@@ -3,7 +3,6 @@
 package chiselTests.stage.phases
 
 import chisel3._
-import chisel3.experimental.ChiselAnnotation
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{Convert, Elaborate}
 
@@ -16,17 +15,13 @@ import org.scalatest.matchers.should.Matchers
 
 case class ConvertSpecFirrtlAnnotation(name: String) extends NoTargetAnnotation
 
-case class ConvertSpecChiselAnnotation(name: String) extends ChiselAnnotation {
-  def toFirrtl: Annotation = ConvertSpecFirrtlAnnotation(name)
-}
-
 class ConvertSpecFoo extends RawModule {
   override val desiredName: String = "foo"
 
   val in = IO(Input(Bool()))
   val out = IO(Output(Bool()))
 
-  experimental.annotate(ConvertSpecChiselAnnotation("bar"))
+  chisel3.experimental.annotate()(Seq(ConvertSpecFirrtlAnnotation("bar")))
 }
 
 class ConvertSpec extends AnyFlatSpec with Matchers {

@@ -4,12 +4,16 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.util.Counter
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import scala.annotation.nowarn
 
 /** Extend BasicTester with a simple circuit and finish method.  TesterDriver will call the
   * finish method after the FinishTester's constructor has completed, which will alter the
   * circuit after the constructor has finished.
   */
+@nowarn("msg=class BasicTester in package testers is deprecated")
 class FinishTester extends BasicTester {
   val test_wire_width = 2
   val test_wire_override_value = 3

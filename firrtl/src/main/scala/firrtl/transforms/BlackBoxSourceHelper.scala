@@ -27,6 +27,7 @@ case class BlackBoxPathAnno(target: ModuleName, path: String)
   override def serialize: String = s"path\n$path"
 }
 
+@deprecated("Use Chisel's HasBlockBoxResource/HasExtModuleResource APIs", "Chisel 6.7.0")
 case class BlackBoxResourceFileNameAnno(resourceFileName: String) extends BlackBoxHelperAnno with NoTargetAnnotation {
   override def serialize: String = s"resourceFileName\n$resourceFileName"
 }
@@ -40,6 +41,7 @@ class BlackBoxNotFoundException(fileName: String, message: String)
       s"BlackBox '$fileName' not found. Did you misspell it? Is it in src/{main,test}/resources?\n$message"
     )
 
+@deprecated("Use Chisel's HasBlockBoxResource/HasExtModuleResource APIs", "Chisel 6.7.0")
 object BlackBoxSourceHelper {
 
   /** Safely access a file converting [[FileNotFoundException]]s and [[NullPointerException]]s into
@@ -59,6 +61,7 @@ object BlackBoxSourceHelper {
     * @param dir the directory in which to write the file
     * @return the closed File object
     */
+  @deprecated("Use Chisel's HasBlockBoxResource/HasExtModuleResource APIs", "Chisel 6.7.0")
   def writeResourceToDirectory(name: String, dir: File): File = {
     val fileName = name.split("/").last
     val outFile = new File(dir, fileName)
@@ -72,6 +75,7 @@ object BlackBoxSourceHelper {
     * @param file the file to write it into
     * @throws BlackBoxNotFoundException if the requested resource does not exist
     */
+  @deprecated("Use Chisel's HasBlockBoxResource/HasExtModuleResource APIs", "Chisel 6.7.0")
   def copyResourceToFile(name: String, file: File): Unit = {
     val in = getClass.getResourceAsStream(name)
     val out = new FileOutputStream(file)
@@ -79,6 +83,7 @@ object BlackBoxSourceHelper {
     out.close()
   }
 
+  @deprecated("Use Chisel's HasBlockBoxResource/HasExtModuleResource APIs", "Chisel 6.7.0")
   val defaultFileListName = "firrtl_black_box_resource_files.f"
 
 }

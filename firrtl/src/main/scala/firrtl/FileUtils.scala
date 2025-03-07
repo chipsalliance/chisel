@@ -2,6 +2,7 @@
 
 package firrtl
 
+@deprecated("Use os-lib directly or scala.io", "Chisel 6.7.0")
 object FileUtils {
 
   /** Read a text file and return it as a Seq of strings

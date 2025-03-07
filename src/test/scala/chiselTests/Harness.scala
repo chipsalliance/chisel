@@ -4,6 +4,15 @@ package chiselTests
 
 import java.io.File
 import firrtl.util.BackendCompilationUtilities._
+import scala.annotation.nowarn
+
+@nowarn("msg=object BackendCompilationUtilities in package util is deprecated")
+@nowarn("msg=method makeHarness in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method cppToExe in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method executeExpectingSuccess in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method executeExpectingFailure in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method createTestDirectory in object BackendCompilationUtilities is deprecated")
+@nowarn("msg=method verilogToCpp in object BackendCompilationUtilities is deprecated")
 class HarnessSpec extends ChiselPropSpec {
 
   def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""

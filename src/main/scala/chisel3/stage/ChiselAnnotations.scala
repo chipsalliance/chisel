@@ -14,7 +14,7 @@ import firrtl.options.{
 }
 import firrtl.options.internal.WriteableCircuitAnnotation
 import firrtl.options.Viewer.view
-import chisel3.{deprecatedMFCMessage, ChiselException, Module}
+import chisel3.{deprecatedMFCMessage, ChiselException, ElaboratedCircuit, Module}
 import chisel3.RawModule
 import chisel3.internal.{Builder, WarningFilter}
 import chisel3.internal.firrtl.ir.Circuit
@@ -267,11 +267,56 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
 /** Stores a Chisel Circuit
   * @param circuit a Chisel Circuit
   */
-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption with Unserializable {
+class ChiselCircuitAnnotation private (private[chisel3] val _circuit: Either[Circuit, ElaboratedCircuit])
+    extends NoTargetAnnotation
+    with ChiselOption
+    with Unserializable
+    with Product
+    with Serializable {
+
+  @deprecated("Use factory method with ElaboratedCircuit instead.", "Chisel 6.7.0")
+  def this(circuit: Circuit) = this(Left(circuit))
+
+  @deprecated("Use elaboratedCircuit instead.", "Chisel 6.7.0")
+  def circuit: Circuit = _circuit.map(_._circuit).merge
+
+  // If constructed from a Circuit, we fake an ElaboratedCircuit with no annotations
+  def elaboratedCircuit: ElaboratedCircuit = _circuit.left.map(ElaboratedCircuit(_, Nil)).merge
+
+  def canEqual(that: Any): Boolean = that.isInstanceOf[ChiselCircuitAnnotation]
+
+  override def equals(obj: Any): Boolean = obj match {
+    case that: ChiselCircuitAnnotation => this._circuit == that._circuit
+    case _ => false
+  }
+
+  def productArity: Int = 1
+
+  def productElement(n: Int): Any = n match {
+    case 0 => _circuit
+    case _ => throw new IndexOutOfBoundsException(s"Invalid index $n")
+  }
+
   /* Caching the hashCode for a large circuit is necessary due to repeated queries.
    * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
    */
-  override lazy val hashCode: Int = circuit.hashCode
+  override lazy val hashCode: Int = _circuit.hashCode
+
+  @deprecated("Don't copy, just create a new one.", "Chisel 6.7.0")
+  def copy(circuit: Circuit = this.circuit): ChiselCircuitAnnotation = new ChiselCircuitAnnotation(Left(circuit))
+}
+
+object ChiselCircuitAnnotation extends scala.runtime.AbstractFunction1[ElaboratedCircuit, ChiselCircuitAnnotation] {
+
+  @deprecated("Construct with ElaboratedCircuit instead.", "Chisel 6.7.0")
+  def apply(circuit: Circuit): ChiselCircuitAnnotation = new ChiselCircuitAnnotation(Left(circuit))
+
+  def apply(elaboratedCircuit: ElaboratedCircuit): ChiselCircuitAnnotation = new ChiselCircuitAnnotation(
+    Right(elaboratedCircuit)
+  )
+
+  @deprecated("Unapply is deprecated, access fields directly.", "Chisel 6.7.0")
+  def unapply(c: ChiselCircuitAnnotation): Option[Circuit] = Some(c.circuit)
 }
 
 object CircuitSerializationAnnotation {
@@ -281,23 +326,68 @@ object CircuitSerializationAnnotation {
   case object FirrtlFileFormat extends Format {
     def extension = ".fir"
   }
+
+  @deprecated("Construct with ElaboratedCircuit instead.", "Chisel 6.7.0")
+  def apply(circuit: Circuit, filename: String, format: Format): CircuitSerializationAnnotation =
+    new CircuitSerializationAnnotation(Left(circuit), filename, format)
+
+  def apply(elaboratedCircuit: ElaboratedCircuit, filename: String): CircuitSerializationAnnotation =
+    new CircuitSerializationAnnotation(Right(elaboratedCircuit), filename, FirrtlFileFormat)
+
+  @deprecated("Unapply is deprecated, access fields directly.", "Chisel 6.7.0")
+  def unapply(c: CircuitSerializationAnnotation): Option[(Circuit, String, Format)] = Some(
+    (c.circuit, c.filename, FirrtlFileFormat)
+  )
 }
 
-import CircuitSerializationAnnotation._
+import CircuitSerializationAnnotation.{FirrtlFileFormat, Format}
 
 /** Wraps a `Circuit` for serialization via `CustomFileEmission`
   * @param circuit a Chisel Circuit
   * @param filename name of destination file (excludes file extension)
   * @param format serialization file format (sets file extension)
   */
-case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, format: Format)
+class CircuitSerializationAnnotation private (
+  private val _circuit: Either[Circuit, ElaboratedCircuit],
+  val filename:         String,
+  val format:           Format)
     extends NoTargetAnnotation
     with BufferedCustomFileEmission
-    with WriteableCircuitAnnotation {
+    with WriteableCircuitAnnotation
+    with Product
+    with Serializable {
+
+  @deprecated("Construct with ElaboratedCircuit instead", "Chisel 6.7.0")
+  def this(circuit: Circuit, filename: String, format: Format) = this(Left(circuit), filename, format)
+
+  @deprecated("Use elaboratedCircuit instead", "Chisel 6.7.0")
+  def circuit: Circuit = _circuit.map(_._circuit).merge
+
+  def elaboratedCircuit: ElaboratedCircuit = _circuit.toOption.getOrElse(
+    throw new Exception("This object was built with the deprecated Circuit constructor, cannot get elaboratedCircuit.")
+  )
+
   /* Caching the hashCode for a large circuit is necessary due to repeated queries.
    * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
    */
-  override lazy val hashCode: Int = circuit.hashCode
+  override lazy val hashCode: Int = _circuit.hashCode
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[CircuitSerializationAnnotation]
+
+  override def equals(obj: Any): Boolean = obj match {
+    case that: CircuitSerializationAnnotation =>
+      this._circuit == that._circuit && this.filename == that.filename && this.format == that.format
+    case _ => false
+  }
+
+  override def productArity: Int = 3
+
+  def productElement(n: Int): Any = n match {
+    case 0 => _circuit
+    case 1 => filename
+    case 2 => format
+    case _ => throw new IndexOutOfBoundsException(s"Invalid index $n")
+  }
 
   protected def baseFileName(annotations: AnnotationSeq): String = filename
 
@@ -320,23 +410,16 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
     *
     * @note This API is lazy to improve performance and enable emitting circuits larger than 2 GiB
     */
-  def emitLazily(annos: Seq[Annotation]): Iterable[String] = {
-    // First emit all circuit logic without modules
-    val prelude = {
-      val dummyCircuit = circuit.copy(components = Nil)
-      val converted = Converter.convert(dummyCircuit)
-      val withAnnos = CircuitWithAnnos(converted, annos)
-      Serializer.lazily(withAnnos)
-    }
-    val typeAliases: Seq[String] = circuit.typeAliases.map(_.name)
-    val modules = circuit.components.iterator.map(c => Converter.convert(c, typeAliases))
-    val moduleStrings = modules.flatMap { m =>
-      Serializer.lazily(m, 1) ++ Seq("\n\n")
-    }
-    prelude ++ moduleStrings
+  def emitLazily(annos: Seq[Annotation]): Iterable[String] = _circuit match {
+    case Left(c)   => ElaboratedCircuit(c, Nil).lazilySerialize(annos)
+    case Right(ec) => ec.lazilySerialize(annos)
   }
 
   override def getBytesBuffered: Iterable[Array[Byte]] = emitLazily(Nil).map(_.getBytes)
+
+  @deprecated("Don't copy, just create a new one.", "Chisel 6.7.0")
+  def copy(circuit: Circuit = this.circuit, filename: String = this.filename, format: Format = this.format) =
+    new CircuitSerializationAnnotation(Left(circuit), filename, format)
 }
 
 case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption with Unserializable

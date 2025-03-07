@@ -38,7 +38,7 @@ class ElaborateSpec extends AnyFlatSpec with Matchers {
     out.collect { case a: ChiselGeneratorAnnotation => a } should be(empty)
 
     info("circuits created with the expected names")
-    out.collect { case a: ChiselCircuitAnnotation => a.circuit.name } should be(Seq("Foo", "Bar"))
+    out.collect { case a: ChiselCircuitAnnotation => a.elaboratedCircuit.name } should be(Seq("Foo", "Bar"))
   }
 
 }

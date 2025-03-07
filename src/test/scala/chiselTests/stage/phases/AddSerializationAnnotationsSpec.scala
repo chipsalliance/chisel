@@ -29,7 +29,7 @@ class AddSerializationAnnotationsSpec extends AnyFlatSpec with Matchers {
 
     manager
       .transform(annotations)
-      .collect { case CircuitSerializationAnnotation(_, filename, format) => (filename, format) }
+      .collect { case a: CircuitSerializationAnnotation => (a.filename, a.format) }
       .toSeq should be(Seq(("Bar", FirrtlFileFormat)))
   }
 
@@ -39,7 +39,7 @@ class AddSerializationAnnotationsSpec extends AnyFlatSpec with Matchers {
 
     manager
       .transform(annotations)
-      .collect { case CircuitSerializationAnnotation(_, filename, format) => (filename, format) }
+      .collect { case a: CircuitSerializationAnnotation => (a.filename, a.format) }
       .toSeq should be(Seq(("Bar.pb", FirrtlFileFormat)))
   }
 

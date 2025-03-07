@@ -5,6 +5,7 @@ package chisel3
 import scala.language.experimental.macros
 import scala.language.existentials
 import scala.reflect.macros.blackbox.Context
+import scala.annotation.nowarn
 import scala.collection.mutable
 import chisel3.experimental.{annotate, requireIsHardware, ChiselAnnotation, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.Builder.pushOp
@@ -25,6 +26,9 @@ import chisel3.internal.{
 
 import chisel3.experimental.EnumAnnotations._
 
+// Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
+@nowarn("msg=Avoid custom annotations")
+@nowarn("msg=Enum annotations will be removed")
 abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating: Boolean = true) extends Element {
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
@@ -228,10 +232,15 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum, selfAnnotating
   }
 }
 
+// Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
+@nowarn("msg=Avoid custom annotations")
 private[chisel3] object ChiselEnum {
   private[chisel3] case object CacheKey extends BuilderContextCache.Key[mutable.HashSet[ChiselAnnotation]]
 }
 
+// Rather than refactoring the annotation work here, we should just remove ChiselEnum annotations
+@nowarn("msg=Avoid custom annotations")
+@nowarn("msg=Enum annotations will be removed")
 abstract class ChiselEnum {
   class Type extends EnumType(this)
   object Type {
