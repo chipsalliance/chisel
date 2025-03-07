@@ -22,7 +22,7 @@ import chisel3.internal.Builder.Prefix
 import logger.{LazyLogging, LoggerOption}
 
 import scala.collection.mutable
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import java.io.File
 import scala.util.control.NonFatal
 import chisel3.ChiselException
@@ -450,6 +450,7 @@ private[chisel3] class ChiselContext() {
   val viewNamespace = Namespace.empty
 }
 
+@nowarn("msg=Avoid custom annotations")
 private[chisel3] class DynamicContext(
   val annotationSeq:     AnnotationSeq,
   val throwOnFirstError: Boolean,
@@ -541,6 +542,7 @@ private[chisel3] class DynamicContext(
   var inDefinition: Boolean = false
 }
 
+@nowarn("msg=Avoid custom annotations")
 private[chisel3] object Builder extends LazyLogging {
 
   // Represents the current state of the prefixes given
@@ -1017,7 +1019,7 @@ private[chisel3] object Builder extends LazyLogging {
     f:              => T,
     dynamicContext: DynamicContext,
     forceModName:   Boolean = true
-  ): (Circuit, T) = {
+  ): (ElaboratedCircuit, T) = {
     // Logger has its own context separate from Chisel's dynamic context
     _root_.logger.Logger.makeScope(dynamicContext.loggerOptions) {
       buildImpl(f, dynamicContext, forceModName)
@@ -1028,7 +1030,7 @@ private[chisel3] object Builder extends LazyLogging {
     f:              => T,
     dynamicContext: DynamicContext,
     forceModName:   Boolean
-  ): (Circuit, T) = {
+  ): (ElaboratedCircuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       // Must initialize the singleton in a Builder context or weird things can happen
       // in tiny designs/testcases that never access anything in chisel3.internal.
@@ -1091,7 +1093,7 @@ private[chisel3] object Builder extends LazyLogging {
           )
       }
 
-      (
+      val circuit =
         Circuit(
           components.last.name,
           components.toSeq,
@@ -1101,9 +1103,8 @@ private[chisel3] object Builder extends LazyLogging {
           typeAliases,
           layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
           optionDefs
-        ),
-        mod
-      )
+        )
+      (ElaboratedCircuit(circuit, dynamicContext.annotationSeq.toSeq), mod)
     }
   }
   initializeSingletons()

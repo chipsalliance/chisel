@@ -16,6 +16,7 @@ import scala.annotation.nowarn
 import scala.sys.process.ProcessLogger
 
 @nowarn("msg=trait BackendCompilationUtilities in package chisel3 is deprecated")
+@deprecated("Please migrate to ChiselSim APIs", "Chisel 6.7.0")
 object TesterDriver extends BackendCompilationUtilities {
   //TODO: need to remove BackendCompilationUtilities here but it will break external API
   //      unless all methods of it are implemented
@@ -112,11 +113,14 @@ object TesterDriver extends BackendCompilationUtilities {
     override def invalidates(a: Phase) = false
 
     override def transform(a: AnnotationSeq) = a.flatMap {
-      case a @ ChiselCircuitAnnotation(circuit) =>
+      case a: ChiselCircuitAnnotation =>
         Seq(
           a,
           TargetDirAnnotation(
-            firrtl.util.BackendCompilationUtilities.createTestDirectory(circuit.name).getAbsolutePath.toString
+            firrtl.util.BackendCompilationUtilities
+              .createTestDirectory(a.elaboratedCircuit.name)
+              .getAbsolutePath
+              .toString
           )
         )
       case a => Seq(a)

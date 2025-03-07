@@ -45,10 +45,7 @@ trait HasBlackBoxResource extends BlackBox {
     * }}}
     */
   def addResource(blackBoxResource: String): Unit = {
-    val anno = new ChiselAnnotation {
-      def toFirrtl = BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)
-    }
-    chisel3.experimental.annotate(anno)
+    chisel3.experimental.annotate(self)(Seq(BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)))
   }
 }
 
@@ -61,10 +58,7 @@ trait HasBlackBoxInline extends BlackBox {
     * @param blackBoxInline The black box contents
     */
   def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
-    val anno = new ChiselAnnotation {
-      def toFirrtl = BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline)
-    }
-    chisel3.experimental.annotate(anno)
+    chisel3.experimental.annotate(self)(Seq(BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline)))
   }
 }
 
@@ -78,9 +72,6 @@ trait HasBlackBoxPath extends BlackBox {
     * target directory.
     */
   def addPath(blackBoxPath: String): Unit = {
-    val anno = new ChiselAnnotation {
-      def toFirrtl = BlackBoxPathAnno(self.toNamed, blackBoxPath)
-    }
-    chisel3.experimental.annotate(anno)
+    chisel3.experimental.annotate(self)(Seq(BlackBoxPathAnno(self.toNamed, blackBoxPath)))
   }
 }

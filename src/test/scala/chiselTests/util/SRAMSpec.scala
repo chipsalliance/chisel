@@ -4,7 +4,7 @@ package chiselTests.util
 
 import chisel3._
 import chisel3.util.SRAM
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.annotate
 import chiselTests.ChiselFlatSpec
 import _root_.circt.stage.ChiselStage.emitCHIRRTL
 import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
@@ -26,9 +26,7 @@ class SRAMSpec extends ChiselFlatSpec {
         numReadwritePorts = 1
       )
       require(sram.underlying.nonEmpty)
-      annotate(new ChiselAnnotation {
-        override def toFirrtl: Annotation = DummyAnno(sram.underlying.get.toTarget)
-      })
+      annotate(sram.underlying.get)(Seq(DummyAnno(sram.underlying.get.toTarget)))
     }
     val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top)
     val chirrtl = chirrtlCircuit.serialize
@@ -54,9 +52,7 @@ class SRAMSpec extends ChiselFlatSpec {
       )
       require(sramInterface.underlying.nonEmpty)
       sramInterface.underlying.get.suggestName("carrot")
-      annotate(new ChiselAnnotation {
-        override def toFirrtl: Annotation = DummyAnno(sramInterface.underlying.get.toTarget)
-      })
+      annotate(sramInterface.underlying.get)(Seq(DummyAnno(sramInterface.underlying.get.toTarget)))
     }
     val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top)
     val chirrtl = chirrtlCircuit.serialize

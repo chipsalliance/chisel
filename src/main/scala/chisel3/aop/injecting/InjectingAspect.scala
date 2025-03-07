@@ -81,7 +81,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         dynamicContext.globalNamespace.name(n)
       }
 
-      val (chiselIR, _) = Builder.build(
+      val (elaboratedCircuit, _) = Builder.build(
         Module(new ModuleAspect(module) {
           module match {
             case x: Module    => withClockAndReset(x.clock, x.reset) { injection(module) }
@@ -91,12 +91,12 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         dynamicContext
       )
 
-      val comps = chiselIR.components.map {
+      val comps = elaboratedCircuit._circuit.components.map {
         case x: DefModule if x.name == module.name => x.copy(id = module)
         case other => other
       }
 
-      val annotations: Seq[Annotation] = chiselIR.firrtlAnnotations.toSeq.filterNot { a =>
+      val annotations: Seq[Annotation] = elaboratedCircuit.annotations.toSeq.filterNot { a =>
         a.isInstanceOf[DesignAnnotation[_]]
       }
 
@@ -104,7 +104,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
       val stmts = mutable.ArrayBuffer[ir.Statement]()
 
       /** Modules to be injected via aspect. */
-      val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).modules.flatMap {
+      val modules = Aspect.getFirrtl(elaboratedCircuit._circuit.copy(components = comps)).modules.flatMap {
         // for "container" modules, inject their statements
         case m: firrtl.ir.Module if m.name == module.name =>
           stmts += m.body
