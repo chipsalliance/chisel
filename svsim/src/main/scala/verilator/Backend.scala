@@ -21,7 +21,7 @@ object Backend {
     disabledWarnings:           Seq[String] = Seq(),
     disableFatalExitOnWarnings: Boolean = false,
     enableAllAssertions:        Boolean = false
-  )
+  ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
     val output = mutable.ArrayBuffer.empty[String]

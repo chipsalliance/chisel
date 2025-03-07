@@ -67,7 +67,7 @@ object Backend {
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false
-  )
+  ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
     (sys.env.get("VCS_HOME"), sys.env.get("LM_LICENSE_FILE")) match {
