@@ -25,7 +25,12 @@ trait SimulatorAPI {
   def simulateRaw[T <: RawModule](
     module:         => T,
     chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
-  )(stimulus: (T) => Unit)(implicit hasSimulator: HasSimulator, testingDirectory: HasTestingDirectory): Unit = {
+  )(stimulus: (T) => Unit)(
+    implicit hasSimulator:        HasSimulator,
+    testingDirectory:             HasTestingDirectory,
+    commonSettingsModifications:  svsim.CommonSettingsModifications,
+    backendSettingsModifications: svsim.BackendSettingsModifications
+  ): Unit = {
 
     hasSimulator.getSimulator
       .simulate(module, chiselSettings) { module =>
@@ -77,7 +82,12 @@ trait SimulatorAPI {
     module:                => T,
     chiselSettings:        ChiselSettings[T] = ChiselSettings.default[T],
     additionalResetCycles: Int = 0
-  )(stimulus: (T) => Unit)(implicit hasSimulator: HasSimulator, testingDirectory: HasTestingDirectory): Unit = {
+  )(stimulus: (T) => Unit)(
+    implicit hasSimulator:        HasSimulator,
+    testingDirectory:             HasTestingDirectory,
+    commonSettingsModifications:  svsim.CommonSettingsModifications,
+    backendSettingsModifications: svsim.BackendSettingsModifications
+  ): Unit = {
 
     hasSimulator.getSimulator
       .simulate(module, chiselSettings) { module =>
