@@ -1,15 +1,20 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package chiselTests
-import chisel3._
-import chisel3.experimental.{annotate, ChiselMultiAnnotation}
-import chisel3.stage.ChiselGeneratorAnnotation
+
 import circt.stage.ChiselStage
-import firrtl.stage.FirrtlCircuitAnnotation
+
+import chisel3._
+import chisel3.experimental.{annotate, AnyTargetable}
+import chisel3.stage.ChiselGeneratorAnnotation
+import chiselTests.experimental.hierarchy.Utils
+
+import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import firrtl.transforms.NoDedupAnnotation
-import firrtl.transforms.DontTouchAnnotation
 
-class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
+class NewAnnotationsSpec extends AnyFreeSpec with Matchers with ChiselRunners with Utils {
 
   class MuchUsedModule extends Module {
     val io = IO(new Bundle {
@@ -37,13 +42,13 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
     io.out := mod3.io.out
 
     // Give two annotations as single element of the seq - ensures previous API works by wrapping into a seq.
-    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod2.toNamed)) })
-    annotate(new ChiselMultiAnnotation { def toFirrtl = Seq(new NoDedupAnnotation(mod3.toNamed)) })
+    annotate(mod2)(Seq(new NoDedupAnnotation(mod2.toNamed)))
+    annotate(mod3)(Seq(new NoDedupAnnotation(mod3.toNamed)))
 
     // Pass multiple annotations in the same seq - should get emitted out correctly.
-    annotate(new ChiselMultiAnnotation {
-      def toFirrtl =
-        Seq(new DontTouchAnnotation(mod1.io.in.toNamed), new DontTouchAnnotation(mod1.io.out.toNamed))
+    val ports = Seq(mod1.io.in, mod1.io.out)
+    annotate(ports)({
+      ports.map(p => new DontTouchAnnotation(p.toTarget))
     })
   }
 
@@ -67,7 +72,30 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers {
       noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_3")
       dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io.out")
       dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io.in")
+    }
 
+    "It should be possible to annotate heterogeneous Targetable things" in {
+      val (_, annotations) = getFirrtlAndAnnos(new RawModule {
+        override def desiredName: String = "Top"
+        val in = IO(Input(UInt(8.W)))
+        val out = IO(Output(UInt(8.W)))
+        out := in
+        // Given a Seq[UInt]
+        val xs: Seq[UInt] = Seq(in, out)
+        // We can manually use AnyTargetable to also include a Module
+        // Using either type ascriptions to invoke the implicit conversion, or manually
+        val ys = Seq[AnyTargetable](this) ++ xs.map(AnyTargetable(_))
+        annotate(ys)(
+          Seq(
+            DontTouchAnnotation(in.toTarget),
+            DontTouchAnnotation(out.toTarget),
+            NoDedupAnnotation(this.toNamed)
+          )
+        )
+      })
+      annotations should contain(DontTouchAnnotation("~Top|Top>in".rt))
+      annotations should contain(DontTouchAnnotation("~Top|Top>out".rt))
+      annotations should contain(NoDedupAnnotation("~Top|Top".mt))
     }
   }
 }

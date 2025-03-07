@@ -9,6 +9,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.experimental.SourceInfo
 
+@deprecated("Use a `Module` instead of `BasicTester`", "Chisel 6.7.0")
 class BasicTester extends Module() {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.
   val io = IO(new Bundle() {})

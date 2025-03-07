@@ -20,7 +20,7 @@ class AddDedupGroupAnnotations extends Phase {
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val chiselOptions = view[ChiselOptions](annotations)
-    val circuit = chiselOptions.chiselCircuit.getOrElse {
+    val elaboratedCircuit = chiselOptions.elaboratedCircuit.getOrElse {
       throw new ChiselException(
         s"Unable to locate the elaborated circuit, did ${classOf[Elaborate].getName} run correctly"
       )
@@ -28,7 +28,7 @@ class AddDedupGroupAnnotations extends Phase {
 
     val skipAnnos = annotations.collect { case x: DedupGroupAnnotation => x.target }.toSet
 
-    val annos = circuit.components.filter {
+    val annos = elaboratedCircuit._circuit.components.filter {
       case x @ DefBlackBox(id, _, _, _, _)   => !id._isImportedDefinition
       case DefIntrinsicModule(_, _, _, _, _) => false
       case DefClass(_, _, _, _)              => false

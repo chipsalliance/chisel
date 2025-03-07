@@ -12,6 +12,8 @@ import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
+import scala.annotation.nowarn
+
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
 
@@ -723,6 +725,7 @@ class ChiselEnumAnnotatorWithChiselName extends Module {
   val indexed2 = vec_of_bundles(cycle)
 }
 
+@nowarn("msg=Enum annotations will be removed")
 class ChiselEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   import chisel3.experimental.EnumAnnotations._
   import firrtl.annotations.{Annotation, ComponentName}

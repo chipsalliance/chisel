@@ -10,7 +10,7 @@ import scala.reflect.macros.blackbox.Context
 import scala.reflect.macros.whitebox
 
 /** Transforms a function call so that it can both provide implicit-style source information and
-  * have a chained apply call. Without macros, only one is possible, since having a implicit
+  * have a chained apply call. Without macros, only one is possible, since having an implicit
   * argument in the definition will cause the compiler to interpret a chained apply as an
   * explicit implicit argument and give type errors.
   *
@@ -375,13 +375,13 @@ class IntLiteralApplyTransform(val c: Context) extends AutoSourceTransform {
     c.macroApplication match {
       case q"$_.$clazz($lit).$func.apply($arg)" =>
         if (
-          Set("U", "S").contains(func.toString) &&
+          Set("U", "S", "asUInt", "asSInt").contains(func.toString) &&
           Set("fromStringToLiteral", "fromIntToLiteral", "fromLongToIteral", "fromBigIntToLiteral").contains(
             clazz.toString
           )
         ) {
           val msg =
-            s"""Passing an Int to .$func is usually a mistake: It does *not* set the width but does a bit extract.
+            s"""Passing an Int to .$func is usually a mistake: It does *not* set the width; it does a bit extraction.
                |Did you mean .$func($arg.W)?
                |If you do want bit extraction, use .$func.extract($arg) instead.
                |""".stripMargin

@@ -163,12 +163,8 @@ class Top extends Module {
 ```
 ```scala mdoc:passthrough
 println("```")
-val chiselCircuit = (new chisel3.stage.phases.Elaborate)
-  .transform(Seq(chisel3.stage.ChiselGeneratorAnnotation(() => new Top)))
-  .collectFirst { case chisel3.stage.ChiselCircuitAnnotation(a) =>
-    a
-  }.get
-  println(chiselCircuit)
+// Run elaboration so that the println above shows up
+circt.stage.ChiselStage.convert(new Top)
 println("```")
 ```
 
@@ -252,19 +248,13 @@ There are seven hierarchy-specific functions, which (with the exception of `ios`
  - `allDefinitionsOf[type]`: Return all definitions of instances of provided `type` directly and indirectly instantiated, locally and deeply, starting from `root`
  - `ios`: Returns all the I/Os of the provided definition or instance.
 
-To demonstrate this, consider the following. We mock up an example where we are using the `Select.allInstancesOf` and `Select.allDefinitionsOf` to annotate instances and the definition of `EmptyModule`. When converting the `ChiselAnnotation` to firrtl's `Annotation`, we print out the resulting `Target`. As shown, despite `EmptyModule` actually only being elaborated once, we still provide different targets depending on how the instance or definition is selected.
+To demonstrate this, consider the following. We mock up an example where we are using the `Select.allInstancesOf` and `Select.allDefinitionsOf` to annotate instances and the definition of `EmptyModule`.
+When the annotation logic is execute after elaboration, we print the resulting `Target`.
+As shown, despite `EmptyModule` actually only being elaborated once, we still provide different targets depending on how the instance or definition is selected.
 
 ```scala mdoc:reset
 import chisel3._
 import chisel3.experimental.hierarchy.{Definition, Instance, Hierarchy, instantiable, public}
-import firrtl.annotations.{IsModule, NoTargetAnnotation}
-case object EmptyAnnotation extends NoTargetAnnotation
-case class MyChiselAnnotation(m: Hierarchy[RawModule], tag: String) extends experimental.ChiselAnnotation {
-  def toFirrtl = {
-    println(tag + ": " + m.toTarget)
-    EmptyAnnotation
-  }
-}
 
 @instantiable
 class EmptyModule extends Module {
@@ -282,10 +272,16 @@ class Top extends Module {
   val definition = Definition(new TwoEmptyModules)
   val instance   = Instance(definition)
   aop.Select.allInstancesOf[EmptyModule](instance).foreach { i =>
-    experimental.annotate(MyChiselAnnotation(i, "instance"))
+    experimental.annotate(i) {
+      println("instance: " + i.toTarget)
+      Nil
+    }
   }
   aop.Select.allDefinitionsOf[EmptyModule](instance).foreach { d =>
-    experimental.annotate(MyChiselAnnotation(d, "definition"))
+    experimental.annotate(d) {
+      println("definition: " + d.toTarget)
+      Nil
+    }
   }
 }
 ```
@@ -298,13 +294,6 @@ println("```")
 You can also use `Select.ios` on either a `Definition` or an `Instance` to annotate the I/Os appropriately:
 
 ```scala mdoc
-case class MyIOAnnotation(m: Data, tag: String) extends experimental.ChiselAnnotation {
-  def toFirrtl = {
-    println(tag + ": " + m.toTarget)
-    EmptyAnnotation
-  }
-}
-
 @instantiable
 class InOutModule extends Module {
   @public val in = IO(Input(Bool()))
@@ -329,12 +318,20 @@ class InOutTop extends Module {
   val instance   = Instance(definition)
   aop.Select.allInstancesOf[InOutModule](instance).foreach { i =>
     aop.Select.ios(i).foreach { io =>
-      experimental.annotate(MyIOAnnotation(io, "instance io"))
-  }}
+      experimental.annotate(io) {
+        println("instance io: " + io.toTarget)
+        Nil
+      }
+    }
+  }
   aop.Select.allDefinitionsOf[InOutModule](instance).foreach { d =>
-    aop.Select.ios(d).foreach {io =>
-      experimental.annotate(MyIOAnnotation(io, "definition io"))
-  }}
+    aop.Select.ios(d).foreach { io =>
+      experimental.annotate(io) {
+        println("definition io: " + io.toTarget)
+        Nil
+      }
+    }
+  }
 }
 ```
 ```scala mdoc:passthrough

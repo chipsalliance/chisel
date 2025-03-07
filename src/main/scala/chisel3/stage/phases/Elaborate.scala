@@ -19,6 +19,7 @@ import firrtl.options.Viewer.view
 import logger.LoggerOptions
 
 import scala.collection.mutable.ArrayBuffer
+import scala.annotation.nowarn
 
 /** Elaborate all [[chisel3.stage.ChiselGeneratorAnnotation]]s into [[chisel3.stage.ChiselCircuitAnnotation]]s.
   */
@@ -48,9 +49,9 @@ class Elaborate extends Phase {
             ArrayBuffer[Definition[_]](),
             BuilderContextCache.empty
           )
-        val (circuit, dut) =
+        val (elaboratedCircuit, dut) =
           Builder.build(Module(gen()), context)
-        Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
+        Seq(ChiselCircuitAnnotation(elaboratedCircuit), DesignAnnotation(dut))
       } catch {
         /* if any throwable comes back and we're in "stack trace trimming" mode, then print an error and trim the stack trace
          */

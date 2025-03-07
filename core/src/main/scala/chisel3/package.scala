@@ -30,10 +30,6 @@ package object chisel3 {
     * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
     * confusion (the 1 is a bit length and the 0 is a bit extraction position).
     * Prefer storing the result and then extracting from it.
-    *
-    * Implementation note: the empty parameter list (like `U()`) is necessary to prevent
-    * interpreting calls that have a non-Width parameter as a chained apply, otherwise things like
-    * `0.asUInt(16)` (instead of `16.W`) compile without error and produce undesired results.
     */
   implicit class fromBigIntToLiteral(bigint: BigInt) {
 
@@ -158,6 +154,7 @@ package object chisel3 {
     * currently, the node's name, the full path name, and references to its parent Module and component.
     * These are only valid once the design has been elaborated, and should not be used during its construction.
     */
+  @deprecated("User-defined annotations are not supported in CIRCT, use Targetable if you must.", "Chisel 6.7.0")
   trait InstanceId {
     def instanceName:   String
     def pathName:       String
