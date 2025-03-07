@@ -156,7 +156,12 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       val directory = Directory(FileSystems.getDefault().getPath("test_run_dir", "foo").toFile())
       directory.deleteRecursively()
 
-      simulate(new Foo()) { _ => }(hasSimulator = implicitly[HasSimulator], testingDirectory = fooDirectory)
+      simulate(new Foo()) { _ => }(
+        hasSimulator = implicitly[HasSimulator],
+        testingDirectory = fooDirectory,
+        implicitly,
+        implicitly
+      )
 
       info(s"found expected directory: '$directory'")
       assert(directory.exists)

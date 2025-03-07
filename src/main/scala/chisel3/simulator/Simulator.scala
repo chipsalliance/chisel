@@ -91,13 +91,16 @@ trait Simulator[T <: Backend] {
   final def simulate[T <: RawModule, U](
     module:         => T,
     chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
-  )(body: (SimulatedModule[T]) => U): Simulator.BackendInvocationDigest[U] = {
+  )(body: (SimulatedModule[T]) => U)(
+    implicit commonSettingsModifications: svsim.CommonSettingsModifications,
+    backendSettingsModifications:         svsim.BackendSettingsModifications
+  ): Simulator.BackendInvocationDigest[U] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs)
     workspace.generateAdditionalSources()
 
-    val commonCompilationSettingsUpdated = commonCompilationSettings.copy(
+    val commonCompilationSettingsUpdated = commonSettingsModifications(commonCompilationSettings).copy(
       // Append to the include directorires based on what the
       // workspace indicates is the path for primary sources.  This
       // ensures that `` `include `` directives can be resolved.
@@ -119,7 +122,7 @@ trait Simulator[T <: Backend] {
           .compile(backend)(
             tag,
             commonCompilationSettingsUpdated,
-            backendSpecificCompilationSettings,
+            backendSettingsModifications(backendSpecificCompilationSettings).asInstanceOf[backend.CompilationSettings],
             customSimulationWorkingDirectory,
             verbose
           )
