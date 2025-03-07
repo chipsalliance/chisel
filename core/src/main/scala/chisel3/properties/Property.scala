@@ -147,7 +147,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     }
 
   implicit val stringPropertyTypeInstance: SimplePropertyType[String] =
-    makeSimple[String](fir.StringPropertyType, s => fir.StringPropertyLiteral(fir.StringLit(s)))
+    makeSimple[String](fir.StringPropertyType, s => fir.StringPropertyLiteral(s))
 
   implicit val boolPropertyTypeInstance: SimplePropertyType[Boolean] =
     makeSimple[Boolean](fir.BooleanPropertyType, fir.BooleanPropertyLiteral(_))

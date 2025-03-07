@@ -242,7 +242,7 @@ case class DoublePropertyLiteral(value: Double) extends Expression with UseSeria
   val width = UnknownWidth
 }
 
-case class StringPropertyLiteral(value: StringLit) extends Expression with UseSerializer {
+case class StringPropertyLiteral(value: String) extends Expression with UseSerializer {
   def tpe = StringPropertyType
   val width = UnknownWidth
 }
