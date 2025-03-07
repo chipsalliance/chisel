@@ -70,7 +70,7 @@ object CLI {
           case "true" | "1" => true
           case invalid =>
             throw new IllegalArgumentException(
-              "invalid argument '$invalid' for option '$name', must be one of [true, 1]"
+              s"invalid argument '$invalid' for option 'emitVCD', must be one of [true, 1]"
             )
         },
         updateCommonSettings = (_, options) => {
