@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.choice.{Case, Group, ModuleChoice}
 import chiselTests.{ChiselFlatSpec, MatchesAndOmits, Utils}
+import chisel3.experimental.hierarchy.Definition
 import _root_.circt.stage.ChiselStage
 
 object Platform extends Group {
@@ -17,26 +18,50 @@ class TargetIO(width: Int) extends Bundle {
   val out = UInt(width.W)
 }
 
-class FPGATarget extends FixedIOExtModule[TargetIO](new TargetIO(8))
+class FPGATarget extends FixedIORawModule[TargetIO](new TargetIO(8)) {
+  io.out := io.in
+}
 
 class ASICTarget extends FixedIOExtModule[TargetIO](new TargetIO(8))
 
-class VerifTarget extends FixedIORawModule[TargetIO](new TargetIO(8))
+class VerifTarget extends FixedIORawModule[TargetIO](new TargetIO(8)) {
+  io.out := io.in
+}
+
+class ModuleWithChoice[T <: Data](
+  default:        => FixedIOBaseModule[T]
+)(alternateImpls: Seq[(Case, () => FixedIOBaseModule[T])])
+    extends Module {
+  val inst = ModuleChoice(default)(alternateImpls)
+  val io = IO(inst.cloneType)
+  io <> inst
+}
 
 class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
   it should "emit options and cases" in {
-    class ModuleWithChoice extends Module {
-      val out = IO(UInt(8.W))
+    class ModuleWithValidChoices
+        extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
 
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
+    val chirrtl = ChiselStage.emitCHIRRTL(new ModuleWithValidChoices)
+    info("CHIRRTL emission looks correct")
+    matchesAndOmits(chirrtl)(
+      "option Platform :",
+      "FPGA",
+      "ASIC",
+      "instchoice inst of VerifTarget, Platform :",
+      "FPGA => FPGATarget",
+      "ASIC => ASICTarget"
+    )()
+  }
 
-      inst.in := 42.U(8.W)
-      out := inst.out
+  it should "emit options and cases for Modules including definitions" in {
+    class ModuleWithValidChoices
+        extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
+    class TopWithDefinition extends Module {
+      val definitionWithChoice = Definition(new ModuleWithValidChoices)
     }
 
-    val chirrtl = ChiselStage.emitCHIRRTL(new ModuleWithChoice, Array("--full-stacktrace"))
-
+    val chirrtl = ChiselStage.emitCHIRRTL(new TopWithDefinition)
     info("CHIRRTL emission looks correct")
     matchesAndOmits(chirrtl)(
       "option Platform :",
@@ -50,20 +75,15 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   it should "require that all cases are part of the same option" in {
 
-    class MixedOptions extends Module {
-      object Performance extends Group {
-        object Fast extends Case
-        object Small extends Case
-      }
-
-      val out = IO(UInt(8.W))
-
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Performance.Fast -> new ASICTarget))
-
-      inst.in := 42.U(8.W)
-      out := inst.out
+    object Performance extends Group {
+      object Fast extends Case
+      object Small extends Case
     }
+
+    class MixedOptions
+        extends ModuleWithChoice(new VerifTarget)(
+          Seq(Platform.FPGA -> new FPGATarget, Performance.Fast -> new ASICTarget)
+        )
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
       "cannot mix choices from different groups: Platform, Performance"
@@ -73,33 +93,35 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   it should "require that at least one alternative is present" in {
 
-    class MixedOptions extends Module {
-      val out = IO(UInt(8.W))
+    class NoAlternatives extends ModuleWithChoice(new VerifTarget)(Seq())
 
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq())
-
-      inst.in := 42.U(8.W)
-      out := inst.out
-    }
-
-    intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
+    intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new NoAlternatives) }.getMessage() should include(
       "at least one alternative must be specified"
     )
 
   }
 
+  it should "allow a subset of options to be provided" in {
+
+    class SubsetOptions extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget))
+
+    // Note, because of a quirk in how [[Case]]s are registered, only those referenced
+    // in the Module here are going to be captured. This will be fixed in a forthcoming PR
+    // that implements an [[addLayer]] like feature for [[Group]]s
+    val chirrtl = ChiselStage.emitCHIRRTL(new SubsetOptions)
+    info("CHIRRTL emission looks correct")
+    matchesAndOmits(chirrtl)(
+      "option Platform :",
+      "FPGA",
+      "instchoice inst of VerifTarget, Platform :",
+      "FPGA => FPGATarget"
+    )()
+  }
+
   it should "require that all cases are distinct" in {
 
-    class MixedOptions extends Module {
-      val out = IO(UInt(8.W))
-
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.FPGA -> new ASICTarget))
-
-      inst.in := 42.U(8.W)
-      out := inst.out
-    }
+    class MixedOptions
+        extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.FPGA -> new ASICTarget))
 
     intercept[IllegalArgumentException] { ChiselStage.emitCHIRRTL(new MixedOptions) }.getMessage() should include(
       "duplicate case 'FPGA'"
@@ -109,17 +131,9 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with MatchesAndOmits {
 
   it should "require that all IO bundles are type equivalent" in {
 
-    class MixedIO extends Module {
-      val out = IO(UInt(8.W))
+    class Target16 extends FixedIOExtModule[TargetIO](new TargetIO(16))
 
-      class Target16 extends FixedIOExtModule[TargetIO](new TargetIO(16))
-
-      val inst =
-        ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new Target16))
-
-      inst.in := 42.U(8.W)
-      out := inst.out
-    }
+    class MixedIO extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new Target16))
 
     intercept[ChiselException] { ChiselStage.emitCHIRRTL(new MixedIO, Array("--throw-on-first-error")) }
       .getMessage() should include(
