@@ -70,7 +70,7 @@ object CommonCompilationSettings {
 }
 
 trait Backend {
-  type CompilationSettings
+  type CompilationSettings <: Backend.Settings
   def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,
@@ -93,6 +93,9 @@ trait Backend {
 }
 
 final object Backend {
+
+  /** The super type of all backend-specific settings. */
+  trait Settings extends Product
 
   final case class Parameters(
     private[svsim] val compilerPath:         String,
