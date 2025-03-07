@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.testing.scalatest
+package chisel3.simulator.scalatest
 
 import chisel3.simulator.HasSimulator
 import chisel3.testing.scalatest.HasConfigMap
