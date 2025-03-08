@@ -1,7 +1,7 @@
 //> using repository "sonatype-s01:snapshots"
 //> using scala "2.13.16"
-//> using dep "org.chipsalliance::chisel:7.0.0-M2+526-425bdd2b-SNAPSHOT"
-//> using plugin "org.chipsalliance:::chisel-plugin:7.0.0-M2+526-425bdd2b-SNAPSHOT"
+//> using dep "org.chipsalliance::chisel:7.0.0-M2+527-262e428a-SNAPSHOT"
+//> using plugin "org.chipsalliance:::chisel-plugin:7.0.0-M2+527-262e428a-SNAPSHOT"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
 
 import chisel3._
