@@ -22,7 +22,7 @@ package object scalatest {
     *
     * @see [[chisel3.simulator.ChiselSim]]
     */
-  trait ChiselSim extends HasConfigMap with PeekPokeAPI with SimulatorAPI with ControlAPI with TestingDirectory {
+  trait ChiselSim extends chisel3.simulator.ChiselSim with HasConfigMap with TestingDirectory {
     self: TestSuite =>
   }
 
