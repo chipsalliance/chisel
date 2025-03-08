@@ -7,8 +7,16 @@ import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.ir.PrimOp.AsUIntOp
 
+object Clock {
+  def apply(): Clock = new Clock
+}
+
+private[chisel3] trait ClockVirtualMethods {
+  private[chisel3] def _asBoolImpl(implicit sourceInfo: SourceInfo): Bool
+}
+
 // TODO: Document this.
-private[chisel3] trait ClockImpl extends Element {
+sealed class Clock extends Element with ClockIntf {
   private[chisel3] val width: Width = Width(1)
 
   override def toString: String = stringAccessor("Clock")
@@ -26,7 +34,7 @@ private[chisel3] trait ClockImpl extends Element {
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")
 
-  protected def _asBoolImpl(implicit sourceInfo: SourceInfo): Bool = this.asUInt.asBool
+  override private[chisel3] def _asBoolImpl(implicit sourceInfo: SourceInfo): Bool = this.asUInt.asBool
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
