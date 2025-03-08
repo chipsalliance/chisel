@@ -142,6 +142,10 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with T
         args = Array("-td", testDir, "--full-stacktrace", "--target", "chirrtl"),
         annotations = Seq(ChiselGeneratorAnnotation(() => new Testbench(dutDef)), ImportDefinitionAnnotation(dutDef))
       )
+
+      val tbFir = Source.fromFile(s"${testDir}/Testbench.fir").getLines().mkString
+      assert("extmodule AddOne".r.findAllMatchIn(tbFir).length == 1)
+      assert("""inst \S+ of AddOne""".r.findAllMatchIn(tbFir).length == 2)
     }
   }
 
