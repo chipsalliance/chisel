@@ -16,15 +16,7 @@ private[chisel3] sealed trait ToBoolable extends Element {
   def asBool: Bool
 }
 
-/** A data type for values represented by a single bitvector. This provides basic bitwise operations.
-  *
-  * @groupdesc Bitwise Bitwise hardware operators
-  * @define coll [[Bits]]
-  * @define sumWidthInt    @note The width of the returned $coll is `width of this` + `that`.
-  * @define sumWidth       @note The width of the returned $coll is `width of this` + `width of that`.
-  * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
-  */
-sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl with ToBoolable {
+private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
 
   /** Tail operator
     *
@@ -195,17 +187,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsImpl w
   def ##(that: Bits)(using SourceInfo): UInt = _impl_##(that)
 }
 
-object Bits extends UIntFactory
-
-/** A data type for unsigned integers, represented as a binary bitvector. Defines arithmetic operations between other
-  * integer types.
-  *
-  * @define coll [[UInt]]
-  * @define numType $coll
-  * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
-  * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
-  */
-sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntImpl {
+private[chisel3] trait UIntIntf { self: UInt =>
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   /** Unary negation (expanding width)
@@ -404,9 +386,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   override def asSInt(using SourceInfo): SInt = _asSIntImpl
 }
 
-object UInt extends UIntFactory
-
-sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntImpl {
+private[chisel3] trait SIntIntf { self: SInt =>
 
   /** Unary negation (constant width)
     *
@@ -542,53 +522,25 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
   override def asSInt(using SourceInfo): SInt = _asSIntImpl
 }
 
-object SInt extends SIntFactory
-
-sealed trait Reset extends ResetImpl with ToBoolable {
+private[chisel3] trait ResetIntf extends ToBoolable { self: Reset =>
   def asAsyncReset(using SourceInfo): AsyncReset
   def asDisable(using SourceInfo):    Disable = _asDisableImpl
 }
 
-object Reset {
-  def apply(): Reset = new ResetType
-}
-
-/** "Abstract" Reset Type inferred in FIRRTL to either [[AsyncReset]] or [[Bool]]
-  *
-  * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not their actual
-  * super type due to Bool inheriting from abstract class UInt
-  */
-final class ResetType(private[chisel3] val width: Width = Width(1)) extends Reset with ResetTypeImpl with ToBoolable {
+private[chisel3] trait ResetTypeIntf extends ToBoolable { self: ResetType =>
   def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
   def asBool:                         Bool = _asBoolImpl
   def toBool:                         Bool = asBool
 }
 
-object AsyncReset {
-  def apply(): AsyncReset = new AsyncReset
-}
-
-/** Data type representing asynchronous reset signals
-  *
-  * These signals are similar to [[Clock]]s in that they must be glitch-free for proper circuit
-  * operation. [[Reg]]s defined with the implicit reset being an [[AsyncReset]] will be
-  * asychronously reset registers.
-  */
-sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends AsyncResetImpl with Reset {
+private[chisel3] trait AsyncResetIntf { self: AsyncReset =>
   override def toString:              String = stringAccessor("AsyncReset")
   def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
   def asBool:                         Bool = _asBoolImpl
   def toBool:                         Bool = _asBoolImpl
 }
 
-// REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
-// operations on a Bool make sense?
-/** A data type for booleans, defined as a single bit indicating true or false.
-  *
-  * @define coll [[Bool]]
-  * @define numType $coll
-  */
-sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
+private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
 
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
@@ -644,5 +596,3 @@ sealed class Bool() extends UInt(1.W) with BoolImpl with Reset {
 
   def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
 }
-
-object Bool extends BoolFactory
