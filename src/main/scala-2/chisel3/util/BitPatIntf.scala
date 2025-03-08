@@ -9,7 +9,7 @@ import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-object BitPat extends ObjectBitPatImpl {
+private[chisel3] trait BitPat$Intf { self: BitPat.type =>
   implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
 
     import scala.language.experimental.macros
@@ -25,7 +25,7 @@ object BitPat extends ObjectBitPatImpl {
   }
 }
 
-sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends BitPatImpl with SourceInfoDoc {
+private[chisel3] trait BitPatIntf extends SourceInfoDoc { self: BitPat =>
   import chisel3.util.experimental.BitSet
   def terms = Set(this)
 

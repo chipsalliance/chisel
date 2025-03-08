@@ -7,7 +7,7 @@ import chisel3.experimental.SourceInfo
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-private[chisel3] trait ObjectBitPatImpl {
+object BitPat extends BitPat$Intf {
 
   private[chisel3] implicit val bitPatOrder: Ordering[BitPat] = new Ordering[BitPat] {
     import scala.math.Ordered.orderingToOrdered
@@ -287,12 +287,10 @@ package experimental {
   }
 }
 
-private[chisel3] trait BitPatImpl extends util.experimental.BitSet {
+sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int)
+    extends util.experimental.BitSet
+    with BitPatIntf {
   import chisel3.util.experimental.BitSet
-
-  def value: BigInt
-  def mask:  BigInt
-  def width: Int
 
   /**
     * Get specified width of said BitPat
