@@ -175,4 +175,74 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
     }
   }
 
+  it("should dump waveform with Chisel Module") {
+    class Foo extends Module {
+      val a = IO(Input(Bool()))
+      val b = IO(Output(Bool()))
+
+      b :<= !a
+    }
+    import chisel3.simulator.HasSimulator.simulators
+    import chisel3.simulator.stimulus.RunUntilFinished
+    implicit val verilator = simulators
+      .verilator(verilatorSettings =
+        svsim.verilator.Backend.CompilationSettings(
+          traceStyle =
+            Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
+        )
+      )
+    val workSpacePath = "dump_wave_module"
+    val directory = Directory(FileSystems.getDefault().getPath("test_run_dir", workSpacePath).toFile())
+    directory.deleteRecursively()
+    implicit val waveDirectory = new HasTestingDirectory {
+      override def getDirectory =
+        FileSystems.getDefault().getPath("test_run_dir", workSpacePath)
+    }
+    simulate(new Foo, enableTrace = true) { foo =>
+      foo.a.poke(true.B)
+      foo.b.expect(false.B)
+      foo.a.poke(false.B)
+      foo.b.expect(true.B)
+    }(hasSimulator = verilator, testingDirectory = waveDirectory)
+    val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
+    val file = s"test_run_dir/$workSpacePath/workdir-verilator/trace.vcd"
+    info(s"found expected file: '$file'")
+    allFiles should contain(file)
+  }
+
+  it("should dump waveform with RawModule") {
+    class Foo extends RawModule {
+      val a = IO(Input(Bool()))
+      val b = IO(Output(Bool()))
+
+      b :<= !a
+    }
+    import chisel3.simulator.HasSimulator.simulators
+    import chisel3.simulator.stimulus.RunUntilFinished
+    implicit val verilator = simulators
+      .verilator(verilatorSettings =
+        svsim.verilator.Backend.CompilationSettings(
+          traceStyle =
+            Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
+        )
+      )
+    val workSpacePath = "dump_wave_raw_module"
+    val directory = Directory(FileSystems.getDefault().getPath("test_run_dir", workSpacePath).toFile())
+    directory.deleteRecursively()
+    implicit val waveDirectory = new HasTestingDirectory {
+      override def getDirectory =
+        FileSystems.getDefault().getPath("test_run_dir", workSpacePath)
+    }
+    simulateRaw(new Foo, enableTrace = true) { foo =>
+      foo.a.poke(true.B)
+      foo.b.expect(false.B)
+      foo.a.poke(false.B)
+      foo.b.expect(true.B)
+    }(hasSimulator = verilator, testingDirectory = waveDirectory)
+    val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
+    val file = s"test_run_dir/$workSpacePath/workdir-verilator/trace.vcd"
+    info(s"found expected file: '$file'")
+    allFiles should contain(file)
+  }
+
 }
