@@ -23,7 +23,7 @@ package object simulator {
     *
     * @see [[chisel3.simulator.scalatest.ChiselSim]]
     */
-  trait ChiselSim extends PeekPokeAPI with SimulatorAPI
+  trait ChiselSim extends ControlAPI with PeekPokeAPI with SimulatorAPI
 
   /**
     * An opaque class that can be passed to `Simulation.run` to get access to a `SimulatedModule` in the simulation body.

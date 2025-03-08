@@ -173,6 +173,35 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         allFiles should contain(file)
       }
     }
+
+    it("should dump a waveform when enableWaves is used") {
+
+      implicit val verilator = HasSimulator.simulators
+        .verilator(verilatorSettings =
+          svsim.verilator.Backend.CompilationSettings(
+            traceStyle =
+              Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
+          )
+        )
+
+      class Foo extends Module {
+        stop()
+      }
+
+      val vcdFile = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.vcd")
+        .toFile
+
+      vcdFile.delete
+
+      simulateRaw(new Foo) { _ =>
+        enableWaves()
+      }
+
+      info(s"$vcdFile exists")
+      vcdFile should (exist)
+    }
   }
 
 }
