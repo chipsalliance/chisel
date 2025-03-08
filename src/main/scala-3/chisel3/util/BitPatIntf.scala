@@ -7,14 +7,14 @@ import chisel3.experimental.SourceInfo
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-object BitPat extends ObjectBitPatImpl {
+private[chisel3] trait BitPat$Intf { self: BitPat.type =>
   implicit class fromUIntToBitPatComparable(x: UInt) {
     def ===(that: BitPat)(using SourceInfo): Bool = that === x
     def =/=(that: BitPat)(using SourceInfo): Bool = that =/= x
   }
 }
 
-sealed class BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends BitPatImpl with SourceInfoDoc {
+private[chisel3] trait BitPatIntf extends SourceInfoDoc { self: BitPat =>
   import chisel3.util.experimental.BitSet
   def terms = Set(this)
 
