@@ -12,9 +12,7 @@ import chisel3.internal.{castToInt, Builder, Warning, WarningID}
 import chisel3.util.simpleClassName
 import scala.annotation.nowarn
 
-private[chisel3] trait BitsImpl extends Element { self: Bits =>
-
-  private[chisel3] val width: Width
+sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
 
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
@@ -219,7 +217,18 @@ private[chisel3] trait BitsImpl extends Element { self: Bits =>
   }
 }
 
-private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
+object Bits extends UIntFactory
+
+/** A data type for unsigned integers, represented as a binary bitvector. Defines arithmetic operations between other
+  * integer types.
+  *
+  * @define coll [[UInt]]
+  * @define numType $coll
+  * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
+  * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
+  */
+sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntIntf with Num[UInt] {
+
   override def toString: String = {
     litOption match {
       case Some(value) => s"UInt$width($value)"
@@ -400,7 +409,17 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
     binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
 }
 
-private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
+object UInt extends UIntFactory
+
+/** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
+  * integer types.
+  *
+  * @define coll [[SInt]]
+  * @define numType $coll
+  * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
+  * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
+  */
+sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntIntf with Num[SInt] {
   override def toString: String = {
     litOption match {
       case Some(value) => s"SInt$width($value)"
@@ -522,15 +541,25 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
     _resizeToWidth(that.asSInt, this.widthOption, false)(_.asSInt).asInstanceOf[this.type]
 }
 
-private[chisel3] trait ResetImpl extends Element { self: Reset =>
+object SInt extends SIntFactory
+
+sealed trait Reset extends Element with ResetIntf {
 
   protected def _asAsyncResetImpl(implicit sourceInfo: SourceInfo): AsyncReset
 
   protected def _asDisableImpl(implicit sourceInfo: SourceInfo): Disable = new Disable(this.asBool)
 }
 
-private[chisel3] trait ResetTypeImpl extends Element { self: Reset =>
-  private[chisel3] val width: Width
+object Reset {
+  def apply(): Reset = new ResetType
+}
+
+/** "Abstract" Reset Type inferred in FIRRTL to either [[AsyncReset]] or [[Bool]]
+  *
+  * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not their actual
+  * super type due to Bool inheriting from abstract class UInt
+  */
+final class ResetType(private[chisel3] val width: Width = Width(1)) extends Reset with ResetTypeIntf {
 
   override def toString: String = stringAccessor("Reset")
 
@@ -558,8 +587,17 @@ private[chisel3] trait ResetTypeImpl extends Element { self: Reset =>
     pushOp(DefPrim(sourceInfo, Bool(), AsUIntOp, ref))
 }
 
-private[chisel3] trait AsyncResetImpl extends Element { self: AsyncReset =>
-  private[chisel3] val width: Width
+object AsyncReset {
+  def apply(): AsyncReset = new AsyncReset
+}
+
+/** Data type representing asynchronous reset signals
+  *
+  * These signals are similar to [[Clock]]s in that they must be glitch-free for proper circuit
+  * operation. [[Reg]]s defined with the implicit reset being an [[AsyncReset]] will be
+  * asychronously reset registers.
+  */
+sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with AsyncResetIntf with Reset {
 
   override def toString: String = stringAccessor("AsyncReset")
 
@@ -589,7 +627,7 @@ private[chisel3] trait AsyncResetImpl extends Element { self: AsyncReset =>
   * @define coll [[Bool]]
   * @define numType $coll
   */
-private[chisel3] trait BoolImpl extends UIntImpl { self: Bool =>
+sealed class Bool() extends UInt(1.W) with BoolIntf with Reset {
 
   /**
     * Give this `Bool` a stable `typeName` for Verilog name generation.
@@ -648,3 +686,5 @@ private[chisel3] trait BoolImpl extends UIntImpl { self: Bool =>
     _resizeToWidth(that, this.widthOption, true)(identity).asBool.asInstanceOf[this.type]
   }
 }
+
+object Bool extends BoolFactory
