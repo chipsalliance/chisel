@@ -235,7 +235,7 @@ sealed trait Property[T] extends Element { self =>
     Builder.error(s"${this._localErrorContext} does not support .asUInt.")
     0.U
   }
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
     Builder.exception(s"${this._localErrorContext} cannot be driven by UInt")
   }
 

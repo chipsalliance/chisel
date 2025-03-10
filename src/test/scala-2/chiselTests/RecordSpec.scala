@@ -182,6 +182,32 @@ class RecordSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck
       )
   }
 
+  // This is not a great API but it enables the external FixedPoint library
+  they should "support overriding _fromUInt" in {
+    class MyRecord extends Record {
+      val foo = UInt(8.W)
+      val elements = SeqMap("foo" -> foo)
+      override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+        val _w = Wire(this.cloneType)
+        _w.foo := that ^ 0x55.U(8.W)
+        _w
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        val in = IO(Input(UInt(8.W)))
+        val out = IO(Output(new MyRecord))
+        out := in.asTypeOf(new MyRecord)
+      })
+      .fileCheck()(
+        """|CHECK: wire [[wire:.*]] : { foo : UInt<8>}
+           |CHECK: node [[node:.*]] = xor(in, UInt<8>(0h55))
+           |CHECK: connect [[wire]].foo, [[node]]
+           |CHECK: connect out, [[wire]]
+           |""".stripMargin
+      )
+  }
+
   "Bulk connect on Record" should "check that the fields match" in {
     intercept[ChiselException] {
       ChiselStage.emitCHIRRTL { new MyModule(fooBarType, new CustomBundle("bar" -> UInt(32.W))) }
