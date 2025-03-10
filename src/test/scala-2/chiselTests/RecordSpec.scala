@@ -3,10 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.OpaqueType
+import chisel3.experimental.{OpaqueType, SourceInfo}
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -113,7 +114,7 @@ object RecordSpec {
   }
 }
 
-class RecordSpec extends AnyFlatSpec with Matchers with ChiselSim {
+class RecordSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
   import RecordSpec._
 
   behavior.of("Records")
@@ -127,11 +128,12 @@ class RecordSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   they should "emit FIRRTL bulk connects when possible" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(
-      gen = new ConnectionTestModule(fooBarType, fooBarType)
+    val chirrtl = ChiselStage.emitCHIRRTL(new ConnectionTestModule(fooBarType, fooBarType))
+    chirrtl.fileCheck()(
+      """| CHECK: connect io.outMono, io.inMono
+         | CHECK: connect io.outBi, io.inBi
+         |""".stripMargin
     )
-    chirrtl should include("connect io.outMono, io.inMono @")
-    chirrtl should include("connect io.outBi, io.inBi @")
   }
 
   they should "not allow aliased fields" in {
@@ -170,10 +172,14 @@ class RecordSpec extends AnyFlatSpec with Matchers with ChiselSim {
     class MyRecord extends Record {
       lazy val elements = VectorMap("sanitize me" -> UInt(8.W))
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val out = IO(Output(new MyRecord))
-    })
-    chirrtl should include("output out : { sanitizeme : UInt<8>}")
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        val out = IO(Output(new MyRecord))
+      })
+      .fileCheck()(
+        """|CHECK: output out : { sanitizeme : UInt<8>}
+           |""".stripMargin
+      )
   }
 
   "Bulk connect on Record" should "check that the fields match" in {
