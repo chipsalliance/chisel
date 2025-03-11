@@ -2,30 +2,15 @@
 
 package chisel3
 
-// REVIEW TODO: Further discussion needed on what Num actually is.
+import chisel3.internal.sourceinfo.SourceInfoTransform
 
-/** Abstract trait defining operations available on numeric-like hardware data types.
-  *
-  * @tparam T the underlying type of the number
-  * @groupdesc Arithmetic Arithmetic hardware operators
-  * @groupdesc Comparison Comparison hardware operators
-  * @groupdesc Logical Logical hardware operators
-  * @define coll numeric-like type
-  * @define numType hardware type
-  * @define canHaveHighCost can result in significant cycle time and area costs
-  * @define canGenerateA This method generates a
-  * @define singleCycleMul  @note $canGenerateA fully combinational multiplier which $canHaveHighCost.
-  * @define singleCycleDiv  @note $canGenerateA fully combinational divider which $canHaveHighCost.
-  * @define maxWidth        @note The width of the returned $numType is `max(width of this, width of that)`.
-  * @define maxWidthPlusOne @note The width of the returned $numType is `max(width of this, width of that) + 1`.
-  * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
-  * @define unchangedWidth  @note The width of the returned $numType is unchanged, i.e., the `width of this`.
-  */
-trait Num[T <: Data] {
-  self: Num[T] =>
+import scala.language.experimental.macros
+import chisel3.experimental.SourceInfo
+
+private[chisel3] trait NumIntf[T <: Data] extends SourceInfoDoc { self: Num[T] =>
   // def << (b: T): T
   // def >> (b: T): T
-  // def unary_-(): T
+  // def unary_-: T
 
   // REVIEW TODO: double check ops conventions against FIRRTL
 
@@ -36,7 +21,10 @@ trait Num[T <: Data] {
     * $maxWidth
     * @group Arithmetic
     */
-  def +(that: T): T
+  final def +(that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_+(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Multiplication operator
     *
@@ -46,7 +34,10 @@ trait Num[T <: Data] {
     * $singleCycleMul
     * @group Arithmetic
     */
-  def *(that: T): T
+  final def *(that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_*(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Division operator
     *
@@ -56,7 +47,10 @@ trait Num[T <: Data] {
     * @todo full rules
     * @group Arithmetic
     */
-  def /(that: T): T
+  final def /(that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_/(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Modulo operator
     *
@@ -65,7 +59,10 @@ trait Num[T <: Data] {
     * $singleCycleDiv
     * @group Arithmetic
     */
-  def %(that: T): T
+  final def %(that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_%(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Subtraction operator
     *
@@ -74,7 +71,10 @@ trait Num[T <: Data] {
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def -(that: T): T
+  final def -(that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_-(that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Less than operator
     *
@@ -82,7 +82,10 @@ trait Num[T <: Data] {
     * @return a hardware [[Bool]] asserted if this $coll is less than `that`
     * @group Comparison
     */
-  def <(that: T): Bool
+  final def <(that: T): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_<(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Less than or equal to operator
     *
@@ -90,7 +93,10 @@ trait Num[T <: Data] {
     * @return a hardware [[Bool]] asserted if this $coll is less than or equal to `that`
     * @group Comparison
     */
-  def <=(that: T): Bool
+  final def <=(that: T): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_<=(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Greater than operator
     *
@@ -98,7 +104,10 @@ trait Num[T <: Data] {
     * @return a hardware [[Bool]] asserted if this $coll is greater than `that`
     * @group Comparison
     */
-  def >(that: T): Bool
+  final def >(that: T): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_>(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Greater than or equal to operator
     *
@@ -106,7 +115,10 @@ trait Num[T <: Data] {
     * @return a hardware [[Bool]] asserted if this $coll is greather than or equal to `that`
     * @group Comparison
     */
-  def >=(that: T): Bool
+  final def >=(that: T): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_>=(that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Absolute value operator
     *
@@ -114,11 +126,10 @@ trait Num[T <: Data] {
     * $unchangedWidth
     * @group Arithmetic
     */
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  def abs: T
+  final def abs: T = macro SourceInfoTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_abs(implicit sourceInfo: SourceInfo): T
 
   /** Minimum operator
     *
@@ -127,7 +138,10 @@ trait Num[T <: Data] {
     * $maxWidth
     * @group Arithmetic
     */
-  def min(that: T): T =
+  final def min(that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_min(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, this.asInstanceOf[T], that)
 
   /** Maximum operator
@@ -137,8 +151,9 @@ trait Num[T <: Data] {
     * $maxWidth
     * @group Arithmetic
     */
-  def max(that: T): T =
+  final def max(that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_max(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, that, this.asInstanceOf[T])
 }
-
-object Num extends NumObject

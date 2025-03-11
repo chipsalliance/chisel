@@ -5,8 +5,26 @@ package chisel3
 import scala.math.BigDecimal.RoundingMode.{HALF_UP, RoundingMode}
 import chisel3.experimental.SourceInfo
 
-private[chisel3] trait NumImpl[T <: Data] {
-  self: Num[T] =>
+// REVIEW TODO: Further discussion needed on what Num actually is.
+
+/** Abstract trait defining operations available on numeric-like hardware data types.
+  *
+  * @tparam T the underlying type of the number
+  * @groupdesc Arithmetic Arithmetic hardware operators
+  * @groupdesc Comparison Comparison hardware operators
+  * @groupdesc Logical Logical hardware operators
+  * @define coll numeric-like type
+  * @define numType hardware type
+  * @define canHaveHighCost can result in significant cycle time and area costs
+  * @define canGenerateA This method generates a
+  * @define singleCycleMul  @note $canGenerateA fully combinational multiplier which $canHaveHighCost.
+  * @define singleCycleDiv  @note $canGenerateA fully combinational divider which $canHaveHighCost.
+  * @define maxWidth        @note The width of the returned $numType is `max(width of this, width of that)`.
+  * @define maxWidthPlusOne @note The width of the returned $numType is `max(width of this, width of that) + 1`.
+  * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
+  * @define unchangedWidth  @note The width of the returned $numType is unchanged, i.e., the `width of this`.
+  */
+trait Num[T <: Data] extends NumIntf[T] {
 
   protected def _minImpl(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, this.asInstanceOf[T], that)
@@ -15,10 +33,10 @@ private[chisel3] trait NumImpl[T <: Data] {
     Mux(this < that, that, this.asInstanceOf[T])
 }
 
-/** NumbObject has a lot of convenience methods for converting between
+/** Convenience methods for converting between
   * BigInts and Double and BigDecimal
   */
-trait NumObject {
+object Num {
   val MaxBitsBigIntToBigDecimal = 108
   val MaxBitsBigIntToDouble = 53
 
