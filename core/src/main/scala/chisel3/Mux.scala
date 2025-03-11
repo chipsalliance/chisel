@@ -8,7 +8,7 @@ import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.ir.PrimOp._
 
-private[chisel3] trait MuxImpl {
+object Mux extends Mux$Intf {
 
   protected def _applyImpl[T <: Data](
     cond: Bool,
