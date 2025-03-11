@@ -173,7 +173,7 @@ private[chisel3] object ir {
     }
 
     // Special case for 0 which can be specified to zero-width (but defaults to 1 bit).
-    def minWidth: Int = if (n == 0) (if (w.known) 0 else 1) else 1 + n.bitLength
+    def minWidth: Int = if (n == 0 && w.known) 0 else 1 + n.bitLength
 
     def cloneWithWidth(newWidth: Width): this.type = {
       SLit(n, newWidth).asInstanceOf[this.type]
