@@ -10,7 +10,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, SourceLine}
 
-private[chisel3] trait ObjectMemImpl {
+object Mem extends Mem$Intf {
 
   protected def _applyImpl[T <: Data](
     size: BigInt,
@@ -31,12 +31,10 @@ private[chisel3] trait ObjectMemImpl {
     _applyImpl(BigInt(size), t)(sourceInfo)
 }
 
-private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent {
-
-  def t:      T
-  def length: BigInt
-
-  protected def sourceInfo: SourceInfo
+sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected val sourceInfo: SourceInfo)
+    extends MemBaseIntf[T]
+    with HasId
+    with NamedComponent {
 
   if (t.isConst) Builder.error("Mem type cannot be const.")(sourceInfo)
 
@@ -181,8 +179,20 @@ private[chisel3] trait MemBaseImpl[T <: Data] extends HasId with NamedComponent 
     port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentBlock))
     port
   }
+
 }
-private[chisel3] trait MemImpl[T <: Data] extends MemBaseImpl[T] {
+
+/** A combinational/asynchronous-read, sequential/synchronous-write memory.
+  *
+  * Writes take effect on the rising clock edge after the request. Reads are
+  * combinational (requests will return data on the same cycle).
+  * Read-after-write hazards are not an issue.
+  *
+  * @note when multiple conflicting writes are performed on a Mem element, the
+  * result is undefined (unlike Vec, where the last assignment wins)
+  */
+sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt, sourceInfo: SourceInfo)
+    extends MemBase(t, length, sourceInfo) {
   override protected def clockWarning(sourceInfo: Option[SourceInfo], dir: MemPortDirection): Unit = {
     // Do not issue clock warnings on reads, since they are not clocked
     if (dir != MemPortDirection.READ)
@@ -190,7 +200,7 @@ private[chisel3] trait MemImpl[T <: Data] extends MemBaseImpl[T] {
   }
 }
 
-private[chisel3] trait ObjectSyncReadMemImpl {
+object SyncReadMem extends SyncReadMem$Intf {
 
   type ReadUnderWrite = fir.ReadUnderWrite.Value
   val Undefined = fir.ReadUnderWrite.Undefined
@@ -231,9 +241,23 @@ private[chisel3] trait ObjectSyncReadMemImpl {
   ): SyncReadMem[T] = _applyImpl(BigInt(size), t, ruw)
 }
 
-private[chisel3] trait SyncReadMemImpl[T <: Data] extends MemBaseImpl[T] {
-
-  def readUnderWrite: SyncReadMem.ReadUnderWrite
+/** A sequential/synchronous-read, sequential/synchronous-write memory.
+  *
+  * Writes take effect on the rising clock edge after the request. Reads return
+  * data on the rising edge after the request. Read-after-write behavior (when
+  * a read and write to the same address are requested on the same cycle) is
+  * undefined.
+  *
+  * @note when multiple conflicting writes are performed on a Mem element, the
+  * result is undefined (unlike Vec, where the last assignment wins)
+  */
+sealed class SyncReadMem[T <: Data] private[chisel3] (
+  t:                  T,
+  n:                  BigInt,
+  val readUnderWrite: SyncReadMem.ReadUnderWrite,
+  sourceInfo:         SourceInfo
+) extends MemBase[T](t, n, sourceInfo)
+    with SyncReadMemIntf[T] {
 
   override protected def _readImpl(idx: UInt)(implicit sourceInfo: SourceInfo): T =
     _readImpl(idx = idx, en = true.B)

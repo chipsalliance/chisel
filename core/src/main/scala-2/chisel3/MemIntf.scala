@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.experimental.SourceInfo
 
-object Mem extends ObjectMemImpl with SourceInfoDoc {
+private[chisel3] trait Mem$Intf extends SourceInfoDoc { self: Mem.type =>
 
   /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
     *
@@ -34,9 +34,7 @@ object Mem extends ObjectMemImpl with SourceInfoDoc {
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): Mem[T] = _applyImpl(size, t)
 }
 
-sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected val sourceInfo: SourceInfo)
-    extends MemBaseImpl[T]
-    with SourceInfoDoc {
+private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemBase[T] =>
 
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
@@ -165,20 +163,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
   ): Unit = _writeImpl(idx, data, mask, clock)
 }
 
-/** A combinational/asynchronous-read, sequential/synchronous-write memory.
-  *
-  * Writes take effect on the rising clock edge after the request. Reads are
-  * combinational (requests will return data on the same cycle).
-  * Read-after-write hazards are not an issue.
-  *
-  * @note when multiple conflicting writes are performed on a Mem element, the
-  * result is undefined (unlike Vec, where the last assignment wins)
-  */
-sealed class Mem[T <: Data] private[chisel3] (t: T, length: BigInt, sourceInfo: SourceInfo)
-    extends MemBase(t, length, sourceInfo)
-    with MemImpl[T]
-
-object SyncReadMem extends ObjectSyncReadMemImpl {
+private[chisel3] trait SyncReadMem$Intf extends SourceInfoDoc { self: SyncReadMem.type =>
 
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *
@@ -225,23 +210,7 @@ object SyncReadMem extends ObjectSyncReadMemImpl {
   ): SyncReadMem[T] = _applyImpl(size, t, ruw)
 }
 
-/** A sequential/synchronous-read, sequential/synchronous-write memory.
-  *
-  * Writes take effect on the rising clock edge after the request. Reads return
-  * data on the rising edge after the request. Read-after-write behavior (when
-  * a read and write to the same address are requested on the same cycle) is
-  * undefined.
-  *
-  * @note when multiple conflicting writes are performed on a Mem element, the
-  * result is undefined (unlike Vec, where the last assignment wins)
-  */
-sealed class SyncReadMem[T <: Data] private[chisel3] (
-  t:                  T,
-  n:                  BigInt,
-  val readUnderWrite: SyncReadMem.ReadUnderWrite,
-  sourceInfo:         SourceInfo
-) extends MemBase[T](t, n, sourceInfo)
-    with SyncReadMemImpl[T] {
+private[chisel3] trait SyncReadMemIntf[T <: Data] extends SourceInfoDoc { self: SyncReadMem[T] =>
 
   override def read(x: UInt): T = macro SourceInfoTransform.xArg
 
