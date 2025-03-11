@@ -284,4 +284,18 @@ class SIntOpsSpec extends AnyPropSpec with Matchers with ShiftRightWidthBehavior
     blit.x.litOption should be(Some(2))
     blit.y.litOption should be(Some(9))
   }
+
+  property("SInt literals with too small of a width should be rejected") {
+    // Sanity checks.
+    0.S.getWidth should be(1)
+    0.S(0.W).getWidth should be(0)
+    -1.S.getWidth should be(1)
+    1.S.getWidth should be(2)
+    // The real check.
+    -2.S.getWidth should be(2)
+    an[IllegalArgumentException] shouldBe thrownBy(-2.S(1.W))
+    0xde.S.getWidth should be(9)
+    an[IllegalArgumentException] shouldBe thrownBy(0xde.S(8.W))
+    an[IllegalArgumentException] shouldBe thrownBy(0xde.S(4.W))
+  }
 }
