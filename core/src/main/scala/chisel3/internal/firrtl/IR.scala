@@ -171,7 +171,9 @@ private[chisel3] object ir {
       val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
       s"asSInt(${ULit(unsigned, width).name})"
     }
-    def minWidth: Int = (if (w.known) 0 else 1) + n.bitLength
+
+    // Special case for 0 which can be specified to zero-width (but defaults to 1 bit).
+    def minWidth: Int = if (n == 0 && w.known) 0 else 1 + n.bitLength
 
     def cloneWithWidth(newWidth: Width): this.type = {
       SLit(n, newWidth).asInstanceOf[this.type]
