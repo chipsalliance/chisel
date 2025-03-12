@@ -4,13 +4,12 @@ import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.stage.PrintFullStackTraceAnnotation
-import chisel3.testers.BasicTester
 import chisel3.util.{pla, BitPat}
 import org.scalatest.flatspec.AnyFlatSpec
 
 class PlaSpec extends AnyFlatSpec with ChiselSim {
   "A 1-of-8 decoder (eg. 74xx138 without enables)" should "be generated correctly" in {
-    simulate(new BasicTester {
+    simulate(new Module {
       val table = Seq(
         (BitPat("b000"), BitPat("b00000001")),
         (BitPat("b001"), BitPat("b00000010")),
@@ -35,7 +34,7 @@ class PlaSpec extends AnyFlatSpec with ChiselSim {
   }
 
   "An active-low 1-of-8 decoder (eg. inverted 74xx138 without enables)" should "be generated correctly" in {
-    simulate(new BasicTester {
+    simulate(new Module {
       val table = Seq(
         (BitPat("b000"), BitPat("b00000001")),
         (BitPat("b001"), BitPat("b00000010")),
@@ -60,7 +59,7 @@ class PlaSpec extends AnyFlatSpec with ChiselSim {
   }
 
   "#2112" should "be generated correctly" in {
-    simulate(new BasicTester {
+    simulate(new Module {
       val table = Seq(
         (BitPat("b000"), BitPat("b?01")),
         (BitPat("b111"), BitPat("b?01"))
@@ -75,7 +74,7 @@ class PlaSpec extends AnyFlatSpec with ChiselSim {
   }
 
   "A simple PLA" should "be generated correctly" in {
-    simulate(new BasicTester {
+    simulate(new Module {
       val table = Seq(
         (BitPat("b0000"), BitPat("b1")),
         (BitPat("b0001"), BitPat("b1")),

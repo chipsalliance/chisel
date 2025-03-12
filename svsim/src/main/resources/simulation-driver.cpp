@@ -71,7 +71,7 @@ void initTestBenchScope() { testbenchScope = svGetScope(); }
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern void run_simulation(int timesteps, int *done);
+extern void run_simulation(int timesteps, int *finish);
 extern void simulation_main(int argc, const char **argv);
 #ifdef __cplusplus
 }
@@ -151,49 +151,84 @@ enum {
   // proper arguments are passed to the compiler, including the desired
   // SVSIM_ENABLE_*_TRACING define.
   COMMAND_TRACE = 'W',
+
+  // Indicates the absence of a command.  This is used to keep track of when
+  // there is no outstanding command.
+  COMMAND_NONE = 0,
 };
 
-/**
- * Messages and commands are logged to an execution script for potential replay.
- * Messages start at -1 because the "READY" message does not have an associated
- * command
- */
-FILE *executionScript = NULL;
-int executionScriptMessageCount = 0;
-int executionScriptCommandCount = 1;
-int executionScriptLimit = -1;
+// Struct that tracks an outstanding command.  This is used to keep track of a
+// command that is being processed while `run_simulation` is called.  Different
+// simulators will handle this function differently and outstanding commands may
+// be left around.
+struct OutstandingCommand {
+
+  // The command being executed.
+  char command = COMMAND_NONE;
+
+  // The number of cycles that have elapsed.
+  int cycles = -1;
+};
+
+// Global state shared acrcoss all functions in this file.
+static struct {
+  FILE *executionScript = NULL;
+
+  int executionScriptMessageCount = 0;
+
+  int executionScriptCommandCount = 1;
+
+  int executionScriptLimit = -1;
+
+  FILE *messageStream = NULL;
+
+  const char *logFilePath = NULL;
+
+  FILE *commandStream = NULL;
+
+  const char *simulationTraceFilepath = NULL;
+
+  bool aslrShenanigansDetected = false;
+
+  // Track any outstanding commands that are executing while `run_simulation` is
+  // called.  This will be cleared by `simulation_final` before termination.
+  //
+  // TODO: This could evolve into a `std::hashmap` of commands to allow for
+  // multiple outstanding commands to be running at the same time, e.g., to
+  // enable fork/join simulation primitives.
+  OutstandingCommand outstandingCommand;
+} state;
 
 // -- Sending Messages
 
-bool shouldLogMessageToExecutionScript() {
-  return executionScript != NULL &&
-         (executionScriptLimit == -1 ||
-          executionScriptMessageCount < executionScriptLimit);
+static bool shouldLogMessageToExecutionScript() {
+  return state.executionScript != NULL &&
+         (state.executionScriptLimit == -1 ||
+          state.executionScriptMessageCount < state.executionScriptLimit);
 }
 
-FILE *messageStream = NULL;
 static void writeMessageStart(char messageCode) {
   if (shouldLogMessageToExecutionScript()) {
-    fprintf(executionScript, "%d< %c ", executionScriptMessageCount,
+    fprintf(state.executionScript, "%d< %c ", state.executionScriptMessageCount,
             messageCode);
   }
-  fprintf(messageStream, "%c ", messageCode);
+  fprintf(state.messageStream, "%c ", messageCode);
 }
 #define writeMessageBody(format, args...)                                      \
   {                                                                            \
-    fprintf(messageStream, format, ##args);                                    \
+    fprintf(state.messageStream, format, ##args);                              \
     if (shouldLogMessageToExecutionScript()) {                                 \
-      fprintf(executionScript, format, ##args);                                \
+      fprintf(state.executionScript, format, ##args);                          \
     }                                                                          \
   }
 static void writeMessageEnd() {
-  fprintf(messageStream, "\n");
-  fflush(messageStream);
+  fprintf(state.messageStream, "\n");
+  fflush(state.messageStream);
   if (shouldLogMessageToExecutionScript()) {
-    fprintf(executionScript, "\n");
-    fflush(executionScript);
+    fprintf(state.executionScript, "\n");
+    fflush(state.executionScript);
   }
-  executionScriptMessageCount += 1;
+  state.executionScriptMessageCount += 1;
 }
 
 #define writeMessage(messageCode, format, args...)                             \
@@ -290,8 +325,6 @@ static void sendUintAsBits(uint64_t value) {
   sendBits((uint8_t *)&value, sizeof(uint64_t) * 8, false);
 }
 
-// `logFilePath` is set in `main`
-const char *logFilePath = NULL;
 static void sendLog() {
   /// `stdout` is a file and needs to be flushed so that the log is present
   fflush(stdout);
@@ -299,12 +332,12 @@ static void sendLog() {
   /// RUN responds with a LOG message and the currently logged data
   static FILE *log = NULL;
   if (log == NULL) {
-    if (logFilePath == NULL) {
+    if (state.logFilePath == NULL) {
       failWithError("No log file specified.");
     }
-    log = fopen(logFilePath, "rb");
+    log = fopen(state.logFilePath, "rb");
     if (log == NULL) {
-      failWithError("Could not open log file '%s'.", logFilePath);
+      failWithError("Could not open log file '%s'.", state.logFilePath);
     }
   }
   // Determine how many bytes can be read
@@ -339,26 +372,27 @@ static void sendLog() {
 
 // A subsequent call to `readCommand` will invalidate the string returned by the
 // previous call.
-FILE *commandStream = NULL;
 static void readCommand(const char **start, const char **end) {
   static char *stringBuffer = NULL;
   static size_t stringBufferLength = 0;
-  int byteCount = getline(&stringBuffer, &stringBufferLength, commandStream);
-  if (executionScript != NULL) {
-    if (executionScriptLimit == -1 ||
-        executionScriptCommandCount <= executionScriptLimit) {
-      fprintf(executionScript, "%d> %s", executionScriptCommandCount,
-              stringBuffer);
-      executionScriptCommandCount += 1;
+  int byteCount =
+      getline(&stringBuffer, &stringBufferLength, state.commandStream);
+  if (state.executionScript != NULL) {
+    if (state.executionScriptLimit == -1 ||
+        state.executionScriptCommandCount <= state.executionScriptLimit) {
+      fprintf(state.executionScript, "%d> %s",
+              state.executionScriptCommandCount, stringBuffer);
+      state.executionScriptCommandCount += 1;
     }
-    if (executionScriptCommandCount == executionScriptLimit + 1) {
-      fprintf(executionScript,
+    if (state.executionScriptCommandCount == state.executionScriptLimit + 1) {
+      fprintf(state.executionScript,
               "# Execution script limited to %d commands (not counting "
               "implicit 'Done').\n",
-              executionScriptLimit);
-      fprintf(executionScript, "%d> D\n", executionScriptCommandCount);
+              state.executionScriptLimit);
+      fprintf(state.executionScript, "%d> D\n",
+              state.executionScriptCommandCount);
     }
-    fflush(executionScript);
+    fflush(state.executionScript);
   }
   const char *stringEnd = stringBuffer + byteCount - 1;
   if (byteCount <= 0) {
@@ -394,8 +428,8 @@ static int scanInt(const char **lineCursor, const char *description) {
   return (int)value;
 }
 
-int scanHexCharacterReverse(const char **reverseScanCursor,
-                            const char *description) {
+static int scanHexCharacterReverse(const char **reverseScanCursor,
+                                   const char *description) {
   char value = **reverseScanCursor;
   if (value >= '0' && value <= '9') {
     (*reverseScanCursor)--;
@@ -412,9 +446,9 @@ int scanHexCharacterReverse(const char **reverseScanCursor,
   }
 }
 
-int scanHexByteReverse(const char **reverseScanCursor,
-                       const char *firstCharacterOfValue,
-                       const char *description) {
+static int scanHexByteReverse(const char **reverseScanCursor,
+                              const char *firstCharacterOfValue,
+                              const char *description) {
   char low = scanHexCharacterReverse(reverseScanCursor, description);
   if (*reverseScanCursor < firstCharacterOfValue) {
     return low;
@@ -470,7 +504,8 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
       carry = scannedByte >> 8;
       if ((carry & ~1) != 0) {
         failWithError("Unexpected error in carry computation for "
-                      "negative value when %s", description);
+                      "negative value when %s",
+                      description);
       }
     }
     bytes[scannedByteCount] = (uint8_t)scannedByte;
@@ -487,8 +522,8 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
   // A mask of the "inapplicable" bits in the high order byte, used to determine
   // if we received too many bits for the value we are trying to scan. This
   // value could be calculated with bitwise operations, but I find a table to be
-  // cleaner and easier to understand. There's no sign bit in Scala's `BigInt.toString(16)`,
-  // instead a minus sign will be present.
+  // cleaner and easier to understand. There's no sign bit in Scala's
+  // `BigInt.toString(16)`, instead a minus sign will be present.
   uint8_t highOrderByteMask;
   switch (bitCount % 8) {
   case 1:
@@ -590,19 +625,18 @@ static void resolveGettablePort(int id, GettablePort *out,
 
 // -- Processing Commands
 
-const char *simulationTraceFilepath = NULL;
-
-bool receivedDone = false;
-static void processCommand() {
+// Read a command and process it.  Return true if the simulation is dead, either
+// due to a done command being received or the Verilog deciding to terminate.
+static bool processCommand() {
   const char *lineCursor = NULL;
   const char *lineEnd = NULL;
   readCommand(&lineCursor, &lineEnd);
 
   char commandCode = *(lineCursor++);
+  state.outstandingCommand = {/*command=*/commandCode, /*cycles=*/0};
   switch (commandCode) {
   case COMMAND_DONE: {
-    receivedDone = true;
-    break;
+    return true;
   }
   case COMMAND_LOG: {
     sendLog();
@@ -660,7 +694,7 @@ static void processCommand() {
     resolveGettablePort(id, &port, "resolving port for GET_BITS command");
 
     int byteCount = (port.bitWidth + 7) / 8;
-    uint8_t *bytes = (uint8_t *)calloc( byteCount, sizeof(uint8_t));
+    uint8_t *bytes = (uint8_t *)calloc(byteCount, sizeof(uint8_t));
     assert(bytes != NULL);
     (*port.getter)(bytes);
     sendBits(bytes, port.bitWidth, isSigned);
@@ -672,10 +706,10 @@ static void processCommand() {
     if (*lineCursor != '\n') {
       failWithError("Unexpected data at end of RUN command.");
     }
-    int done = 0;
-    run_simulation(time, &done);
-    if (done)
-      receivedDone = true;
+    int finish = 0;
+    run_simulation(time, &finish);
+    if (finish)
+      return true;
 
     sendAck();
     break;
@@ -749,7 +783,8 @@ static void processCommand() {
       failWithError("Unexpected data at end of TICK command: %s.", lineCursor);
     }
 
-    int cycles = 0;
+    int finish = 0;
+    int &cycles = state.outstandingCommand.cycles;
     while (cycles++ < maxCycleCount) {
       if (sentinelPort.getter != NULL) {
         (*sentinelPort.getter)(sentinelPortValue);
@@ -760,22 +795,17 @@ static void processCommand() {
       }
 
       (*tickingPort.setter)(inPhaseValue);
-      int done = 0;
-      run_simulation(timestepsPerPhase, &done);
-      if (done) {
-        receivedDone = true;
-        break;
-      }
+      run_simulation(timestepsPerPhase, &finish);
+      if (finish)
+        return true;
       (*tickingPort.setter)(outOfPhaseValue);
-      run_simulation(timestepsPerPhase, &done);
-      if (done) {
-        receivedDone = true;
-        break;
-      }
+      run_simulation(timestepsPerPhase, &finish);
+      if (finish)
+        return true;
     }
 
-    cycles--; // Consume the unbalanced increment from the while condition
-    sendUintAsBits(cycles);
+    // Consume the unbalanced increment from the while condition
+    sendUintAsBits(--cycles);
 
     free(inPhaseValue);
     free(outOfPhaseValue);
@@ -783,6 +813,7 @@ static void processCommand() {
       free(sentinelValue);
     if (sentinelPortValue != NULL)
       free(sentinelPortValue);
+
     break;
   }
   case COMMAND_TRACE: {
@@ -802,7 +833,7 @@ static void processCommand() {
     case '1':
       if (!traceInitialized) {
         traceInitialized = true;
-        simulation_initializeTrace(simulationTraceFilepath);
+        simulation_initializeTrace(state.simulationTraceFilepath);
       }
       simulation_enableTrace();
       break;
@@ -817,28 +848,85 @@ static void processCommand() {
   default:
     failWithError("Unknown opcode '%d'.", commandCode);
   }
+
+  state.outstandingCommand = {};
+  return false;
 }
 
-bool aslrShenanigansDetected = false;
 DPI_TASK_RETURN_TYPE simulation_body() {
-  if (aslrShenanigansDetected) {
+  if (state.aslrShenanigansDetected) {
     failWithError("Backend did not relaunch the executable with ASLR disabled "
                   "as expected.");
   }
   /// If we have made it to `simulation_body`, there were no errors on startup
   /// and the first thing we do is send a READY message.
   sendReady();
-  while (!receivedDone)
-    processCommand();
+  // Repeatedly process commands until the simulation says it is done.
+  while (!processCommand())
+    ;
+  return DPI_TASK_RETURN_VALUE;
+}
+
+// This is called at the end of simulation from a Verilog `final` block.  This
+// clears any outstanding commands.
+DPI_TASK_RETURN_TYPE simulation_final() {
+
+  // Handle any outstanding commands.  This can happen if the simulator never
+  // returned to `processCommand` after executing `run_simulation`.
+  // Specifically, VCS hits this code path as it will (correctly) stop the
+  // simulation when it sees a `$finish` whereas Verilator will _not_ stop the
+  // simulation.
+  auto &[command, cycles] = state.outstandingCommand;
+  switch (command) {
+  // If the outstanding command is "done", then just exit.
+  case COMMAND_DONE:
+    return DPI_TASK_RETURN_VALUE;
+  // If the outstanding commadn is "none", then `processCommand` finished
+  // cleanly.
+  case COMMAND_NONE:
+    break;
+  // Handle outstanding commands.
+  case COMMAND_RUN:
+    sendAck();
+    break;
+  case COMMAND_TICK:
+    sendUintAsBits(--cycles);
+    break;
+  // This command should _not_ be outstanding.
+  default:
+    failWithError(
+        "Unimplemented handling of command '%c' in `simulation_final`",
+        command);
+  }
+
+  // Block until we see a "done" command.  Error if any command _other_ than a
+  // "done" command is received.
+  //
+  // TOOD: It may be reasonable to accept other commands here, e.g., "get"
+  // commands.  However, other commands, like "tick" must clearly be rejected.
+  const char *lineCursor = NULL;
+  const char *lineEnd = NULL;
+  readCommand(&lineCursor, &lineEnd);
+
+  char commandCode = *(lineCursor++);
+  switch (commandCode) {
+  case COMMAND_DONE:
+    break;
+  default:
+    failWithError("the simulation has already finished and can only accept "
+                  "'done' commands to shut it down");
+  }
+
   return DPI_TASK_RETURN_VALUE;
 }
 
 int main(int argc, const char *argv[]) {
+
 #ifdef SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
   if (!(personality(0xffffffff) & ADDR_NO_RANDOMIZE)) {
     // See note in `Workspace.scala` on
     // SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
-    aslrShenanigansDetected = true;
+    state.aslrShenanigansDetected = true;
     simulation_main(argc, argv);
     failWithError("simulation_main returned.");
   }
@@ -850,32 +938,32 @@ int main(int argc, const char *argv[]) {
   if (stdinCopy == -1) {
     failWithError("Failed to duplicate stdin.");
   }
-  commandStream = fdopen(stdinCopy, "r");
-  if (commandStream == NULL) {
+  state.commandStream = fdopen(stdinCopy, "r");
+  if (state.commandStream == NULL) {
     failWithError("Failed to open command stream for writing.");
   }
   int stdoutCopy = dup(STDOUT_FILENO);
   if (stdoutCopy == -1) {
     failWithError("Failed to duplicate stdout.");
   }
-  messageStream = fdopen(stdoutCopy, "w");
-  if (messageStream == NULL) {
+  state.messageStream = fdopen(stdoutCopy, "w");
+  if (state.messageStream == NULL) {
     failWithError("Failed to open message stream for reading.");
   }
   if (freopen("/dev/null", "r", stdin) == NULL) {
     failWithError("Failed to redirect stdin to /dev/null.");
   }
-  logFilePath = getenv("SVSIM_SIMULATION_LOG");
-  if (logFilePath == NULL) {
-    logFilePath = "simulation-log.txt";
+  state.logFilePath = getenv("SVSIM_SIMULATION_LOG");
+  if (state.logFilePath == NULL) {
+    state.logFilePath = "simulation-log.txt";
   }
-  if (freopen(logFilePath, "w", stdout) == NULL) {
-    failWithError("Failed to redirect stdout to %s.", logFilePath);
+  if (freopen(state.logFilePath, "w", stdout) == NULL) {
+    failWithError("Failed to redirect stdout to %s.", state.logFilePath);
   }
 
-  simulationTraceFilepath = getenv("SVSIM_SIMULATION_TRACE");
-  if (simulationTraceFilepath == NULL) {
-    simulationTraceFilepath = "trace";
+  state.simulationTraceFilepath = getenv("SVSIM_SIMULATION_TRACE");
+  if (state.simulationTraceFilepath == NULL) {
+    state.simulationTraceFilepath = "trace";
   }
 
   const char *executionScriptLimitString =
@@ -886,12 +974,12 @@ int main(int argc, const char *argv[]) {
     if (value < 0 || value > INT_MAX) {
       failWithError("Invalid execution script limit '%ld'.", value);
     }
-    executionScriptLimit = (int)value;
+    state.executionScriptLimit = (int)value;
   }
   const char *executionScriptPath = getenv("SVSIM_EXECUTION_SCRIPT");
   if (executionScriptPath != NULL) {
-    executionScript = fopen(executionScriptPath, "w");
-    if (executionScript == NULL) {
+    state.executionScript = fopen(executionScriptPath, "w");
+    if (state.executionScript == NULL) {
       failWithError("Failed to open execution script for writing.");
     }
   }
@@ -938,15 +1026,18 @@ void simulation_main(int argc, char const **argv) {
   delete context;
 }
 
-void run_simulation(int delay, int *done) {
-  if(!delay) {
+// Run the simulation for some time delay.  Set finish if a Verilog finish was
+// called while ticking.  This is specific to Verilator because Verilator does
+// _not_ terminate the simulation when it hits a finish.
+void run_simulation(int delay, int *finish) {
+  if (!delay) {
     testbench->eval_step();
-    *done = context->gotFinish();
+    *finish = context->gotFinish();
     return;
   }
   testbench->eval();
-  *done = context->gotFinish();
-  if (*done)
+  *finish = context->gotFinish();
+  if (*finish)
     return;
   context->timeInc(delay);
 }

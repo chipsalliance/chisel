@@ -2,10 +2,11 @@
 
 package chisel3.internal
 
-import chisel3.{assert => _, _}
 import chisel3.experimental.BaseModule
 import chisel3.naming.{fixTraitIdentifier, HasCustomIdentifier, IdentifierProposer}
-import chiselTests.ChiselFunSpec
+import chisel3.{assert => _, _}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 class ConcreteClass(i: Int) extends Module
 trait NormalTrait extends Module
@@ -31,7 +32,7 @@ class HasByNameArg(g: => Module) extends Module {
   val x = Module(g)
 }
 
-class IdentifierSpec extends ChiselFunSpec {
+class IdentifierSpec extends AnyFunSpec with Matchers {
   it("(1): definitionIdentifier works on classes, abstract classes, but not traits") {
     class TopA extends Module {
       assert(Module(new ConcreteClass(0)).definitionIdentifier == "ConcreteClass_0")

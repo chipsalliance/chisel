@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object IllegalRefSpec {
   class IllegalRefInner extends RawModule {
@@ -52,20 +54,20 @@ object IllegalRefSpec {
   }
 }
 
-class IllegalRefSpec extends ChiselFlatSpec with Utils {
+class IllegalRefSpec extends AnyFlatSpec with Matchers {
   import IllegalRefSpec._
 
   val variants = Map("a connect" -> true, "an op" -> false)
 
   variants.foreach { case (k, v) =>
     s"Illegal cross-module references in ${k}" should "fail" in {
-      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      a[ChiselException] should be thrownBy {
         ChiselStage.emitCHIRRTL { new IllegalRefOuter(v) }
       }
     }
 
     s"Using a signal that has escaped its enclosing when scope in ${k}" should "fail" in {
-      a[ChiselException] should be thrownBy extractCause[ChiselException] {
+      a[ChiselException] should be thrownBy {
         ChiselStage.emitCHIRRTL { new CrossWhenConnect(v) }
       }
     }

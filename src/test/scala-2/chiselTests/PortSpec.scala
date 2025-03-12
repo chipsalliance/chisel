@@ -1,9 +1,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PortSpec extends ChiselFreeSpec {
+class PortSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   class DummyIO extends Bundle {
     val foo = Input(Bool())
@@ -16,15 +19,20 @@ class PortSpec extends ChiselFreeSpec {
     out := in.foo.asUInt + in.bar
   }
 
-  "Ports now have source locators" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new Dummy)
-    // Automatic clock and reset coming from Module do not get source locators
-    chirrtl should include("input clock : Clock")
-    chirrtl should include("input reset : UInt<1>")
-    // other ports get source locators
-    chirrtl should include(
-      "output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[src/test/scala-2/chiselTests/PortSpec.scala"
-    )
-    chirrtl should include("output out : UInt<1> @[src/test/scala-2/chiselTests/PortSpec.scala")
+  behavior of "Ports"
+
+  they should "have source locators" in {
+    info("Module-provided ports (clock and reset) point at the line with `Module`")
+    info("User-defined ports point at the correct lines")
+    ChiselStage
+      .emitCHIRRTL(new Dummy)
+      .fileCheck()(
+        """|CHECK:      public module Dummy :
+           |CHECK-NEXT:   input clock : Clock @[src/test/scala-2/chiselTests/PortSpec.scala 16:9
+           |CHECK-NEXT:   input reset : UInt<1> @[src/test/scala-2/chiselTests/PortSpec.scala 16:9
+           |CHECK-NEXT:   output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[src/test/scala-2/chiselTests/PortSpec.scala 17:16
+           |CHECK-NEXT:   output out : UInt<1> @[src/test/scala-2/chiselTests/PortSpec.scala 18:17
+           |""".stripMargin
+      )
   }
 }

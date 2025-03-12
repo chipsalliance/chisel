@@ -4,9 +4,12 @@ package chiselTests.experimental
 
 import chisel3._
 import chisel3.experimental.dataview._
-import chisel3.util._
-import chiselTests.ChiselFlatSpec
+import chisel3.testing.scalatest.FileCheck
+import chisel3.util.{log2Ceil, Decoupled, DecoupledIO, Queue, QueueIO}
+import circt.stage.ChiselStage
 import firrtl.transforms.DontTouchAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // Let's put it all together!
 object DataViewIntegrationSpec {
@@ -45,12 +48,14 @@ object DataViewIntegrationSpec {
   }
 }
 
-class DataViewIntegrationSpec extends ChiselFlatSpec {
+class DataViewIntegrationSpec extends AnyFlatSpec with Matchers with FileCheck {
   import DataViewIntegrationSpec.MyModule
 
   "Users" should "be able to view and annotate Modules" in {
-    val (_, annos) = getFirrtlAndAnnos(new MyModule)
-    val ts = annos.collect { case DontTouchAnnotation(t) => t.serialize }
-    ts should equal(Seq("~MyModule|Queue4_UInt8>enq_ptr_value"))
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """CHECK: "target":"~MyModule|Queue4_UInt8>enq_ptr_value""""
+      )
   }
 }

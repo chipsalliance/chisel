@@ -3,14 +3,15 @@
 package chiselTests.reflect
 
 import chisel3._
+import chisel3.experimental.dataview._
+import chisel3.experimental.hierarchy._
 import chisel3.probe.Probe
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
-import chiselTests.ChiselFlatSpec
-import circt.stage.ChiselStage
 import chisel3.util.DecoupledIO
-import chisel3.experimental.hierarchy._
-import chisel3.experimental.dataview._
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object DataMirrorSpec {
   import org.scalatest.matchers.should.Matchers._
@@ -66,7 +67,7 @@ object DataMirrorSpec {
   }
 }
 
-class DataMirrorSpec extends ChiselFlatSpec {
+class DataMirrorSpec extends AnyFlatSpec with Matchers {
   import DataMirrorSpec._
 
   behavior.of("DataMirror")

@@ -299,7 +299,7 @@ Clone and build the Chisel library:
 ```bash
 git clone https://github.com/chipsalliance/chisel.git
 cd chisel
-sbt compile
+./mill chisel[].compile
 ```
 
 In order to run the following unit tests, you will need several tools on your `PATH`, namely
@@ -311,19 +311,19 @@ Check that each is installed on your `PATH` by running `which verilator` and so 
 If the compilation succeeded and the dependencies noted above are installed, you can then run the included unit tests by invoking:
 
 ```bash
-sbt test
+./mill chisel[].test
 ```
 
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`main` branch), you will need to build from source and publish locally.
-The repository version can be found by running `sbt version`.
-As of the time of writing it was: `6.0.0+1-8d92842c-SNAPSHOT`.
+The repository version can be found by running `./mill show unipublish.publishVersion`.
+As of the time of writing it was: `7.0.0-M2+431-4798bea7-SNAPSHOT`
 
-To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
+To publish your version of Chisel to the local Ivy repository, run:
 
 ```bash
-sbt "unipublish / publishLocal"
+./mill unipublish.publishLocal
 ```
 
 The compiled version gets placed in `~/.ivy2/local/org.chipsalliance/`.
@@ -332,7 +332,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to use the current version, for example:
 
 ```scala
-val chiselVersion = "6.0.0+1-8d92842c-SNAPSHOT"
+val chiselVersion = "7.0.0-M2+431-4798bea7-SNAPSHOT"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```

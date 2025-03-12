@@ -4,8 +4,10 @@ package chiselTests
 
 import chisel3._
 import org.scalatest.exceptions.TestFailedException
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
+class ChiselTestUtilitiesSpec extends AnyFlatSpec with Matchers with WidthHelpers {
   // Who tests the testers?
   "assertKnownWidth" should "error when the expected width is wrong" in {
     intercept[TestFailedException] {

@@ -3,13 +3,18 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util._
-import chisel3.experimental.{annotate, dedupGroup}
-import chisel3.experimental.hierarchy.Definition
-import chisel3.properties.Class
-import firrtl.transforms.DedupGroupAnnotation
 import chisel3.experimental.hierarchy._
+import chisel3.experimental.{annotate, dedupGroup}
+import chisel3.properties.Class
+import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.circt.PlusArgsValue
+import chisel3.util.{Counter, Decoupled, Queue}
+import circt.stage.ChiselStage
+import firrtl.EmittedVerilogCircuitAnnotation
+import firrtl.transforms.DedupGroupAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class DedupIO extends Bundle {
   val in = Flipped(Decoupled(UInt(32.W)))
@@ -95,42 +100,55 @@ class ModuleWithClass extends Module {
   val cls = Definition(new Class)
 }
 
-class DedupSpec extends ChiselFlatSpec {
-  private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
-  def countModules(verilog: String): Int =
-    (verilog.split("\n").collect { case ModuleRegex(name) => name }).filterNot(_.contains("ram_4x32")).size
+class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
+  implicit class VerilogHelpers(verilog: String) {
+    private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
+    def countModules: Int =
+      (verilog.split("\n").collect { case ModuleRegex(name) => name }).filterNot(_.contains("ram_4x32")).size
+  }
 
   "Deduplication" should "occur" in {
-    assert(countModules(compile { new DedupQueues(4) }) === 2)
+    ChiselStage.emitSystemVerilog(new DedupQueues(4)).countModules should be(2)
   }
 
   it should "properly dedup modules with deduped submodules" in {
-    assert(countModules(compile { new NestedDedup }) === 3)
+    ChiselStage.emitSystemVerilog(new NestedDedup).countModules should be(3)
   }
 
   it should "dedup modules that share a literal" in {
-    assert(countModules(compile { new SharedConstantValDedupTop }) === 2)
+    ChiselStage.emitSystemVerilog(new SharedConstantValDedupTop).countModules should be(2)
   }
 
   it should "not dedup modules that are in different dedup groups" in {
-    assert(countModules(compile {
+    ChiselStage.emitSystemVerilog {
       val top = new SharedConstantValDedupTop
       dedupGroup(top.inst0, "inst0")
       dedupGroup(top.inst1, "inst1")
       top
-    }) === 3)
+    }.countModules should be(3)
   }
 
   it should "work natively for desiredNames" in {
-    assert(countModules(compile {
-      val top = new SharedConstantValDedupTopDesiredName
-      top
-    }) === 3)
+    // TODO: This test _should_ be able to use `ChiselStage$` methods, but there
+    // are problems with annotations and D/I.
+    //
+    // See: https://github.com/chipsalliance/chisel/issues/4730
+    val verilog = new ChiselStage()
+      .execute(
+        Array("--target", "systemverilog"),
+        Seq(ChiselGeneratorAnnotation(() => new SharedConstantValDedupTopDesiredName))
+      )
+      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+        a.value
+      }
+      .get
+
+    verilog.countModules should be(3)
   }
 
   it should "error on conflicting dedup groups" in {
     a[Exception] should be thrownBy {
-      compile {
+      ChiselStage.emitSystemVerilog {
         val top = new SharedConstantValDedupTop
         dedupGroup(top.inst0, "inst0")
         dedupGroup(top.inst0, "anothergroup")
@@ -142,18 +160,46 @@ class DedupSpec extends ChiselFlatSpec {
   }
 
   it should "not add DedupGroupAnnotation to intrinsics" in {
-    val (_, annos) = getFirrtlAndAnnos(new ModuleWithIntrinsic)
-    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
-      target.module
-    }
-    dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithIntrinsic")
+    // TODO: This test _should_ be able to use `ChiselStage$` methods, but there
+    // are problems with annotations and D/I.
+    //
+    // See: https://github.com/chipsalliance/chisel/issues/4730
+    val annotations = new ChiselStage()
+      .execute(
+        Array("--target", "chirrtl"),
+        Seq(ChiselGeneratorAnnotation(() => new ModuleWithIntrinsic))
+      )
+    val chirrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+
+    chirrtl.fileCheck()(
+      """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
+         |CHECK-NEXT: "target":"~ModuleWithIntrinsic|ModuleWithIntrinsic"
+         |CHECK-NEXT: "group":"ModuleWithIntrinsic"
+         |""".stripMargin
+    )
   }
 
   it should "not add DedupGroupAnnotation to classes" in {
-    val (_, annos) = getFirrtlAndAnnos(new ModuleWithClass)
-    val dedupGroupAnnos = annos.collect { case DedupGroupAnnotation(target, _) =>
-      target.module
-    }
-    dedupGroupAnnos should contain theSameElementsAs Seq("ModuleWithClass")
+    // TODO: This test _should_ be able to use `ChiselStage$` methods, but there
+    // are problems with annotations and D/I.
+    //
+    // See: https://github.com/chipsalliance/chisel/issues/4730
+    val annotations = new ChiselStage()
+      .execute(
+        Array("--target", "chirrtl"),
+        Seq(ChiselGeneratorAnnotation(() => new ModuleWithClass))
+      )
+    val chirrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+
+    chirrtl.fileCheck()(
+      """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
+         |CHECK-NEXT: "target":"~ModuleWithClass|ModuleWithClass"
+         |CHECK-NEXT: "group":"ModuleWithClass"
+         |""".stripMargin
+    )
   }
 }

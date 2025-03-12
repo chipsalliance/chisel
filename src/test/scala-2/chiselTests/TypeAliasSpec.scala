@@ -1,10 +1,12 @@
 package chiselTests
 
 import chisel3._
-import circt.stage.ChiselStage
 import chisel3.experimental.{HasTypeAlias, RecordAlias}
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TypeAliasSpec extends ChiselFlatSpec with Utils {
+class TypeAliasSpec extends AnyFlatSpec with Matchers {
   "Bundles with opt-in alias names" should "have an emitted FIRRTL type alias" in {
     class Test extends Module {
       class FooBundle extends Bundle with HasTypeAlias {
@@ -211,7 +213,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
   }
 
   "Duplicate bundle type aliases with differing structures" should "error" in {
-    val msg = (the[ChiselException] thrownBy extractCause[ChiselException] {
+    val msg = (the[ChiselException] thrownBy {
       class Test extends Module {
         // These bundles are structurally unequivalent and so must be aliased with different names.
         // Error if they share the same name
@@ -319,7 +321,7 @@ class TypeAliasSpec extends ChiselFlatSpec with Utils {
 
     // Prevent statements like type Clock = { ... }
     firrtlKeywords.map { tpe =>
-      (the[ChiselException] thrownBy extractCause[ChiselException] {
+      (the[ChiselException] thrownBy {
         class Test(val firrtlType: String) extends Module {
           class FooBundle extends Bundle with HasTypeAlias {
             override def aliasName = RecordAlias(firrtlType)

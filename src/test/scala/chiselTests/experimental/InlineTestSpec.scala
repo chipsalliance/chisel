@@ -1,10 +1,14 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.Enum
-import chisel3.testers._
-import chisel3.experimental.inlinetest._
 import chisel3.experimental.hierarchy._
+import chisel3.experimental.inlinetest._
+import chisel3.testers._
+import chisel3.testing.scalatest.FileCheck
+import chisel3.util.Enum
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import circt.stage.ChiselStage.emitCHIRRTL
 
@@ -123,7 +127,7 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests[RawM
   }
 }
 
-class InlineTestSpec extends ChiselFlatSpec with FileCheck {
+class InlineTestSpec extends AnyFlatSpec with FileCheck {
   it should "generate a public module for each test" in {
     emitCHIRRTL(new ModuleWithTests).fileCheck()(
       """
@@ -160,15 +164,17 @@ class InlineTestSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "compile to verilog" in {
-    generateSystemVerilogAndFileCheck(new ModuleWithTests)(
-      """
+    ChiselStage
+      .emitSystemVerilog(new ModuleWithTests)
+      .fileCheck()(
+        """
       | CHECK: module ModuleWithTests
       | CHECK: module test_ModuleWithTests_foo
       | CHECK: module test_ModuleWithTests_bar
       | CHECK: module test_ModuleWithTests_with_result
       | CHECK: module test_ModuleWithTests_with_monitor
       """
-    )
+      )
   }
 
   it should "emit the correct reset types" in {

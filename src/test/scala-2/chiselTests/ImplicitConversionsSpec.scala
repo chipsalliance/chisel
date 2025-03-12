@@ -3,8 +3,10 @@
 package chiselTests
 
 import chisel3._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ImplicitConversionsSpec extends ChiselFlatSpec {
+class ImplicitConversionsSpec extends AnyFlatSpec with Matchers {
   ".data on arbitrary Data objects" should "not work" in {
     assertTypeError("UInt(8.W).data")
     assertTypeError("8.S.data")

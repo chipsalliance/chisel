@@ -3,11 +3,11 @@ package chisel3.internal
 import chisel3._
 import chisel3.probe._
 import chisel3.util.DecoupledIO
-import chisel3.testers.{BasicTester, TesterDriver}
 import circt.stage.ChiselStage
-import chiselTests.ChiselFunSpec
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ContainsProbeSpec extends ChiselFunSpec {
+class ContainsProbeSpec extends AnyFunSpec with Matchers {
   it("1. should return false for elements that dont") {
     class TestMod extends RawModule {
       val a = IO(Input(Bool()))

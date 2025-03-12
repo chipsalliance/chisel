@@ -4,9 +4,10 @@ package chisel3
 
 import chisel3.aop.Select
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
-import chiselTests.ChiselFlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class SelectSpec extends ChiselFlatSpec {
+class SelectSpec extends AnyFlatSpec with Matchers {
 
   "Placeholders" should "be examined" in {
     class Foo extends RawModule {

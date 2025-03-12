@@ -146,7 +146,7 @@ class TraceSpec {
 
 }
 
-class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
+class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils {
 
   private val baseDir = os.pwd / "test_run_dir" / this.getClass.getSimpleName
 

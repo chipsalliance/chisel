@@ -392,7 +392,7 @@ private[chisel3] trait UIntImpl extends BitsImpl with Num[UInt] { self: UInt =>
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
     _resizeToWidth(that, this.widthOption, true)(identity).asInstanceOf[this.type]
   }
 
@@ -518,7 +518,7 @@ private[chisel3] trait SIntImpl extends BitsImpl with Num[SInt] { self: SInt =>
 
   override def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt = this
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type =
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type =
     _resizeToWidth(that.asSInt, this.widthOption, false)(_.asSInt).asInstanceOf[this.type]
 }
 
@@ -545,7 +545,7 @@ private[chisel3] trait ResetTypeImpl extends Element { self: Reset =>
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
     val _wire = Wire(this.cloneTypeFull)
     _wire := that
     _wire
@@ -574,7 +574,7 @@ private[chisel3] trait AsyncResetImpl extends Element { self: AsyncReset =>
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asAsyncReset
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asAsyncReset
 
   protected def _asAsyncResetImpl(implicit sourceInfo: SourceInfo): AsyncReset = this
 
@@ -644,7 +644,7 @@ private[chisel3] trait BoolImpl extends UIntImpl { self: Bool =>
   protected def _asAsyncResetImpl(implicit sourceInfo: SourceInfo): AsyncReset =
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
     _resizeToWidth(that, this.widthOption, true)(identity).asBool.asInstanceOf[this.type]
   }
 }

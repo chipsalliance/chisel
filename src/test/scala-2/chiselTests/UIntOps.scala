@@ -4,8 +4,10 @@ package chiselTests
 
 import circt.stage.ChiselStage
 import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{is, log2Ceil, random, switch, Counter}
+import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 
 class UIntOps extends Module {
@@ -56,7 +58,7 @@ class UIntOps extends Module {
 }
 
 // Note a and b need to be "safe"
-class UIntOpsTester(a: Long, b: Long) extends BasicTester {
+class UIntOpsTester(a: Long, b: Long) extends Module {
   require(a >= 0 && b >= 0)
 
   val dut = Module(new UIntOps)
@@ -125,7 +127,7 @@ class NegativeShift(t: => Bits) extends Module {
   Reg(t) >> -1
 }
 
-class BasicRotate extends BasicTester {
+class BasicRotate extends Module {
   val shiftAmount = random.LFSR(4)
   val ctr = RegInit(0.U(4.W))
 
@@ -159,7 +161,7 @@ class BasicRotate extends BasicTester {
 /** rotating a w-bit word left by n should be equivalent to rotating it by w - n
   * to the left
   */
-class MatchedRotateLeftAndRight(w: Int = 13) extends BasicTester {
+class MatchedRotateLeftAndRight(w: Int = 13) extends Module {
   val initValue = BigInt(w, scala.util.Random)
   println(s"Initial value: ${initValue.toString(2)}")
 
@@ -183,7 +185,7 @@ class MatchedRotateLeftAndRight(w: Int = 13) extends BasicTester {
   }
 }
 
-class UIntLitExtractTester extends BasicTester {
+class UIntLitExtractTester extends Module {
   assert("b101010".U.extract(2) === false.B)
   assert("b101010".U.extract(3) === true.B)
   assert("b101010".U.extract(100) === false.B)
@@ -198,7 +200,7 @@ class UIntLitExtractTester extends BasicTester {
   stop()
 }
 
-class UIntLitZeroWidthTester extends BasicTester {
+class UIntLitZeroWidthTester extends Module {
   assert(-0.U(0.W) === 0.U)
   assert(~0.U(0.W) === 0.U)
   assert(0.U(0.W) + 0.U(0.W) === 0.U)
@@ -211,7 +213,7 @@ class UIntLitZeroWidthTester extends BasicTester {
   stop()
 }
 
-trait ShiftRightWidthBehavior { self: ChiselRunners =>
+trait ShiftRightWidthBehavior extends WidthHelpers {
   // The UInt and SInt objects don't share a type, so make one up that they can conform to structurally
   type BitsFactory[T <: Bits] = {
     def apply():         T
@@ -270,7 +272,7 @@ trait ShiftRightWidthBehavior { self: ChiselRunners =>
 
 }
 
-class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRightWidthBehavior {
+class UIntOpsSpec extends AnyPropSpec with Matchers with LogUtils with ShiftRightWidthBehavior with ChiselSim {
 
   // This is intentionally a val outside of any ScalaTest constructs to check that it is legal
   // to create a literal outside of a Chisel context and *before* any Chisel contexts have been created
@@ -282,15 +284,15 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   }
 
   property("Bools cannot be created from 0 bit UInts") {
-    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.emitCHIRRTL(new ZeroWidthBoolConversion) }
+    intercept[Exception] { ChiselStage.emitCHIRRTL(new ZeroWidthBoolConversion) }
   }
 
   property("Bools cannot be created from >1 bit UInts") {
-    a[Exception] should be thrownBy extractCause[Exception] { ChiselStage.emitCHIRRTL(new BadBoolConversion) }
+    intercept[Exception] { ChiselStage.emitCHIRRTL(new BadBoolConversion) }
   }
 
   property("Out-of-bounds extraction from known-width UInts") {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(2.W)))
         u(2, 1)
@@ -299,7 +301,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   }
 
   property("Out-of-bounds single-bit extraction from known-width UInts") {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(2.W)))
         u(2)
@@ -308,7 +310,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   }
 
   property("Out-of-bounds extraction from known-zero-width UInts") {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(0.W)))
         u(0, 0)
@@ -317,7 +319,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   }
 
   property("Out-of-bounds single-bit extraction from known-zero-width UInts") {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new RawModule {
         val u = IO(Input(UInt(0.W)))
         u(0)
@@ -330,31 +332,31 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
   }
 
   property("UIntOpsTester should return the correct result") {
-    assertTesterPasses { new UIntOpsTester(123, 7) }
+    simulate { new UIntOpsTester(123, 7) }(RunUntilFinished(3))
   }
 
   property("Negative shift amounts are invalid") {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new NegativeShift(UInt()))
     }
   }
 
   property("rotateLeft and rotateRight should work for dynamic shift values") {
-    assertTesterPasses(new BasicRotate)
+    simulate(new BasicRotate)(RunUntilFinished(1024 * 10))
   }
 
   property(
     "rotateLeft and rotateRight should be consistent for dynamic shift values"
   ) {
-    assertTesterPasses(new MatchedRotateLeftAndRight)
+    simulate(new MatchedRotateLeftAndRight)(RunUntilFinished(1024 * 10))
   }
 
   property("Bit extraction on literals should work for all non-negative indices") {
-    assertTesterPasses(new UIntLitExtractTester)
+    simulate(new UIntLitExtractTester)(RunUntilFinished(3))
   }
 
   property("Basic arithmetic and bit operations with zero-width literals should return correct result (0)") {
-    assertTesterPasses(new UIntLitZeroWidthTester)
+    simulate(new UIntLitZeroWidthTester)(RunUntilFinished(3))
   }
 
   property("asBools should support chained apply") {
@@ -499,7 +501,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils with ShiftRigh
       log should include("warn")
     }
 
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new RawModule {
         val in = IO(Input(UInt(0.W)))
         val index = IO(Input(UInt(1.W)))

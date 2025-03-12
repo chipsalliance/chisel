@@ -5,6 +5,8 @@ package experimental
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // NOTE This is currently an experimental API and subject to change
 // Example using a private port
@@ -31,7 +33,7 @@ class PortNameUniquenessTester extends NamedModuleTester {
   val output = expectName(IO(Output(UInt())).suggestName("wire"), "wire")
 }
 
-class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
+class ProgrammaticPortsSpec extends AnyFlatSpec with Matchers {
 
   private def doTest(testMod: => NamedModuleTester): Unit = {
     var module: NamedModuleTester = null
@@ -48,7 +50,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
   }
 
   "Port names" should "not conflict with any component names" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       doTest(new PortNameUniquenessTester)
     }
   }
@@ -64,7 +66,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
   }
 
   "SuggestName collisions on ports" should "be illegal" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val foo = IO(UInt(8.W)).suggestName("apple")
         val bar = IO(UInt(8.W)).suggestName("apple")

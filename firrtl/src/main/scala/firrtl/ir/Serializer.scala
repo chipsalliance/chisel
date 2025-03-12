@@ -416,6 +416,13 @@ object Serializer {
     case Field(name, flip, tpe) => s(flip); b ++= legalize(name); b ++= " : "; s(tpe)
   }
 
+  def serialize(node: Type): String = {
+    implicit val sb:     StringBuilder = new StringBuilder
+    implicit val indent: Int = 0
+    s(node)
+    sb.toString
+  }
+
   private def s(node: Type)(implicit b: StringBuilder, indent: Int): Unit = s(node, false)
 
   private def s(node: Type, lastEmittedConst: Boolean)(implicit b: StringBuilder, indent: Int): Unit = node match {

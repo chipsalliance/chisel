@@ -5,8 +5,10 @@ import chisel3._
 import chisel3.experimental.Analog
 import chisel3.util.{Decoupled, Queue}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TypenameSpec extends ChiselFlatSpec {
+class TypenameSpec extends AnyFlatSpec with Matchers {
   "Queues" should "have stable, type-parameterized default names" in {
     class Test extends Module {
       class AnalogTest[T <: Analog](gen: T) extends Module {

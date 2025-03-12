@@ -5,8 +5,10 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, FileVisitor}
 import java.nio.file.{FileVisitor, Files, Path, Paths}
 import java.lang.ProcessBuilder.Redirect
+import java.util.Comparator
 import scala.annotation.meta.param
 import scala.jdk.CollectionConverters._
+import scala.sys.SystemProperties
 
 case class ModuleInfo(name: String, ports: Seq[ModuleInfo.Port]) {
   private[svsim] val instanceName = "dut"
@@ -28,7 +30,7 @@ final class Workspace(
 ) {
 
   val absolutePath =
-    if (path.startsWith("/"))
+    if (Paths.get(path).isAbsolute())
       path
     else
       s"${System.getProperty("user.dir")}/$path"
@@ -50,7 +52,15 @@ final class Workspace(
   def reset() = {
     _moduleInfo = None
 
-    val rm = Runtime.getRuntime().exec(Array("rm", "-rf", absolutePath)).waitFor()
+    // Create a path type object from the absolute path string.
+    val absolutePathObject = Paths.get(absolutePath)
+    if (Files.exists(absolutePathObject)) {
+      Files
+        .walk(absolutePathObject)
+        .sorted(Comparator.reverseOrder())
+        .forEach(Files.delete)
+    }
+
     val pathsToCreate = Seq(
       supportArtifactsPath,
       primarySourcesPath,
@@ -148,13 +158,16 @@ final class Workspace(
       l("      simulationState = DONE;")
       l("    end")
       l("  end")
+      l("  import \"DPI-C\" context task simulation_final();")
+      l("  final")
+      l("    simulation_final();")
       l("  `ifdef ", Backend.HarnessCompilationFlags.supportsDelayInPublicFunctions)
       l("  export \"DPI-C\" task run_simulation;")
       l("  task run_simulation;")
       l("    input int timesteps;")
-      l("    output int done;")
+      l("    output int finish;")
       l("    #timesteps;")
-      l("    done = 0;")
+      l("    finish = 0;")
       l("  endtask")
       l("  `else")
       l("  import \"DPI-C\" function void run_simulation(input int timesteps, output int done);")
@@ -389,7 +402,13 @@ final class Workspace(
       //format: off
       // For this debug flow, we rebuild the simulation from scratch every time, to avoid issues if the simulation was originally compiled in a different environment, like using SiFive's `wake`.
       l("clean:")
-      l("\tls . | grep -v Makefile | grep -v execution-script.txt | xargs rm -rf")
+      // Add check if OS is windows, since the command syntax is different
+      if (System.getProperty("os.name").toLowerCase.contains("win")) {
+        l("\tfor /f \"delims=\" %i in ('dir /b /a-d ^| findstr /v Makefile ^| findstr /v execution-script.txt') do del \"%i\"")
+        l("\tfor /d %i in (*) do rmdir /s /q \"%i\"")
+      } else {
+        l("\tls . | grep -v Makefile | grep -v execution-script.txt | xargs rm -rf")
+      }
       l()
       l("simulation: clean")
       l("\t$(compilerEnvironment) \\")

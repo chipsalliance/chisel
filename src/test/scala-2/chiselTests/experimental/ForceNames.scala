@@ -2,15 +2,17 @@
 
 package chiselTests
 
-import firrtl._
 import chisel3._
 import chisel3.experimental.annotate
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.experimental.{forceName, InlineInstance}
 import circt.stage.ChiselStage
+import firrtl._
 import firrtl.annotations.{Annotation, ReferenceTarget}
 import firrtl.options.{Dependency, TargetDirAnnotation}
 import logger.{LogLevel, LogLevelAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /** Object containing Modules used for testing */
 object ForceNamesHierarchy {
@@ -36,7 +38,7 @@ object ForceNamesHierarchy {
   }
 }
 
-class ForceNamesSpec extends ChiselFlatSpec {
+class ForceNamesSpec extends AnyFlatSpec with Matchers {
 
   def run[T <: RawModule](
     dut:        => T,

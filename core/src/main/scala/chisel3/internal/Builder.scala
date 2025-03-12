@@ -16,7 +16,6 @@ import _root_.firrtl.annotations.{Annotation, CircuitName, ComponentName, IsMemb
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{annoSeqToSeq, AnnotationSeq}
 import _root_.firrtl.renamemap.MutableRenameMap
-import _root_.firrtl.util.BackendCompilationUtilities._
 import _root_.firrtl.{ir => fir}
 import chisel3.experimental.dataview.{reify, reifyIdentityView, reifySingleTarget}
 import chisel3.internal.Builder.Prefix

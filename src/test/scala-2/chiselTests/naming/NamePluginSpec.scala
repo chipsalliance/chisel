@@ -6,10 +6,12 @@ import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.prefix
 import chisel3.experimental.AffectsChiselName
-import chiselTests.{ChiselFlatSpec, FileCheck, Utils}
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
+class NamePluginSpec extends AnyFlatSpec with Matchers with FileCheck {
   implicit val minimumScalaVersion: Int = 12
 
   "Scala plugin" should "name internally scoped components" in {
@@ -28,7 +30,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Scala plugin" should "interact with prefixing" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder() = {
           val wire = Wire(UInt(3.W))
@@ -40,7 +42,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           builder()
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire first_wire :
          |CHECK: wire second_wire :
          |""".stripMargin
@@ -48,7 +50,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Scala plugin" should "interact with prefixing so last val name wins" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder() = {
           val wire1 = Wire(UInt(3.W))
@@ -66,7 +68,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x1_first_wire1
          |CHECK: wire x1
          |CHECK: wire x2_second_wire1
@@ -76,7 +78,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Scala plugin" should "name verification ops" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val foo, bar = IO(Input(UInt(8.W)))
 
@@ -86,7 +88,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           val x4 = printf("foo = %d\n", foo)
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: cover{{.*}}: x2
          |CHECK: assume{{.*}}: x3
          |CHECK: printf{{.*}}: x4
@@ -109,7 +111,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
 
   "Naming on iterables" should "work" in {
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder(): Seq[UInt] = {
           val a = Wire(UInt(3.W))
@@ -122,7 +124,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire blah_0 :
          |CHECK: wire blah_1 :
          |""".stripMargin
@@ -131,7 +133,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
 
   "Naming on nested iterables" should "work" in {
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder(): Seq[Seq[UInt]] = {
           val a = Wire(UInt(3.W))
@@ -146,7 +148,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire blah_0_0 :
          |CHECK: wire blah_0_1 :
          |CHECK: wire blah_1_0 :
@@ -156,7 +158,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Naming on custom case classes" should "not work" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       case class Container(a: UInt, b: UInt)
 
       new Module {
@@ -168,7 +170,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
 
         { val blah = builder() }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire a :
          |CHECK: wire b :
          |""".stripMargin
@@ -252,13 +254,13 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Unapply assignments" should "still be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val (a, b) = (Wire(UInt(3.W)), Wire(UInt(3.W)))
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire a :
          |CHECK: wire b :
          |""".stripMargin
@@ -266,7 +268,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Unapply assignments" should "name (but not prefix) local vals on the RHS" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val (a, b) = {
@@ -276,7 +278,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire a :
          |CHECK: wire b :
          |CHECK: wire sum :
@@ -285,14 +287,14 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Unapply assignments" should "not override already named things" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val x = Wire(UInt(3.W))
           val (a, b) = (x, Wire(UInt(3.W)))
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x :
          |CHECK: wire b :
          |""".stripMargin
@@ -300,7 +302,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Case class unapply assignments" should "be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       case class Foo(x: UInt, y: UInt)
       new Module {
         {
@@ -308,7 +310,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           val Foo(a, b) = func()
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire a :
          |CHECK: wire b :
          |""".stripMargin
@@ -316,7 +318,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Complex unapply assignments" should "be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       case class Foo(x: UInt, y: UInt)
       new Module {
         {
@@ -328,7 +330,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           val ((Foo(a, _), c) :: Nil) = func()
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire w :
          |CHECK: wire a :
          |CHECK: wire _WIRE :
@@ -348,7 +350,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "Nested val declarations" should "all be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val a = {
@@ -360,7 +362,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire a_b_c :
          |CHECK: wire a_b :
          |CHECK: wire a :
@@ -386,11 +388,11 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "tuples" should "be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val x = (Wire(UInt(3.W)), Wire(UInt(3.W)))
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x_1 :
          |CHECK: wire x_2 :
          |""".stripMargin
@@ -398,14 +400,14 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "nested tuples" should "be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val x = (
           (Wire(UInt(3.W)), Wire(UInt(3.W))),
           (Wire(UInt(3.W)), Wire(UInt(3.W)))
         )
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x_1_1 :
          |CHECK: wire x_1_2 :
          |CHECK: wire x_2_1 :
@@ -415,11 +417,11 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "tuples containing non-Data" should "be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val x = (Wire(UInt(3.W)), "foobar", Wire(UInt(3.W)))
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x_1 :
          |CHECK: wire x_3 :
          |""".stripMargin
@@ -427,11 +429,11 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "tuples nested in options" should "be named" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val x = Option((Wire(UInt(3.W)), Wire(UInt(3.W))))
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x_1 :
          |CHECK: wire x_2 :
          |""".stripMargin
@@ -439,30 +441,31 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
   }
 
   "tuple assignment" should "name IOs and registers" in {
-    generateFirrtlAndFileCheck(
-      new Module {
-        def myFunc(): (UInt, String) = {
-          val out = IO(Output(UInt(3.W)))
-          val in = IO(Input(UInt(3.W)))
-          out := Mux(in(0), RegNext(in + 2.U), in << 3)
-          (out, "Hi!")
-        }
+    ChiselStage
+      .emitCHIRRTL(
+        new Module {
+          def myFunc(): (UInt, String) = {
+            val out = IO(Output(UInt(3.W)))
+            val in = IO(Input(UInt(3.W)))
+            out := Mux(in(0), RegNext(in + 2.U), in << 3)
+            (out, "Hi!")
+          }
 
-        val foo = myFunc()
-      },
-      "--implicit-check-not=wire"
-    )(
-      """|CHECK: input clock :
-         |CHECK: input reset :
-         |CHECK: output foo_1 :
-         |CHECK: input foo_in :
-         |CHECK: reg foo_out_REG :
-         |""".stripMargin
-    )
+          val foo = myFunc()
+        }
+      )
+      .fileCheck("--implicit-check-not=wire")(
+        """|CHECK: input clock :
+           |CHECK: input reset :
+           |CHECK: output foo_1 :
+           |CHECK: input foo_in :
+           |CHECK: reg foo_out_REG :
+           |""".stripMargin
+      )
   }
 
   "identity views" should "forward names to their targets" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       import chisel3.experimental.dataview._
       new Module {
         val x = {
@@ -474,7 +477,7 @@ class NamePluginSpec extends ChiselFlatSpec with FileCheck with Utils {
         val z = Wire(UInt(3.W))
         val zz = z.viewAs[UInt] // But don't accidentally override names
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x :
          |CHECK: wire y :
          |CHECK: wire z :

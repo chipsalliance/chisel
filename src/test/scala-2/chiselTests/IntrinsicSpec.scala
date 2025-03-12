@@ -2,12 +2,12 @@
 
 package chiselTests
 
-import chiselTests.ChiselFlatSpec
-import circt.stage.ChiselStage
-
 import chisel3._
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class IntrinsicSpec extends ChiselFlatSpec {
+class IntrinsicSpec extends AnyFlatSpec with Matchers {
   behavior.of("Intrinsics")
 
   it should "support a simple intrinsic statement" in {

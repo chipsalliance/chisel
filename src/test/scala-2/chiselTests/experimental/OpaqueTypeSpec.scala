@@ -8,7 +8,8 @@ import chisel3.util.Valid
 import chisel3.experimental.OpaqueType
 import chisel3.reflect.DataMirror
 import circt.stage.ChiselStage
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.SeqMap
 
 object OpaqueTypeSpec {
@@ -128,7 +129,7 @@ object OpaqueTypeSpec {
   }
 }
 
-class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
+class OpaqueTypeSpec extends AnyFlatSpec with Matchers {
   import OpaqueTypeSpec._
 
   behavior.of("OpaqueTypes")
@@ -185,13 +186,13 @@ class OpaqueTypeSpec extends ChiselFlatSpec with Utils {
   }
 
   they should "throw an error when map contains a named element and OpaqueType is mixed in" in {
-    (the[Exception] thrownBy extractCause[Exception] {
+    (the[Exception] thrownBy {
       ChiselStage.emitCHIRRTL { new NamedSingleElementModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
   }
 
   they should "throw an error when map contains more than one element and OpaqueType is mixed in" in {
-    (the[Exception] thrownBy extractCause[Exception] {
+    (the[Exception] thrownBy {
       ChiselStage.emitCHIRRTL { new ErroneousOverrideModule }
     }).getMessage should include("Opaque types must have exactly one element with an empty name")
   }

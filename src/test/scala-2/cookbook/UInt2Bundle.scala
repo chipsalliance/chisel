@@ -3,6 +3,7 @@
 package cookbook
 
 import chisel3._
+import chisel3.simulator.stimulus.RunUntilFinished
 
 /* ### How do I create a Bundle from a UInt?
  *
@@ -25,6 +26,6 @@ class UInt2Bundle extends CookbookTester(1) {
 
 class UInt2BundleSpec extends CookbookSpec {
   "UInt2Bundle" should "work" in {
-    assertTesterPasses { new UInt2Bundle }
+    simulate(new UInt2Bundle)(RunUntilFinished(3))
   }
 }

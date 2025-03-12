@@ -3,10 +3,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Counter
 import circt.stage.ChiselStage
-import chisel3.util._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class WarningSpec extends ChiselFlatSpec with Utils {
+class WarningSpec extends AnyFlatSpec with Matchers with LogUtils {
   behavior.of("Warnings")
 
   object MyEnum extends ChiselEnum {
@@ -32,7 +34,7 @@ class WarningSpec extends ChiselFlatSpec with Utils {
   }
 
   "Warnings" should "be treated as errors with warningsAsErrors" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       val args = Array("--warnings-as-errors")
       ChiselStage.emitCHIRRTL(new MyModule, args)
     }

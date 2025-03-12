@@ -7,15 +7,16 @@ import _root_.circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import chisel3._
 import chisel3.experimental.{annotate, OpaqueType}
 import chisel3.stage.{ChiselGeneratorAnnotation, IncludeUtilMetadata, UseSRAMBlackbox}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.{MemoryReadWritePort, SRAM}
-import chiselTests.ChiselFlatSpec
 import firrtl.EmittedVerilogCircuitAnnotation
 import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.SeqMap
 import scala.util.chaining.scalaUtilChainingOps
 
-class SRAMSpec extends ChiselFlatSpec {
+class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
   case class DummyAnno(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
     override def duplicate(n: ReferenceTarget) = this.copy(target = n)
   }
@@ -34,32 +35,31 @@ class SRAMSpec extends ChiselFlatSpec {
       require(sram.underlying.nonEmpty)
       annotate(sram.underlying.get)(Seq(DummyAnno(sram.underlying.get.toTarget)))
     }
-    val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top, providedAnnotations = Seq(IncludeUtilMetadata))
-    val chirrtl = chirrtlCircuit.serialize
-    chirrtl should include("module Top :")
-    chirrtl should include(
-      "wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : Inst<SRAMDescription>}"
-    )
-    chirrtl should include("mem sram_sram")
-    chirrtl should include("data-type => UInt<8>")
-    chirrtl should include("depth => 32")
-    chirrtl should include("read-latency => 1")
-    chirrtl should include("write-latency => 1")
-    chirrtl should include("readwriter => RW0")
-    chirrtl should include("read-under-write => undefined")
-    chirrtl should include("connect sram_sram.RW0.addr, sram.readwritePorts[0].address")
-    chirrtl should include("connect sram_sram.RW0.clk, clock")
-    chirrtl should include("connect sram_sram.RW0.en, sram.readwritePorts[0].enable")
-    chirrtl should include("connect sram.readwritePorts[0].readData, sram_sram.RW0.rdata")
-    chirrtl should include("connect sram_sram.RW0.wdata, sram.readwritePorts[0].writeData")
-    chirrtl should include("connect sram_sram.RW0.wmode, sram.readwritePorts[0].isWrite")
-    chirrtl should include(
-      "propassign sram_descriptionInstance.hierarchyIn, path(\"OMReferenceTarget:~Top|Top>sram_sram\")"
-    )
-    chirrtl should include("propassign sram.description, sram_descriptionInstance")
-
-    val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
-    dummyAnno should be(Some("~Top|Top>sram_sram"))
+    ChiselStage
+      .emitCHIRRTL(new Top, Array("--include-util-metadata"))
+      .fileCheck()(
+        """|CHECK:      "class":"chiselTests.util.SRAMSpec$DummyAnno"
+           |CHECK-NEXT: "target":"~Top|Top>sram_sram"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : Inst<SRAMDescription>}
+           |CHECK-NEXT:   mem sram_sram
+           |CHECK-NEXT:     data-type => UInt<8>
+           |CHECK-NEXT:     depth => 32
+           |CHECK-NEXT:     read-latency => 1
+           |CHECK-NEXT:     write-latency => 1
+           |CHECK-NEXT:     readwriter => RW0
+           |CHECK-NEXT:     read-under-write => undefined
+           |CHECK:        connect sram_sram.RW0.addr, sram.readwritePorts[0].address
+           |CHECK:        connect sram_sram.RW0.clk, clock
+           |CHECK:        connect sram_sram.RW0.en, sram.readwritePorts[0].enable
+           |CHECK:        connect sram.readwritePorts[0].readData, sram_sram.RW0.rdata
+           |CHECK:        connect sram_sram.RW0.wdata, sram.readwritePorts[0].writeData
+           |CHECK:        connect sram_sram.RW0.wmode, sram.readwritePorts[0].isWrite
+           |CHECK:        propassign sram_descriptionInstance.hierarchyIn, path("OMReferenceTarget:~Top|Top>sram_sram")
+           |CHECK:        propassign sram.description, sram_descriptionInstance
+           |""".stripMargin
+      )
   }
 
   it should "Get emitted with a custom name when one is suggested" in {
@@ -76,16 +76,17 @@ class SRAMSpec extends ChiselFlatSpec {
       sramInterface.underlying.get.suggestName("carrot")
       annotate(sramInterface.underlying.get)(Seq(DummyAnno(sramInterface.underlying.get.toTarget)))
     }
-    val (chirrtlCircuit, annos) = getFirrtlAndAnnos(new Top)
-    val chirrtl = chirrtlCircuit.serialize
-    chirrtl should include("module Top :")
-    chirrtl should include("mem carrot :")
-    chirrtl should include(
-      "wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}"
-    )
-
-    val dummyAnno = annos.collectFirst { case DummyAnno(t) => (t.toString) }
-    dummyAnno should be(Some("~Top|Top>carrot"))
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK:      "class":"chiselTests.util.SRAMSpec$DummyAnno"
+           |CHECK-NEXT: "target":"~Top|Top>carrot"
+           |
+           |CHECK:      public module Top :
+           |CHECK:        wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}
+           |CHECK-NEXT:   mem carrot :
+           |""".stripMargin
+      )
   }
 
   it should "emit proper masks for non-Aggregate memories" in {

@@ -5,10 +5,11 @@ package chiselTests
 import chisel3._
 import chisel3.probe.{Probe, ProbeValue}
 import chisel3.properties.Property
-import chiselTests.experimental.hierarchy.Utils
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
-
 import firrtl.transforms.DontTouchAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
   val io = IO(new Bundle {
@@ -80,26 +81,26 @@ object OptTest {
   }
 }
 
-class DontTouchSpec extends ChiselFlatSpec with Utils {
+class DontTouchSpec extends AnyFlatSpec with Matchers with FileCheck {
   val deadSignals = List(
     "io_c_0",
     "io_c_1",
     "dead"
   )
   "Dead code" should "be removed by default" in {
-    val verilog = compile(new HasDeadCode(false))
+    val verilog = ChiselStage.emitSystemVerilog(new HasDeadCode(false))
     for (signal <- deadSignals) {
       (verilog should not).include(signal)
     }
   }
   it should "NOT be removed if marked dontTouch" in {
-    val verilog = compile(new HasDeadCode(true))
+    val verilog = ChiselStage.emitSystemVerilog(new HasDeadCode(true))
     for (signal <- deadSignals) {
       verilog should include(signal)
     }
   }
   "Dont touch" should "only work on bound hardware" in {
-    a[chisel3.BindingException] should be thrownBy extractCause[BindingException] {
+    a[BindingException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         dontTouch(new Bundle { val a = UInt(32.W) })
@@ -116,19 +117,37 @@ class DontTouchSpec extends ChiselFlatSpec with Utils {
   }
 
   "fields" should "be marked don't touch by default" in {
-    val (_, annos) = getFirrtlAndAnnos(new HasDeadCodeLeaves())
-    annos should contain(DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1".rt))
-    annos should not contain (DontTouchAnnotation("~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a".rt))
+    ChiselStage
+      .emitCHIRRTL(new HasDeadCodeLeaves())
+      .fileCheck(
+        "--implicit-check-not",
+        """"target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a""""
+      )(
+        """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
+           |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a2"
+           |CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
+           |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1"
+           |""".stripMargin
+      )
   }
 
   "probes and properties" should "NOT be marked dontTouch" in {
-    val (_, annos) = getFirrtlAndAnnos(new HasProbesAndProperties())
-    // Check for DontTouch on io.a but not on the probe or property leaves.
-    annos should contain(DontTouchAnnotation("~HasProbesAndProperties|HasProbesAndProperties>io.a".rt))
-    annos should not contain (DontTouchAnnotation("~HasProbesAndProperties|HasProbesAndProperties>io.probe".rt))
-    annos should not contain (DontTouchAnnotation("~HasProbesAndProperties|HasProbesAndProperties>io.prop".rt))
+    ChiselStage
+      .emitCHIRRTL(
+        new HasProbesAndProperties()
+      )
+      .fileCheck(
+        "--implicit-check-not",
+        """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.probe"""",
+        "--implicit-check-not",
+        """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.prop""""
+      )(
+        """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
+           |CHECK-NEXT: "target":"~HasProbesAndProperties|HasProbesAndProperties>io.a"
+           |""".stripMargin
+      )
 
     // Ensure can compile the result.
-    compile(new HasProbesAndProperties())
+    ChiselStage.emitSystemVerilog(new HasProbesAndProperties())
   }
 }

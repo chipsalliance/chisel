@@ -2,13 +2,17 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
+import chisel3.util.Counter
 import chisel3.experimental.{SourceInfo, SourceLine}
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class WhenTester() extends BasicTester {
+class WhenTester() extends Module {
   val cnt = Counter(4)
   when(true.B) { cnt.inc() }
 
@@ -30,7 +34,7 @@ class WhenTester() extends BasicTester {
   }
 }
 
-class OverlappedWhenTester() extends BasicTester {
+class OverlappedWhenTester() extends Module {
   val cnt = Counter(4)
   when(true.B) { cnt.inc() }
 
@@ -52,7 +56,7 @@ class OverlappedWhenTester() extends BasicTester {
   }
 }
 
-class NoOtherwiseOverlappedWhenTester() extends BasicTester {
+class NoOtherwiseOverlappedWhenTester() extends Module {
   val cnt = Counter(4)
   when(true.B) { cnt.inc() }
 
@@ -76,7 +80,7 @@ class NoOtherwiseOverlappedWhenTester() extends BasicTester {
   }
 }
 
-class SubmoduleWhenTester extends BasicTester {
+class SubmoduleWhenTester extends Module {
   val (cycle, done) = Counter(true.B, 3)
   when(done) { stop() }
   val children =
@@ -92,7 +96,7 @@ class SubmoduleWhenTester extends BasicTester {
   }
 }
 
-class WhenCondTester extends BasicTester {
+class WhenCondTester extends Module {
   val pred = Wire(Vec(4, Bool()))
   val (cycle, done) = Counter(true.B, 1 << pred.size)
   // Cycle through every predicate
@@ -128,25 +132,25 @@ class WhenCondTester extends BasicTester {
   when(done) { stop() }
 }
 
-class WhenSpec extends ChiselFlatSpec with Utils {
+class WhenSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
   "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
-    assertTesterPasses { new WhenTester }
+    simulate(new WhenTester)(RunUntilFinished(5))
   }
   "When, elsewhen, and otherwise with overlapped conditions" should "work" in {
-    assertTesterPasses { new OverlappedWhenTester }
+    simulate(new OverlappedWhenTester)(RunUntilFinished(5))
   }
   "When and elsewhen without otherwise with overlapped conditions" should "work" in {
-    assertTesterPasses { new NoOtherwiseOverlappedWhenTester }
+    simulate(new NoOtherwiseOverlappedWhenTester)(RunUntilFinished(5))
   }
   "Conditional connections to submodule ports" should "be handled properly" in {
-    assertTesterPasses(new SubmoduleWhenTester)
+    simulate(new SubmoduleWhenTester)(RunUntilFinished(4))
   }
   "when.cond" should "give the current when condition" in {
-    assertTesterPasses(new WhenCondTester)
+    simulate(new WhenCondTester)(RunUntilFinished(math.pow(2, 4).toInt + 1))
   }
 
   "Returning in a when scope" should "give a reasonable error message" in {
-    val e = the[ChiselException] thrownBy extractCause[ChiselException] {
+    val e = intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {
           val foo = Input(UInt(8.W))
@@ -209,6 +213,24 @@ class WhenSpec extends ChiselFlatSpec with Utils {
     val msg =
       "'Top.foo_w: Wire[UInt<8>]' has escaped the scope of the block (@[Foo.scala:12:3]) in which it was constructed."
     e.getMessage should include(msg)
+  }
+
+  "Whens with empty clauses" should "emit an indented skip" in {
+    class Top extends Module {
+      val cond = IO(Input(Bool()))
+      val out = IO(Output(UInt(8.W)))
+      when(cond) {}
+      out := 1.U
+    }
+    // Strict check so we can match the exact location of the skip
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck("--strict-whitespace", "--match-full-lines")(
+        """|     CHECK:    when cond : @{{.*}}
+           |CHECK-NEXT:      skip
+           |CHECK-NEXT:    connect out, UInt<1>(0h1) @{{.*}}
+           |""".stripMargin
+      )
   }
 
   "Whens with empty else clauses" should "not emit the else clause" in {

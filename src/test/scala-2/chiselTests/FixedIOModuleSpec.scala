@@ -3,14 +3,17 @@
 package chiselTests
 
 import chisel3._
-import circt.stage.ChiselStage
-import scala.collection.immutable.ListMap
-import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.SourceInfo
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance, Instantiate}
 import chisel3.probe.Probe
+import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import chisel3.testing.scalatest.FileCheck
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import scala.collection.immutable.ListMap
 
-class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
+class FixedIOModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   "FixedIOModule" should "create a module with flattened IO" in {
 
@@ -46,14 +49,16 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
       val baz = Module(new Baz)
     }
 
-    generateFirrtlAndFileCheck(new Foo)(
-      """|CHECK-LABEL: extmodule Bar :
-         |CHECK:         output io : UInt<1>
-         |CHECK-LABEL: extmodule Baz :
-         |CHECK:         output a : UInt<2>
-         |CHECK-LABEL: public module Foo :
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: extmodule Bar :
+           |CHECK:         output io : UInt<1>
+           |CHECK-LABEL: extmodule Baz :
+           |CHECK:         output a : UInt<2>
+           |CHECK-LABEL: public module Foo :
+           |""".stripMargin
+      )
   }
 
   "User defined RawModules" should "be able to lock down their ios" in {
@@ -92,13 +97,15 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
     }
     exception.getMessage should include("This module cannot have IOs instantiated after disallowing IOs")
 
-    generateFirrtlAndFileCheck(new Bar(false))(
-      """|CHECK-LABEL: public module Bar :
-         |CHECK:         input in : UInt<1>
-         |CHECK:         output out : UInt<1>
-         |CHECK:         input end : UInt<1>
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Bar(false))
+      .fileCheck()(
+        """|CHECK-LABEL: public module Bar :
+           |CHECK:         input in : UInt<1>
+           |CHECK:         output out : UInt<1>
+           |CHECK:         input end : UInt<1>
+           |""".stripMargin
+      )
   }
 
   class Agg extends Bundle {
@@ -190,44 +197,50 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
   }
 
   "FixedIORaw/ExtModules" should "be able to have a Record with Probes of Elements in their IOs" in {
-    generateFirrtlAndFileCheck(new Parent(false, false))(
-      """|CHECK-LABEL: module ExampleRaw :
-         |CHECK:         output elem : Probe<UInt<1>>
-         |CHECK-LABEL: extmodule ExampleExt
-         |CHECK:         output elem : Probe<UInt<1>>
-         |CHECK-LABEL: public module Parent :
-         |CHECK:         define probeElemWireRaw = childRaw.elem
-         |CHECK:         define probeElemWireExt = childExt.elem
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Parent(false, false))
+      .fileCheck()(
+        """|CHECK-LABEL: module ExampleRaw :
+           |CHECK:         output elem : Probe<UInt<1>>
+           |CHECK-LABEL: extmodule ExampleExt
+           |CHECK:         output elem : Probe<UInt<1>>
+           |CHECK-LABEL: public module Parent :
+           |CHECK:         define probeElemWireRaw = childRaw.elem
+           |CHECK:         define probeElemWireExt = childExt.elem
+           |""".stripMargin
+      )
   }
 
   "FixedIORaw/ExtModules" should "be able to have a Record with Probes of Aggregates in their IOs" in {
-    generateFirrtlAndFileCheck(new Parent(true, false))(
-      """|CHECK-LABEL: module ExampleRaw :
-         |CHECK:         output agg : Probe<{ foo : UInt<1>, bar : UInt<1>}>
-         |CHECK-LABEL: extmodule ExampleExt
-         |CHECK:         output agg : Probe<{ foo : UInt<1>, bar : UInt<1>}>
-         |CHECK-LABEL: public module Parent :
-         |CHECK:         define probeAggWireRaw = childRaw.agg
-         |CHECK:         define probeAggWireExt = childExt.agg
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Parent(true, false))
+      .fileCheck()(
+        """|CHECK-LABEL: module ExampleRaw :
+           |CHECK:         output agg : Probe<{ foo : UInt<1>, bar : UInt<1>}>
+           |CHECK-LABEL: extmodule ExampleExt
+           |CHECK:         output agg : Probe<{ foo : UInt<1>, bar : UInt<1>}>
+           |CHECK-LABEL: public module Parent :
+           |CHECK:         define probeAggWireRaw = childRaw.agg
+           |CHECK:         define probeAggWireExt = childExt.agg
+           |""".stripMargin
+      )
   }
 
   "FixedIORaw/ExtModules" should "be able to have a Record with Aggregates with Probes in their IOs" in {
-    generateFirrtlAndFileCheck(new Parent(false, true))(
-      """|CHECK-LABEL: module ExampleRaw :
-         |CHECK:         output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}
-         |CHECK-LABEL: extmodule ExampleExt
-         |CHECK:         output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}
-         |CHECK-LABEL: public module Parent :
-         |CHECK:         define probeNestedWireRaw.bar = childRaw.nested.bar
-         |CHECK:         define probeNestedWireRaw.foo = childRaw.nested.foo
-         |CHECK:         define probeNestedWireExt.bar = childExt.nested.bar
-         |CHECK:         define probeNestedWireExt.foo = childExt.nested.foo
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Parent(false, true))
+      .fileCheck()(
+        """|CHECK-LABEL: module ExampleRaw :
+           |CHECK:         output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}
+           |CHECK-LABEL: extmodule ExampleExt
+           |CHECK:         output nested : { foo : Probe<UInt<1>>, bar : Probe<UInt<1>>}
+           |CHECK-LABEL: public module Parent :
+           |CHECK:         define probeNestedWireRaw.bar = childRaw.nested.bar
+           |CHECK:         define probeNestedWireRaw.foo = childRaw.nested.foo
+           |CHECK:         define probeNestedWireExt.bar = childExt.nested.bar
+           |CHECK:         define probeNestedWireExt.foo = childExt.nested.foo
+           |""".stripMargin
+      )
   }
   "FixedIOExtModules" should "be able to have a Probe(Element) as its FixedIO" in {
     class ProbeElemExt extends FixedIOExtModule(Probe(Bool()))
@@ -238,13 +251,15 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
       wireElem :<>= child.io
       ioElem := probe.read(wireElem)
     }
-    generateFirrtlAndFileCheck(new Parent)(
-      """|CHECK-LABEL: extmodule ProbeElemExt :
-         |CHECK:         output io : Probe<UInt<1>>
-         |CHECK-LABEL: public module Parent :
-         |CHECK:         define wireElem = child.io
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Parent)
+      .fileCheck()(
+        """|CHECK-LABEL: extmodule ProbeElemExt :
+           |CHECK:         output io : Probe<UInt<1>>
+           |CHECK-LABEL: public module Parent :
+           |CHECK:         define wireElem = child.io
+           |""".stripMargin
+      )
   }
   "FixedIOExtModules" should "be able to have a Probe(Aggregate) as its FixedIO" in {
     class ProbeAggExt extends FixedIOExtModule(Probe(new Agg()))
@@ -255,13 +270,15 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
       wireAgg :<>= child.io
       ioAgg := probe.read(wireAgg)
     }
-    generateFirrtlAndFileCheck(new Parent)(
-      """|CHECK-LABEL: extmodule ProbeAggExt :
-         |CHECK:         output io : Probe<{ foo : UInt<1>, bar : UInt<1>}>
-         |CHECK-LABEL: public module Parent :
-         |CHECK:         define wireAgg = child.io
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Parent)
+      .fileCheck()(
+        """|CHECK-LABEL: extmodule ProbeAggExt :
+           |CHECK:         output io : Probe<{ foo : UInt<1>, bar : UInt<1>}>
+           |CHECK-LABEL: public module Parent :
+           |CHECK:         define wireAgg = child.io
+           |""".stripMargin
+      )
   }
 
   "FixedIOExtModules" should "be able to have an Aggregate with Probes as its FixedIO" in {
@@ -273,15 +290,17 @@ class FixedIOModuleSpec extends ChiselFlatSpec with Utils with FileCheck {
       wireNested :<>= child.io
       ioBar := probe.read(wireNested.bar)
     }
-    generateFirrtlAndFileCheck(new Parent)(
-      """|CHECK-LABEL: extmodule ProbeNestedExt :
-         |CHECK:         output foo : Probe<UInt<1>>
-         |CHECK:         output bar : Probe<UInt<1>>
-         |CHECK-LABEL: public module Parent :
-         |CHECK:         define wireNested.bar = child.bar
-         |CHECK:         define wireNested.foo = child.foo
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Parent)
+      .fileCheck()(
+        """|CHECK-LABEL: extmodule ProbeNestedExt :
+           |CHECK:         output foo : Probe<UInt<1>>
+           |CHECK:         output bar : Probe<UInt<1>>
+           |CHECK-LABEL: public module Parent :
+           |CHECK:         define wireNested.bar = child.bar
+           |CHECK:         define wireNested.foo = child.foo
+           |""".stripMargin
+      )
   }
 
   "FixedIOModule" should "work with D/I API" in {

@@ -5,16 +5,17 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.Trace._
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import chisel3.testing.HasTestingDirectory
+import chisel3.testing.scalatest.TestingDirectory
 import chisel3.util.experimental.InlineInstance
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
 import firrtl.annotations.TargetToken.{Instance, OfModule, Ref}
 import firrtl.annotations.{CompleteTarget, InstanceTarget, ReferenceTarget}
-import firrtl.util.BackendCompilationUtilities.createTestDirectory
-
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class TraceSpec extends ChiselFlatSpec with Matchers {
+class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory {
 
   def refTarget(topName: String, ref: String, path: Seq[(Instance, OfModule)] = Seq()) =
     ReferenceTarget(topName, topName, path, ref, Seq())
@@ -22,8 +23,10 @@ class TraceSpec extends ChiselFlatSpec with Matchers {
   def instTarget(topName: String, instance: String, ofModule: String, path: Seq[(Instance, OfModule)] = Seq()) =
     InstanceTarget(topName, topName, path, instance, ofModule)
 
-  def compile(testName: String, gen: () => Module): (os.Path, AnnotationSeq) = {
-    val testDir = os.Path(createTestDirectory(testName).getAbsolutePath)
+  def compile(testName: String, gen: () => Module)(
+    implicit testingDirectory: HasTestingDirectory
+  ): (os.Path, AnnotationSeq) = {
+    val testDir = os.pwd / os.RelPath(testingDirectory.getDirectory)
     val annos = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir", "--target", "systemverilog", "--split-verilog"),
       Seq(

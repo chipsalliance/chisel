@@ -3,6 +3,7 @@
 package cookbook
 
 import chisel3._
+import chisel3.simulator.stimulus.RunUntilFinished
 
 /* ### How do I create a UInt from an instance of a Bundle?
  *
@@ -26,6 +27,6 @@ class Bundle2UInt extends CookbookTester(1) {
 
 class Bundle2UIntSpec extends CookbookSpec {
   "Bundle2UInt" should "work" in {
-    assertTesterPasses { new Bundle2UInt }
+    simulate(new Bundle2UInt)(RunUntilFinished(3))
   }
 }

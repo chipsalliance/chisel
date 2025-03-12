@@ -2,6 +2,7 @@ package chisel3.simulator
 
 import svsim._
 import chisel3.RawModule
+import chisel3.testing.HasTestingDirectory
 import java.nio.file.Files
 import java.io.File
 
@@ -17,12 +18,14 @@ import java.io.File
   */
 object EphemeralSimulator extends PeekPokeAPI {
 
+  private val chiselSim = new ChiselSim {}
+
   def simulate[T <: RawModule](
     module:       => T,
     layerControl: LayerControl.Type = LayerControl.EnableAll
   )(body: (T) => Unit): Unit = {
-    implicit val temporary = HasTestingDirectory.temporary(deleteOnExit = true)
-    DefaultSimulator.simulateRaw(
+    implicit val temporary: HasTestingDirectory = HasTestingDirectory.temporary(deleteOnExit = true)
+    chiselSim.simulateRaw(
       module,
       ChiselSettings.defaultRaw[T].copy(verilogLayers = layerControl)
     )(body)

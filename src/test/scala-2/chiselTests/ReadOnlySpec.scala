@@ -2,17 +2,18 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
-import chisel3.util._
+import chisel3.experimental.BundleLiterals._
+import chisel3.experimental.SourceInfo
+import chisel3.experimental.VecLiterals._
+import chisel3.experimental.dataview._
 import chisel3.probe._
 import chisel3.properties._
-import chisel3.experimental.SourceInfo
-import chisel3.experimental.dataview._
-import chisel3.experimental.BundleLiterals._
-import chisel3.experimental.VecLiterals._
-
+import chisel3.util.Counter
+import circt.stage.ChiselStage
 import org.scalactic.source.Position
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object ReadOnlySpec {
   class SimpleBundle extends Bundle {
@@ -76,7 +77,7 @@ object ReadOnlySpec {
   }
 }
 
-class ReadOnlySpec extends ChiselFlatSpec with Utils {
+class ReadOnlySpec extends AnyFlatSpec with Matchers {
   import ReadOnlySpec._
 
   behavior.of("readOnly")

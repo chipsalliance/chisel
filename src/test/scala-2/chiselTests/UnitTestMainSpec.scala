@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.test._
+import chisel3.testing.scalatest.FileCheck
 import java.io.{ByteArrayOutputStream, PrintStream}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -17,8 +18,8 @@ class UnitTestMainSpec extends AnyFlatSpec with Matchers with FileCheck {
         UnitTests.main(args.toArray)
       }
     }
-    if (!checkOut.isEmpty) fileCheckString(outStream.toString)(checkOut)
-    if (!checkErr.isEmpty) fileCheckString(errStream.toString)(checkErr)
+    if (!checkOut.isEmpty) outStream.toString.fileCheck("--allow-empty")(checkOut)
+    if (!checkErr.isEmpty) errStream.toString.fileCheck("--allow-empty")(checkErr)
   }
 
   def checkOutAndErr(args: String*)(checkOut: String, checkErr: String): Unit = check(args)(checkOut, checkErr)

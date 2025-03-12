@@ -6,15 +6,16 @@ import chisel3._
 import chisel3.experimental.AffectsChiselPrefix
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
-import chisel3.util._
+import chisel3.util.{is, switch, Cat, Counter}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
+import chisel3.testing.scalatest.FileCheck
+import java.io.ByteArrayOutputStream
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-
+import scala.Console.{withErr, withOut}
 import scala.annotation.nowarn
 
 object EnumExample extends ChiselEnum {
@@ -188,7 +189,7 @@ class LoadStoreExample extends Module {
   printf(p"${io.opcode}")
 }
 
-class CastToUIntTester extends BasicTester {
+class CastToUIntTester extends Module {
   for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastToUInt)
     mod.io.in := enumVal
@@ -197,7 +198,7 @@ class CastToUIntTester extends BasicTester {
   stop()
 }
 
-class CastFromLitTester extends BasicTester {
+class CastFromLitTester extends Module {
   for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastFromLit(lit))
     assert(mod.io.out === enumVal)
@@ -206,7 +207,7 @@ class CastFromLitTester extends BasicTester {
   stop()
 }
 
-class CastFromNonLitTester extends BasicTester {
+class CastFromNonLitTester extends Module {
   for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new CastFromNonLit)
     mod.io.in := lit
@@ -227,7 +228,7 @@ class CastFromNonLitTester extends BasicTester {
   stop()
 }
 
-class SafeCastFromNonLitTester extends BasicTester {
+class SafeCastFromNonLitTester extends Module {
   for ((enumVal, lit) <- EnumExample.all.zip(EnumExample.litValues)) {
     val mod = Module(new SafeCastFromNonLit)
     mod.io.in := lit
@@ -248,12 +249,12 @@ class SafeCastFromNonLitTester extends BasicTester {
   stop()
 }
 
-class CastToInvalidEnumTester extends BasicTester {
+class CastToInvalidEnumTester extends Module {
   val invalid_value: UInt = EnumExample.litValues.last + 1.U
   Module(new CastFromLit(invalid_value))
 }
 
-class EnumOpsTester extends BasicTester {
+class EnumOpsTester extends Module {
   for {
     x <- EnumExample.all
     y <- EnumExample.all
@@ -272,13 +273,13 @@ class EnumOpsTester extends BasicTester {
   stop()
 }
 
-class InvalidEnumOpsTester extends BasicTester {
+class InvalidEnumOpsTester extends Module {
   val mod = Module(new EnumOps(EnumExample, OtherEnum))
   mod.io.x := EnumExample.e0
   mod.io.y := OtherEnum.otherEnum
 }
 
-class IsLitTester extends BasicTester {
+class IsLitTester extends Module {
   for (e <- EnumExample.all) {
     val wire = WireDefault(e)
 
@@ -288,7 +289,7 @@ class IsLitTester extends BasicTester {
   stop()
 }
 
-class NextTester extends BasicTester {
+class NextTester extends Module {
   for ((e, n) <- EnumExample.all.zip(EnumExample.litValues.tail :+ EnumExample.litValues.head)) {
     assert(e.next.litValue == n.litValue)
     val w = WireDefault(e)
@@ -297,7 +298,7 @@ class NextTester extends BasicTester {
   stop()
 }
 
-class WidthTester extends BasicTester {
+class WidthTester extends Module {
   assert(EnumExample.getWidth == EnumExample.litValues.last.getWidth)
   assert(EnumExample.all.forall(_.getWidth == EnumExample.litValues.last.getWidth))
   assert(EnumExample.all.forall { e =>
@@ -307,7 +308,7 @@ class WidthTester extends BasicTester {
   stop()
 }
 
-class ChiselEnumFSMTester extends BasicTester {
+class ChiselEnumFSMTester extends Module {
   import ChiselEnumFSM.State._
 
   val dut = Module(new ChiselEnumFSM)
@@ -330,7 +331,7 @@ class ChiselEnumFSMTester extends BasicTester {
   }
 }
 
-class IsOneOfTester extends BasicTester {
+class IsOneOfTester extends Module {
   import EnumExample._
 
   // is one of itself
@@ -365,7 +366,7 @@ class IsOneOfTester extends BasicTester {
   stop()
 }
 
-class ChiselEnumSpec extends AnyFlatSpec with Matchers with Utils with FileCheck with ChiselSim {
+class ChiselEnumSpec extends AnyFlatSpec with Matchers with LogUtils with ChiselSim with FileCheck {
 
   behavior.of("ChiselEnum")
 
@@ -534,7 +535,9 @@ class ChiselEnumSpec extends AnyFlatSpec with Matchers with Utils with FileCheck
       val out = IO(Output(MyEnum()))
       out := MyEnum(in)
     }
-    elaborateAndFileCheckOutAndErr(new MyModule)(
+    val outStream = new ByteArrayOutputStream()
+    withOut(outStream)(withErr(outStream)(ChiselStage.emitCHIRRTL(new MyModule)))
+    outStream.toString.fileCheck()(
       """| CHECK:      [W001] Casting non-literal UInt to [[enum:[a-zA-Z0-9_$.]+]].
          | CHECK-SAME: You can use [[enum]].safe to cast without this warning.
          |""".stripMargin

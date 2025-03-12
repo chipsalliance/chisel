@@ -154,7 +154,7 @@ private[chisel3] object ir {
   }
 
   case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-    def name:     String = "UInt" + width + "(0h0" + num.toString(16) + ")"
+    def name:     String = "UInt" + width + "(0h" + num.toString(16) + ")"
     def minWidth: Int = (if (w.known) 0 else 1).max(n.bitLength)
 
     def cloneWithWidth(newWidth: Width): this.type = {
@@ -171,7 +171,9 @@ private[chisel3] object ir {
       val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
       s"asSInt(${ULit(unsigned, width).name})"
     }
-    def minWidth: Int = (if (w.known) 0 else 1) + n.bitLength
+
+    // Special case for 0 which can be specified to zero-width (but defaults to 1 bit).
+    def minWidth: Int = if (n == 0 && w.known) 0 else 1 + n.bitLength
 
     def cloneWithWidth(newWidth: Width): this.type = {
       SLit(n, newWidth).asInstanceOf[this.type]
@@ -479,6 +481,10 @@ private[chisel3] object ir {
     def unapply(layerBlock: LayerBlock): Option[(SourceInfo, String, Seq[Command])] = {
       Some((layerBlock.sourceInfo, layerBlock.layer.name, layerBlock.region.getAllCommands()))
     }
+  }
+
+  case class DefContract(sourceInfo: SourceInfo, ids: Seq[Data], exprs: Seq[Arg]) extends Command {
+    val region = new Block(sourceInfo)
   }
 
   case class DefOption(sourceInfo: SourceInfo, name: String, cases: Seq[DefOptionCase])

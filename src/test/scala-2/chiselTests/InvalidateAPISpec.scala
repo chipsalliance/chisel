@@ -5,22 +5,12 @@ package chiselTests
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.Counter
-import firrtl.util.BackendCompilationUtilities._
 import circt.stage.ChiselStage
-import org.scalatest._
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
-class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
+class InvalidateAPISpec extends AnyPropSpec with Matchers {
 
-  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitCHIRRTL(t)
-  def compileFirrtl(t: => Module): Unit = {
-    val testDir = createTestDirectory(this.getClass.getSimpleName)
-
-    (new ChiselStage).execute(
-      Array[String]("-td", testDir.getAbsolutePath, "--target", "verilog"),
-      Seq(ChiselGeneratorAnnotation(() => t))
-    )
-  }
   class TrivialInterface extends Bundle {
     val in = Input(Bool())
     val out = Output(Bool())
@@ -32,7 +22,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       io.out := DontCare
       io.out := io.in
     }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithDontCare)
+    val firrtlOutput = ChiselStage.emitCHIRRTL(new ModuleWithDontCare)
     firrtlOutput should include("invalidate io.out")
   }
 
@@ -41,7 +31,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       val io = IO(new TrivialInterface)
       io.out := io.in
     }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
+    val firrtlOutput = ChiselStage.emitCHIRRTL(new ModuleWithoutDontCare)
     (firrtlOutput should not).include("invalidate")
   }
 
@@ -50,7 +40,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       val io = IO(new TrivialInterface)
       io <> DontCare
     }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
+    val firrtlOutput = ChiselStage.emitCHIRRTL(new ModuleWithoutDontCare)
     firrtlOutput should include("invalidate io.out")
     firrtlOutput should include("invalidate io.in")
   }
@@ -63,7 +53,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       })
       io.outs <> DontCare
     }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
+    val firrtlOutput = ChiselStage.emitCHIRRTL(new ModuleWithoutDontCare)
     for (i <- 0 until nElements)
       firrtlOutput should include(s"invalidate io.outs[$i]")
   }
@@ -76,7 +66,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       })
       io.ins := DontCare
     }
-    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
+    val firrtlOutput = ChiselStage.emitCHIRRTL(new ModuleWithoutDontCare)
     for (i <- 0 until nElements)
       firrtlOutput should include(s"invalidate io.ins[$i]")
   }
@@ -87,9 +77,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       DontCare := io.in
     }
     val exception = intercept[ChiselException] {
-      extractCause[ChiselException] {
-        ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
-      }
+      ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
     }
     exception.getMessage should include("DontCare cannot be a connection sink")
   }
@@ -100,9 +88,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       DontCare <> io.in
     }
     val exception = intercept[BiConnectException] {
-      extractCause[BiConnectException] {
-        circt.stage.ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
-      }
+      circt.stage.ChiselStage.emitCHIRRTL(new ModuleWithDontCareSink)
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
   }
@@ -162,6 +148,6 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with Utils {
       val foo = IO(Output(Clock()))
       foo := DontCare
     }
-    myGenerateFirrtl(new ClockConnectedToDontCare) should include("invalidate foo")
+    ChiselStage.emitCHIRRTL(new ClockConnectedToDontCare) should include("invalidate foo")
   }
 }

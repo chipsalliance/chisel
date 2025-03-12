@@ -23,7 +23,7 @@ object v extends Module {
   // Only publish plugin for 2.13.11+ when using Java > 11, but still
   // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
-    val latest213 = 15
+    val latest213 = 16
     val java21Min213 = 11
     val minVersion = if (javaVersion > 11) java21Min213 else 0
     val versions = minVersion to latest213
@@ -32,7 +32,7 @@ object v extends Module {
   }
 
   val scalaCrossVersions = Seq(
-    "2.13.15",
+    "2.13.16",
     "3.3.4"
   )
 
@@ -64,8 +64,9 @@ object v extends Module {
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-18:3.2.19.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.7"
   val dataclass = ivy"io.github.alexarchambault::data-class:0.2.6"
-  val commonText = ivy"org.apache.commons:commons-text:1.12.0"
+  val commonText = ivy"org.apache.commons:commons-text:1.13.0"
   val scopt = ivy"com.github.scopt::scopt:4.1.0"
+  val mdoc = ivy"org.scalameta::mdoc:2.6.4"
 
   def scalaReflect(scalaVersion:  String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
   def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
@@ -94,7 +95,7 @@ object v extends Module {
   )
 
   // ScalacOptions
-  val scala2CommonOptions = Seq(
+  def scala2CommonOptions(extraWarnConf: Seq[String]) = Seq(
     "-deprecation",
     "-feature",
     "-unchecked",
@@ -106,12 +107,23 @@ object v extends Module {
     "-Xlint:infer-any",
     "-Xlint:missing-interpolator",
     "-language:reflectiveCalls",
-    s"-Wconf:${scala2WarnConf.mkString(",")}"
+    s"-Wconf:${(scala2WarnConf ++ extraWarnConf).mkString(",")}"
   )
 }
 
+/** Alias for compiling everything */
 def compileAll() = Task.Command {
   Task.traverse(v.buildUnits())(_.compile)()
+}
+
+/** Alias command for running mdoc */
+def mdoc() = Task.Command {
+  docs.mdoc()
+}
+
+/** The latest stable version */
+def latestStableVersion() = Task.Command {
+  docs.latestStableVersion()
 }
 
 trait HasScala2MacroAnno extends CrossModuleBase {
@@ -141,9 +153,12 @@ trait HasScala2Plugin extends CrossModuleBase {
 
 trait HasCommonOptions extends CrossModuleBase {
   def xsource3: Boolean = true
+
+  /** Extra warning configuration to include in scalacOptions */
+  def extraWarnConf: Seq[String] = Nil
   override def scalacOptions = Task {
     if (!v.isScala3(crossScalaVersion)) {
-      super.scalacOptions() ++ v.scala2CommonOptions ++ Option.when(xsource3)("-Xsource:3")
+      super.scalacOptions() ++ v.scala2CommonOptions(extraWarnConf) ++ Option.when(xsource3)("-Xsource:3")
     } else super.scalacOptions()
   }
 }
@@ -269,7 +284,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
     if (v.isScala3(crossScalaVersion)) {
       Seq.empty[String]
     } else {
-      super.scalacOptions() ++ v.scala2CommonOptions
+      super.scalacOptions() ++ v.scala2CommonOptions(Nil)
     }
   }
 

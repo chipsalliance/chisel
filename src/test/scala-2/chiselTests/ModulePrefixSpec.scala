@@ -5,10 +5,13 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
-import circt.stage.ChiselStage.emitCHIRRTL
-import circt.stage.ChiselStage
+import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.SRAM
+import circt.stage.ChiselStage
 import firrtl.transforms.DedupGroupAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object ModulePrefixSpec {
   // This has to be defined at the top-level because @instantiable doesn't work when nested.
@@ -20,7 +23,7 @@ object ModulePrefixSpec {
   }
 }
 
-class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with FileCheck {
+class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
   import ModulePrefixSpec._
   behavior.of("withModulePrefix")
 
@@ -35,16 +38,18 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val pref_foo = withModulePrefix("Pref") { Module(new Foo) }
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module Foo :
-         |CHECK:         wire a : UInt<1>
-         |CHECK-LABEL: module Pref_Foo :
-         |CHECK:         wire a : UInt<1>
-         |CHECK-LABEL: module Top :
-         |CHECK:         inst foo of Foo
-         |CHECK-NEXT:    inst pref_foo of Pref_Foo
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Pref_Foo :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Foo
+           |CHECK-NEXT:    inst pref_foo of Pref_Foo
+           |""".stripMargin
+      )
   }
 
   it should "Allow nested module prefixes" in {
@@ -64,15 +69,17 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       }
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module Outer_Inner_Bar :
-         |CHECK:         wire a : UInt<1>
-         |CHECK-LABEL: module Outer_Foo
-         |CHECK:         inst bar of Outer_Inner_Bar
-         |CHECK-LABEL: module Top :
-         |CHECK:         inst foo of Outer_Foo
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Outer_Inner_Bar :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Outer_Foo
+           |CHECK:         inst bar of Outer_Inner_Bar
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Outer_Foo
+           |""".stripMargin
+      )
   }
 
   it should "Instantiate should create distinct module definitions when instantiated with distinct prefixes" in {
@@ -98,16 +105,18 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       np_inst.in := in
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module Foo_AddOne :
-         |CHECK-LABEL: module Bar_AddOne :
-         |CHECK-LABEL: module AddOne :
-         |CHECK-LABEL: public module Top :
-         |CHECK:         inst foo_inst of Foo_AddOne
-         |CHECK:         inst bar_inst of Bar_AddOne
-         |CHECK:         inst np_inst of AddOne
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo_AddOne :
+           |CHECK-LABEL: module Bar_AddOne :
+           |CHECK-LABEL: module AddOne :
+           |CHECK-LABEL: public module Top :
+           |CHECK:         inst foo_inst of Foo_AddOne
+           |CHECK:         inst bar_inst of Bar_AddOne
+           |CHECK:         inst np_inst of AddOne
+           |""".stripMargin
+      )
   }
 
   it should "Instantiate should reference the same module definitions when instantiated with the same prefix" in {
@@ -128,13 +137,15 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       out := foo_inst1.out
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module Foo_AddOne :
-         |CHECK-LABEL: public module Top :
-         |CHECK:         inst foo_inst1 of Foo_AddOne
-         |CHECK:         inst foo_inst2 of Foo_AddOne
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo_AddOne :
+           |CHECK-LABEL: public module Top :
+           |CHECK:         inst foo_inst1 of Foo_AddOne
+           |CHECK:         inst foo_inst2 of Foo_AddOne
+           |""".stripMargin
+      )
   }
 
   it should "Memories work" in {
@@ -163,24 +174,26 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       io.dataOut := smem.read(io.addr, io.enable)
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK:      {
-         |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
-         |CHECK-NEXT:   "target":"~Top|Top>smem",
-         |CHECK-NEXT:   "prefix":"Foo_"
-         |CHECK-NEXT: },
-         |CHECK-NEXT: {
-         |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
-         |CHECK-NEXT:   "target":"~Top|Top>cmem",
-         |CHECK-NEXT:   "prefix":"Bar_"
-         |CHECK-NEXT: },
-         |CHECK-NEXT: {
-         |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
-         |CHECK-NEXT:   "target":"~Top|Top>sram_sram",
-         |CHECK-NEXT:   "prefix":"Baz_"
-         |CHECK-NEXT: }
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK:      {
+           |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
+           |CHECK-NEXT:   "target":"~Top|Top>smem",
+           |CHECK-NEXT:   "prefix":"Foo_"
+           |CHECK-NEXT: },
+           |CHECK-NEXT: {
+           |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
+           |CHECK-NEXT:   "target":"~Top|Top>cmem",
+           |CHECK-NEXT:   "prefix":"Bar_"
+           |CHECK-NEXT: },
+           |CHECK-NEXT: {
+           |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
+           |CHECK-NEXT:   "target":"~Top|Top>sram_sram",
+           |CHECK-NEXT:   "prefix":"Baz_"
+           |CHECK-NEXT: }
+           |""".stripMargin
+      )
   }
 
   it should "Definitions that appear within withModulePrefix get prefixed" in {
@@ -192,11 +205,13 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val addone = Instance(dfn)
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK: module Foo_AddOne
-         |CHECK: module Top
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK: module Foo_AddOne
+           |CHECK: module Top
+           |""".stripMargin
+      )
   }
 
   it should "allow definitions to be instantiated within a withModulePrefix block without prefixing it" in {
@@ -212,12 +227,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       }
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK: module AddOne
-         |CHECK: module Foo_Child
-         |CHECK: public module Top
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK: module AddOne
+           |CHECK: module Foo_Child
+           |CHECK: public module Top
+           |""".stripMargin
+      )
   }
 
   it should "withModulePrefix does not automatically affect ExtModules" in {
@@ -227,12 +244,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val sub_foo = withModulePrefix("Foo") { Module(new Sub) }
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: extmodule Sub
-         |CHECK:         defname = Sub
-         |CHECK-LABEL: module Top
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: extmodule Sub
+           |CHECK:         defname = Sub
+           |CHECK-LABEL: module Top
+           |""".stripMargin
+      )
   }
 
   it should "Using modulePrefix to force the name of an extmodule" in {
@@ -244,12 +263,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val sub_foo = withModulePrefix("Foo") { Module(new Sub) }
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: extmodule Foo_Sub
-         |CHECK:  defname = Foo_Sub
-         |CHECK:module Top
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: extmodule Foo_Sub
+           |CHECK:  defname = Foo_Sub
+           |CHECK:module Top
+           |""".stripMargin
+      )
   }
 
   it should "support omitting the separator" in {
@@ -260,12 +281,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       }
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module PrefixFoo :
-         |CHECK-LABEL: module Top :
-         |CHECK:         inst foo of PrefixFoo
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module PrefixFoo :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of PrefixFoo
+           |""".stripMargin
+      )
   }
 
   behavior.of("BaseModule.localModulePrefix")
@@ -281,14 +304,16 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val bar = Module(new Bar)
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module Prefix_Foo :
-         |CHECK-LABEL: module Prefix_Bar :
-         |CHECK-LABEL: module Prefix_Top :
-         |CHECK:         inst foo of Prefix_Foo
-         |CHECK:         inst bar of Prefix_Bar
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Prefix_Foo :
+           |CHECK-LABEL: module Prefix_Bar :
+           |CHECK-LABEL: module Prefix_Top :
+           |CHECK:         inst foo of Prefix_Foo
+           |CHECK:         inst bar of Prefix_Bar
       """.stripMargin
-    )
+      )
   }
 
   it should "set the prefix for a Module's children but not the Module itself if localModulePrefixAppliesToSelf is false" in {
@@ -303,14 +328,16 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val bar = Module(new Bar)
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module Prefix_Foo :
-         |CHECK-LABEL: module Prefix_Bar :
-         |CHECK-LABEL: module Top :
-         |CHECK:         inst foo of Prefix_Foo
-         |CHECK:         inst bar of Prefix_Bar
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Prefix_Foo :
+           |CHECK-LABEL: module Prefix_Bar :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Prefix_Foo
+           |CHECK:         inst bar of Prefix_Bar
+           |""".stripMargin
+      )
   }
 
   it should "compose with withModulePrefix" in {
@@ -329,16 +356,18 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       }
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module Outer_Inner_Foo :
-         |CHECK-LABEL: module Outer_Prefix_Inner_Foo :
-         |CHECK-LABEL: module Outer_Prefix_Bar :
-         |CHECK-LABEL: module Outer_Top :
-         |CHECK:         inst f1 of Outer_Inner_Foo
-         |CHECK:         inst f2 of Outer_Prefix_Inner_Foo
-         |CHECK:         inst bar of Outer_Prefix_Bar
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Outer_Inner_Foo :
+           |CHECK-LABEL: module Outer_Prefix_Inner_Foo :
+           |CHECK-LABEL: module Outer_Prefix_Bar :
+           |CHECK-LABEL: module Outer_Top :
+           |CHECK:         inst f1 of Outer_Inner_Foo
+           |CHECK:         inst f2 of Outer_Prefix_Inner_Foo
+           |CHECK:         inst bar of Outer_Prefix_Bar
+           |""".stripMargin
+      )
   }
 
   it should "omit the prefix if localModulePrefixUseSeparator is false" in {
@@ -353,12 +382,14 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val foo = Module(new Foo)
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module OuterInnerFoo :
-         |CHECK-LABEL: module Top :
-         |CHECK:         inst foo of OuterInnerFoo
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module OuterInnerFoo :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of OuterInnerFoo
+           |""".stripMargin
+      )
   }
 
   it should "support mixing and matching of separator omission" in {
@@ -375,14 +406,16 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
       val bar = Module(new Bar)
     }
 
-    generateFirrtlAndFileCheck(new Top)(
-      """|CHECK-LABEL: module OuterMiddle_Inner_Foo :
-         |CHECK-LABEL: module OuterMiddle_Bar :
-         |CHECK:         inst foo of OuterMiddle_Inner_Foo
-         |CHECK-LABEL: module OuterTop :
-         |CHECK:         inst bar of OuterMiddle_Bar
-         |""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module OuterMiddle_Inner_Foo :
+           |CHECK-LABEL: module OuterMiddle_Bar :
+           |CHECK:         inst foo of OuterMiddle_Inner_Foo
+           |CHECK-LABEL: module OuterTop :
+           |CHECK:         inst bar of OuterMiddle_Bar
+           |""".stripMargin
+      )
   }
 
   behavior.of("Module prefixes")
@@ -398,11 +431,27 @@ class ModulePrefixSpec extends ChiselFlatSpec with ChiselRunners with Utils with
     class Top extends RawModule {
       val bar = Module(new Bar)
     }
-    val (_, annos) = getFirrtlAndAnnos(new Top)
-    val dedupGroups = annos.collect { case DedupGroupAnnotation(target, group) =>
-      target.module -> group
-    }
-    dedupGroups should be(Seq("Outer_Inner_Foo" -> "Outer_Inner_Foo", "Outer_Bar" -> "Outer_Bar", "Top" -> "Top"))
+
+    // TODO: Due to a known issue [1], `ChiselStage.emitCHIRRTL` cannot be used
+    // for this test and, instead, we need to hand-roll the construction of a
+    // FIRRTL output string with annotations.  Change this once the issue is
+    // fixed.
+    //
+    // [1]: https://github.com/chipsalliance/chisel/issues/4730
+    val annotations =
+      new ChiselStage().execute(Array("--target", "chirrtl"), Seq(ChiselGeneratorAnnotation(() => new Top)))
+    val firrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+    firrtl.fileCheck()(
+      """|CHECK:      "target":"~Top|Outer_Inner_Foo"
+         |CHECK-NEXT: "group":"Outer_Inner_Foo"
+         |CHECK:      "target":"~Top|Outer_Bar"
+         |CHECK-NEXT: "group":"Outer_Bar"
+         |CHECK:      "target":"~Top|Top"
+         |CHECK-NEXT: "group":"Top"
+         |""".stripMargin
+    )
   }
 
 }

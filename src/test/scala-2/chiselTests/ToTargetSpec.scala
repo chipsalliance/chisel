@@ -3,9 +3,11 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import chisel3.properties.{Path, Property}
 import circt.stage.ChiselStage
-import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 @instantiable
 class RelativeInnerModule extends RawModule {
@@ -158,7 +160,7 @@ class PathFromInstanceToTarget extends RawModule {
   val instance1 = Instantiate(new Hierarchy1)
 }
 
-class ToTargetSpec extends ChiselFlatSpec with Utils {
+class ToTargetSpec extends AnyFlatSpec with Matchers {
 
   var m: InstanceNameModule = _
   ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
@@ -204,7 +206,7 @@ class ToTargetSpec extends ChiselFlatSpec with Utils {
       out := in
     }
 
-    val e = the[ChiselException] thrownBy extractCause[ChiselException] {
+    val e = the[ChiselException] thrownBy {
       var e: Example = null
       circt.stage.ChiselStage.emitCHIRRTL { e = new Example; e }
       e.tpe.toTarget

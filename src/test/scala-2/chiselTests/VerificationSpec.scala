@@ -4,9 +4,9 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
-import org.scalatest.matchers.should.Matchers
-
 import java.io.File
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 class SimpleTest extends Module {
   val io = IO(new Bundle {
@@ -21,7 +21,7 @@ class SimpleTest extends Module {
   }
 }
 
-class VerificationSpec extends ChiselPropSpec with Matchers {
+class VerificationSpec extends AnyPropSpec with Matchers {
 
   def assertContains(s: Seq[String], x: String): Unit = {
     val containsLine = s.map(_.contains(x)).reduce(_ || _)

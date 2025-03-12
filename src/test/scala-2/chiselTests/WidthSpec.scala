@@ -3,6 +3,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.reflect.DataMirror
+import circt.stage.ChiselStage
+import org.scalactic.source.Position
+import org.scalatest.Assertions
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class SimpleBundle extends Bundle {
   val x = UInt(4.W)
@@ -30,7 +36,7 @@ object ZeroWidthBundle {
   }
 }
 
-class WidthSpec extends ChiselFlatSpec {
+class WidthSpec extends AnyFlatSpec with Matchers {
   "Literals without specified widths" should "get the minimum legal width" in {
     "hdeadbeef".U.getWidth should be(32)
     "h_dead_beef".U.getWidth should be(32)
@@ -44,7 +50,59 @@ class WidthSpec extends ChiselFlatSpec {
   }
 }
 
-abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
+trait WidthHelpers extends Assertions {
+
+  def assertKnownWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
+    class TestModule extends Module {
+      val testPoint = gen
+      assert(testPoint.getWidth === expected)
+      val out = IO(chiselTypeOf(testPoint))
+      // Sanity check that firrtl doesn't change the width
+      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      if (DataMirror.isWire(testPoint)) {
+        testPoint := zero
+      }
+      out := zero
+      out := testPoint
+    }
+    val verilog = ChiselStage.emitSystemVerilog(new TestModule, args.toArray, Array("-disable-all-randomization"))
+    expected match {
+      case 0 => assert(!verilog.contains("out"))
+      case 1 =>
+        assert(verilog.contains(s"out"))
+        assert(!verilog.contains(s"0] out"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] out"))
+    }
+  }
+
+  def assertInferredWidth(expected: Int, args: Iterable[String] = Nil)(gen: => Data)(implicit pos: Position): Unit = {
+    class TestModule extends Module {
+      val testPoint = gen
+      assert(!testPoint.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
+      // Sanity check that firrtl doesn't change the width
+      val widthcheck = Wire(chiselTypeOf(testPoint))
+      dontTouch(widthcheck)
+      val zero = 0.U(0.W).asTypeOf(chiselTypeOf(testPoint))
+      if (DataMirror.isWire(testPoint)) {
+        testPoint := zero
+      }
+      widthcheck := zero
+      widthcheck := testPoint
+    }
+    val verilog =
+      ChiselStage.emitSystemVerilog(new TestModule, args.toArray, Array("-disable-all-randomization"))
+    expected match {
+      case 0 => assert(!verilog.contains("widthcheck"))
+      case 1 =>
+        assert(verilog.contains(s"widthcheck"))
+        assert(!verilog.contains(s"0] widthcheck"))
+      case _ => assert(verilog.contains(s"[${expected - 1}:0] widthcheck"))
+    }
+  }
+
+}
+
+abstract class WireRegWidthSpecImpl extends AnyFlatSpec with Matchers with WidthHelpers {
   def name:                     String
   def builder[T <: Data](x: T): T
 
@@ -126,7 +184,7 @@ class RegWidthSpec extends WireRegWidthSpecImpl {
   def builder[T <: Data](x: T): T = Reg(x)
 }
 
-abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
+abstract class WireDefaultRegInitSpecImpl extends AnyFlatSpec with Matchers with WidthHelpers {
   def name:                            String
   def builder1[T <: Data](x: T):       T
   def builder2[T <: Data](x: T, y: T): T

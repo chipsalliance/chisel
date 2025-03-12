@@ -2,12 +2,11 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.matchers.should.Matchers
 import chisel3._
 import chisel3.experimental.{ExtModule, OpaqueType}
-
 import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import scala.collection.immutable.SeqMap
 
 class DirectionedBundle extends Bundle {
@@ -44,7 +43,7 @@ class TopDirectionOutput extends Module {
   io.out := 117.U
 }
 
-class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
+class DirectionSpec extends AnyPropSpec with Matchers {
 
   // TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
@@ -53,10 +52,10 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   }
 
   property("Inputs should not be assignable") {
-    a[Exception] should be thrownBy extractCause[Exception] {
+    a[Exception] should be thrownBy {
       ChiselStage.emitCHIRRTL(new BadDirection)
     }
-    a[Exception] should be thrownBy extractCause[Exception] {
+    a[Exception] should be thrownBy {
       ChiselStage.emitCHIRRTL(new BadSubDirection)
     }
   }
@@ -385,23 +384,14 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(vecOutputFlipped(index).b) == Direction.Output)
     }
 
-    val emitted: String = ChiselStage.emitCHIRRTL(new MyModule)
-    val firrtl:  String = ChiselStage.convert(new MyModule).serialize
+    val s: String = ChiselStage.emitCHIRRTL(new MyModule)
 
-    // Check that emitted directions are correct.
-    Seq(emitted, firrtl).foreach { o =>
-      {
-        // Chisel Emitter formats spacing a little differently than the
-        // FIRRTL Emitter :-(
-        val s = o.replace("{a", "{ a")
-        assert(s.contains("input inputVec : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input vecInput : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("input vecInputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output outputVec : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output vecOutput : { a : UInt<1>, b : UInt<1>}[2]"))
-        assert(s.contains("output vecOutputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
-      }
-    }
+    assert(s.contains("input inputVec : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("input vecInput : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("input vecInputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("output outputVec : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("output vecOutput : { a : UInt<1>, b : UInt<1>}[2]"))
+    assert(s.contains("output vecOutputFlipped : { a : UInt<1>, b : UInt<1>}[2]"))
   }
 
   property("Using OpaqueTypes and Flipped together should calculate directions properly") {

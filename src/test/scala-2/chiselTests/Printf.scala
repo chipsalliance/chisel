@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class SinglePrintfTester() extends Module {
   val x = 254.U
@@ -36,7 +38,7 @@ class ScopeTesterModule extends Module {
   val wp = cf"$w"
 }
 
-class PrintfSpec extends ChiselFlatSpec {
+class PrintfSpec extends AnyFlatSpec with Matchers {
   "A printf with a single argument" should "elaborate" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new SinglePrintfTester)
 

@@ -2,11 +2,12 @@
 
 package chiselTests.util
 
-import chisel3._
-import chisel3.util.Cat
-import chisel3.experimental.noPrefix
-import chiselTests.ChiselFlatSpec
 import _root_.circt.stage.ChiselStage
+import chisel3._
+import chisel3.experimental.noPrefix
+import chisel3.util.Cat
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object CatSpec {
 
@@ -19,7 +20,7 @@ object CatSpec {
 
 }
 
-class CatSpec extends ChiselFlatSpec {
+class CatSpec extends AnyFlatSpec with Matchers {
 
   import CatSpec._
 

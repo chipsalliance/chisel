@@ -124,6 +124,23 @@ object Instance extends SourceInfoDoc {
     }
   }
 
+  private class ImportedDefinitionExtModule(
+    override val desiredName: String,
+    val importedDefinition:   Definition[BaseModule with IsInstantiable]
+  ) extends ExtModule {
+    override private[chisel3] def _isImportedDefinition = true
+    override def generateComponent(): Option[Component] = {
+      require(!_closed, s"Can't generate $desiredName module more than once")
+      _closed = true
+      val firrtlPorts = importedDefinition.proto.getModulePortsAndLocators.map { case (port, sourceInfo) =>
+        Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
+      }
+      val component =
+        DefBlackBox(this, importedDefinition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
+      Some(component)
+    }
+  }
+
   /** A constructs an [[Instance]] from a [[Definition]]
     *
     * @param definition the Module being created
@@ -136,10 +153,11 @@ object Instance extends SourceInfoDoc {
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
     val existingMod = Builder.definitions.view.map(_.proto).exists {
-      case c: Class               => c == definition.proto
-      case c: RawModule           => c == definition.proto
-      case c: BaseBlackBox        => c.name == definition.proto.name
-      case c: BaseIntrinsicModule => c.name == definition.proto.name
+      case c: Class                       => c == definition.proto
+      case c: RawModule                   => c == definition.proto
+      case c: ImportedDefinitionExtModule => c.importedDefinition == definition
+      case c: BaseBlackBox                => c.name == definition.proto.name
+      case c: BaseIntrinsicModule         => c.name == definition.proto.name
       case _ => false
     }
 
@@ -152,20 +170,7 @@ object Instance extends SourceInfoDoc {
           s"Imported Definition information not found for ${definition.proto.name} - possibly forgot to add ImportDefinition annotation?"
         )
       )
-      class EmptyExtModule extends ExtModule {
-        override def desiredName: String = extModName
-        override private[chisel3] def _isImportedDefinition = true
-        override def generateComponent(): Option[Component] = {
-          require(!_closed, s"Can't generate $desiredName module more than once")
-          _closed = true
-          val firrtlPorts = definition.proto.getModulePortsAndLocators.map { case (port, sourceInfo) =>
-            Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
-          }
-          val component = DefBlackBox(this, definition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
-          Some(component)
-        }
-      }
-      Definition(new EmptyExtModule() {})
+      Definition(new ImportedDefinitionExtModule(extModName, definition))
     }
 
     val ports = experimental.CloneModuleAsRecord(definition.proto)

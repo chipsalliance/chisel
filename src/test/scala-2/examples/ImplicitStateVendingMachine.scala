@@ -2,8 +2,11 @@
 
 package examples
 
-import chiselTests.ChiselFlatSpec
 import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 // Vending machine implemented with an implicit state machine
 class ImplicitStateVendingMachine extends SimpleVendingMachine {
@@ -24,8 +27,8 @@ class ImplicitStateVendingMachine extends SimpleVendingMachine {
   io.dispense := doDispense
 }
 
-class ImplicitStateVendingMachineSpec extends ChiselFlatSpec {
+class ImplicitStateVendingMachineSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "An vending machine implemented with implicit state" should "work" in {
-    assertTesterPasses { new SimpleVendingMachineTester(new ImplicitStateVendingMachine) }
+    simulate { new SimpleVendingMachineTester(new ImplicitStateVendingMachine) }(RunUntilFinished(11))
   }
 }

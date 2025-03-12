@@ -4,9 +4,11 @@ package chiselTests
 
 import chisel3._
 import chisel3.choice.{Case, Group, ModuleChoice}
-import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3.experimental.hierarchy.Definition
-import _root_.circt.stage.ChiselStage
+import chisel3.testing.scalatest.FileCheck
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object Platform extends Group {
   object FPGA extends Case
@@ -37,19 +39,21 @@ class ModuleWithChoice[T <: Data](
   io <> inst
 }
 
-class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
+class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
   it should "emit options and cases" in {
     class ModuleWithValidChoices
         extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
 
-    generateFirrtlAndFileCheck(new ModuleWithValidChoices)(
-      """|CHECK: option Platform :
-         |CHECK-NEXT: FPGA
-         |CHECK-NEXT: ASIC
-         |CHECK: instchoice inst of VerifTarget, Platform :
-         |CHECK-NEXT: FPGA => FPGATarget
-         |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new ModuleWithValidChoices)
+      .fileCheck()(
+        """|CHECK: option Platform :
+           |CHECK-NEXT: FPGA
+           |CHECK-NEXT: ASIC
+           |CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK-NEXT: FPGA => FPGATarget
+           |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
+      )
   }
 
   it should "emit options and cases for Modules including definitions" in {
@@ -59,14 +63,16 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
       val definitionWithChoice = Definition(new ModuleWithValidChoices)
     }
 
-    generateFirrtlAndFileCheck(new TopWithDefinition)(
-      """|CHECK: option Platform :
-         |CHECK-NEXT: FPGA
-         |CHECK-NEXT: ASIC
-         |CHECK: instchoice inst of VerifTarget, Platform :
-         |CHECK-NEXT: FPGA => FPGATarget
-         |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new TopWithDefinition)
+      .fileCheck()(
+        """|CHECK: option Platform :
+           |CHECK-NEXT: FPGA
+           |CHECK-NEXT: ASIC
+           |CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK-NEXT: FPGA => FPGATarget
+           |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
+      )
   }
 
   it should "require that all cases are part of the same option" in {
@@ -104,12 +110,14 @@ class ModuleChoiceSpec extends ChiselFlatSpec with Utils with FileCheck {
     // Note, because of a quirk in how [[Case]]s are registered, only those referenced
     // in the Module here are going to be captured. This will be fixed in a forthcoming PR
     // that implements an [[addLayer]] like feature for [[Group]]s
-    generateFirrtlAndFileCheck(new SubsetOptions)(
-      """|CHECK: option Platform :
-         |CHECK-NEXT: FPGA
-         |CHECK: instchoice inst of VerifTarget, Platform :
-         |CHECK-NEXT: FPGA => FPGATarget""".stripMargin
-    )
+    ChiselStage
+      .emitCHIRRTL(new SubsetOptions)
+      .fileCheck()(
+        """|CHECK: option Platform :
+           |CHECK-NEXT: FPGA
+           |CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK-NEXT: FPGA => FPGATarget""".stripMargin
+      )
   }
 
   it should "require that all cases are distinct" in {

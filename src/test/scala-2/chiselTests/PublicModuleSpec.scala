@@ -3,10 +3,13 @@
 package chiselTests
 
 import chisel3._
+import chisel3.testing.scalatest.FileCheck
 import chisel3.experimental.hierarchy.{instantiable, Definition, Instance}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
+class PublicModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   @instantiable
   class Grault extends RawModule with Public {
@@ -44,7 +47,7 @@ class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
   }
 
   "non-main modules" should "be implicitly private" in {
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK-NOT: public module Qux
          |CHECK:     module Qux
          |"""".stripMargin
@@ -52,7 +55,7 @@ class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
   }
 
   "definitions" should "be implicitly private" in {
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK-NOT: public module Quz
          |CHECK:     module Quz
          |"""".stripMargin
@@ -62,7 +65,7 @@ class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
   behavior.of("the Public trait")
 
   it should "cause a module that mixes it in to be public" in {
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK-NOT: public module Bar
          |CHECK:     module Bar
          |"""".stripMargin
@@ -70,7 +73,7 @@ class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "allow making a module that mixes it in private via an override" in {
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK-NOT: public module Baz
          |CHECK:     module Baz
          |"""".stripMargin
@@ -82,7 +85,7 @@ class PublicModuleSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "allow making a Definition that mixes it in private via an override" in {
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK-NOT: public module Grault
          |CHECK:     module Grault
          |"""".stripMargin

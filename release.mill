@@ -89,7 +89,7 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
   }
 
   // Needed for ScalaDoc
-  override def scalacOptions = v.scala2CommonOptions
+  override def scalacOptions = v.scala2CommonOptions(Nil)
 
   def scalaDocRootDoc = Task.Source { Task.workspace / "root-doc.txt" }
 

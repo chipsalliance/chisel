@@ -2,17 +2,19 @@
 
 package chiselTests
 
-import circt.stage.ChiselStage
 import chisel3._
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.util._
+import chisel3.util.{Counter, ShiftRegister, ShiftRegisters}
+import circt.stage.ChiselStage
 import org.scalacheck.Gen
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class RegSpec extends ChiselFlatSpec {
+class RegSpec extends AnyFlatSpec with Matchers {
   "Reg" should "be of the same type and width as t" in {
     class RegOutTypeWidthTester extends Module {
       val reg = Reg(UInt(2.W))

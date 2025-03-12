@@ -4,9 +4,42 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-trait VecToTargetSpecUtils extends Utils {
-  this: ChiselFunSpec =>
+class VecToTargetSpec extends AnyFunSpec with Matchers {
+
+  def conversionSucceeds(data: InstanceId) = {
+    describe(".toTarget") {
+      it("should convert successfully") {
+        data.toTarget
+      }
+    }
+
+    describe(".toNamed") {
+      it("should convert successfully") {
+        data.toNamed
+      }
+    }
+  }
+
+  def conversionFails(data: InstanceId) = {
+    describe(".toTarget") {
+      it("should fail to convert with a useful error message") {
+        (the[ChiselException] thrownBy {
+          data.toTarget
+        }).getMessage should include(expectedError)
+      }
+    }
+
+    describe(".toNamed") {
+      it("should fail to convert with a useful error message") {
+        (the[ChiselException] thrownBy {
+          data.toNamed
+        }).getMessage should include(expectedError)
+      }
+    }
+  }
 
   class Foo extends RawModule {
     val vec = IO(Input(Vec(4, Bool())))
@@ -29,40 +62,6 @@ trait VecToTargetSpecUtils extends Utils {
 
   val expectedError = "You cannot target Vec subaccess:"
 
-  def conversionSucceeds(data: InstanceId) = {
-    describe(".toTarget") {
-      it("should convert successfully") {
-        data.toTarget
-      }
-    }
-
-    describe(".toNamed") {
-      it("should convert successfully") {
-        data.toNamed
-      }
-    }
-  }
-
-  def conversionFails(data: InstanceId) = {
-    describe(".toTarget") {
-      it("should fail to convert with a useful error message") {
-        (the[ChiselException] thrownBy extractCause[ChiselException] {
-          data.toTarget
-        }).getMessage should include(expectedError)
-      }
-    }
-
-    describe(".toNamed") {
-      it("should fail to convert with a useful error message") {
-        (the[ChiselException] thrownBy extractCause[ChiselException] {
-          data.toNamed
-        }).getMessage should include(expectedError)
-      }
-    }
-  }
-}
-
-class VecToTargetSpec extends ChiselFunSpec with VecToTargetSpecUtils {
   describe("Vec subaccess") {
     var foo: Foo = null
     ChiselStage.emitCHIRRTL { foo = new Foo; foo }

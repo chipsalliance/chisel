@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
+
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.propspec.AnyPropSpec
 
 class EnableShiftRegister extends Module {
   val io = IO(new Bundle {
@@ -43,7 +45,7 @@ class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
 }
  */
 
-class EnableShiftRegisterSpec extends ChiselPropSpec {
+class EnableShiftRegisterSpec extends AnyPropSpec {
 
   property("EnableShiftRegister should elaborate") {
     ChiselStage.emitCHIRRTL { new EnableShiftRegister }

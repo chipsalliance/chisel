@@ -5,13 +5,12 @@ package chiselTests
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class AsyncResetTester extends BasicTester {
+class AsyncResetTester extends Module {
   val (_, cDiv) = Counter(true.B, 4)
   // First rising edge when count === 3
   val slowClk = cDiv.asClock
@@ -41,7 +40,7 @@ class AsyncResetTester extends BasicTester {
   }
 }
 
-class AsyncResetAggregateTester extends BasicTester {
+class AsyncResetAggregateTester extends Module {
   class MyBundle extends Bundle {
     val x = UInt(8.W)
     val y = UInt(8.W)
@@ -92,7 +91,7 @@ class AsyncResetAggregateTester extends BasicTester {
   }
 }
 
-class AsyncResetQueueTester extends BasicTester {
+class AsyncResetQueueTester extends Module {
   val (_, cDiv) = Counter(true.B, 4)
   val slowClk = cDiv.asClock
 
@@ -141,7 +140,7 @@ class AsyncResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
-class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim {
+class AsyncResetSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   behavior.of("AsyncReset")
 
@@ -150,14 +149,14 @@ class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
   }
 
   it should "be allowed with literal reset values" in {
-    ChiselStage.emitCHIRRTL(new BasicTester {
+    ChiselStage.emitCHIRRTL(new Module {
       withReset(reset.asAsyncReset)(RegInit(123.U))
     })
   }
 
   it should "NOT be allowed with non-literal reset values" in {
     val e = intercept[RuntimeException] {
-      ChiselStage.emitSystemVerilog(new BasicTester {
+      ChiselStage.emitSystemVerilog(new Module {
         val x = WireInit(123.U + 456.U)
         withReset(reset.asAsyncReset)(RegInit(x))
       })
@@ -168,7 +167,7 @@ class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
 
   it should "NOT be allowed to connect directly to a Bool" in {
     intercept[ChiselException] {
-      ChiselStage.emitCHIRRTL(new BasicTester {
+      ChiselStage.emitCHIRRTL(new Module {
         val bool = Wire(Bool())
         val areset = reset.asAsyncReset
         bool := areset
@@ -185,7 +184,7 @@ class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
   }
 
   it should "allow casting to and from Bool" in {
-    ChiselStage.emitCHIRRTL(new BasicTester {
+    ChiselStage.emitCHIRRTL(new Module {
       val r: Reset = reset
       val a: AsyncReset = WireInit(r.asAsyncReset)
       val b: Bool = a.asBool
@@ -198,7 +197,7 @@ class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
   }
 
   it should "support SInt regs" in {
-    simulate(new BasicTester {
+    simulate(new Module {
       // Also check that it traces through wires
       val initValue = Wire(SInt())
       val reg = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
@@ -218,7 +217,7 @@ class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
       val x = UInt(16.W)
       val y = UInt(16.W)
     }
-    simulate(new BasicTester {
+    simulate(new Module {
       val reg = withReset(reset.asAsyncReset) {
         RegNext(0xbad0cad0L.U.asTypeOf(new MyBundle), 0xdeadbeefL.U.asTypeOf(new MyBundle))
       }
@@ -232,7 +231,7 @@ class AsyncResetSpec extends AnyFlatSpec with Matchers with Utils with ChiselSim
     })(RunUntilFinished(5))
   }
   it should "allow literals cast to Vecs as reset values" in {
-    simulate(new BasicTester {
+    simulate(new Module {
       val reg = withReset(reset.asAsyncReset) {
         RegNext(0xbad0cad0L.U.asTypeOf(Vec(4, UInt(8.W))), 0xdeadbeefL.U.asTypeOf(Vec(4, UInt(8.W))))
       }

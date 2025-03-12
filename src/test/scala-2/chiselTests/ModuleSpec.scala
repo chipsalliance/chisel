@@ -9,7 +9,8 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage, FirtoolOption}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{TargetDirAnnotation, Unserializable}
-
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import scala.io.Source
 
 class SimpleIO extends Bundle {
@@ -84,7 +85,7 @@ class NullModuleWrapper extends Module {
   val child = Module(new ModuleWire)
 }
 
-class ModuleSpec extends ChiselPropSpec with Utils {
+class ModuleSpec extends AnyPropSpec with Matchers {
 
   property("ModuleVec should elaborate") {
     ChiselStage.emitCHIRRTL { new ModuleVec(2) }
@@ -105,25 +106,25 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   ignore("ModuleWhenTester should return the correct result") {}
 
   property("Forgetting a Module() wrapper should result in an error") {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL { new ModuleForgetWrapper }
     }).getMessage should include("attempted to instantiate a Module without wrapping it")
   }
 
   property("Double wrapping a Module should result in an error") {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL { new ModuleDoubleWrap }
     }).getMessage should include("Called Module() twice without instantiating a Module")
   }
 
   property("Rewrapping an already instantiated Module should result in an error") {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL { new ModuleRewrap }
     }).getMessage should include("This is probably due to rewrapping a Module instance")
   }
 
   property("Wrapping a Class in Module() should result in an error") {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL { new RawModule { Module(new Class {}) } }
     }).getMessage should include("Module() cannot be called on a Class")
   }
@@ -282,7 +283,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     ChiselStage.emitCHIRRTL(new ModuleWrapper(new ModuleWire)) should include("module ModuleWireWrapper")
   }
   property("A name generating a null pointer exception should provide a good error message") {
-    (the[ChiselException] thrownBy extractCause[ChiselException](
+    (the[ChiselException] thrownBy (
       ChiselStage.emitCHIRRTL(new NullModuleWrapper)
     )).getMessage should include("desiredName of chiselTests.NullModuleWrapper is null")
   }

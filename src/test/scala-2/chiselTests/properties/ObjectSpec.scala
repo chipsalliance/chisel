@@ -3,17 +3,19 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, DynamicObject, Property}
 import chisel3.experimental.hierarchy.{Definition, Instance}
+import chisel3.properties.{Class, DynamicObject, Property}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.experimental.BoringUtils
-import chiselTests.{ChiselFlatSpec, FileCheck}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ObjectSpec extends ChiselFlatSpec with FileCheck {
+class ObjectSpec extends AnyFlatSpec with Matchers with FileCheck {
   behavior.of("DynamicObject")
 
   it should "support Objects in Class ports" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = Definition(new Class {
           override def desiredName = "Test"
@@ -29,7 +31,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
           out := obj1.getReference
         })
       }
-    }(
+    }.fileCheck()(
       """|CHECK: class Parent
          |CHECK: output out : Inst<Test>
          |CHECK: propassign out, obj1
@@ -38,7 +40,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support Objects in Module ports" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = Definition(new Class {
           override def desiredName = "Test"
@@ -54,7 +56,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
           out := obj1.getReference
         })
       }
-    }(
+    }.fileCheck()(
       """|CHECK: module Parent
          |CHECK: output out : Inst<Test>
          |CHECK: propassign out, obj1
@@ -63,7 +65,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support output Object fields as sources" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = Definition(new Class {
           override def desiredName = "Test"
@@ -74,7 +76,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
         val obj1 = Class.unsafeGetDynamicObject("Test")
         out := obj1.getField[Int]("out")
       }
-    }(
+    }.fileCheck()(
       """|CHECK: object obj1 of Test
          |CHECK: propassign out, obj1.out
          |""".stripMargin
@@ -82,7 +84,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support input Object fields as sinks" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = Definition(new Class {
           override def desiredName = "Test"
@@ -93,7 +95,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
         val obj1 = Class.unsafeGetDynamicObject("Test")
         obj1.getField[Int]("in") := in
       }
-    }(
+    }.fileCheck()(
       """|CHECK: object obj1 of Test
          |CHECK: propassign obj1.in, in
          |""".stripMargin
@@ -101,7 +103,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support creating DynamicObject from a Class with DynamicObject.apply" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val out = IO(Output(Property[Int]()))
 
@@ -115,7 +117,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
 
         out := obj.getField[Int]("out")
       }
-    }(
+    }.fileCheck()(
       """|CHECK: object obj of Test
          |CHECK: propassign obj.in, Integer(1)
          |CHECK: propassign out, obj.out
@@ -124,7 +126,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support boring ports through a Class created with DynamicObject.apply" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val in = IO(Input(Property[Int]()))
 
@@ -134,7 +136,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
           out := BoringUtils.bore(in)
         })
       }
-    }(
+    }.fileCheck()(
       """|CHECK: input out_bore : Integer
          |CHECK: propassign out, out_bore
          |CHECK: propassign obj.out_bore, in
@@ -145,7 +147,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
   behavior.of("StaticObject")
 
   it should "support Instances of Objects in Class ports" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         Definition({
           val cls1 = Definition(new Class {
@@ -175,7 +177,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
           }
         })
       }
-    }(
+    }.fileCheck()(
       """|CHECK: class Parent
          |CHECK: output out1 : Inst<Test>
          |CHECK: output out2 : Inst<Test_1>
@@ -188,7 +190,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support Instances of Objects in Module ports" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls1 = Definition(new Class {
           override def desiredName = "Test"
@@ -215,7 +217,7 @@ class ObjectSpec extends ChiselFlatSpec with FileCheck {
           out2 := obj2.getPropertyReference
         })
       }
-    }(
+    }.fileCheck()(
       """|CHECK: module Parent
          |CHECK: output out1 : Inst<Test>
          |CHECK: output out2 : Inst<Test_1>

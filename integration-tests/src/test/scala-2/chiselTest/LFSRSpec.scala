@@ -6,10 +6,8 @@ import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.{Cat, Counter}
 import chisel3.util.random._
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chiselTests.{ChiselFlatSpec, Utils}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -17,7 +15,7 @@ class FooLFSR(val reduction: LFSRReduce, seed: Option[BigInt]) extends PRNG(4, s
   def delta(s: Seq[Bool]): Seq[Bool] = s
 }
 
-class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
+class LFSRMaxPeriod(gen: => UInt) extends Module {
 
   val rv = gen
   val started = RegNext(true.B, false.B)
@@ -40,7 +38,7 @@ class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
   * Each cycle it adds them together and adds a count to the bin corresponding to that value
   * The asserts check that the bins show the correct distribution.
   */
-class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester {
+class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends Module {
 
   val rv = gen
   val bins = Reg(Vec(8, UInt(32.W)))
@@ -77,7 +75,7 @@ class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester {
   * @param gen an LFSR to test
   * @param lockUpValue the value that would lock up the LFSR
   */
-class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
+class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends Module {
 
   val lfsr = Module(gen)
   lfsr.io.seed.valid := false.B

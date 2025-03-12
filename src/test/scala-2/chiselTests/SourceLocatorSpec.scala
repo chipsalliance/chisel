@@ -7,6 +7,8 @@ import chisel3._
 import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, SourceLine}
 import chisel3.experimental.hierarchy.Definition
 import firrtl.ir.FileInfo
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 object SourceLocatorSpec {
   val thisFile = "src/test/scala-2/chiselTests/SourceLocatorSpec.scala"
@@ -37,7 +39,7 @@ object SourceLocatorSpec {
   }
 }
 
-class SourceLocatorSpec extends ChiselFunSpec with Utils {
+class SourceLocatorSpec extends AnyFunSpec with Matchers {
   import SourceLocatorSpec._
 
   describe("(0) Relative source paths") {
@@ -77,36 +79,36 @@ class SourceLocatorSpec extends ChiselFunSpec with Utils {
   describe("(2) Module source locators") {
     it("(2.a): modules extending RawModule should have a source locator") {
       val chirrtl = emitCHIRRTL(new RawModuleChild)
-      chirrtl should include(s"module RawModuleChild : @[$thisFile 14:9]")
+      chirrtl should include(s"module RawModuleChild : @[$thisFile 16:9]")
     }
     it("(2.b): modules extending Module should have a source locator") {
       val chirrtl = emitCHIRRTL(new ModuleChild)
-      chirrtl should include(s"module ModuleChild : @[$thisFile 15:9]")
+      chirrtl should include(s"module ModuleChild : @[$thisFile 17:9]")
     }
     it("(2.c): modules extending other user modules should have a source locator") {
       val chirrtl = emitCHIRRTL(new InheritanceModule)
-      chirrtl should include(s"module InheritanceModule : @[$thisFile 16:9]")
+      chirrtl should include(s"module InheritanceModule : @[$thisFile 18:9]")
     }
     it("(2.d): modules extending BlackBox should have a source locator") {
       val chirrtl = emitCHIRRTL(new WrapperTop(new BlackBoxChild))
-      chirrtl should include(s"extmodule BlackBoxChild : @[$thisFile 17:9]")
+      chirrtl should include(s"extmodule BlackBoxChild : @[$thisFile 19:9]")
     }
     it("(2.e): modules extending ExtModule should have a source locator") {
       val chirrtl = emitCHIRRTL(new WrapperTop(new ExtModuleChild))
-      chirrtl should include(s"extmodule ExtModuleChild : @[$thisFile 20:9]")
+      chirrtl should include(s"extmodule ExtModuleChild : @[$thisFile 22:9]")
     }
     it("(2.f): user-defined Classes should have a source locator") {
       val chirrtl = emitCHIRRTL(new ClassTop)
-      chirrtl should include(s"class ClassChild : @[$thisFile 24:9]")
+      chirrtl should include(s"class ClassChild : @[$thisFile 26:9]")
     }
     it("(2.g): Inner and anonymous modules should have a source locators") {
       val chirrtl = emitCHIRRTL(new Outer)
-      chirrtl should include(s"module Inner : @[$thisFile 29:11]")
-      chirrtl should include(s"module AnonymousModule : @[$thisFile 31:25]")
+      chirrtl should include(s"module Inner : @[$thisFile 31:11]")
+      chirrtl should include(s"module AnonymousModule : @[$thisFile 33:25]")
     }
     it("(2.h): Definitions should have a source locator") {
       val chirrtl = emitCHIRRTL(new RawModuleChild)
-      chirrtl should include(s"module RawModuleChild : @[$thisFile 14:9]")
+      chirrtl should include(s"module RawModuleChild : @[$thisFile 16:9]")
     }
   }
 
@@ -115,7 +117,7 @@ class SourceLocatorSpec extends ChiselFunSpec with Utils {
       val locator = SourceInfo.materialize
       // This click-to-source works in VSCode terminal, uncomment to manually test
       // println(s"Try clicking to this source locator! ${locator.makeMessage()}")
-      locator.makeMessage() should include(s"$thisFile:115:32")
+      locator.makeMessage() should include(s"$thisFile:117:32")
     }
   }
 }

@@ -1,11 +1,12 @@
 package chiselTests.util
 
+import _root_.circt.stage.ChiselStage
 import chisel3._
 import chisel3.util.addAttribute
-import chiselTests.ChiselFlatSpec
-import _root_.circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AttributeAnnotationSpec extends ChiselFlatSpec {
+class AttributeAnnotationSpec extends AnyFlatSpec with Matchers {
   class AttributeExample extends Module {
     val io = IO(new Bundle {
       val input = Input(UInt(8.W))

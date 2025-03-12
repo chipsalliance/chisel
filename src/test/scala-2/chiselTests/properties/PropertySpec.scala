@@ -3,14 +3,14 @@
 package chiselTests.properties
 
 import chisel3._
-import chisel3.properties.{Class, DynamicObject, Path, Property, PropertyType}
-import chiselTests.{ChiselFlatSpec, FileCheck}
-import circt.stage.ChiselStage
-import chisel3.properties.ClassType
-import chisel3.properties.AnyClassType
+import chisel3.properties.{AnyClassType, Class, ClassType, DynamicObject, Path, Property, PropertyType}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.experimental.BoringUtils
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PropertySpec extends ChiselFlatSpec with FileCheck {
+class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
   behavior.of("Property")
 
   it should "fail to compile with unsupported Property types" in {
@@ -159,7 +159,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support path as a Property literal" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val propOutA = IO(Output(Property[Path]()))
         val propOutB = IO(Output(Property[Path]()))
@@ -185,7 +185,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         propOutF := Property(Path(inst.sram.underlying.get))
         propOutG := Property(Path(inst.sram.underlying.get, true))
       }
-    }(
+    }.fileCheck()(
       """|CHECK-LABEL: module Foo :
          |CHECK:         propassign localPropOut, path("OMReferenceTarget:~Top|Foo>data")
          |CHECK-LABEL: public module Top :
@@ -201,7 +201,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support member path target types when requested" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val propOutA = IO(Output(Property[Path]()))
         val propOutB = IO(Output(Property[Path]()))
@@ -220,7 +220,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         propOutC := Property(Path(inst.mem, true))
         propOutD := inst.localPropOut
       }
-    }(
+    }.fileCheck()(
       """|CHECK-LABEL: module Foo :
          |CHECK:         propassign localPropOut, path("OMMemberReferenceTarget:~Top|Foo>data")
          |CHECK-LABEL: public module Top :
@@ -297,13 +297,13 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support Seq[Int], Vector[Int], and List[Int] as a Property type" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val seqProp1 = IO(Input(Property[Seq[Int]]()))
         val seqProp2 = IO(Input(Property[Vector[Int]]()))
         val seqProp3 = IO(Input(Property[List[Int]]()))
       }
-    }(
+    }.fileCheck()(
       """|CHECK: input seqProp1 : List<Integer>
          |CHECK: input seqProp2 : List<Integer>
          |CHECK: input seqProp3 : List<Integer>
@@ -351,7 +351,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
       "Property[Property[Property[Int]]]()"
     }
 
-    fileCheckString(chirrtl)(
+    chirrtl.fileCheck()(
       """|CHECK: output a : List<List<Integer>>
          |CHECK: output b : List<List<Integer>>
          |CHECK: propassign a, List<List<Integer>>(List<Integer>(Integer(123)))
@@ -367,7 +367,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "be supported as a field of a Bundle" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       class MyBundle extends Bundle {
         val foo = UInt(8.W)
         val bar = Property[BigInt]()
@@ -377,7 +377,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         propOut.foo := 123.U
         propOut.bar := Property(3)
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output propOut : { foo : UInt<8>, bar : Integer}
          |CHECK: connect propOut.foo, UInt<7>(0h7b)
          |CHECK: propassign propOut.bar, Integer(3)
@@ -386,7 +386,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "being a flipped field of a Bundle" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       class MyBundle extends Bundle {
         val foo = UInt(8.W)
         val bar = Flipped(Property[BigInt]())
@@ -397,7 +397,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         aligned.foo := flipped.foo
         flipped.bar := aligned.bar
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output aligned : { foo : UInt<8>, flip bar : Integer}
          |CHECK: input flipped : { foo : UInt<8>, flip bar : Integer}
          |CHECK: connect aligned.foo, flipped.foo
@@ -416,11 +416,11 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
       val flipped = IO(Flipped(new MyBundle))
     }
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new MyBaseModule {
         aligned :<>= flipped
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output aligned : { foo : String, flip bar : Integer}
          |CHECK: input flipped : { foo : String, flip bar : Integer}
          |CHECK: propassign flipped.bar, aligned.bar
@@ -428,11 +428,11 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
          |""".stripMargin
     )
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new MyBaseModule {
         aligned :<= flipped
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output aligned : { foo : String, flip bar : Integer}
          |CHECK: input flipped : { foo : String, flip bar : Integer}
          |CHECK-NOT: propassign
@@ -441,11 +441,11 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
          |""".stripMargin
     )
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new MyBaseModule {
         aligned :>= flipped
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output aligned         : { foo : String, flip bar : Integer}
          |CHECK: input flipped  : { foo : String, flip bar : Integer}
          |CHECK-NOT: propassign
@@ -454,13 +454,13 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
          |""".stripMargin
     )
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val out = IO(Output(new MyBundle))
         val in = IO(Input(new MyBundle))
         out :#= in
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output out : { foo : String, bar : Integer}
          |CHECK: input in : { foo : String, bar : Integer}
          |CHECK: propassign out.bar, in.bar
@@ -470,7 +470,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support being nested in a Bundle in a wire" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       class MyBundle extends Bundle {
         val foo = Property[String]()
         val bar = Flipped(Property[BigInt]())
@@ -482,7 +482,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         wire :<>= incoming
         outgoing :<>= wire
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output outgoing : { foo : String, flip bar : Integer}
          |CHECK: input incoming : { foo : String, flip bar : Integer}
          |CHECK: wire wire : { foo : String, flip bar : Integer}
@@ -554,7 +554,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "emit correct types for all the ways of creating class references and properties" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val cls = ClassType.unsafeGetClassTypeByName("MyClass")
         val a = IO(Input(Property[cls.Type]()))
@@ -601,7 +601,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         connectAB(ClassType.unsafeGetClassTypeByName("foo"))
         connectAB(ClassType.unsafeGetClassTypeByName("bar"))
       }
-    }(
+    }.fileCheck()(
       """|CHECK:      input a : Inst<MyClass>
          |CHECK-NEXT: output b : List<Inst<MyClass>>
          |CHECK-NEXT: output c : Inst<MyClass>
@@ -636,7 +636,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support FlatIO" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val flatModule = Module(new RawModule {
           val io = FlatIO(new Bundle {
@@ -648,7 +648,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         flatModule.io.bool := true.B
         flatModule.io.prop := Property(1)
       }
-    }(
+    }.fileCheck()(
       """|CHECK: connect flatModule.bool, UInt<1>(0h1)
          |CHECK: propassign flatModule.prop, Integer(1)
          |""".stripMargin
@@ -686,7 +686,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   behavior.of("PropertyArithmeticOps")
 
   it should "support expressions in temporaries, wires, and ports" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = IO(Input(Property[Int]()))
         val b = IO(Input(Property[Int]()))
@@ -702,7 +702,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         d := t + a
         e := w + (a + b)
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire t : Integer
          |CHECK: propassign t, integer_add(a, b)
          |CHECK: wire w : Integer
@@ -721,7 +721,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support boring from expressions" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val child = Module(new RawModule {
           val a = IO(Input(Property[Int]()))
@@ -737,7 +737,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
         child.b := a
         c := BoringUtils.bore(child.c)
       }
-    }(
+    }.fileCheck()(
       """|CHECK: output c_bore : Integer
          |CHECK: wire c : Integer
          |CHECK: propassign c, integer_add(a, b)
@@ -748,7 +748,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support targeting the result of expressions" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         override def desiredName = "Top"
 
@@ -761,7 +761,7 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
 
         mod.c.toTarget.toString should equal("~Top|Foo>c")
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire c : Integer
          |CHECK: propassign c, integer_add(a, b)
          |""".stripMargin
@@ -792,14 +792,14 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support addition" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = IO(Input(Property[BigInt]()))
         val b = IO(Input(Property[BigInt]()))
         val c = IO(Output(Property[BigInt]()))
         c := a + b
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire _c_propExpr : Integer
          |CHECK: propassign _c_propExpr, integer_add(a, b)
          |CHECK: propassign c, _c_propExpr
@@ -808,14 +808,14 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support multiplication" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = IO(Input(Property[BigInt]()))
         val b = IO(Input(Property[BigInt]()))
         val c = IO(Output(Property[BigInt]()))
         c := a * b
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire _c_propExpr : Integer
          |CHECK: propassign _c_propExpr, integer_mul(a, b)
          |CHECK: propassign c, _c_propExpr
@@ -824,14 +824,14 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support shift right" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = IO(Input(Property[BigInt]()))
         val b = IO(Input(Property[BigInt]()))
         val c = IO(Output(Property[BigInt]()))
         c := a >> b
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire _c_propExpr : Integer
          |CHECK: propassign _c_propExpr, integer_shr(a, b)
          |CHECK: propassign c, _c_propExpr
@@ -840,14 +840,14 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support shift left" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = IO(Input(Property[BigInt]()))
         val b = IO(Input(Property[BigInt]()))
         val c = IO(Output(Property[BigInt]()))
         c := a << b
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire _c_propExpr : Integer
          |CHECK: propassign _c_propExpr, integer_shl(a, b)
          |CHECK: propassign c, _c_propExpr
@@ -881,14 +881,14 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support concatenation for Property[Seq[Int]]" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = IO(Input(Property[Seq[Int]]()))
         val b = IO(Input(Property[Seq[Int]]()))
         val c = IO(Output(Property[Seq[Int]]()))
         c := a ++ b
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire _c_propExpr : List<Integer>
          |CHECK: propassign _c_propExpr, list_concat(a, b)
          |CHECK: propassign c, _c_propExpr
@@ -897,14 +897,14 @@ class PropertySpec extends ChiselFlatSpec with FileCheck {
   }
 
   it should "support concatenation for Property[Seq[ClassType]]" in {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new RawModule {
         val a = IO(Input(Property[Seq[AnyClassType]]()))
         val b = IO(Input(Property[Seq[AnyClassType]]()))
         val c = IO(Output(Property[Seq[AnyClassType]]()))
         c := a ++ b
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire _c_propExpr : List<AnyRef>
          |CHECK: propassign _c_propExpr, list_concat(a, b)
          |CHECK: propassign c, _c_propExpr

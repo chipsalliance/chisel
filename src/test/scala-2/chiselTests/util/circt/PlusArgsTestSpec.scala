@@ -3,13 +3,10 @@
 package chiselTests.util.circt
 
 import chisel3._
-import chisel3.testers.BasicTester
 import chisel3.util.circt.PlusArgsTest
 import circt.stage.ChiselStage
-
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
 import scala.io.Source
 
 private class PlusArgsTestTop extends Module {

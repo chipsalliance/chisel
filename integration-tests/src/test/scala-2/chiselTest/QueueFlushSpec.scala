@@ -5,7 +5,6 @@ import org.scalacheck._
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import chisel3.util.random.LFSR
 import org.scalatest.propspec.AnyPropSpec
@@ -40,7 +39,7 @@ abstract class FlushQueueTesterBase(
   bitWidth:       Int,
   tap:            Int,
   useSyncReadMem: Boolean
-) extends BasicTester {
+) extends Module {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
   val elems = VecInit(elements.map(_.U))
   val inCnt = Counter(elements.length + 1)

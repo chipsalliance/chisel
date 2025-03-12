@@ -2,10 +2,12 @@
 
 package examples
 
-import chiselTests.ChiselFlatSpec
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3._
-import chisel3.util._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.util.{is, switch, Counter, Enum, HasBlackBoxResource}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class SimpleVendingMachineIO extends Bundle {
   val nickel = Input(Bool())
@@ -48,12 +50,14 @@ class FSMVendingMachine extends SimpleVendingMachine {
   io.dispense := (state === sOk)
 }
 
-class VerilogVendingMachine extends BlackBox {
+class VerilogVendingMachine extends BlackBox with HasBlackBoxResource {
   // Because this is a blackbox, we must explicitly add clock and reset
   val io = IO(new SimpleVendingMachineIO {
     val clock = Input(Clock())
     val reset = Input(Reset())
   })
+
+  addResource("/chisel3/VerilogVendingMachine.v")
 }
 
 // Shim because Blackbox io is slightly different than normal Chisel Modules
@@ -68,12 +72,12 @@ class VerilogVendingMachineWrapper extends SimpleVendingMachine {
 
 // Accept a reference to a SimpleVendingMachine so it can be constructed inside
 // the tester (in a call to Module.apply as required by Chisel
-class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends BasicTester {
+class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends Module {
 
   val dut = Module(mod)
 
   val (cycle, done) = Counter(true.B, 10)
-  when(done) { stop(); stop() } // Stop twice because of Verilator
+  when(done) { stop() }
 
   val nickelInputs = VecInit(true.B, true.B, true.B, true.B, true.B, false.B, false.B, false.B, true.B, false.B)
   val dimeInputs = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
@@ -84,14 +88,13 @@ class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends BasicTest
   assert(dut.io.dispense === expected(cycle))
 }
 
-class SimpleVendingMachineSpec extends ChiselFlatSpec {
+class SimpleVendingMachineSpec extends AnyFlatSpec with Matchers with ChiselSim {
   "An FSM implementation of a vending machine" should "work" in {
-    assertTesterPasses { new SimpleVendingMachineTester(new FSMVendingMachine) }
+    simulate(new SimpleVendingMachineTester(new FSMVendingMachine))(RunUntilFinished(12))
   }
   "An Verilog implementation of a vending machine" should "work" in {
-    assertTesterPasses(
-      new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
-      List("/chisel3/VerilogVendingMachine.v")
-    )
+    simulate(
+      new SimpleVendingMachineTester(new VerilogVendingMachineWrapper)
+    )(RunUntilFinished(12))
   }
 }

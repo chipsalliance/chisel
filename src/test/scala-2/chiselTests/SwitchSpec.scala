@@ -5,10 +5,12 @@ package chiselTests
 import chisel3._
 import chisel3.util.{is, switch}
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class SwitchSpec extends ChiselFlatSpec with Utils {
+class SwitchSpec extends AnyFlatSpec with Matchers {
   "switch" should "require literal conditions" in {
-    a[java.lang.IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
+    a[java.lang.IllegalArgumentException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val state = RegInit(0.U)
@@ -20,7 +22,7 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
     }
   }
   it should "require mutually exclusive conditions" in {
-    a[java.lang.IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
+    a[java.lang.IllegalArgumentException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module {
         val io = IO(new Bundle {})
         val state = RegInit(0.U)

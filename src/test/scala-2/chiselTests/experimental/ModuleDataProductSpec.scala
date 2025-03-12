@@ -3,9 +3,12 @@
 package chiselTests.experimental
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ExtModule}
 import chisel3.experimental.dataview.DataProduct
-import chiselTests.ChiselFlatSpec
+import chisel3.experimental.{BaseModule, ExtModule}
+import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object ModuleDataProductSpec {
   class MyBundle extends Bundle {
@@ -36,13 +39,13 @@ object ModuleDataProductSpec {
   }
 }
 
-class ModuleDataProductSpec extends ChiselFlatSpec {
+class ModuleDataProductSpec extends AnyFlatSpec with Matchers {
   import ModuleDataProductSpec._
 
   behavior.of("DataProduct")
 
   it should "work for UserModules (recursively)" in {
-    val m = elaborateAndGetModule(new MyUserModule)
+    val m = ChiselStage.getModule(new MyUserModule)
     val expected = Seq(
       m.clock -> "m.clock",
       m.reset -> "m.reset",
@@ -72,7 +75,7 @@ class ModuleDataProductSpec extends ChiselFlatSpec {
   }
 
   it should "work for (wrapped) ExtModules" in {
-    val m = elaborateAndGetModule(new MyExtModuleWrapper).inst
+    val m = ChiselStage.getModule(new MyExtModuleWrapper).inst
     val expected = Seq(
       m.in -> "m.in",
       m.in.bar -> "m.in.bar",

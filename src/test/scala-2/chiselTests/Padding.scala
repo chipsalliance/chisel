@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
 class Padder extends Module {
   val io = IO(new Bundle {
@@ -33,7 +35,7 @@ class PadsTester(c: Pads) extends Tester(c) {
 }
  */
 
-class PadderSpec extends ChiselPropSpec {
+class PadderSpec extends AnyPropSpec with Matchers {
 
   property("Padder should elaborate") {
     ChiselStage.emitCHIRRTL { new Padder }

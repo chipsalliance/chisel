@@ -3,6 +3,7 @@
 package cookbook
 
 import chisel3._
+import chisel3.simulator.stimulus.RunUntilFinished
 
 /* ### How do I create a Reg of type Vec?
  *
@@ -28,6 +29,6 @@ class RegOfVec extends CookbookTester(2) {
 
 class RegOfVecSpec extends CookbookSpec {
   "RegOfVec" should "work" in {
-    assertTesterPasses { new RegOfVec }
+    simulate(new RegOfVec)(RunUntilFinished(4))
   }
 }

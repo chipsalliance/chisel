@@ -5,13 +5,15 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.{noPrefix, prefix, skipPrefix, AffectsChiselPrefix}
-import chiselTests.{ChiselPropSpec, FileCheck, Utils}
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
-class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
+class PrefixSpec extends AnyPropSpec with Matchers with FileCheck {
   implicit val minimumMajorVersion: Int = 12
   property("Scala plugin should interact with prefixing so last plugin name wins?") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder(): UInt = {
           val wire1 = Wire(UInt(3.W))
@@ -30,7 +32,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x1_first_wire1 :
          |CHECK: wire x2_second_wire1 :
          |CHECK: wire x2 :
@@ -39,7 +41,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Nested prefixes should work") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder2(): UInt = {
           val wire1 = Wire(UInt(3.W))
@@ -56,7 +58,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
         { val x1 = builder() }
         { val x2 = builder() }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x1_wire1 :
          |CHECK: wire x1_wire2 :
          |CHECK: wire x1_foo_wire1 :
@@ -69,7 +71,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Skipping a prefix should work") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder2(): UInt = {
           skipPrefix {
@@ -87,7 +89,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
         { val x2 = builder2() }
         { builder2() }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x1_wire1 :
          |CHECK: wire x1 :
          |CHECK: wire wire1 :
@@ -99,7 +101,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing seeded with signal") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder(): UInt = {
           val wire = Wire(UInt(3.W))
@@ -117,7 +119,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x1 :
          |CHECK: wire x1_wire :
          |CHECK: wire x2 :
@@ -128,7 +130,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
 
   property("Automatic prefixing should work") {
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder(): UInt = {
           val a = Wire(UInt(3.W))
@@ -141,7 +143,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           val JACOB = builder()
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire ADAM_a :
          |CHECK: wire ADAM :
          |CHECK: wire JACOB_a :
@@ -152,7 +154,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
 
   property("No prefixing annotation on defs should work") {
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder(): UInt = noPrefix {
           val a = Wire(UInt(3.W))
@@ -162,7 +164,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
 
         { val noprefix = builder() }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire a :
          |CHECK: wire noprefix :
          |""".stripMargin
@@ -171,7 +173,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
 
   property("Prefixing on temps should work") {
 
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def builder(): UInt = {
           val a = Wire(UInt(3.W))
@@ -181,7 +183,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
 
         { val blah = builder() }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: node _blah_T = mul
          |CHECK: node blah = add
          |""".stripMargin
@@ -223,7 +225,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Instance names should not be added to prefix") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       class Child(tpe: UInt) extends Module {
         {
           val io = IO(Input(tpe))
@@ -239,7 +241,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           val child = Module(module)
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: input clock :
          |CHECK: input reset :
          |CHECK: input io :
@@ -272,7 +274,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing should NOT be influenced by suggestName") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val wire = {
@@ -281,7 +283,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire wire_x :
          |CHECK: wire foo :
          |""".stripMargin
@@ -289,7 +291,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing should be influenced by the \"current name\" of the signal") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val wire = {
@@ -313,7 +315,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire foo :
          |CHECK: wire wire_x :
          |CHECK: wire bar :
@@ -325,7 +327,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing have intuitive behavior") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val wire = {
@@ -336,7 +338,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire wire_mywire :
          |CHECK: wire mywire2 :
          |""".stripMargin
@@ -344,7 +346,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing on connection to subfields work") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         {
           val wire = Wire(new Bundle {
@@ -359,7 +361,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           wire.vec(1.U) := RegNext(3.U)
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: reg wire_x_REG :
          |CHECK: reg wire_y_REG :
          |CHECK: reg wire_vec_0_REG :
@@ -370,7 +372,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing on connection to IOs should work") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       class Child extends Module {
         val in = IO(Input(UInt(3.W)))
         val out = IO(Output(UInt(3.W)))
@@ -382,7 +384,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           child.in := RegNext(3.U)
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: reg out_REG :
          |CHECK: reg child_in_REG :
          |""".stripMargin
@@ -390,7 +392,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing on bulk connects should work") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       class Child extends Module {
         val in = IO(Input(UInt(3.W)))
         val out = IO(Output(UInt(3.W)))
@@ -402,7 +404,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           child.in <> RegNext(3.U)
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: reg out_REG :
          |CHECK: reg child_in_REG :
          |""".stripMargin
@@ -411,7 +413,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Connections should use the non-prefixed name of the connected Data") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         prefix("foo") {
           val x = Wire(UInt(8.W))
@@ -422,7 +424,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire foo_x :
          |CHECK: wire foo_x_w :
          |""".stripMargin
@@ -430,7 +432,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Connections to aggregate fields should use the non-prefixed aggregate name") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         prefix("foo") {
           val x = Wire(new Bundle { val bar = UInt(8.W) })
@@ -441,7 +443,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire foo_x :
          |CHECK: wire foo_x_bar_w :
          |""".stripMargin
@@ -449,7 +451,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing with wires in recursive functions should grow linearly") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         def func(bools: Seq[Bool]): Bool = {
           if (bools.isEmpty) true.B
@@ -462,7 +464,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
         val in = IO(Input(Vec(4, Bool())))
         val x = func(in)
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire x :
          |CHECK: wire x_w_w :
          |CHECK: wire x_w_w_w :
@@ -472,7 +474,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing should work for verification ops") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       new Module {
         val foo, bar = IO(Input(UInt(8.W)))
 
@@ -485,7 +487,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           }
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: cover{{.*}}: x5
          |CHECK: assume{{.*}}: x5_x3
          |CHECK: printf{{.*}}: x5_x4
@@ -543,7 +545,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
   }
 
   property("Prefixing of AffectsChiselPrefix objects should work") {
-    generateFirrtlAndFileCheck {
+    ChiselStage.emitCHIRRTL {
       class NotAData extends AffectsChiselPrefix {
         val value = Wire(UInt(3.W))
       }
@@ -561,7 +563,7 @@ class PrefixSpec extends ChiselPropSpec with FileCheck with Utils {
           nonData2.value := RegNext(3.U)
         }
       }
-    }(
+    }.fileCheck()(
       """|CHECK: wire nonData_value :
          |CHECK: wire value :
          |""".stripMargin

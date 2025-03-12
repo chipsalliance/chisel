@@ -5,8 +5,10 @@ package chiselTests
 import chisel3._
 import circt.stage.ChiselStage
 import chisel3.util.Valid
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ValidSpec extends ChiselFlatSpec {
+class ValidSpec extends AnyFlatSpec with Matchers {
   "Valid.map" should "apply a function to the wrapped Data" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val in = IO(Flipped(Valid(UInt(8.W))))

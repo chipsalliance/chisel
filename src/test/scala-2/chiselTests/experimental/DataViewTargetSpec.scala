@@ -7,7 +7,11 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.dataview._
 import chisel3.experimental.conversions._
 import chisel3.experimental.annotate
-import chiselTests.ChiselFlatSpec
+import chisel3.testing.scalatest.FileCheck
+import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object DataViewTargetSpec {
   import firrtl.annotations._
@@ -20,7 +24,7 @@ object DataViewTargetSpec {
     annotate(d)(Seq(DummyAnno(d.toRelativeTarget(root), id)))
 }
 
-class DataViewTargetSpec extends ChiselFlatSpec {
+class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
   import DataViewTargetSpec._
   private val checks: Seq[Data => String] = Seq(
     _.toTarget.toString,
@@ -56,7 +60,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       val inst = Module(new MyChild)
       out := inst.out
     }
-    val m = elaborateAndGetModule(new MyParent)
+    val m = ChiselStage.getModule(new MyParent)
     val outsideView = m.inst.out.viewAs[UInt]
     checkSameAs(m.inst.out, m.inst.insideView, outsideView)
   }
@@ -81,7 +85,7 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       val inst = Module(new MyChild)
       out := inst.out
     }
-    val m = elaborateAndGetModule(new MyParent)
+    val m = ChiselStage.getModule(new MyParent)
     val outView = m.inst.out.viewAs[Vec[UInt]] // Note different type
     val outFooView = m.inst.out.foo.viewAs[UInt]
     val outBarsView = m.inst.out.bars.viewAs[Vec[UInt]]
@@ -120,15 +124,19 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       val inst = Module(new MyChild)
       out := inst.out
     }
-    val (_, annos) = getFirrtlAndAnnos(new MyParent)
-    val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sortBy(_._1)
-    val expected = Seq(
-      0 -> "~MyParent|MyChild>out.foo",
-      1 -> "~MyParent|MyChild>out.foo",
-      2 -> "~MyParent|MyParent/inst:MyChild>out.foo",
-      3 -> "~MyParent|MyParent/inst:MyChild>out"
-    )
-    pairs should equal(expected)
+    ChiselStage
+      .emitCHIRRTL(new MyParent)
+      .fileCheck()(
+        """|CHECK:      "target":"~MyParent|MyChild>out.foo"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>out.foo"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out.foo"
+           |CHECK-NEXT: "id":2
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK-NEXT: "id":3
+           |""".stripMargin
+      )
   }
 
   it should "support annotating views that cannot be mapped to a single ReferenceTarget" in {
@@ -154,21 +162,31 @@ class DataViewTargetSpec extends ChiselFlatSpec {
       val inst = Module(new MyChild)
       io <> inst.io
     }
-    val (_, annos) = getFirrtlAndAnnos(new MyParent)
-    val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sorted
-    val expected = Seq(
-      0 -> "~MyParent|MyChild>io.a",
-      0 -> "~MyParent|MyChild>io.b",
-      1 -> "~MyParent|MyChild>io.c",
-      1 -> "~MyParent|MyChild>io.d",
-      2 -> "~MyParent|MyParent/inst:MyChild>io.a",
-      2 -> "~MyParent|MyParent/inst:MyChild>io.b",
-      3 -> "~MyParent|MyParent/inst:MyChild>io.c",
-      3 -> "~MyParent|MyParent/inst:MyChild>io.d",
-      4 -> "~MyParent|MyChild>io.b",
-      4 -> "~MyParent|MyChild>io.d"
-    )
-    pairs should equal(expected)
+    ChiselStage
+      .emitCHIRRTL(new MyParent)
+      .fileCheck()(
+        """|CHECK:      "target":"~MyParent|MyChild>io.b"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>io.a"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>io.d"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyChild>io.c"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.b"
+           |CHECK-NEXT: "id":2
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.a"
+           |CHECK-NEXT: "id":2
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.d"
+           |CHECK-NEXT: "id":3
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.c"
+           |CHECK-NEXT: "id":3
+           |CHECK:      "target":"~MyParent|MyChild>io.d"
+           |CHECK-NEXT: "id":4
+           |CHECK:      "target":"~MyParent|MyChild>io.b"
+           |CHECK-NEXT: "id":4
+           |""".stripMargin
+      )
   }
 
   it should "support views with toRelativeTarget" in {
@@ -191,14 +209,17 @@ class DataViewTargetSpec extends ChiselFlatSpec {
         markRel(inst.outView, None, 2)
       }
     }
-    val (_, annos) = getFirrtlAndAnnos(new MyParent)
-    val pairs = annos.collect { case DummyAnno(t, idx) => (idx, t.toString) }.sorted
-    val expected = Seq(
-      0 -> "~MyParent|MyParent/inst:MyChild>out",
-      1 -> "~MyParent|MyChild>out",
-      2 -> "~MyParent|MyParent/inst:MyChild>out"
-    )
-    pairs should equal(expected)
+    ChiselStage
+      .emitCHIRRTL(new MyParent)
+      .fileCheck()(
+        """|CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK-NEXT: "id":0
+           |CHECK:      "target":"~MyParent|MyChild>out"
+           |CHECK-NEXT: "id":1
+           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK-NEXT: "id":2
+           |""".stripMargin
+      )
   }
 
   // TODO check these properties when using @instance API (especially preservation of totality)

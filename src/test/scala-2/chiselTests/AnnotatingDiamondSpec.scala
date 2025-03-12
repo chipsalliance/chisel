@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.{annotate, AnyTargetable}
 import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.testers.BasicTester
 import circt.stage.ChiselStage
 import firrtl.annotations.{CircuitTarget, SingleTargetAnnotation, Target}
 import org.scalatest._
@@ -102,7 +101,7 @@ class TopOfDiamond extends Module {
   identify(modB.io.in, s"modB.io.in annotated from outside modB")
 }
 
-class DiamondTester extends BasicTester {
+class DiamondTester extends Module {
   val dut = Module(new TopOfDiamond)
 
   stop()

@@ -5,10 +5,9 @@ package chiselTests
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import org.scalatest.propspec.AnyPropSpec
 
-class IntegerMathTester extends BasicTester {
+class IntegerMathTester extends Module {
 
   // TODO: Add more operators
 

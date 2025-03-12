@@ -138,7 +138,7 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
     clone
   }
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
     val _asUInt = _resizeToWidth(that, this.widthOption, true)(identity)
     // If that is a literal and all constituent Elements can be represented as literals, return a literal
     val ((_, allLit), rvalues) = {
@@ -147,7 +147,7 @@ private[chisel3] trait AggregateImpl extends Data { thiz: Aggregate =>
         // Chisel only supports zero width extraction if hi = -1 and lo = 0, so do it manually
         val _extracted = if (elt.getWidth == 0) 0.U(0.W) else _asUInt(hi - 1, lo)
         // _fromUInt returns Data but we know that it is an Element
-        val rhs = elt._fromUInt(_extracted).asInstanceOf[Element]
+        val rhs = elt._fromUIntPrivate(_extracted).asInstanceOf[Element]
         ((hi, literal && rhs.isLit), rhs)
       }
     }

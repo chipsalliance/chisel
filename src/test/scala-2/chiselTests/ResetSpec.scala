@@ -4,6 +4,8 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class ResetAgnosticModule extends RawModule {
   val clk = IO(Input(Clock()))
@@ -33,7 +35,7 @@ class AbstractResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
-class ResetSpec extends ChiselFlatSpec with Utils {
+class ResetSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("Reset")
 
@@ -62,7 +64,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "allow writing modules that are reset agnostic" in {
-    val sync = compile(new Module {
+    val sync = ChiselStage.emitSystemVerilog(new Module {
       val io = IO(new Bundle {
         val out = Output(UInt(8.W))
       })
@@ -74,7 +76,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
     })
     sync should include("always @(posedge clk)")
 
-    val async = compile(new Module {
+    val async = ChiselStage.emitSystemVerilog(new Module {
       val io = IO(new Bundle {
         val out = Output(UInt(8.W))
       })
@@ -147,7 +149,7 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   }
 
   "Chisel" should "error if sync and async modules are nested" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       ChiselStage.emitCHIRRTL(new Module with RequireAsyncReset {
         val mod = Module(new Module with RequireSyncReset)
       })

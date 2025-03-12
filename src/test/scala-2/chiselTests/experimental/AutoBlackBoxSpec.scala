@@ -2,13 +2,14 @@
 
 package chiselTests.experimental
 
-import chisel3.util.experimental.AutoBlackBox
-import chiselTests.ChiselFlatSpec
-import circt.stage.ChiselStage
-import chisel3.experimental.hierarchy.Instantiate
 import chisel3.experimental.SourceLine
+import chisel3.experimental.hierarchy.Instantiate
+import chisel3.util.experimental.AutoBlackBox
+import circt.stage.ChiselStage
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AutoBlackBoxSpec extends ChiselFlatSpec {
+class AutoBlackBoxSpec extends AnyFlatSpec with Matchers {
   "AutoBlackBox" should "generate IO, module name and parameter" in {
     assert(
       ChiselStage

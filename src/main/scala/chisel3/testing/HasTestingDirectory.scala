@@ -1,4 +1,4 @@
-package chisel3.simulator
+package chisel3.testing
 
 import java.io.IOException
 import java.nio.file._
@@ -9,10 +9,32 @@ import java.util.Comparator
 /** This is a trait that can be mixed into a class to determine where
   * compilation should happen and where simulation artifacts should be written.
   */
-trait HasTestingDirectory {
+trait HasTestingDirectory { parent =>
 
   /** Return the directory where tests should be placed. */
   def getDirectory: Path
+
+  /** Factory that returns a new `HasTestingDirectory` which will put test files
+    * in a subdirectory of the parent `HasTestingDirectory`.
+    *
+    * For example, the object `bar` will have an output directory of `foo/bar/`.
+    * {{{
+    * import java.nio.file.Paths
+    *
+    * val foo = new HasTestingDirectory {
+    *   override def getDirectory = Paths.get("foo")
+    * }
+    *
+    * val bar = foo.getSubDir("bar")
+    * }}}
+    *
+    * @param subdirectory a subdirectory
+    */
+  def withSubdirectory(subdirectory: String): HasTestingDirectory = new HasTestingDirectory {
+
+    override def getDirectory = parent.getDirectory.resolve(subdirectory)
+
+  }
 
 }
 
@@ -27,7 +49,7 @@ object HasTestingDirectory {
     * E.g., this may produce something like:
     *
     * {{{
-    * test_run_dir
+    * build
     * └── chiselsim
     *     ├── 2025-02-05T16-58-02.175175
     *     ├── 2025-02-05T16-58-11.941263
@@ -37,7 +59,7 @@ object HasTestingDirectory {
   val timestamp: HasTestingDirectory = new HasTestingDirectory {
     override def getDirectory: Path = FileSystems
       .getDefault()
-      .getPath("test_run_dir", "chiselsim", LocalDateTime.now().toString.replace(':', '-'))
+      .getPath("build", "chiselsim", LocalDateTime.now().toString.replace(':', '-'))
   }
 
   /** An implementation generator of [[HasTestingDirectory]] which will use an

@@ -59,8 +59,6 @@ trait Core extends CrossSbtModule with HasScala2MacroAnno with HasCommonOptions 
          |  val buildInfoPackage: String = "chisel3"
          |  val version: String = "${publishVersion()}"
          |  val scalaVersion: String = "${scalaVersion()}"
-         |  @deprecated("Chisel no longer uses SBT, this field will be removed.", "Chisel 7.0")
-         |  val sbtVersion: String = ""
          |  val firtoolVersion: scala.Option[String] = $firtoolVersionString
          |  override val toString: String = {
          |    "buildInfoPackage: %s, version: %s, scalaVersion: %s, firtoolVersion %s".format(

@@ -5,12 +5,11 @@ package chiselTests
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.testers.BasicTester
 import chisel3.util.{Counter, ShiftRegister}
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.propspec.AnyPropSpec
 
-class ShiftMemTester(n: Int, dp_mem: Boolean) extends BasicTester {
+class ShiftMemTester(n: Int, dp_mem: Boolean) extends Module {
   val (cntVal, done) = Counter(true.B, n)
   val start = 23.U
   val sr = ShiftRegister.mem(cntVal + start, n, true.B, dp_mem, Some("simple_sr"))

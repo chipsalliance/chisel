@@ -5,7 +5,8 @@ package chiselTests
 import chisel3._
 import chisel3.util.QueueIO
 import circt.stage.ChiselStage.emitCHIRRTL
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.collection.immutable.ListMap
 
 class BundleWithIntArg(val i: Int) extends Bundle {
@@ -90,7 +91,7 @@ class RecordWithVerbotenMethods(w: Int) extends Record {
   protected def _elementsImpl: Iterable[(String, Any)] = Nil
 }
 
-class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
+class AutoClonetypeSpec extends AnyFlatSpec with Matchers {
 
   "Bundles with Scala args" should "not need clonetype" in {
     emitCHIRRTL {
@@ -232,7 +233,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Aliased fields" should "be caught" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       emitCHIRRTL {
         new Module {
           val bundleFieldType = UInt(8.W)
@@ -246,7 +247,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Aliased fields from inadequate autoclonetype" should "be caught" in {
-    a[ChiselException] should be thrownBy extractCause[ChiselException] {
+    a[ChiselException] should be thrownBy {
       class BadBundle(val typeTuple: (Data, Int)) extends Bundle {
         val a = typeTuple._1
       }
