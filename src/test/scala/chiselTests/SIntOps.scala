@@ -248,4 +248,44 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
     -5.S(8.W).pad(16).litValue should be(-5)
     -5.S(8.W).pad(16).getWidth should be(16)
   }
+<<<<<<< HEAD:src/test/scala/chiselTests/SIntOps.scala
+||||||| parent of db931617 (Fix SInt literals to reject too small of widths (#4786)):src/test/scala-2/chiselTests/SIntOps.scala
+
+  property("Casting a SInt literal to a Bundle should maintain the literal value") {
+    class SimpleBundle extends Bundle {
+      val x = UInt(4.W)
+      val y = UInt(4.W)
+    }
+    val blit = -23.S.asTypeOf(new SimpleBundle)
+    blit.litOption should be(Some(0x29))
+    blit.x.litOption should be(Some(2))
+    blit.y.litOption should be(Some(9))
+  }
+=======
+
+  property("Casting a SInt literal to a Bundle should maintain the literal value") {
+    class SimpleBundle extends Bundle {
+      val x = UInt(4.W)
+      val y = UInt(4.W)
+    }
+    val blit = -23.S.asTypeOf(new SimpleBundle)
+    blit.litOption should be(Some(0x29))
+    blit.x.litOption should be(Some(2))
+    blit.y.litOption should be(Some(9))
+  }
+
+  property("SInt literals with too small of a width should be rejected") {
+    // Sanity checks.
+    0.S.getWidth should be(1)
+    0.S(0.W).getWidth should be(0)
+    -1.S.getWidth should be(1)
+    1.S.getWidth should be(2)
+    // The real check.
+    -2.S.getWidth should be(2)
+    an[IllegalArgumentException] shouldBe thrownBy(-2.S(1.W))
+    0xde.S.getWidth should be(9)
+    an[IllegalArgumentException] shouldBe thrownBy(0xde.S(8.W))
+    an[IllegalArgumentException] shouldBe thrownBy(0xde.S(4.W))
+  }
+>>>>>>> db931617 (Fix SInt literals to reject too small of widths (#4786)):src/test/scala-2/chiselTests/SIntOps.scala
 }
