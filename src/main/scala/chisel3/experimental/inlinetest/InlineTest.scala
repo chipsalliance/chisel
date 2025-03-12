@@ -21,7 +21,7 @@ class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** The body for this test, returns a result. */
   val testBody: Instance[M] => R,
   /** The reset type of the DUT module. */
-  val resetType: Option[Module.ResetType.Type],
+  val resetType: Option[Module.ResetType.Type]
 ) {
   final def desiredTestModuleName = s"test_${dutName}_${testName}"
 }
@@ -53,9 +53,9 @@ object TestHarness {
    */
   trait Module[M <: ChiselRawModule, R] extends RawModule[M, R] { this: ChiselModule =>
     override def resetType = test.resetType match {
-      case Some(rt @ Module.ResetType.Synchronous) => rt
+      case Some(rt @ Module.ResetType.Synchronous)  => rt
       case Some(rt @ Module.ResetType.Asynchronous) => rt
-      case _ => Module.ResetType.Synchronous
+      case _                                        => Module.ResetType.Synchronous
     }
   }
 }
@@ -118,7 +118,7 @@ trait HasTests[M <: RawModule] { module: M =>
     elaborateParentModule { moduleDefinition =>
       val resetType = module match {
         case module: Module => Some(module.resetType)
-        case _              => None
+        case _ => None
       }
       val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, testBody, resetType)
       th.generate(test)
