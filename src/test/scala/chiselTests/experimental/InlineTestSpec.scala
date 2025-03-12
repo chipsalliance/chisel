@@ -63,7 +63,10 @@ class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
 }
 
 @instantiable
-class ModuleWithTests(ioWidth: Int = 32) extends Module with HasMonitorSocket with HasTests[ModuleWithTests] {
+class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetType.Type = Module.ResetType.Synchronous)
+    extends Module
+    with HasMonitorSocket
+    with HasTests[ModuleWithTests] {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
   override val monProbe = makeProbe(io)
@@ -117,23 +120,23 @@ class InlineTestSpec extends ChiselFlatSpec with FileCheck {
       |
       | CHECK:      public module test_ModuleWithTests_foo
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_bar
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_result
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK-NEXT:   output result : { finish : UInt<1>, code : UInt<8>}
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK:        inst dut of ModuleWithTests
       | CHECK:        inst monitor of ProtocolMonitor
       | CHECK-NEXT:   connect monitor.clock, clock
@@ -153,6 +156,41 @@ class InlineTestSpec extends ChiselFlatSpec with FileCheck {
       | CHECK: module test_ModuleWithTests_with_result
       | CHECK: module test_ModuleWithTests_with_monitor
       """
+    )
+  }
+
+  it should "emit the correct reset types" in {
+    def fileCheckString(resetType: String) =
+      s"""
+      | CHECK:      module ModuleWithTests
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_foo
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_bar
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_with_result
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_with_monitor
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      """
+
+    generateFirrtlAndFileCheck(new ModuleWithTests(resetType = Module.ResetType.Synchronous))(
+      fileCheckString("UInt<1>")
+    )
+    generateFirrtlAndFileCheck(new ModuleWithTests(resetType = Module.ResetType.Asynchronous))(
+      fileCheckString("AsyncReset")
+    )
+    generateFirrtlAndFileCheck(new ModuleWithTests(resetType = Module.ResetType.Default))(
+      fileCheckString("UInt<1>")
     )
   }
 }
