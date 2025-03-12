@@ -111,6 +111,16 @@ class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetTyp
   }
 }
 
+@instantiable
+class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests[RawModuleWithTests] {
+  @public val io = IO(new ProtocolBundle(ioWidth))
+  io.out := io.in
+  test("foo") { instance =>
+    instance.io.in := 3.U(ioWidth.W)
+    assert(instance.io.out === 3.U): Unit
+  }
+}
+
 class InlineTestSpec extends ChiselFlatSpec with FileCheck {
   it should "generate a public module for each test" in {
     generateFirrtlAndFileCheck(new ModuleWithTests)(
@@ -191,6 +201,17 @@ class InlineTestSpec extends ChiselFlatSpec with FileCheck {
     )
     generateFirrtlAndFileCheck(new ModuleWithTests(resetType = Module.ResetType.Default))(
       fileCheckString("UInt<1>")
+    )
+
+    generateFirrtlAndFileCheck(new RawModuleWithTests())(
+      """
+      | CHECK:      module RawModuleWithTests
+      | CHECK-NEXT:   output io
+      |
+      | CHECK:      public module test_RawModuleWithTests_foo
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : UInt<1>
+      """
     )
   }
 }
