@@ -830,16 +830,24 @@ static bool processCommand() {
     }
 
     switch (argument) {
-    case '1':
+    case '1': {
       if (!traceInitialized) {
         traceInitialized = true;
         simulation_initializeTrace(state.simulationTraceFilepath);
       }
-      simulation_enableTrace();
+      int success;
+      simulation_enableTrace(&success);
+      if (!success)
+        failWithError("Cannot enable traces as simulator was not compiled to support them");
       break;
-    case '0':
-      simulation_disableTrace();
+    }
+    case '0': {
+      int success;
+      simulation_disableTrace(&success);
+      if (!success)
+        failWithError("Cannot enable traces as simulator was not compiled to support them");
       break;
+    }
     }
 
     sendAck();
