@@ -6,6 +6,8 @@ import chisel3.testers._
 import chisel3.experimental.inlinetest._
 import chisel3.experimental.hierarchy._
 
+import circt.stage.ChiselStage.emitCHIRRTL
+
 class TestResultBundle extends Bundle {
   val finish = Output(Bool())
   val code = Output(UInt(8.W))
@@ -123,7 +125,7 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests[RawM
 
 class InlineTestSpec extends ChiselFlatSpec with FileCheck {
   it should "generate a public module for each test" in {
-    generateFirrtlAndFileCheck(new ModuleWithTests)(
+    emitCHIRRTL(new ModuleWithTests).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
@@ -193,17 +195,17 @@ class InlineTestSpec extends ChiselFlatSpec with FileCheck {
       | CHECK-NEXT:   input reset : ${resetType}
       """
 
-    generateFirrtlAndFileCheck(new ModuleWithTests(resetType = Module.ResetType.Synchronous))(
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Synchronous)).fileCheck()(
       fileCheckString("UInt<1>")
     )
-    generateFirrtlAndFileCheck(new ModuleWithTests(resetType = Module.ResetType.Asynchronous))(
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Asynchronous)).fileCheck()(
       fileCheckString("AsyncReset")
     )
-    generateFirrtlAndFileCheck(new ModuleWithTests(resetType = Module.ResetType.Default))(
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default)).fileCheck()(
       fileCheckString("UInt<1>")
     )
 
-    generateFirrtlAndFileCheck(new RawModuleWithTests())(
+    emitCHIRRTL(new RawModuleWithTests()).fileCheck()(
       """
       | CHECK:      module RawModuleWithTests
       | CHECK-NEXT:   output io
