@@ -11,8 +11,10 @@ import chisel3.internal.firrtl.ir._
 import chisel3.internal.{containsProbe, throwException, Builder, BuilderContextCache, Warning, WarningID}
 import chisel3.internal.binding.{Binding, ChildBinding, ConstrainedBinding}
 
-private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: ChiselEnum) extends Element {
-  self: EnumType =>
+abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Element with EnumTypeIntf {
+
+  @deprecated("ChiselEnum annotations have been removed so selfAnnotating no longer does anything.", "Chisel 7.0")
+  def this(factory: ChiselEnum, selfAnnotating: Boolean) = this(factory)
 
   // Use getSimpleName instead of enumTypeName because for debugging purposes
   //   the fully qualified name isn't necessary, and it's more consistent with Bundle printing.
@@ -200,10 +202,10 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
   }
 }
 
-private[chisel3] trait ChiselEnumImpl { self: ChiselEnum =>
+abstract class ChiselEnum extends ChiselEnumIntf {
   class Type extends EnumType(this)
   object Type {
-    def apply(): Type = ChiselEnumImpl.this.apply()
+    def apply(): Type = ChiselEnum.this.apply()
   }
 
   private var id:             BigInt = 0

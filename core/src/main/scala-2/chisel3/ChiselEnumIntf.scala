@@ -7,10 +7,7 @@ import scala.reflect.macros.blackbox.Context
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.SourceInfoTransform
 
-abstract class EnumType(factory: ChiselEnum) extends EnumTypeImpl(factory) {
-
-  @deprecated("ChiselEnum annotations have been removed so selfAnnotating no longer does anything.", "Chisel 7.0")
-  def this(factory: ChiselEnum, selfAnnotating: Boolean) = this(factory)
+private[chisel3] trait EnumTypeIntf { self: EnumType =>
 
   final def ===(that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def =/=(that: EnumType): Bool = macro SourceInfoTransform.thatArg
@@ -27,7 +24,7 @@ abstract class EnumType(factory: ChiselEnum) extends EnumTypeImpl(factory) {
   def do_>=(that:  EnumType)(implicit sourceInfo: SourceInfo): Bool = _impl_>=(that)
 }
 
-abstract class ChiselEnum extends ChiselEnumImpl {
+private[chisel3] trait ChiselEnumIntf { self: ChiselEnum =>
   protected def Value:           Type = macro EnumMacros.ValImpl
   protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
 }
