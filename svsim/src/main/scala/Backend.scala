@@ -160,4 +160,11 @@ final object Backend {
       */
     val backendEngagesInASLRShenanigans = "SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS"
   }
+
+  object Exceptions {
+
+    /** Indicates that a backend failed to initialize. */
+    final class FailedInitialization private[svsim] (message: String) extends RuntimeException(message)
+
+  }
 }
