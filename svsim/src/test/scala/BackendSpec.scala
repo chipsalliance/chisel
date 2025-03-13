@@ -65,6 +65,38 @@ class VerilatorSpec extends BackendSpec {
     traceStyle = Some(TraceStyle.Vcd(traceUnderscore = false))
   )
   test("verilator", backend)(compilationSettings)
+
+  describe("trace enablement") {
+
+    it("should error if a user requests traces in a simulation that doesn't support them ") {
+      val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}")
+
+      import Resources._
+      workspace.reset()
+      workspace.elaborateGCD()
+      workspace.generateAdditionalSources()
+      val simulation = workspace.compile(
+        backend
+      )(
+        workingDirectoryTag = "verilator",
+        commonSettings = CommonCompilationSettings(),
+        backendSpecificSettings = compilationSettings.copy(traceStyle = None),
+        customSimulationWorkingDirectory = None,
+        verbose = false
+      )
+
+      intercept[svsim.Simulation.Message.Error] {
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+          controller.setTraceEnabled(true)
+        }
+      }.getMessage must include("Cannot enable traces as simulator was not compiled to support them")
+    }
+
+  }
+
 }
 
 trait BackendSpec extends AnyFunSpec with Matchers {
