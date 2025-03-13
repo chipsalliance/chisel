@@ -7,6 +7,7 @@ import org.scalatest.matchers.must.Matchers
 import svsim._
 import java.io.{BufferedReader, FileReader}
 import java.nio.file.Path
+import scala.util.Either
 import scala.util.matching.Regex
 import svsimTests.Resources.TestWorkspace
 
@@ -15,17 +16,23 @@ class VCSSpec extends BackendSpec {
   override val finishRe = "^\\$finish called from file.*$".r
 
   import vcs.Backend.CompilationSettings._
-  val backend = vcs.Backend.initializeFromProcessEnvironment()
+  val backend =
+    try {
+      Right(vcs.Backend.initializeFromProcessEnvironment())
+    } catch {
+      case e: Backend.Exceptions.FailedInitialization => Left(e)
+    }
   val compilationSettings = vcs.Backend.CompilationSettings(
     traceSettings = TraceSettings(
       enableVcd = true
     ),
     licenceExpireWarningTimeout = Some(0),
-    archOverride = Some("linux")
+    archOverride = Some("linux"),
+    waitForLicenseIfUnavailable = true
   )
   backend match {
-    case Some(backend) => test("vcs", backend)(compilationSettings)
-    case None          => ignore("Svsim backend 'vcs'") {}
+    case Right(backend) => test("vcs", backend)(compilationSettings)
+    case Left(_)        => ignore("Svsim backend 'vcs'") {}
   }
 }
 
