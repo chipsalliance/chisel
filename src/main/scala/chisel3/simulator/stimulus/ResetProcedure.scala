@@ -76,17 +76,6 @@ trait ResetProcedure[A] extends Stimulus.Type[A] {
 /** Factory of [[ResetProcedure]] stimulus. */
 object ResetProcedure {
 
-  /** Return reset stimulus for a [[Module]]. */
-  def module[A <: Module](additionalResetCycles: Int = 0): ResetProcedure[A] = new ResetProcedure[A] {
-
-    override protected final val _additionalResetCycles = additionalResetCycles
-
-    override protected final val _getClock = _.clock
-
-    override protected final val _getReset = _.reset
-
-  }
-
   /** Return reset stimulus for a [[RawModule]].
     *
     * This necessarily requires defining how to get the clock and reset to use
@@ -109,5 +98,12 @@ object ResetProcedure {
     override protected final val _getReset = getReset
 
   }
+
+  /** Return reset stimulus for a [[Module]]. */
+  def module[A <: Module](additionalResetCycles: Int = 0): ResetProcedure[A] = any(
+    getClock = _.clock,
+    getReset = _.reset,
+    additionalResetCycles = additionalResetCycles
+  )
 
 }
