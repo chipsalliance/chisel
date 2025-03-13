@@ -10,6 +10,8 @@ import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import circt.stage.ChiselStage.emitCHIRRTL
+
 class TestResultBundle extends Bundle {
   val finish = Output(Bool())
   val code = Output(UInt(8.W))
@@ -67,7 +69,10 @@ class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
 }
 
 @instantiable
-class ModuleWithTests(ioWidth: Int = 32) extends Module with HasMonitorSocket with HasTests[ModuleWithTests] {
+class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetType.Type = Module.ResetType.Synchronous)
+    extends Module
+    with HasMonitorSocket
+    with HasTests[ModuleWithTests] {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
   override val monProbe = makeProbe(io)
@@ -112,34 +117,42 @@ class ModuleWithTests(ioWidth: Int = 32) extends Module with HasMonitorSocket wi
   }
 }
 
-class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck {
+@instantiable
+class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests[RawModuleWithTests] {
+  @public val io = IO(new ProtocolBundle(ioWidth))
+  io.out := io.in
+  test("foo") { instance =>
+    instance.io.in := 3.U(ioWidth.W)
+    assert(instance.io.out === 3.U): Unit
+  }
+}
+
+class InlineTestSpec extends AnyFlatSpec with FileCheck {
   it should "generate a public module for each test" in {
-    ChiselStage
-      .emitCHIRRTL(new ModuleWithTests)
-      .fileCheck()(
-        """
+    emitCHIRRTL(new ModuleWithTests).fileCheck()(
+      """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
       | CHECK:      public module test_ModuleWithTests_foo
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_bar
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_result
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK-NEXT:   output result : { finish : UInt<1>, code : UInt<8>}
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input reset
       | CHECK:        inst dut of ModuleWithTests
       | CHECK:        inst monitor of ProtocolMonitor
       | CHECK-NEXT:   connect monitor.clock, clock
@@ -147,7 +160,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck {
       | CHECK-NEXT:   connect monitor.io.out, read(dut.monProbe).out
       | CHECK-NEXT:   connect monitor.io.in, read(dut.monProbe).in
       """
-      )
+    )
   }
 
   it should "compile to verilog" in {
@@ -162,5 +175,51 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck {
       | CHECK: module test_ModuleWithTests_with_monitor
       """
       )
+  }
+
+  it should "emit the correct reset types" in {
+    def fileCheckString(resetType: String) =
+      s"""
+      | CHECK:      module ModuleWithTests
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_foo
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_bar
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_with_result
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_with_monitor
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      """
+
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Synchronous)).fileCheck()(
+      fileCheckString("UInt<1>")
+    )
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Asynchronous)).fileCheck()(
+      fileCheckString("AsyncReset")
+    )
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default)).fileCheck()(
+      fileCheckString("UInt<1>")
+    )
+
+    emitCHIRRTL(new RawModuleWithTests()).fileCheck()(
+      """
+      | CHECK:      module RawModuleWithTests
+      | CHECK-NEXT:   output io
+      |
+      | CHECK:      public module test_RawModuleWithTests_foo
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : UInt<1>
+      """
+    )
   }
 }
