@@ -64,7 +64,7 @@ class ExtModuleMinusPath extends ExtModule with HasExtModulePath {
     val out = Output(UInt(16.W))
   })
   addPath(
-    new File("src/test/resources/chisel3/BlackBoxTest.v").getCanonicalPath
+    new File(s"${sys.env.get("MILL_TEST_RESOURCE_DIR").get}/chisel3/BlackBoxTest.v").getCanonicalPath
   )
 }
 
