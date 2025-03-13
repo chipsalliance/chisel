@@ -107,22 +107,24 @@ object Backend {
   ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
-    val vcsUserGuideNote = "Please consult the VCS User Guide for information on how to setup your environment to run VCS."
+    val vcsUserGuideNote =
+      "Please consult the VCS User Guide for information on how to setup your environment to run VCS."
 
     // Extract VCS-specific environment variables.  VCS_HOME must be set.  Then
     // either SNPSLMD_LICENSE_FILE or LM_LICENSE_FILE must be set.
-    val (vcsHome, lic) = (sys.env.get("VCS_HOME"), sys.env.get(LicenseFile.Synopsys.name), sys.env.get(LicenseFile.Generic.name)) match {
-      case (None, _, _) =>
-        throw new svsim.Backend.Exceptions.FailedInitialization(
-          s"Unable to initialize VCS as the environment variable 'VCS_HOME' was not set.  $vcsUserGuideNote"
-        )
-      case (Some(vcsHome), None, None) =>
-        throw new svsim.Backend.Exceptions.FailedInitialization(
-          s"Unable to initialize VCS as neither the environment variable '${LicenseFile.Synopsys.name}' or '${LicenseFile.Generic.name}' was set.  $vcsUserGuideNote"
-        )
-      case (Some(vcsHome), Some(snpsLic), _)  => (vcsHome, LicenseFile.Synopsys(snpsLic))
-      case (Some(vcsHome), None, Some(lmLic)) => (vcsHome, LicenseFile.Generic(lmLic))
-    }
+    val (vcsHome, lic) =
+      (sys.env.get("VCS_HOME"), sys.env.get(LicenseFile.Synopsys.name), sys.env.get(LicenseFile.Generic.name)) match {
+        case (None, _, _) =>
+          throw new svsim.Backend.Exceptions.FailedInitialization(
+            s"Unable to initialize VCS as the environment variable 'VCS_HOME' was not set.  $vcsUserGuideNote"
+          )
+        case (Some(vcsHome), None, None) =>
+          throw new svsim.Backend.Exceptions.FailedInitialization(
+            s"Unable to initialize VCS as neither the environment variable '${LicenseFile.Synopsys.name}' or '${LicenseFile.Generic.name}' was set.  $vcsUserGuideNote"
+          )
+        case (Some(vcsHome), Some(snpsLic), _)  => (vcsHome, LicenseFile.Synopsys(snpsLic))
+        case (Some(vcsHome), None, Some(lmLic)) => (vcsHome, LicenseFile.Generic(lmLic))
+      }
 
     new Backend(
       vcsHome,
