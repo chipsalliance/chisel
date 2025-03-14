@@ -5,7 +5,17 @@ import chisel3._
 
 import chisel3.experimental.SourceInfo
 
-private[chisel3] trait CatImpl {
+/** Concatenates elements of the input, in order, together.
+  *
+  * @example {{{
+  * Cat("b101".U, "b11".U)  // equivalent to "b101 11".U
+  * Cat(myUIntWire0, myUIntWire1)
+  *
+  * Cat(Seq("b101".U, "b11".U))  // equivalent to "b101 11".U
+  * Cat(mySeqOfBits)
+  * }}}
+  */
+object Cat extends CatIntf {
 
   protected def _applyImpl[T <: Bits](a: T, r: T*)(implicit sourceInfo: SourceInfo): UInt =
     _applyImpl(a :: r.toList)

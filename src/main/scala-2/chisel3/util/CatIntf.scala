@@ -8,17 +8,7 @@ import chisel3.internal.sourceinfo.SourceInfoTransform
 
 import scala.language.experimental.macros
 
-/** Concatenates elements of the input, in order, together.
-  *
-  * @example {{{
-  * Cat("b101".U, "b11".U)  // equivalent to "b101 11".U
-  * Cat(myUIntWire0, myUIntWire1)
-  *
-  * Cat(Seq("b101".U, "b11".U))  // equivalent to "b101 11".U
-  * Cat(mySeqOfBits)
-  * }}}
-  */
-object Cat extends CatImpl {
+private[chisel3] trait CatIntf { self: Cat.type =>
 
   /** Concatenates the argument data elements, in argument order, together. The first argument
     * forms the most significant bits, while the last argument forms the least significant bits.
