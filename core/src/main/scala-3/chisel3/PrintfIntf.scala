@@ -9,14 +9,7 @@ import chisel3.PrintfMacrosCompat._
 
 import scala.language.experimental.macros
 
-/** Prints a message in simulation
-  *
-  * See apply methods for use
-  */
-object printf extends PrintfImpl {
-
-  /** Named class for [[printf]]s. */
-  final class Printf private[chisel3] (val pable: Printable) extends VerificationStatement
+private[chisel3] trait PrintfIntf { self: printf.type =>
 
   /** Prints a message in simulation
     *

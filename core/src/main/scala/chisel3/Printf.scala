@@ -2,7 +2,14 @@
 
 package chisel3
 
-private[chisel3] trait PrintfImpl {
+/** Prints a message in simulation
+  *
+  * See apply methods for use
+  */
+object printf extends PrintfIntf {
+
+  /** Named class for [[printf]]s. */
+  final class Printf private[chisel3] (val pable: Printable) extends VerificationStatement
 
   /** Helper for packing escape characters */
   private[chisel3] def format(formatIn: String): String = {
