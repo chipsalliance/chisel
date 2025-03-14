@@ -154,12 +154,36 @@ object Backend {
 
   }
 
+  /** Settings for controlling VCS toggle coverage.
+    *
+    * These options map to the `-cm_tgl` option.  Consult the Synopsys VCS user
+    * guide for documentation.
+    */
+  final case class ToggleCoverageSettings(
+    assign:              Boolean = false,
+    portsonly:           Boolean = false,
+    fullintf:            Boolean = false,
+    mda:                 Boolean = false,
+    count:               Boolean = false,
+    structarr:           Boolean = false,
+    modportarr:          Boolean = false,
+    union_excl:          Boolean = false,
+    union_adv:           Boolean = false,
+    unencrypted_signals: Boolean = false,
+    old:                 Boolean = false
+  ) extends PlusSeparated {
+
+    override def name = "cm_tgl"
+
+  }
+
   case class CompilationSettings(
     xProp:                       Option[CompilationSettings.XProp] = None,
     randomlyInitializeRegisters: Boolean = false,
     traceSettings:               CompilationSettings.TraceSettings = CompilationSettings.TraceSettings(),
     simulationSettings:          SimulationSettings = SimulationSettings(),
     coverageSettings:            CoverageSettings = CoverageSettings(),
+    toggleCoverageSettings:      ToggleCoverageSettings = ToggleCoverageSettings(),
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false

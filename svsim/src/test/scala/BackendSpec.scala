@@ -75,6 +75,44 @@ class VCSSpec extends BackendSpec {
           info("a VCS coverage database was created")
           Paths.get(workspace.absolutePath, "workdir-vcs", "simulation.vdb").toFile must (exist)
         }
+
+        // TODO: Find a way to test this.
+        they("extra toggle coverage options should not error") {
+          val workspace =
+            new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}/ToggleCoverageSettings")
+
+          import Resources._
+          workspace.reset()
+          workspace.elaborateGCD()
+          workspace.generateAdditionalSources()
+          val simulation = workspace.compile(
+            backend
+          )(
+            workingDirectoryTag = "vcs",
+            commonSettings = CommonCompilationSettings(),
+            backendSpecificSettings = compilationSettings.copy(
+              coverageSettings = vcs.Backend.CoverageSettings(
+                tgl = true
+              ),
+              toggleCoverageSettings = vcs.Backend.ToggleCoverageSettings(
+                assign = true,
+                portsonly = true,
+                fullintf = true,
+                mda = true,
+                count = true,
+                structarr = true,
+                modportarr = true,
+                union_excl = true,
+                union_adv = true,
+                unencrypted_signals = true,
+                old = true
+              )
+            ),
+            customSimulationWorkingDirectory = None,
+            verbose = false
+          )
+        }
+
       }
   }
 }
