@@ -11,9 +11,26 @@ import chisel3.internal.binding.ObjectFieldBinding
 import scala.collection.immutable.HashMap
 import scala.language.existentials
 
-private[chisel3] trait DynamicObjectImpl extends HasId with NamedComponent {
-
-  val className: ClassType
+/** Represents an instance of a Class.
+  *
+  * This cannot be instantiated directly, instead see Class.unsafeGetDynamicObject.
+  *
+  * The DynamicObject is generally unsafe, in that its getField method does not check the name, type, or direction of
+  * the accessed field. It may be used with care, and a more typesafe version called StaticObject has been added, which
+  * works with the Definition / Instance APIs.
+  *
+  * To create a DynamicObject directly, wrap a Class with DynamicObject.apply. For example:
+  *
+  *  {{{
+  *    val obj = DynamicObject(new Class {
+  *      override def desiredName = "Test"
+  *      val in = IO(Input(Property[Int]()))
+  *      val out = IO(Output(Property[Int]()))
+  *      out := in
+  *    })
+  *  }}}
+  */
+class DynamicObject private[chisel3] (val className: ClassType) extends HasId with NamedComponent {
 
   private val tpe = Property[className.Type]()
 
@@ -60,7 +77,7 @@ private[chisel3] trait DynamicObjectImpl extends HasId with NamedComponent {
   }
 }
 
-private[chisel3] trait ObjectDynamicObjectImpl {
+object DynamicObject extends DynamicObject$Intf {
 
   protected def _applyImpl[T <: Class](bc: => T)(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Class definition.
