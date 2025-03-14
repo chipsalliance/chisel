@@ -607,7 +607,7 @@ private[chisel3] object Serializer {
         outputDir match {
           case Some(d) =>
             b ++= ", "
-            //When serializing a windows path we need to escape the backslashes
+            // When serializing a windows path we need to escape the backslashes
             quote(d.replace("\\", "\\\\"))
           case None => ()
         }
