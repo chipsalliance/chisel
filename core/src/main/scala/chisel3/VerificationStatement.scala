@@ -13,7 +13,10 @@ abstract class VerificationStatement extends NamedComponent {
   _parent.foreach(_.addId(this))
 }
 
-private[chisel3] trait assertImpl {
+object assert extends Assert$Intf {
+
+  /** Named class for assertions. */
+  final class Assert private[chisel3] () extends VerificationStatement
 
   /** An elaboration-time assertion. Calls the built-in Scala assert function. */
   def apply(cond: Boolean, message: => String): Unit = Predef.assert(cond, message)
@@ -22,7 +25,10 @@ private[chisel3] trait assertImpl {
   def apply(cond: Boolean): Unit = Predef.assert(cond, "")
 }
 
-private[chisel3] trait assumeImpl {
+object assume extends Assume$Intf {
+
+  /** Named class for assumptions. */
+  final class Assume private[chisel3] () extends VerificationStatement
 
   /** An elaboration-time assumption. Calls the built-in Scala assume function. */
   def apply(cond: Boolean, message: => String): Unit = Predef.assume(cond, message)
@@ -31,7 +37,11 @@ private[chisel3] trait assumeImpl {
   def apply(cond: Boolean): Unit = Predef.assume(cond, "")
 }
 
-private[chisel3] trait coverImpl {
+object cover extends Cover$Impl {
+
+  /** Named class for cover statements. */
+  final class Cover private[chisel3] () extends VerificationStatement
+
   type SourceLineInfo = (String, Int)
 }
 
