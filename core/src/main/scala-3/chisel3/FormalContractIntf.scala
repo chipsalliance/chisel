@@ -4,7 +4,7 @@ package chisel3
 
 import scala.quoted.*
 
-private[chisel3] trait FormalContract$Intf extends FormalContract$VirtualMethods {
+private[chisel3] trait FormalContract$Intf { self: FormalContract.type =>
 
   /** Create a `contract` block with one or more arguments and results. */
   transparent inline def apply[T <: Data](inline args: T*): Any =

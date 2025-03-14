@@ -6,7 +6,7 @@ import chisel3.experimental.SourceInfo
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-private[chisel3] trait FormalContract$Intf extends FormalContract$VirtualMethods {
+private[chisel3] trait FormalContract$Intf { self: FormalContract.type =>
 
   /** Create a `contract` block with one or more arguments and results. */
   def apply(head: Data, tail: Data*): (Any => Unit) => Any =
