@@ -41,7 +41,7 @@ private[chisel3] abstract class EnumTypeImpl(private[chisel3] val factory: Chise
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data =
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data =
     factory.apply(that.asUInt)
 
   protected def _impl_===(that: EnumType)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)

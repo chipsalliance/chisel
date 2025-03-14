@@ -32,5 +32,5 @@ private[chisel3] trait ClockImpl extends Element {
     DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
   )
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asClock
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asClock
 }

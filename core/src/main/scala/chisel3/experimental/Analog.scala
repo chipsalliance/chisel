@@ -70,7 +70,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt =
     throwException("Analog does not support asUInt")
 
-  override private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
     Builder.error("Analog does not support fromUInt")
     Wire(Analog(that.width))
   }

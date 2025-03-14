@@ -156,7 +156,12 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       val directory = Directory(FileSystems.getDefault().getPath("test_run_dir", "foo").toFile())
       directory.deleteRecursively()
 
-      simulate(new Foo()) { _ => }(hasSimulator = implicitly[HasSimulator], testingDirectory = fooDirectory)
+      simulate(new Foo()) { _ => }(
+        hasSimulator = implicitly[HasSimulator],
+        testingDirectory = fooDirectory,
+        implicitly,
+        implicitly
+      )
 
       info(s"found expected directory: '$directory'")
       assert(directory.exists)
@@ -172,6 +177,35 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         info(s"found expected file: '$file'")
         allFiles should contain(file)
       }
+    }
+
+    it("should dump a waveform when enableWaves is used") {
+
+      implicit val verilator = HasSimulator.simulators
+        .verilator(verilatorSettings =
+          svsim.verilator.Backend.CompilationSettings(
+            traceStyle =
+              Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
+          )
+        )
+
+      class Foo extends Module {
+        stop()
+      }
+
+      val vcdFile = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.vcd")
+        .toFile
+
+      vcdFile.delete
+
+      simulateRaw(new Foo) { _ =>
+        enableWaves()
+      }
+
+      info(s"$vcdFile exists")
+      vcdFile should (exist)
     }
   }
 

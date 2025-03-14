@@ -5,6 +5,43 @@ package svsim.vcs
 import svsim._
 
 object Backend {
+
+  /** Utilities for working with VCS license files */
+  object LicenseFile {
+
+    /** The super type of all license files */
+    sealed trait Type {
+
+      /** The value of the environment variable */
+      def value: String
+
+      /** Convert this to name/value tuple that can be used to set an environment variable */
+      def toEnvVar: (String, String)
+    }
+
+    /** A Synopsys-specific license file environment variable
+      *
+      * @param value the value of the environment variable
+      */
+    case class Synopsys(value: String) extends Type {
+      override def toEnvVar = Synopsys.name -> value
+    }
+    object Synopsys {
+      def name: String = "SNPSLMD_LICENSE_FILE"
+    }
+
+    /** A generic license file environment variable
+      *
+      * @param value the value of the environment value
+      */
+    case class Generic(value: String) extends Type {
+      override def toEnvVar = Generic.name -> value
+    }
+    object Generic {
+      def name: String = "LM_LICENSE_FILE"
+    }
+  }
+
   object CompilationSettings {
     sealed trait XProp
     object XProp {
@@ -67,26 +104,40 @@ object Backend {
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false
-  )
+  ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
-    (sys.env.get("VCS_HOME"), sys.env.get("LM_LICENSE_FILE")) match {
-      case (Some(vcsHome), Some(lmLicenseFile)) =>
-        Some(
-          new Backend(
-            vcsHome,
-            lmLicenseFile,
-            defaultArchOverride = sys.env.get("VCS_ARCH_OVERRIDE"),
-            defaultLicenseExpireWarningTimeout = sys.env.get("VCS_LIC_EXPIRE_WARNING")
+    val vcsUserGuideNote =
+      "Please consult the VCS User Guide for information on how to setup your environment to run VCS."
+
+    // Extract VCS-specific environment variables.  VCS_HOME must be set.  Then
+    // either SNPSLMD_LICENSE_FILE or LM_LICENSE_FILE must be set.
+    val (vcsHome, lic) =
+      (sys.env.get("VCS_HOME"), sys.env.get(LicenseFile.Synopsys.name), sys.env.get(LicenseFile.Generic.name)) match {
+        case (None, _, _) =>
+          throw new svsim.Backend.Exceptions.FailedInitialization(
+            s"Unable to initialize VCS as the environment variable 'VCS_HOME' was not set.  $vcsUserGuideNote"
           )
-        )
-      case _ => None
-    }
+        case (Some(vcsHome), None, None) =>
+          throw new svsim.Backend.Exceptions.FailedInitialization(
+            s"Unable to initialize VCS as neither the environment variable '${LicenseFile.Synopsys.name}' or '${LicenseFile.Generic.name}' was set.  $vcsUserGuideNote"
+          )
+        case (Some(vcsHome), Some(snpsLic), _)  => (vcsHome, LicenseFile.Synopsys(snpsLic))
+        case (Some(vcsHome), None, Some(lmLic)) => (vcsHome, LicenseFile.Generic(lmLic))
+      }
+
+    new Backend(
+      vcsHome,
+      lic,
+      defaultArchOverride = sys.env.get("VCS_ARCH_OVERRIDE"),
+      defaultLicenseExpireWarningTimeout = sys.env.get("VCS_LIC_EXPIRE_WARNING")
+    )
+
   }
 }
 final class Backend(
   vcsHome:                            String,
-  lmLicenseFile:                      String,
+  licenseFile:                        Backend.LicenseFile.Type,
   defaultArchOverride:                Option[String] = None,
   defaultLicenseExpireWarningTimeout: Option[String] = None
 ) extends svsim.Backend {
@@ -199,7 +250,7 @@ final class Backend(
         ).flatten,
         environment = environment ++ Seq(
           "VCS_HOME" -> vcsHome,
-          "LM_LICENSE_FILE" -> lmLicenseFile,
+          licenseFile.toEnvVar
         ) ++ backendSpecificSettings.traceSettings.environment
       ),
       simulationInvocation = svsim.Backend.Parameters.Invocation(
