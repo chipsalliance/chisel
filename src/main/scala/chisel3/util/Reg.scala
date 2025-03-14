@@ -5,7 +5,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.SourceInfo
 
-private[chisel3] trait RegEnableImpl {
+object RegEnable extends RegEnableIntf {
 
   protected def _applyImpl[T <: Data](next: T, enable: Bool)(implicit sourceInfo: SourceInfo): T = {
     val r = Reg(chiselTypeOf(next))
@@ -26,7 +26,7 @@ private[chisel3] trait RegEnableImpl {
   }
 }
 
-private[chisel3] trait ShiftRegisterImpl {
+object ShiftRegister extends ShiftRegisterIntf {
 
   protected def _applyImpl[T <: Data](
     in: T,
@@ -114,7 +114,7 @@ private[chisel3] trait ShiftRegisterImpl {
   }
 }
 
-private[chisel3] trait ShiftRegistersImpl {
+object ShiftRegisters extends ShiftRegistersIntf {
 
   protected def _applyImpl[T <: Data](
     in: T,

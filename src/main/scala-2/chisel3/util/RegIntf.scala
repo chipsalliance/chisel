@@ -8,7 +8,7 @@ import chisel3._
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.SourceInfoTransform
 
-object RegEnable extends RegEnableImpl {
+private[chisel3] trait RegEnableIntf { self: RegEnable.type =>
 
   /** Returns a register with the specified next, update enable gate, and no reset initialization.
     *
@@ -39,7 +39,7 @@ object RegEnable extends RegEnableImpl {
   ): T = _applyImpl(next, init, enable)
 }
 
-object ShiftRegister extends ShiftRegisterImpl {
+private[chisel3] trait ShiftRegisterIntf { self: ShiftRegister.type =>
 
   /** Returns the n-cycle delayed version of the input signal.
     *
@@ -126,7 +126,7 @@ object ShiftRegister extends ShiftRegisterImpl {
   ): T = _applyImplMem(in, n, en, useDualPortSram, name)
 }
 
-object ShiftRegisters extends ShiftRegistersImpl {
+private[chisel3] trait ShiftRegistersIntf { self: ShiftRegisters.type =>
 
   /** Returns a sequence of delayed input signal registers from 1 to n.
     *
