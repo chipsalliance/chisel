@@ -10,7 +10,29 @@ import chisel3.reflect.DataMirror
 import chisel3.reflect.DataMirror.internal.isSynthesizable
 import chisel3.internal.Builder
 
-private[chisel3] trait InstantiateImpl {
+/** Create an [[Instance]] of a [[Module]]
+  *
+  * Acts as a nicer API wrapping [[Definition]] and [[Instance]].
+  * Used in a similar way to traditional module instantiation using `Module(...)`.
+  *
+  * {{{
+  * val inst0: Instance[MyModule] = Instantiate(new MyModule(arg1, arg2))
+  *
+  * // Note that you cannot pass arguments by name (this will not compile)
+  * val inst1 = Instantiate(new OtherModule(n = 3))
+  *
+  * // Instead, only pass arguments positionally
+  * val inst2 = Instantiate(new OtherModule(3))
+  * }}}
+  *
+  * ==Limitations==
+  *   - The caching does not work for Modules that are inner classes. This is due to the fact that
+  *     the WeakTypeTags for instances will be different and thus will not hit in the cache.
+  *   - Passing parameters by name to module constructors is not supported.
+  *   - User-defined types that wrap up Data will use the default Data equality and hashCode
+  *     implementations which use referential equality, thus will not hit in the cache.
+  */
+object Instantiate extends InstantiateIntf {
 
   // Data uses referential equality by default, but for looking up Data in the cache, we need to use
   // structural equality for Data unbound types and literal values
