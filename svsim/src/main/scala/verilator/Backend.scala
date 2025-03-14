@@ -163,7 +163,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
         ).flatten,
         environment = Seq()
       ),
-      simulationInvocation = svsim.Backend.Parameters.Invocation(Seq(), Seq())
+      simulationInvocation = svsim.Backend.Parameters.Invocation(commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags), Seq())
     )
     //format: on
   }

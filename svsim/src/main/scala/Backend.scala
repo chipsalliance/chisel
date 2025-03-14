@@ -13,6 +13,38 @@ object CommonSettingsModifications {
 
 // -- Compilation Settings
 
+/** Backend-independent simulation runtime settings
+  *
+  * @note Use [[CommonSimulationSettings$]] methods to create objects of this
+  * class.
+  */
+final class CommonSimulationSettings private[svsim] (
+  val plusArgs: Seq[PlusArg]
+) {
+
+  /** Return a copy of this [[CommonSimulationSettings]] with some fields
+    * modified.
+    */
+  def copy(
+    plusArgs: Seq[PlusArg] = plusArgs
+  ) = new CommonSimulationSettings(
+    plusArgs = plusArgs
+  )
+}
+
+object CommonSimulationSettings {
+
+  /** Return a [[CommonSimulationSettings]] with default values.
+    *
+    * @param plusArgs Verilog value or test plusargs to set at simulation
+    * runtime
+    */
+  def default = new CommonSimulationSettings(
+    plusArgs = Seq.empty
+  )
+
+}
+
 /** Settings supported by all svsim backends.
   */
 case class CommonCompilationSettings(
@@ -20,12 +52,13 @@ case class CommonCompilationSettings(
   optimizationStyle: CommonCompilationSettings.OptimizationStyle = CommonCompilationSettings.OptimizationStyle.Default,
   availableParallelism: CommonCompilationSettings.AvailableParallelism =
     CommonCompilationSettings.AvailableParallelism.Default,
-  defaultTimescale:  Option[CommonCompilationSettings.Timescale] = None,
-  libraryExtensions: Option[Seq[String]] = None,
-  libraryPaths:      Option[Seq[String]] = None,
-  includeDirs:       Option[Seq[String]] = None,
-  fileFilter:        PartialFunction[File, Boolean] = PartialFunction.empty,
-  directoryFilter:   PartialFunction[File, Boolean] = PartialFunction.empty
+  defaultTimescale:   Option[CommonCompilationSettings.Timescale] = None,
+  libraryExtensions:  Option[Seq[String]] = None,
+  libraryPaths:       Option[Seq[String]] = None,
+  includeDirs:        Option[Seq[String]] = None,
+  fileFilter:         PartialFunction[File, Boolean] = PartialFunction.empty,
+  directoryFilter:    PartialFunction[File, Boolean] = PartialFunction.empty,
+  simulationSettings: CommonSimulationSettings = CommonSimulationSettings.default
 )
 object CommonCompilationSettings {
   object VerilogPreprocessorDefine {
@@ -75,6 +108,27 @@ object CommonCompilationSettings {
   object Timescale {
     case class FromString(value: String) extends Timescale
   }
+}
+
+/** A key/value pair representing a Verilog plusarg
+  *
+  * When `value` is a `Some`, this acts like a `$value$plusargs`.  When `value`
+  * is `None`, this acts like a `$test$plusargs`.  I.e., when `None`, the
+  * plusarg is simply set.  When `Some`, the plusarg has a value.
+  *
+  * @param name the name of the plusarg
+  * @param value an optional value for the plusarg
+  */
+final class PlusArg(
+  val name:  String,
+  val value: Option[String] = None
+) {
+
+  /** Return Verilator-compliant or VCS-compliant simulator options to set this
+    * plusarg.
+    */
+  def simulatorFlags: String = (name +: value.toSeq).mkString("+", "=", "")
+
 }
 
 trait Backend {

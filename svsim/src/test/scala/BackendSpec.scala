@@ -127,7 +127,7 @@ class VCSSpec extends BackendSpec {
   */
 case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Backend {
   type CompilationSettings = verilator.Backend.CompilationSettings
-  def generateParameters(
+  override def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
@@ -468,6 +468,43 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           .filter(finishRe.matches(_))
           .toArray
           .size must be(1)
+      }
+
+      it("should support both $value$plusargs and $test$plusargs") {
+        workspace.reset()
+        workspace.elaboratePlusArgTest()
+        workspace.generateAdditionalSources()
+        simulation = workspace.compile(
+          backend
+        )(
+          workingDirectoryTag = name,
+          commonSettings = CommonCompilationSettings(
+            simulationSettings = CommonSimulationSettings.default.copy(
+              plusArgs = Seq(
+                new PlusArg(name = "value", value = Some("1")),
+                new PlusArg(name = "test", value = None)
+              )
+            )
+          ),
+          backendSpecificSettings = compilationSettings,
+          customSimulationWorkingDirectory = None,
+          verbose = false
+        )
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+          val value = controller.port("value")
+          val test = controller.port("test")
+          value.check() { a =>
+            info("$value$plusargs work")
+            a.asBigInt must be(1)
+          }
+          test.check() { a =>
+            info("$test$plusargs work")
+            a.asBigInt must be(1)
+          }
+        }
       }
     }
   }
