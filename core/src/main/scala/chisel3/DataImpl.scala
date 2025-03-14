@@ -861,8 +861,13 @@ private[chisel3] trait DataImpl extends HasId with NamedComponent { self: Data =
   }
 
   /** Return a value of this type from a UInt type. Internal implementation for asTypeOf.
+    *
+    * Protected so that it can be implemented by the external FixedPoint library 
     */
-  private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data
+  protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data
+
+  // Package private alias for _fromUInt so we can call it elsewhere in chisel3
+  private[chisel3] final def _fromUIntPrivate(that: UInt)(implicit sourceInfo: SourceInfo): Data = _fromUInt(that)
 
   // The actual implementation of do_asUInt
   // @param first exists because of awkward behavior in Aggregate that requires changing 0.U to be zero-width to fix
@@ -1242,7 +1247,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
 
   def toPrintable: Printable = PString("DONTCARE")
 
-  private[chisel3] def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
+  override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
     Builder.error("DontCare cannot be a connection sink (LHS)")
     this
   }

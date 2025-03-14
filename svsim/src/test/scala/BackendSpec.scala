@@ -7,6 +7,7 @@ import org.scalatest.matchers.must.Matchers
 import svsim._
 import java.io.{BufferedReader, FileReader}
 import java.nio.file.Path
+import scala.util.Either
 import scala.util.matching.Regex
 import svsimTests.Resources.TestWorkspace
 
@@ -15,17 +16,23 @@ class VCSSpec extends BackendSpec {
   override val finishRe = "^\\$finish called from file.*$".r
 
   import vcs.Backend.CompilationSettings._
-  val backend = vcs.Backend.initializeFromProcessEnvironment()
+  val backend =
+    try {
+      Right(vcs.Backend.initializeFromProcessEnvironment())
+    } catch {
+      case e: Backend.Exceptions.FailedInitialization => Left(e)
+    }
   val compilationSettings = vcs.Backend.CompilationSettings(
     traceSettings = TraceSettings(
       enableVcd = true
     ),
     licenceExpireWarningTimeout = Some(0),
-    archOverride = Some("linux")
+    archOverride = Some("linux"),
+    waitForLicenseIfUnavailable = true
   )
   backend match {
-    case Some(backend) => test("vcs", backend)(compilationSettings)
-    case None          => ignore("Svsim backend 'vcs'") {}
+    case Right(backend) => test("vcs", backend)(compilationSettings)
+    case Left(_)        => ignore("Svsim backend 'vcs'") {}
   }
 }
 
@@ -65,6 +72,38 @@ class VerilatorSpec extends BackendSpec {
     traceStyle = Some(TraceStyle.Vcd(traceUnderscore = false))
   )
   test("verilator", backend)(compilationSettings)
+
+  describe("trace enablement") {
+
+    it("should error if a user requests traces in a simulation that doesn't support them ") {
+      val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}")
+
+      import Resources._
+      workspace.reset()
+      workspace.elaborateGCD()
+      workspace.generateAdditionalSources()
+      val simulation = workspace.compile(
+        backend
+      )(
+        workingDirectoryTag = "verilator",
+        commonSettings = CommonCompilationSettings(),
+        backendSpecificSettings = compilationSettings.copy(traceStyle = None),
+        customSimulationWorkingDirectory = None,
+        verbose = false
+      )
+
+      intercept[svsim.Simulation.Message.Error] {
+        simulation.run(
+          verbose = false,
+          executionScriptLimit = None
+        ) { controller =>
+          controller.setTraceEnabled(true)
+        }
+      }.getMessage must include("Cannot enable traces as simulator was not compiled to support them")
+    }
+
+  }
+
 }
 
 trait BackendSpec extends AnyFunSpec with Matchers {

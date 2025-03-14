@@ -61,11 +61,7 @@ object HasSimulator {
     ): HasSimulator = new HasSimulator {
       override def getSimulator(implicit testingDirectory: HasTestingDirectory): Simulator[svsim.vcs.Backend] =
         new Simulator[svsim.vcs.Backend] {
-          override val backend = svsim.vcs.Backend.initializeFromProcessEnvironment().getOrElse {
-            throw new Exception(
-              "Unable to load VCS from the environment. (Did you forget to set VCS_HOME and LM_LICENSE_FILE?)"
-            )
-          }
+          override val backend = svsim.vcs.Backend.initializeFromProcessEnvironment()
           override val tag = "vcs"
           override val commonCompilationSettings = compilationSettings
           override val backendSpecificCompilationSettings = vcsSettings
