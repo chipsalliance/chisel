@@ -96,11 +96,70 @@ object Backend {
     assertionSettings:      Option[AssertionSettings] = None
   )
 
+  /** Trait that encodes a VCS "plus" option.
+    *
+    * VCS has a lot of options that take the form of:
+    *
+    *     -<name> <flag>[+<flag>...]
+    *
+    * This encapsulates the logic to generate these options from a `Product`
+    * that consists of elements whose names are the flags.
+    */
+  sealed trait PlusSeparated { this: Product =>
+
+    /** The name of the option. */
+    def name: String
+
+    /** Convert the option into  */
+    final def compileFlags: Seq[String] = {
+      val setFlags: Seq[String] = productElementNames
+        .zip(productIterator)
+        .flatMap {
+          case (_, false)   => None
+          case (name, true) => Some(name)
+        }
+        .toSeq
+
+      if (setFlags.isEmpty) {
+        Seq.empty
+      } else {
+        Seq(s"-$name", setFlags.mkString("+"))
+      }
+
+    }
+
+  }
+
+  /** Settings for controlling VCS coverage.
+    *
+    * These options map to the `-cm` option.  Each parameter turns on a specific
+    * kind of coverage.  Consult the Synopsys VCS user guide for documentation.
+    */
+  // Note: This case class is being clever and re-using the names of the
+  // elements as the names of the options.  This makes these very terse, but
+  // they then match, exactly, the documentation in the VCS manual.
+  final case class CoverageSettings(
+    line:   Boolean = false,
+    cond:   Boolean = false,
+    fsm:    Boolean = false,
+    tgl:    Boolean = false,
+    obc:    Boolean = false,
+    path:   Boolean = false,
+    assert: Boolean = false,
+    branch: Boolean = false,
+    sdc:    Boolean = false
+  ) extends PlusSeparated {
+
+    override def name = "cm"
+
+  }
+
   case class CompilationSettings(
     xProp:                       Option[CompilationSettings.XProp] = None,
     randomlyInitializeRegisters: Boolean = false,
     traceSettings:               CompilationSettings.TraceSettings = CompilationSettings.TraceSettings(),
     simulationSettings:          SimulationSettings = SimulationSettings(),
+    coverageSettings:            CoverageSettings = CoverageSettings(),
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false
@@ -239,6 +298,8 @@ final class Backend(
           }.flatten,
 
           backendSpecificSettings.traceSettings.compileFlags,
+
+          backendSpecificSettings.coverageSettings.compileFlags,
 
           Seq(
             commonSettings.verilogPreprocessorDefines,

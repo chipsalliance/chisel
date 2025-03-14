@@ -6,7 +6,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
 import java.io.{BufferedReader, FileReader}
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import scala.util.Either
 import scala.util.matching.Regex
 import svsimTests.Resources.TestWorkspace
@@ -31,8 +31,51 @@ class VCSSpec extends BackendSpec {
     waitForLicenseIfUnavailable = true
   )
   backend match {
-    case Right(backend) => test("vcs", backend)(compilationSettings)
-    case Left(_)        => ignore("Svsim backend 'vcs'") {}
+    case Left(_) => ignore("Svsim backend 'vcs'") {}
+    case Right(backend) =>
+      test("vcs", backend)(compilationSettings)
+
+      describe("VCS coverage options") {
+
+        they("coverage options should produce a coverage database") {
+          val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}/CoverageSettings")
+
+          import Resources._
+          workspace.reset()
+          workspace.elaborateGCD()
+          workspace.generateAdditionalSources()
+          val simulation = workspace.compile(
+            backend
+          )(
+            workingDirectoryTag = "vcs",
+            commonSettings = CommonCompilationSettings(),
+            backendSpecificSettings = compilationSettings.copy(coverageSettings =
+              vcs.Backend.CoverageSettings(
+                line = true,
+                cond = true,
+                fsm = true,
+                tgl = true,
+                assert = true,
+                branch = true,
+                // Don't set these options because they require other options.
+                path = false,
+                obc = false,
+                sdc = false
+              )
+            ),
+            customSimulationWorkingDirectory = None,
+            verbose = false
+          )
+
+          simulation.run(
+            verbose = false,
+            executionScriptLimit = None
+          ) { _ => }
+
+          info("a VCS coverage database was created")
+          Paths.get(workspace.absolutePath, "workdir-vcs", "simulation.vdb").toFile must (exist)
+        }
+      }
   }
 }
 
