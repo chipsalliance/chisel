@@ -18,13 +18,20 @@ trait SimulatorAPI {
     * and reset procedure.
     *
     * @param module the Chisel module to generate
-    * @param layerControl layers that should be enabled
+    * @param chiselOpts command line options to pass to Chisel
+    * @param firtoolOpts command line options to pass to firtool
+    * @param chiselSettings Chisel-related settings used for simulation
     * @param stimulus directed stimulus to use
     * @param testingDirectory a type class implementation that can be used to
     * change the behavior of where files will be created
+    *
+    * @note Take care when passing `chiselOpts`.  The following options are set
+    * by default and if you set incompatible options, the simulation will fail.
     */
   def simulateRaw[T <: RawModule](
     module:         => T,
+    chiselOpts:     Array[String] = Array.empty,
+    firtoolOpts:    Array[String] = Array.empty,
     chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
   )(stimulus: (T) => Unit)(
     implicit hasSimulator:        HasSimulator,
@@ -34,8 +41,9 @@ trait SimulatorAPI {
   ): Unit = {
 
     hasSimulator.getSimulator
-      .simulate(module, chiselSettings) { module =>
-        stimulus(module.wrapped)
+      .simulate(module = module, chiselOpts = chiselOpts, firtoolOpts = firtoolOpts, chiselSettings = chiselSettings) {
+        module =>
+          stimulus(module.wrapped)
       }
       .result
   }
@@ -45,15 +53,22 @@ trait SimulatorAPI {
     * For details of the initialization procedure see [[ResetProcedure]].
     *
     * @param module the Chisel module to generate
-    * @param layerControl layers that should be enabled
+    * @param chiselOpts command line options to pass to Chisel
+    * @param firtoolOpts command line options to pass to firtool
+    * @param chiselSettings Chisel-related settings used for simulation
     * @param additionalResetCycles a number of _additional_ cycles to assert
     * reset for
     * @param stimulus directed stimulus to use
     * @param testingDirectory a type class implementation that can be used to
     * change the behavior of where files will be created
+    *
+    * @note Take care when passing `chiselOpts`.  The following options are set
+    * by default and if you set incompatible options, the simulation will fail.
     */
   def simulate[T <: Module](
     module:                => T,
+    chiselOpts:            Array[String] = Array.empty,
+    firtoolOpts:           Array[String] = Array.empty,
     chiselSettings:        ChiselSettings[T] = ChiselSettings.default[T],
     additionalResetCycles: Int = 0
   )(stimulus: (T) => Unit)(
@@ -61,7 +76,12 @@ trait SimulatorAPI {
     testingDirectory:             HasTestingDirectory,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
-  ): Unit = simulateRaw(module, chiselSettings) { dut =>
+  ): Unit = simulateRaw(
+    module = module,
+    chiselOpts = chiselOpts,
+    firtoolOpts = firtoolOpts,
+    chiselSettings = chiselSettings
+  ) { dut =>
     ResetProcedure.module(additionalResetCycles)(dut)
     stimulus(dut)
   }

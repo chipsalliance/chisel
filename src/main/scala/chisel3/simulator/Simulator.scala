@@ -56,7 +56,6 @@ trait Simulator[T <: Backend] {
   def workingDirectoryPrefix = "workdir"
   def customSimulationWorkingDirectory:   Option[String] = None
   def verbose:                            Boolean = false
-  def firtoolArgs:                        Seq[String] = Seq()
   def commonCompilationSettings:          CommonCompilationSettings
   def backendSpecificCompilationSettings: backend.CompilationSettings
 
@@ -88,8 +87,25 @@ trait Simulator[T <: Backend] {
     )
   }
 
+  /** Simulate a Chisel module with some stimulus
+    *
+    * @param module a Chisel module to simulate
+    * @param chiselOpts command line options to pass to Chisel
+    * @param firtoolOpts command line options to pass to firtool
+    * @param chiselSettings Chisel-related settings used for simulation
+    * @param body stimulus to apply to the module
+    * @param commonSettingsModifications modifications to common compilation
+    * settings
+    * @param backendSettingsModifications modifications to backend (e.g.,
+    * Verilator or VCS) compilation settings
+    *
+    * @note Take care when passing `chiselOpts`.  The following options are set
+    * by default and if you set incompatible options, the simulation will fail.
+    */
   final def simulate[T <: RawModule, U](
     module:         => T,
+    chiselOpts:     Array[String] = Array.empty,
+    firtoolOpts:    Array[String] = Array.empty,
     chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
   )(body: (SimulatedModule[T]) => U)(
     implicit commonSettingsModifications: svsim.CommonSettingsModifications,
@@ -97,7 +113,7 @@ trait Simulator[T <: Backend] {
   ): Simulator.BackendInvocationDigest[U] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
-    val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs)
+    val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs = firtoolOpts.toSeq)
     workspace.generateAdditionalSources()
 
     val commonCompilationSettingsUpdated = commonSettingsModifications(commonCompilationSettings).copy(
