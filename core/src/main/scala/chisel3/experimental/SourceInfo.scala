@@ -2,12 +2,41 @@
 
 package chisel3.experimental
 
-private[chisel3] trait SourceLineImpl {
-  def filename: String
-  def line:     Int
-  def col:      Int
+/** Abstract base class for generalized source information.
+  */
+sealed trait SourceInfo {
 
-  protected def _makeMessageImpl(f: String => String = x => x): String = f(s"@[${this.prettyPrint}]")
+  /** A prettier toString
+    *
+    * Make a useful message if SourceInfo is available, nothing otherwise
+    */
+  def makeMessage(f: String => String = x => x): String
+
+  /** The filename for the originating source file, if known */
+  def filenameOption: Option[String]
+}
+
+sealed trait NoSourceInfo extends SourceInfo {
+  def makeMessage(f: String => String = x => x): String = ""
+  def filenameOption:                            Option[String] = None
+}
+
+/** For when source info can't be generated because of a technical limitation, like for Reg because
+  * Scala macros don't support named or default arguments.
+  */
+case object UnlocatableSourceInfo extends NoSourceInfo
+
+/** For when source info isn't generated because the function is deprecated and we're lazy.
+  */
+case object DeprecatedSourceInfo extends NoSourceInfo
+
+/** For FIRRTL lines from a Scala source line.
+  *
+  * @note A column == 0 indicates no column
+  */
+case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo {
+
+  def makeMessage(f: String => String = x => x): String = f(s"@[${this.prettyPrint}]")
 
   def filenameOption: Option[String] = Some(filename)
 
@@ -21,7 +50,7 @@ private[chisel3] trait SourceLineImpl {
   }
 }
 
-private[chisel3] trait ObjectSourceInfoImpl {
+object SourceInfo extends SourceInfo$Intf {
 
   /** Returns the best guess at the first stack frame that belongs to user code.
     */
