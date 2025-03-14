@@ -8,7 +8,18 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.SourceInfo
 
-private[chisel3] trait FillInterleavedImpl {
+/** Creates repetitions of each bit of the input in order.
+  *
+  * @example {{{
+  * FillInterleaved(2, "b1 0 0 0".U)  // equivalent to "b11 00 00 00".U
+  * FillInterleaved(2, "b1 0 0 1".U)  // equivalent to "b11 00 00 11".U
+  * FillInterleaved(2, myUIntWire)  // dynamic interleaved fill
+  *
+  * FillInterleaved(2, Seq(false.B, false.B, false.B, true.B))  // equivalent to "b11 00 00 00".U
+  * FillInterleaved(2, Seq(true.B, false.B, false.B, true.B))  // equivalent to "b11 00 00 11".U
+  * }}}
+  */
+object FillInterleaved extends FillInterleaved$Intf {
 
   protected def _applyImpl(n: Int, in: UInt)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(n, in.asBools)
 
@@ -16,7 +27,18 @@ private[chisel3] trait FillInterleavedImpl {
     Cat(in.map(Fill(n, _)).reverse)
 }
 
-private[chisel3] trait PopCountImpl {
+/** Returns the number of bits set (value is 1 or true) in the input signal.
+  *
+  * @example {{{
+  * PopCount(Seq(true.B, false.B, true.B, true.B))  // evaluates to 3.U
+  * PopCount(Seq(false.B, false.B, true.B, false.B))  // evaluates to 1.U
+  *
+  * PopCount("b1011".U)  // evaluates to 3.U
+  * PopCount("b0010".U)  // evaluates to 1.U
+  * PopCount(myUIntWire)  // dynamic count
+  * }}}
+  */
+object PopCount extends PopCount$Intf {
 
   protected def _applyImpl(in: Iterable[Bool])(implicit sourceInfo: SourceInfo): UInt = SeqUtils.count(in.toSeq)
 
@@ -25,7 +47,15 @@ private[chisel3] trait PopCountImpl {
   )
 }
 
-private[chisel3] trait FillImpl {
+/** Create repetitions of the input using a tree fanout topology.
+  *
+  * @example {{{
+  * Fill(2, "b1000".U)  // equivalent to "b1000 1000".U
+  * Fill(2, "b1001".U)  // equivalent to "b1001 1001".U
+  * Fill(2, myUIntWire)  // dynamic fill
+  * }}}
+  */
+object Fill extends Fill$Intf {
 
   protected def _applyImpl(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = {
     n match {
@@ -45,7 +75,15 @@ private[chisel3] trait FillImpl {
   }
 }
 
-private[chisel3] trait ReverseImpl {
+/** Returns the input in bit-reversed order. Useful for little/big-endian conversion.
+  *
+  * @example {{{
+  * Reverse("b1101".U)  // equivalent to "b1011".U
+  * Reverse("b1101".U(8.W))  // equivalent to "b10110000".U
+  * Reverse(myUIntWire)  // dynamic reverse
+  * }}}
+  */
+object Reverse extends Reverse$Intf {
 
   private def doit(in: UInt, length: Int)(implicit sourceInfo: SourceInfo): UInt =
     length match {
