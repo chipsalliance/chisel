@@ -8,21 +8,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.SourceInfo
 
-/** Builds a Mux tree out of the input signal vector using a one hot encoded
-  * select signal. Returns the output of the Mux tree.
-  *
-  * @example {{{
-  * val hotValue = chisel3.util.Mux1H(Seq(
-  *  io.selector(0) -> 2.U,
-  *  io.selector(1) -> 4.U,
-  *  io.selector(2) -> 8.U,
-  *  io.selector(4) -> 11.U,
-  * ))
-  * }}}
-  *
-  * @note results unspecified unless exactly one select signal is high
-  */
-object Mux1H extends Mux1HImpl {
+private[chisel3] trait Mux1H$Intf { self: Mux1H.type =>
 
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 
@@ -33,20 +19,7 @@ object Mux1H extends Mux1HImpl {
   def apply(sel: UInt, in: UInt)(using SourceInfo): Bool = _applyImpl(sel, in)
 }
 
-/** Builds a Mux tree under the assumption that multiple select signals
-  * can be enabled. Priority is given to the first select signal.
-  *
-  * @example {{{
-  * val hotValue = chisel3.util.PriorityMux(Seq(
-  *  io.selector(0) -> 2.U,
-  *  io.selector(1) -> 4.U,
-  *  io.selector(2) -> 8.U,
-  *  io.selector(4) -> 11.U,
-  * ))
-  * }}}
-  * Returns the output of the Mux tree.
-  */
-object PriorityMux extends PriorityMuxImpl {
+private[chisel3] trait PriorityMux$Intf { self: PriorityMux.type =>
 
   def apply[T <: Data](in: Seq[(Bool, T)])(using SourceInfo): T = _applyImpl(in)
 
@@ -55,14 +28,7 @@ object PriorityMux extends PriorityMuxImpl {
   def apply[T <: Data](sel: Bits, in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 }
 
-/** Creates a cascade of n Muxs to search for a key value. The Selector may be a UInt or an EnumType.
-  *
-  * @example {{{
-  * MuxLookup(idx, default)(Seq(0.U -> a, 1.U -> b))
-  * MuxLookup(myEnum, default)(Seq(MyEnum.a -> 1.U, MyEnum.b -> 2.U, MyEnum.c -> 3.U))
-  * }}}
-  */
-object MuxLookup extends MuxLookupImpl {
+private[chisel3] trait MuxLookup$Intf { self: MuxLookup.type =>
 
   /** @param key a key to search for
     * @param default a default value if nothing is found
