@@ -2,10 +2,10 @@
 
 package chisel3.choice
 
-import chisel3.{Data, FixedIOBaseModule, SourceInfoDoc}
+import chisel3.{Data, FixedIOBaseModule}
 import chisel3.experimental.SourceInfo
 
-object ModuleChoice extends ModuleChoiceImpl {
+private[chisel3] trait ModuleChoice$Intf { self: ModuleChoice.type =>
 
   /** A wrapper method for Module instantiation based on option choices.
     * (necessary to help Chisel track internal state).

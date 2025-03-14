@@ -11,7 +11,7 @@ import chisel3.internal.binding.WireBinding
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.DefInstanceChoice
 
-private[chisel3] trait ModuleChoiceImpl {
+object ModuleChoice extends ModuleChoice$Intf {
 
   protected def _applyImpl[T <: Data](
     default: => FixedIOBaseModule[T],

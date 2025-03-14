@@ -8,7 +8,7 @@ import chisel3.{Data, FixedIOBaseModule, SourceInfoDoc}
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.InstChoiceTransform
 
-object ModuleChoice extends ModuleChoiceImpl with SourceInfoDoc {
+private[chisel3] trait ModuleChoice$Intf extends SourceInfoDoc { self: ModuleChoice.type =>
 
   /** A wrapper method for Module instantiation based on option choices.
     * (necessary to help Chisel track internal state).
