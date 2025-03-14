@@ -241,7 +241,7 @@ final class Backend(
 ) extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
-  def generateParameters(
+  override def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
@@ -359,6 +359,7 @@ final class Backend(
             case None                                          => Seq()
             case Some(Backend.AssertGlobalMaxFailCount(count)) => Seq("-assert", s"global_finish_maxfail=$count")
           },
+          commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags),
         ).flatten,
         environment = environment
       )
