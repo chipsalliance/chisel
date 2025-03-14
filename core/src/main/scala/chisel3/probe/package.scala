@@ -12,7 +12,7 @@ import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.experimental.dataview.reifyIdentityView
 import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, hasProbeTypeModifier}
 
-private[chisel3] trait ObjectProbeImpl {
+package object probe extends Probe$Intf {
 
   private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
     probeInfo.foreach { _ =>
@@ -65,7 +65,7 @@ private[chisel3] trait ObjectProbeImpl {
     pushCommand(ProbeDefine(sourceInfo, realSink.lref, probeExpr.ref))
   }
 
-  protected def _readImpl[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = {
+  private[probe] def _readImpl[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(source)
     requireHasProbeTypeModifier(source)
     // construct clone to bind to ProbeRead

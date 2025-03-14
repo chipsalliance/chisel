@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3
+package chisel3.probe
 
 import chisel3._
 import chisel3.experimental.SourceInfo
 
 import scala.language.experimental.macros
 
-package object probe extends ObjectProbeImpl with SourceInfoDoc {
+private[chisel3] trait Probe$Intf extends SourceInfoDoc {
 
   /** Access the value of a probe.
     *
@@ -16,5 +16,5 @@ package object probe extends ObjectProbeImpl with SourceInfoDoc {
   def read[T <: Data](source: T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceRead[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = _readImpl(source)
+  def do_read[T <: Data](source: T)(implicit sourceInfo: SourceInfo): T = probe._readImpl(source)
 }
