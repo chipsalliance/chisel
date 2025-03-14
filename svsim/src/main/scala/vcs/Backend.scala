@@ -177,6 +177,20 @@ object Backend {
 
   }
 
+  /** Settings for controlling VCS branch coverage.
+    *
+    * These options map to the `-cm_branch` option.  Consult the Synopsys VCS
+    * user guide for documentation of this option.
+    */
+  final case class BranchCoverageSettings(
+    values:               Boolean = false,
+    ignoreMissingDefault: Boolean = false
+  ) extends PlusSeparated {
+
+    override def name = "cm_branch"
+
+  }
+
   case class CompilationSettings(
     xProp:                       Option[CompilationSettings.XProp] = None,
     randomlyInitializeRegisters: Boolean = false,
@@ -184,6 +198,7 @@ object Backend {
     simulationSettings:          SimulationSettings = SimulationSettings(),
     coverageSettings:            CoverageSettings = CoverageSettings(),
     toggleCoverageSettings:      ToggleCoverageSettings = ToggleCoverageSettings(),
+    branchCoverageSettings:      BranchCoverageSettings = BranchCoverageSettings(),
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false

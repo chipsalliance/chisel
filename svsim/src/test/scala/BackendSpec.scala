@@ -77,7 +77,7 @@ class VCSSpec extends BackendSpec {
         }
 
         // TODO: Find a way to test this.
-        they("extra toggle coverage options should not error") {
+        they("extra toggle and branch coverage options should not error") {
           val workspace =
             new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}/ToggleCoverageSettings")
 
@@ -92,7 +92,8 @@ class VCSSpec extends BackendSpec {
             commonSettings = CommonCompilationSettings(),
             backendSpecificSettings = compilationSettings.copy(
               coverageSettings = vcs.Backend.CoverageSettings(
-                tgl = true
+                tgl = true,
+                branch = true
               ),
               toggleCoverageSettings = vcs.Backend.ToggleCoverageSettings(
                 assign = true,
@@ -106,6 +107,10 @@ class VCSSpec extends BackendSpec {
                 union_adv = true,
                 unencrypted_signals = true,
                 old = true
+              ),
+              branchCoverageSettings = vcs.Backend.BranchCoverageSettings(
+                values = true,
+                ignoreMissingDefault = true
               )
             ),
             customSimulationWorkingDirectory = None,
