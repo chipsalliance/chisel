@@ -52,11 +52,15 @@ trait HasCliArguments extends HasConfigMap { this: TestSuite =>
   }
 
   private def helpBody = {
-    val optionsHelp = options.map { case (_, option) =>
-      s"""|  ${option.name}
-          |      ${option.help}
-          |""".stripMargin
-    }.mkString
+    // Sort the options by name to give predictable output.
+    val optionsHelp = options.keys.toSeq.sorted
+      .map(options)
+      .map { case option =>
+        s"""|  ${option.name}
+            |      ${option.help}
+            |""".stripMargin
+      }
+      .mkString
     s"""|Usage: <ScalaTest> [-D<name>=<value>...]
         |
         |This ChiselSim ScalaTest test supports passing command line arguments via
