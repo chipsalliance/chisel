@@ -7,7 +7,11 @@ import firrtl.options.StageUtils.dramaticMessage
 import org.scalatest.TestSuite
 import scala.collection.mutable
 import scala.util.control.NoStackTrace
-import svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport
+import svsim.Backend.HarnessCompilationFlags.{
+  enableFsdbTracingSupport,
+  enableVcdTracingSupport,
+  enableVpdTracingSupport
+}
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.{Backend, CommonCompilationSettings}
 
@@ -123,26 +127,81 @@ object CLI {
 
   import HasCliArguments.CliOption
 
-  trait VcdCapability { this: HasCliArguments =>
+  trait EmitFsdb { this: HasCliArguments =>
 
     addOption(
       CliOption[Unit](
-        name = "withVcdCapability",
-        help = "compiles the simulator with VCD support. (Use `enableWaves` to dump a VCD.)",
+        name = "emitFsdb",
+        help = "emit a FSDB waveform for the entire simulation",
         convert = value => {
           val trueValue = Set("true", "1")
           trueValue.contains(value) match {
             case true => ()
             case false =>
               throw new IllegalArgumentException(
-                s"""invalid argument '$value' for option 'enableVcdSupport', must be one of ${trueValue
+                s"""invalid argument '$value' for option 'emitFsdb', must be one of ${trueValue
                     .mkString("[", ", ", "]")}"""
               ) with NoStackTrace
           }
         },
         updateCommonSettings = (_, options) => {
-          options.copy(verilogPreprocessorDefines =
-            options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVcdTracingSupport)
+          options.copy(
+            verilogPreprocessorDefines =
+              options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableFsdbTracingSupport),
+            simulationSettings = options.simulationSettings.copy(
+              enableWavesAtTimeZero = true
+            )
+          )
+        },
+        updateBackendSettings = (_, options) =>
+          options match {
+            case options: svsim.vcs.Backend.CompilationSettings =>
+              options.copy(
+                traceSettings = options.traceSettings.copy(fsdbSettings =
+                  Some(
+                    svsim.vcs.Backend.CompilationSettings.TraceSettings.FsdbSettings(
+                      sys.env.getOrElse(
+                        "VERDI_HOME",
+                        throw new RuntimeException(
+                          "Cannot enable FSDB support as the environment variable 'VERDI_HOME' was not set."
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            case options: svsim.verilator.Backend.CompilationSettings =>
+              throw new IllegalArgumentException("Verilator does not support FSDB waveforms.")
+          }
+      )
+    )
+
+  }
+
+  trait EmitVcd { this: HasCliArguments =>
+
+    addOption(
+      CliOption[Unit](
+        name = "emitVcd",
+        help = "compile with VCD waveform support and start dumping waves at time zero",
+        convert = value => {
+          val trueValue = Set("true", "1")
+          trueValue.contains(value) match {
+            case true => ()
+            case false =>
+              throw new IllegalArgumentException(
+                s"""invalid argument '$value' for option 'emitVcd', must be one of ${trueValue
+                    .mkString("[", ", ", "]")}"""
+              ) with NoStackTrace
+          }
+        },
+        updateCommonSettings = (_, options) => {
+          options.copy(
+            verilogPreprocessorDefines =
+              options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVcdTracingSupport),
+            simulationSettings = options.simulationSettings.copy(
+              enableWavesAtTimeZero = true
+            )
           )
         },
         updateBackendSettings = (_, options) =>
@@ -158,6 +217,46 @@ object CLI {
                   case alreadySet => alreadySet
                 }
               )
+          }
+      )
+    )
+
+  }
+
+  trait EmitVpd { this: HasCliArguments =>
+
+    addOption(
+      CliOption[Unit](
+        name = "emitVpd",
+        help = "compile with VPD waveform support and start dumping waves at time zero",
+        convert = value => {
+          val trueValue = Set("true", "1")
+          trueValue.contains(value) match {
+            case true => ()
+            case false =>
+              throw new IllegalArgumentException(
+                s"""invalid argument '$value' for option 'emitVpd', must be one of ${trueValue
+                    .mkString("[", ", ", "]")}"""
+              ) with NoStackTrace
+          }
+        },
+        updateCommonSettings = (_, options) => {
+          options.copy(
+            verilogPreprocessorDefines =
+              options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVpdTracingSupport),
+            simulationSettings = options.simulationSettings.copy(
+              enableWavesAtTimeZero = true
+            )
+          )
+        },
+        updateBackendSettings = (_, options) =>
+          options match {
+            case options: svsim.vcs.Backend.CompilationSettings =>
+              options.copy(
+                traceSettings = options.traceSettings.copy(enableVpd = true)
+              )
+            case options: svsim.verilator.Backend.CompilationSettings =>
+              throw new IllegalArgumentException("Verilator does not support VPD waveforms.")
           }
       )
     )

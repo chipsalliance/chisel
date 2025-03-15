@@ -19,16 +19,19 @@ object CommonSettingsModifications {
   * class.
   */
 final class CommonSimulationSettings private[svsim] (
-  val plusArgs: Seq[PlusArg]
+  val plusArgs:              Seq[PlusArg],
+  val enableWavesAtTimeZero: Boolean
 ) {
 
   /** Return a copy of this [[CommonSimulationSettings]] with some fields
     * modified.
     */
   def copy(
-    plusArgs: Seq[PlusArg] = plusArgs
+    plusArgs:              Seq[PlusArg] = plusArgs,
+    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero
   ) = new CommonSimulationSettings(
-    plusArgs = plusArgs
+    plusArgs = plusArgs,
+    enableWavesAtTimeZero = enableWavesAtTimeZero
   )
 }
 
@@ -40,7 +43,8 @@ object CommonSimulationSettings {
     * runtime
     */
   def default = new CommonSimulationSettings(
-    plusArgs = Seq.empty
+    plusArgs = Seq.empty,
+    enableWavesAtTimeZero = false
   )
 
 }

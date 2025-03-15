@@ -116,20 +116,22 @@ trait Simulator[T <: Backend] {
     val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs = firtoolOpts.toSeq)
     workspace.generateAdditionalSources()
 
-    val commonCompilationSettingsUpdated = commonSettingsModifications(commonCompilationSettings).copy(
-      // Append to the include directorires based on what the
-      // workspace indicates is the path for primary sources.  This
-      // ensures that `` `include `` directives can be resolved.
-      includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
-      verilogPreprocessorDefines =
-        commonCompilationSettings.verilogPreprocessorDefines ++ chiselSettings.preprocessorDefines(elaboratedModule),
-      fileFilter =
-        commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
-      directoryFilter = commonCompilationSettings.directoryFilter.orElse(
-        chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
-      ),
-      simulationSettings = commonCompilationSettings.simulationSettings.copy(
-        plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ chiselSettings.plusArgs
+    val commonCompilationSettingsUpdated = commonSettingsModifications(
+      commonCompilationSettings.copy(
+        // Append to the include directorires based on what the
+        // workspace indicates is the path for primary sources.  This
+        // ensures that `` `include `` directives can be resolved.
+        includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
+        verilogPreprocessorDefines =
+          commonCompilationSettings.verilogPreprocessorDefines ++ chiselSettings.preprocessorDefines(elaboratedModule),
+        fileFilter =
+          commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
+        directoryFilter = commonCompilationSettings.directoryFilter.orElse(
+          chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
+        ),
+        simulationSettings = commonCompilationSettings.simulationSettings.copy(
+          plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ chiselSettings.plusArgs
+        )
       )
     )
 
@@ -168,7 +170,10 @@ trait Simulator[T <: Backend] {
     // Note: this would be much better to handle with extensions to the FIRRTL
     // ABI which would abstract away these differences.
     val simulationOutcome = Try {
-      simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
+      simulation.runElaboratedModule(
+        elaboratedModule = elaboratedModule,
+        traceEnabled = commonCompilationSettingsUpdated.simulationSettings.enableWavesAtTimeZero
+      ) { (module: SimulatedModule[T]) =>
         val outcome = body(module)
         module.completeSimulation()
         outcome
