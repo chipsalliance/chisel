@@ -153,10 +153,8 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       // Check now the debug info is stripped
       val expectedSV = ChiselStage.emitSystemVerilog(new Bar, firtoolOpts = Array("--strip-debug-info", "-g"))
 
-      new VerilatorSimulator("test_run_dir/simulator/bar_debug_mode") {
-        override val firtoolArgs = Seq("--strip-debug-info", "-g")
-      }
-        .simulate(new Bar) { module =>
+      new VerilatorSimulator("test_run_dir/simulator/bar_debug_mode")
+        .simulate(new Bar, firtoolOpts = Array("-strip-debug-info", "-g")) { module =>
           import PeekPokeAPI._
           val bar = module.wrapped
 
@@ -188,10 +186,8 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     it("simulate a circuit with zero-width ports") {
       val width = 0
       // Run a simulation with zero width foo
-      new VerilatorSimulator("test_run_dir/simulator/foo_zero_width") {
-        override val firtoolArgs = Seq("--strip-debug-info", "-g")
-      }
-        .simulate(new OptionalIOModule(n = width)) { module =>
+      new VerilatorSimulator("test_run_dir/simulator/foo_zero_width")
+        .simulate(new OptionalIOModule(n = width), firtoolOpts = Array("--strip-debug-info", "-g")) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
           dut.clock.step(2)
@@ -224,10 +220,8 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     it("simulate a circuit with non zero-width ports") {
       val width = 8
       // Run a simulation with zero width foo
-      new VerilatorSimulator("test_run_dir/simulator/foo_non_zero_width") {
-        override val firtoolArgs = Seq("--strip-debug-info", "-g")
-      }
-        .simulate(new OptionalIOModule(n = width)) { module =>
+      new VerilatorSimulator("test_run_dir/simulator/foo_non_zero_width")
+        .simulate(new OptionalIOModule(n = width), Array("--strip-debug-info", "-g")) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
           dut.clock.step(2)
@@ -312,13 +306,18 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       info("illegal constructs cause compilation failure")
       intercept[Exception] {
         new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-enabledf")
-          .simulate(new Foo, ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.EnableAll)) { _ => }
+          .simulate(
+            new Foo,
+            chiselSettings = ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.EnableAll)
+          ) { _ => }
           .result
       }.getMessage() should include("Unsupported: s_eventually")
 
       info("disabling unsupported constracts causes compilation to succeed")
       new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
-        .simulate(new Foo, ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.DisableAll)) { _ => }
+        .simulate(new Foo, chiselSettings = ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.DisableAll)) {
+          _ =>
+        }
         .result
 
     }
