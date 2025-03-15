@@ -95,7 +95,7 @@ object FormalContract extends FormalContract$Intf {
     *   FormalContract.mapping(Seq(a, b), mapToTuple)(withTupleArgs)
     * }}}
     */
-  override def mapped[R](args: Seq[Data], mapping: Seq[Data] => R)(
+  def mapped[R](args: Seq[Data], mapping: Seq[Data] => R)(
     body: R => Unit
   )(implicit sourceInfo: SourceInfo): R = {
     // Create a sequence of contract results, one for each argument.
@@ -121,9 +121,4 @@ object FormalContract extends FormalContract$Intf {
   def apply(body: => Unit)(implicit sourceInfo: SourceInfo): Unit = {
     mapped[Unit](Seq(), _ => ())(_ => body)
   }
-}
-
-// Virtual methods to tell scala-2 and scala-3 private interface traits what methods will be implemented by the public API.
-private[chisel3] trait FormalContract$VirtualMethods {
-  def mapped[R](args: Seq[Data], mapping: Seq[Data] => R)(body: R => Unit)(implicit sourceInfo: SourceInfo): R
 }
