@@ -171,7 +171,7 @@ object CLI {
                 )
               )
             case options: svsim.verilator.Backend.CompilationSettings =>
-              throw new RuntimeException("Verilator does not support FSDB waveforms.")
+              throw new IllegalArgumentException("Verilator does not support FSDB waveforms.")
           }
       )
     )
