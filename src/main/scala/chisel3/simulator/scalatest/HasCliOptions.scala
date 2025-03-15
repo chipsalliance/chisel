@@ -37,6 +37,59 @@ object HasCliOptions {
     updateBackendSettings: (A, Backend.Settings) => Backend.Settings
   )
 
+  object CliOption {
+
+    /** A simple command line option which does not affect common or backend settings.
+      *
+      * This is intended to be used to create options which are passed directly
+      * to tests as opposed to creating options which are used to affect
+      * compilation or simulation settings.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      * @param convert convert the `<value>` to type `A`
+      */
+    def simple[A](name: String, help: String, convert: (String => A)): CliOption[A] = new CliOption[A](
+      name = name,
+      help = help,
+      convert = convert,
+      updateCommonSettings = (_, a) => a,
+      updateBackendSettings = (_, a) => a
+    )
+
+    /** Add an integer option to a test.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      * @throws IllegalArgumentException if the value is not convertible to an
+      * integer
+      */
+    def int(name: String, help: String): CliOption[Int] = simple[Int](
+      name = name,
+      help = help,
+      convert = value =>
+        try {
+          value.toInt
+        } catch {
+          case e: NumberFormatException =>
+            throw new java.lang.IllegalArgumentException(
+              s"illegal value '$value' for ChiselSim ScalaTest option '$name'.  The value must be convertible to an integer."
+            ) with NoStackTrace
+        }
+    )
+
+    /** Add a string option to a test.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      */
+    def string(name: String, help: String): CliOption[String] = simple[String](
+      name = name,
+      help = help,
+      convert = identity
+    )
+  }
+
 }
 
 trait HasCliOptions extends HasConfigMap { this: TestSuite =>
@@ -50,6 +103,11 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
       throw new Exception("unable to add option with name '$name' because this is already taken by another option")
 
     options += option.name -> option
+  }
+
+  final def getOption[A](name: String): Option[A] = {
+    val value: Option[Any] = configMap.get(name)
+    value.map(_.asInstanceOf[String]).map(options(name).convert(_)).map(_.asInstanceOf[A])
   }
 
   private def helpBody = {
@@ -303,7 +361,7 @@ object Cli {
     }
 
     addOption(
-      CliOption[Unit](
+      CliOption.simple[Unit](
         name = "simulator",
         help = "sets the simulator for the test",
         convert = simulator => {
@@ -314,9 +372,7 @@ object Cli {
               s"""illegal simulator '$simulator', must be one of $legalValues"""
             )
           }
-        },
-        updateCommonSettings = (_, options) => options,
-        updateBackendSettings = (_, options) => options
+        }
       )
     )
 
