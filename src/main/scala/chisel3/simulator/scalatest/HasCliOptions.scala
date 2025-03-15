@@ -127,7 +127,7 @@ trait HasCliArguments extends HasConfigMap { this: TestSuite =>
 
 }
 
-object CLI {
+object Cli {
 
   import HasCliArguments.CliOption
 
