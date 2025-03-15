@@ -256,7 +256,7 @@ object CLI {
                 traceSettings = options.traceSettings.copy(enableVpd = true)
               )
             case options: svsim.verilator.Backend.CompilationSettings =>
-              throw new RuntimeException("Verilator does not support VPD waveforms.")
+              throw new IllegalArgumentException("Verilator does not support VPD waveforms.")
           }
       )
     )
