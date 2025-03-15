@@ -79,9 +79,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Cache Scala
-        uses: coursier/cache-action@v6
+        uses: coursier/cache-action@142d2738bd29f0eb9d44610828acb3a19809feab # v6.4.6
       - name: Setup Scala
-        uses: VirtusLab/scala-cli-setup@v1
+        uses: VirtusLab/scala-cli-setup@28971dc5a5d4e155d2e410220ab21948383baaf9 # v1.7.0
         with:
           jvm: temurin:11
       - name: Publish
@@ -112,7 +112,7 @@ jobs:
       - name: Untar built website
         run: tar zxf website.tar.gz
       - name: Deploy Website to GitHub Pages (From Main Branch)
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: website/build
