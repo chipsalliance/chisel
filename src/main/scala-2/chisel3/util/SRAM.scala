@@ -3,7 +3,6 @@ package chisel3.util
 import chisel3._
 import chisel3.internal.{Builder, NamedComponent}
 import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
-import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.{OpaqueType, SourceInfo}
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import chisel3.internal.sourceinfo.MemTransform
@@ -762,7 +761,7 @@ object SRAM {
     }
 
     // underlying target
-    val mem = autoNameRecursively("sram")(new SramTarget)
+    val mem = withName("sram")(new SramTarget)
 
     val includeMetadata = Builder.includeUtilMetadata
 

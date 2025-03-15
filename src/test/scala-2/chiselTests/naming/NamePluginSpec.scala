@@ -502,4 +502,11 @@ class NamePluginSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
     ChiselStage.emitCHIRRTL(new Test) should include("wire x :")
   }
+
+  "withNames" should "require the same number of names as fields" in {
+    case class Foo(x: Int, y: Int, z: Int)
+    an[IllegalArgumentException] should be thrownBy {
+      chisel3.withNames("a", "b")(Foo(1, 2, 3))
+    }
+  }
 }

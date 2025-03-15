@@ -192,8 +192,8 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         // If a Data and in a Bundle, just get the name but not a prefix
         if (isData && inBundle(dd)) {
           val str = stringFromTermName(name)
-          val newRHS = transform(rhs) // chisel3.internal.plugin.autoNameRecursively
-          val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
+          val newRHS = transform(rhs) // chisel3.withName
+          val named = q"chisel3.withName($str)($newRHS)"
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         }
         // If a Data or a Memory, get the name and a prefix
@@ -208,7 +208,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           val named =
             if (isNamedComp) {
               // Only name named components (not things that are merely prefixed)
-              q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
+              q"chisel3.withName($str)($prefixed)"
             } else {
               prefixed
             }
@@ -219,7 +219,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         else if (shouldMatchModule(tpe) || shouldMatchInstance(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
-          val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
+          val named = q"chisel3.withName($str)($newRHS)"
           treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
         } else {
           // Otherwise, continue
@@ -232,10 +232,10 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         if (fieldsOfInterest.reduce(_ || _)) {
           findUnapplyNames(rhs) match {
             case Some(names) =>
-              val onames: List[Option[String]] =
-                fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) Some(name) else None }
+              val onames: List[String] =
+                fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) name else "" }
               val newRHS = transform(rhs)
-              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($newRHS)"
+              val named = q"chisel3.withNames(..$onames)($newRHS)"
               treeCopy.ValDef(dd, mods, name, tpt, localTyper.typed(named))
             case None => // It's not clear how this could happen but we don't want to crash
               super.transform(tree)

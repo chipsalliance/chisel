@@ -442,4 +442,55 @@ package object chisel3 {
     private[chisel3] def apply(t: SramTarget): HasTarget = Impl(t)
 
   }
+
+  private def _withNameImpl[T](prevId: Long, name: String, nameMe: T): T = {
+    chisel3.internal.Builder.nameRecursively(
+      name,
+      nameMe,
+      (id: chisel3.internal.HasId, n: String) => {
+        // Name override only if result was created in this scope
+        if (id._id > prevId) {
+          id.forceAutoSeed(n)
+        }
+      }
+    )
+    nameMe
+  }
+
+  /** Use Chisel's naming algorithm to name the returned value
+    *
+    * This will name typical "nameable" things like Chisel [[Data]], but only if the object is created in the thunk.
+    * @param name The name to use
+    * @param nameMe A thunk that returns the thing to be named
+    * @tparam T The type of the thing to be named
+    * @return The thing, possibly now named
+    */
+  def withName[T](name: String)(nameMe: => T): T = {
+    // The _id of the most recently constructed HasId
+    val prevId = Builder.idGen.value
+    val result = nameMe
+    _withNameImpl(prevId, name, result)
+  }
+
+  /** Use Chisel's naming algorithm to name values within the returned Product value
+    *
+    * This will name typical "nameable" things like Chisel [[Data]], but only for objects crated in the thunk.
+    * @param names The names to use corresponding to interesting fields of the Product, empty Strings means no name
+    * @param nameMe The [[scala.Product]] to be named
+    * @tparam T The type of the thing to be named
+    * @return The thing, with members possibly named
+    */
+  def withNames[T <: Product](names: String*)(nameMe: => T): T = {
+    // The _id of the most recently constructed HasId
+    val prevId = Builder.idGen.value
+    val result = nameMe
+    require(
+      names.size == result.productArity,
+      s"Number of names must match number of fields in Product, got ${names.size} and ${result.productArity}."
+    )
+    for ((name, t) <- names.iterator.zip(result.productIterator) if name.nonEmpty) {
+      _withNameImpl(prevId, name, t)
+    }
+    result
+  }
 }
