@@ -15,7 +15,7 @@ import svsim.Backend.HarnessCompilationFlags.{
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.{Backend, CommonCompilationSettings}
 
-object HasCliArguments {
+object HasCliOptions {
 
   /** A ScalaTest command line option of the form `-D<name>=<value>`.
     *
@@ -38,9 +38,9 @@ object HasCliArguments {
 
 }
 
-trait HasCliArguments extends HasConfigMap { this: TestSuite =>
+trait HasCliOptions extends HasConfigMap { this: TestSuite =>
 
-  import HasCliArguments._
+  import HasCliOptions._
 
   private val options = mutable.HashMap.empty[String, CliOption[_]]
 
@@ -129,9 +129,9 @@ trait HasCliArguments extends HasConfigMap { this: TestSuite =>
 
 object Cli {
 
-  import HasCliArguments.CliOption
+  import HasCliOptions.CliOption
 
-  trait EmitFsdb { this: HasCliArguments =>
+  trait EmitFsdb { this: HasCliOptions =>
 
     addOption(
       CliOption[Unit](
@@ -182,7 +182,7 @@ object Cli {
 
   }
 
-  trait EmitVcd { this: HasCliArguments =>
+  trait EmitVcd { this: HasCliOptions =>
 
     addOption(
       CliOption[Unit](
@@ -227,7 +227,7 @@ object Cli {
 
   }
 
-  trait EmitVpd { this: HasCliArguments =>
+  trait EmitVpd { this: HasCliOptions =>
 
     addOption(
       CliOption[Unit](
