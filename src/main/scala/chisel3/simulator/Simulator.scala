@@ -170,7 +170,10 @@ trait Simulator[T <: Backend] {
     // Note: this would be much better to handle with extensions to the FIRRTL
     // ABI which would abstract away these differences.
     val simulationOutcome = Try {
-      simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
+      simulation.runElaboratedModule(
+        elaboratedModule = elaboratedModule,
+        traceEnabled = commonCompilationSettingsUpdated.simulationSettings.enableWavesAtTimeZero
+      ) { (module: SimulatedModule[T]) =>
         val outcome = body(module)
         module.completeSimulation()
         outcome
