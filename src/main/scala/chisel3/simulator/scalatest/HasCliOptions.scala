@@ -136,7 +136,7 @@ object Cli {
     addOption(
       CliOption[Unit](
         name = "emitFsdb",
-        help = "emit a FSDB waveform for the entire simulation",
+        help = "compile with FSDB waveform support and start dumping waves at time zero",
         convert = value => {
           val trueValue = Set("true", "1")
           trueValue.contains(value) match {
