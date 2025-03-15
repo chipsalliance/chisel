@@ -2,6 +2,7 @@
 
 package chisel3.simulator.scalatest
 
+import chisel3.simulator.HasSimulator
 import chisel3.testing.scalatest.HasConfigMap
 import firrtl.options.StageUtils.dramaticMessage
 import org.scalatest.TestSuite
@@ -262,6 +263,60 @@ object Cli {
             case options: svsim.verilator.Backend.CompilationSettings =>
               throw new IllegalArgumentException("Verilator does not support VPD waveforms.")
           }
+      )
+    )
+
+  }
+
+  trait Simulator { this: HasCliOptions =>
+
+    /** A mapping of simulator names to simulators. */
+    protected def cliSimulatorMap: Map[String, HasSimulator] = Map(
+      "verilator" -> HasSimulator.simulators.verilator(),
+      "vcs" -> HasSimulator.simulators.vcs()
+    )
+
+    /** Return a string showing legal simulator names. */
+    private def legalValues: String = cliSimulatorMap.keys.toSeq.sorted.mkString("[", ", ", "]")
+
+    /** An optional default simulator to use if the user does _not_ provide a simulator.
+    *
+    * If `Some` then the provided default will be used.  If `None`, then a
+    * simulator must be provided.
+    */
+    protected def defaultCliSimulator: Option[HasSimulator] = Some(HasSimulator.default)
+
+    implicit def cliSimulator: HasSimulator = configMap.getOptional[String]("simulator") match {
+      case None =>
+        defaultCliSimulator.getOrElse(
+          throw new IllegalArgumentException(
+            s"""a simulator must be provided to this test using '-Dsimulator=<simulator-name>' where <simulator-name> must be one of $legalValues"""
+          )
+        )
+      case Some(simulator) =>
+        cliSimulatorMap.getOrElse(
+          simulator,
+          throw new IllegalArgumentException(
+            s"""illegal simulator '$simulator', must be one of $legalValues"""
+          )
+        )
+    }
+
+    addOption(
+      CliOption[Unit](
+        name = "simulator",
+        help = "sets the simulator for the test",
+        convert = simulator => {
+          if (cliSimulatorMap.contains(simulator)) {
+            ()
+          } else {
+            throw new IllegalArgumentException(
+              s"""illegal simulator '$simulator', must be one of $legalValues"""
+            )
+          }
+        },
+        updateCommonSettings = (_, options) => options,
+        updateBackendSettings = (_, options) => options
       )
     )
 
