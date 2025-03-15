@@ -127,6 +127,9 @@ trait Simulator[T <: Backend] {
         commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
       directoryFilter = commonCompilationSettings.directoryFilter.orElse(
         chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
+      ),
+      simulationSettings = commonCompilationSettings.simulationSettings.copy(
+        plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ chiselSettings.plusArgs
       )
     )
 

@@ -7,6 +7,7 @@ import chisel3.simulator.PeekPokeAPI.FailedExpectationException
 import chisel3.simulator.{ChiselSettings, ChiselSim, HasSimulator, MacroText}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
+import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -206,6 +207,31 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       info(s"$vcdFile exists")
       vcdFile should (exist)
+    }
+
+    it("should support passing '$value$plusargs' and '$test$plusargs'") {
+
+      class Foo extends Module {
+        val value = IO(Output(Bool()))
+        val test = IO(Output(Bool()))
+
+        value :<= PlusArgsValue(chiselTypeOf(value), "value=%d", false.B)
+        test :<= PlusArgsTest("test")
+      }
+
+      simulateRaw(
+        new Foo,
+        chiselSettings = ChiselSettings.default.copy(
+          plusArgs = Seq(
+            new svsim.PlusArg("value", Some("1")),
+            new svsim.PlusArg("test", None)
+          )
+        )
+      ) { dut =>
+        dut.value.expect(true.B)
+        dut.test.expect(true.B)
+      }
+
     }
   }
 

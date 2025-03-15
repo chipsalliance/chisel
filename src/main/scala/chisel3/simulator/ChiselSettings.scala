@@ -76,22 +76,26 @@ object MacroText {
   * @param stopCond a condition that guards terminating the simulation (via
   * `$fatal`) for asserts created from `circt_chisel_ifelsefatal` intrinsics
   * enabled _during Verilog elaboration_.
+  * @param plusArgs Verilog `$value$plusargs` or `$test$plusargs` to set at
+  * simulation runtime.
   */
 final class ChiselSettings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
   val verilogLayers:     LayerControl.Type,
   val assertVerboseCond: Option[MacroText.Type[A]],
   val printfCond:        Option[MacroText.Type[A]],
-  val stopCond:          Option[MacroText.Type[A]]
+  val stopCond:          Option[MacroText.Type[A]],
+  val plusArgs:          Seq[svsim.PlusArg]
 ) {
 
   def copy(
     verilogLayers:     LayerControl.Type = verilogLayers,
     assertVerboseCond: Option[MacroText.Type[A]] = assertVerboseCond,
     printfCond:        Option[MacroText.Type[A]] = printfCond,
-    stopCond:          Option[MacroText.Type[A]] = stopCond
+    stopCond:          Option[MacroText.Type[A]] = stopCond,
+    plusArgs:          Seq[svsim.PlusArg] = plusArgs
   ) =
-    new ChiselSettings(verilogLayers, assertVerboseCond, printfCond, stopCond)
+    new ChiselSettings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs)
 
   private[simulator] def preprocessorDefines(
     elaboratedModule: ElaboratedModule[A]
@@ -136,7 +140,8 @@ object ChiselSettings {
     verilogLayers = LayerControl.EnableAll,
     assertVerboseCond = Some(MacroText.NotSignal(get = _.reset)),
     printfCond = Some(MacroText.NotSignal(get = _.reset)),
-    stopCond = Some(MacroText.NotSignal(get = _.reset))
+    stopCond = Some(MacroText.NotSignal(get = _.reset)),
+    plusArgs = Seq.empty
   )
 
   /** Retun a default [[ChiselSettings]] for a [[RawModule]].
@@ -162,7 +167,8 @@ object ChiselSettings {
     verilogLayers = LayerControl.EnableAll,
     assertVerboseCond = None,
     printfCond = None,
-    stopCond = None
+    stopCond = None,
+    plusArgs = Seq.empty
   )
 
   /** Simple factory for construcing a [[ChiselSettings]] from arguments.
@@ -182,12 +188,14 @@ object ChiselSettings {
     verilogLayers:     LayerControl.Type,
     assertVerboseCond: Option[MacroText.Type[A]],
     printfCond:        Option[MacroText.Type[A]],
-    stopCond:          Option[MacroText.Type[A]]
+    stopCond:          Option[MacroText.Type[A]],
+    plusArgs:          Seq[svsim.PlusArg]
   ): ChiselSettings[A] = new ChiselSettings(
     verilogLayers = verilogLayers,
     assertVerboseCond = assertVerboseCond,
     printfCond = printfCond,
-    stopCond = stopCond
+    stopCond = stopCond,
+    plusArgs = plusArgs
   )
 
 }
