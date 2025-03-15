@@ -7,7 +7,11 @@ import firrtl.options.StageUtils.dramaticMessage
 import org.scalatest.TestSuite
 import scala.collection.mutable
 import scala.util.control.NoStackTrace
-import svsim.Backend.HarnessCompilationFlags.{enableFsdbTracingSupport, enableVcdTracingSupport}
+import svsim.Backend.HarnessCompilationFlags.{
+  enableFsdbTracingSupport,
+  enableVcdTracingSupport,
+  enableVpdTracingSupport
+}
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.{Backend, CommonCompilationSettings}
 
@@ -205,6 +209,42 @@ object CLI {
                   case alreadySet => alreadySet
                 }
               )
+          }
+      )
+    )
+
+  }
+
+  trait VpdCapability { this: HasCliArguments =>
+
+    addOption(
+      CliOption[Unit](
+        name = "withVpdCapability",
+        help = "compiles the simulator with VPD support. (Use `enableWaves` to dump a VPD.)",
+        convert = value => {
+          val trueValue = Set("true", "1")
+          trueValue.contains(value) match {
+            case true => ()
+            case false =>
+              throw new IllegalArgumentException(
+                s"""invalid argument '$value' for option 'enableVpdSupport', must be one of ${trueValue
+                    .mkString("[", ", ", "]")}"""
+              ) with NoStackTrace
+          }
+        },
+        updateCommonSettings = (_, options) => {
+          options.copy(verilogPreprocessorDefines =
+            options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVpdTracingSupport)
+          )
+        },
+        updateBackendSettings = (_, options) =>
+          options match {
+            case options: svsim.vcs.Backend.CompilationSettings =>
+              options.copy(
+                traceSettings = options.traceSettings.copy(enableVpd = true)
+              )
+            case options: svsim.verilator.Backend.CompilationSettings =>
+              throw new IllegalArgumentException("Verilator does not support VPD waveforms.")
           }
       )
     )
