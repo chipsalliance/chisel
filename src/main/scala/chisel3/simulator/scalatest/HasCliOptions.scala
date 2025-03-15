@@ -127,26 +127,30 @@ object CLI {
 
   import HasCliArguments.CliOption
 
-  trait FsdbCapability { this: HasCliArguments =>
+  trait EmitFsdb { this: HasCliArguments =>
 
     addOption(
       CliOption[Unit](
-        name = "withFsdbCapability",
-        help = "compiles the simulator with FSDB support. (Use `enableWaves` to dump a FSDB.)",
+        name = "emitFsdb",
+        help = "emit a FSDB waveform for the entire simulation",
         convert = value => {
           val trueValue = Set("true", "1")
           trueValue.contains(value) match {
             case true => ()
             case false =>
               throw new IllegalArgumentException(
-                s"""invalid argument '$value' for option 'enableFsdbSupport', must be one of ${trueValue
+                s"""invalid argument '$value' for option 'emitFsdb', must be one of ${trueValue
                     .mkString("[", ", ", "]")}"""
               ) with NoStackTrace
           }
         },
         updateCommonSettings = (_, options) => {
-          options.copy(verilogPreprocessorDefines =
-            options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableFsdbTracingSupport)
+          options.copy(
+            verilogPreprocessorDefines =
+              options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableFsdbTracingSupport),
+            simulationSettings = options.simulationSettings.copy(
+              enableWavesAtTimeZero = true
+            )
           )
         },
         updateBackendSettings = (_, options) =>
@@ -174,26 +178,30 @@ object CLI {
 
   }
 
-  trait VcdCapability { this: HasCliArguments =>
+  trait EmitVcd { this: HasCliArguments =>
 
     addOption(
       CliOption[Unit](
-        name = "withVcdCapability",
-        help = "compiles the simulator with VCD support. (Use `enableWaves` to dump a VCD.)",
+        name = "emitVcd",
+        help = "compile with VCD waveform support and start dumping waves at time zero",
         convert = value => {
           val trueValue = Set("true", "1")
           trueValue.contains(value) match {
             case true => ()
             case false =>
               throw new IllegalArgumentException(
-                s"""invalid argument '$value' for option 'enableVcdSupport', must be one of ${trueValue
+                s"""invalid argument '$value' for option 'emitVcd', must be one of ${trueValue
                     .mkString("[", ", ", "]")}"""
               ) with NoStackTrace
           }
         },
         updateCommonSettings = (_, options) => {
-          options.copy(verilogPreprocessorDefines =
-            options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVcdTracingSupport)
+          options.copy(
+            verilogPreprocessorDefines =
+              options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVcdTracingSupport),
+            simulationSettings = options.simulationSettings.copy(
+              enableWavesAtTimeZero = true
+            )
           )
         },
         updateBackendSettings = (_, options) =>
@@ -215,26 +223,30 @@ object CLI {
 
   }
 
-  trait VpdCapability { this: HasCliArguments =>
+  trait EmitVpd { this: HasCliArguments =>
 
     addOption(
       CliOption[Unit](
-        name = "withVpdCapability",
-        help = "compiles the simulator with VPD support. (Use `enableWaves` to dump a VPD.)",
+        name = "emitVpd",
+        help = "compile with VPD waveform support and start dumping waves at time zero",
         convert = value => {
           val trueValue = Set("true", "1")
           trueValue.contains(value) match {
             case true => ()
             case false =>
               throw new IllegalArgumentException(
-                s"""invalid argument '$value' for option 'enableVpdSupport', must be one of ${trueValue
+                s"""invalid argument '$value' for option 'emitVpd', must be one of ${trueValue
                     .mkString("[", ", ", "]")}"""
               ) with NoStackTrace
           }
         },
         updateCommonSettings = (_, options) => {
-          options.copy(verilogPreprocessorDefines =
-            options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVpdTracingSupport)
+          options.copy(
+            verilogPreprocessorDefines =
+              options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVpdTracingSupport),
+            simulationSettings = options.simulationSettings.copy(
+              enableWavesAtTimeZero = true
+            )
           )
         },
         updateBackendSettings = (_, options) =>
