@@ -24,7 +24,6 @@ import _root_.firrtl.annotations.{
   Target
 }
 import _root_.firrtl.AnnotationSeq
-import chisel3.internal.plugin.autoNameRecursively
 import chisel3.util.simpleClassName
 import chisel3.experimental.annotate
 import chisel3.experimental.hierarchy.Hierarchy
@@ -128,7 +127,7 @@ object Module extends Module$Intf {
   def disableOption(implicit sourceInfo: SourceInfo): Option[Disable] = {
     Builder.currentDisable match {
       case Disable.Never       => None
-      case Disable.BeforeReset => hasBeenReset.map(x => autoNameRecursively("disable")(!x))
+      case Disable.BeforeReset => hasBeenReset.map(x => withName("disable")(!x))
     }
   }
 
