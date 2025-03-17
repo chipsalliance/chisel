@@ -56,10 +56,11 @@ object HasTestingDirectory {
     *     └── 2025-02-05T16-58-17.721776
     * }}}
     */
-  val timestamp: HasTestingDirectory = new HasTestingDirectory {
+  def timestamp: HasTestingDirectory = new HasTestingDirectory {
+    val time = LocalDateTime.now()
     override def getDirectory: Path = FileSystems
       .getDefault()
-      .getPath("build", "chiselsim", LocalDateTime.now().toString.replace(':', '-'))
+      .getPath("build", "chiselsim", time.toString.replace(':', '-'))
   }
 
   /** An implementation generator of [[HasTestingDirectory]] which will use an
@@ -69,9 +70,10 @@ object HasTestingDirectory {
     * @param deleteOnExit if true, delete the temporary directory when the JVM exits
     */
   def temporary(deleteOnExit: Boolean = true): HasTestingDirectory = new HasTestingDirectory {
+    val time = LocalDateTime.now()
     override def getDirectory: Path = {
       val dir = Files.createTempDirectory(
-        s"chiselsim-${LocalDateTime.now().toString.replace(':', '-')}"
+        s"chiselsim-${time.toString.replace(':', '-')}"
       )
 
       if (deleteOnExit) {
@@ -87,7 +89,7 @@ object HasTestingDirectory {
     * alternative type class implementation of [[HasTestingDirectory]], then
     * this will be what is used.
     */
-  implicit val default: HasTestingDirectory = timestamp
+  implicit def default: HasTestingDirectory = timestamp
 
   /** Walk directory and delete contents */
   private def deleteDir(directory: Path): Unit = {
