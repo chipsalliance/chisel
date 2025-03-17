@@ -2,15 +2,21 @@
 
 package chisel3
 
+import scala.annotation.implicitNotFound
+
 import firrtl.{ir => fir}
 
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
+import chisel3.Mem.HasVecDataType
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo, SourceLine}
 
 object Mem extends Mem$Intf {
+
+  @implicitNotFound("Masked write requires that the data type is a Vec, got ${T}.")
+  type HasVecDataType[T] = T <:< Vec[_]
 
   protected def _applyImpl[T <: Data](
     size: BigInt,
@@ -116,7 +122,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     data: T,
     mask: Seq[Bool]
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): Unit =
     _maskedWriteImpl(idx, data, mask, Builder.forcedClock, true)
@@ -127,7 +133,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     mask:  Seq[Bool],
     clock: Clock
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): Unit =
     _maskedWriteImpl(idx, data, mask, clock, false)
@@ -139,7 +145,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt, protected
     clock: Clock,
     warn:  Boolean
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): Unit = {
     if (warn && clockInst.isDefined && clock != clockInst.get) {
@@ -331,7 +337,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     en:        Bool,
     isWrite:   Bool
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): T = _maskedReadWriteImpl(idx, writeData, mask, en, isWrite, Builder.forcedClock, true)
 
@@ -343,7 +349,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     isWrite:   Bool,
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ) = _maskedReadWriteImpl(idx, writeData, mask, en, isWrite, clock, false)
 
@@ -356,7 +362,7 @@ sealed class SyncReadMem[T <: Data] private[chisel3] (
     clock:   Clock,
     warn:    Boolean
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): T = {
     var _port: Option[T] = None
