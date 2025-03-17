@@ -113,7 +113,8 @@ trait Simulator[T <: Backend] {
   ): Simulator.BackendInvocationDigest[U] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
-    val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs = firtoolOpts.toSeq)
+    val elaboratedModule =
+      workspace.elaborateGeneratedModule(() => module, args = chiselOpts.toSeq, firtoolArgs = firtoolOpts.toSeq)
     workspace.generateAdditionalSources()
 
     val commonCompilationSettingsUpdated = commonSettingsModifications(
