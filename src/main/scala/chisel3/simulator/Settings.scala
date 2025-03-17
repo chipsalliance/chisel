@@ -7,7 +7,7 @@ import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.Workspace
 
 /** This object implements an enumeration of classes that can be used to
-  * generate macros for use in [[ChiselSettings]].
+  * generate macros for use in [[Settings]].
   */
 object MacroText {
 
@@ -63,7 +63,7 @@ object MacroText {
 
 }
 
-/** This struct describes settings related to controlling ChiselSim.
+/** Settings for controlling ChiselSim simulations
   *
   * These setings are only intended to be associated with Chisel, FIRRTL, and
   * FIRRTL's Verilog ABI and not to do with lower-level control of the FIRRTL
@@ -81,7 +81,7 @@ object MacroText {
   * @param enableWavesAtTimeZero enable waveform dumping at time zero. This
   * requires a simulator capable of dumping waves.
   */
-final class ChiselSettings[A <: RawModule] private[simulator] (
+final class Settings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
   val verilogLayers:         LayerControl.Type,
   val assertVerboseCond:     Option[MacroText.Type[A]],
@@ -99,7 +99,7 @@ final class ChiselSettings[A <: RawModule] private[simulator] (
     plusArgs:              Seq[svsim.PlusArg] = plusArgs,
     enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero
   ) =
-    new ChiselSettings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero)
+    new Settings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero)
 
   private[simulator] def preprocessorDefines(
     elaboratedModule: ElaboratedModule[A]
@@ -118,12 +118,12 @@ final class ChiselSettings[A <: RawModule] private[simulator] (
 
 }
 
-/** This object contains factories of [[ChiselSettings]].
+/** This object contains factories of [[Settings]].
   *
   */
-object ChiselSettings {
+object Settings {
 
-  /** Retun a default [[ChiselSettings]] for a [[Module]].  Macros will be set to
+  /** Retun a default [[Settings]] for a [[Module]].  Macros will be set to
     * disable [[chisel3.assert]]-style assertions using the [[Module]]'s reset
     * port.
     *
@@ -131,16 +131,16 @@ object ChiselSettings {
     * must invoke this method like:
     *
     * {{{
-    * ChiselSettings.default[Foo]
+    * Settings.default[Foo]
     * }}}
     *
     * If you invoke this method like the following, you will get an error:
     *
     * {{{
-    * ChiselSettings.default
+    * Settings.default
     * }}}
     */
-  final def default[A <: Module]: ChiselSettings[A] = new ChiselSettings[A](
+  final def default[A <: Module]: Settings[A] = new Settings[A](
     verilogLayers = LayerControl.EnableAll,
     assertVerboseCond = Some(MacroText.NotSignal(get = _.reset)),
     printfCond = Some(MacroText.NotSignal(get = _.reset)),
@@ -149,7 +149,7 @@ object ChiselSettings {
     enableWavesAtTimeZero = false
   )
 
-  /** Retun a default [[ChiselSettings]] for a [[RawModule]].
+  /** Retun a default [[Settings]] for a [[RawModule]].
     *
     * This differs from [[default]] in that it cannot set default values for
     * macros because a [[RawModule]] has no defined reset port.  You will likely
@@ -159,16 +159,16 @@ object ChiselSettings {
     * must invoke this method like:
     *
     * {{{
-    * ChiselSettings.defaultRaw[Foo]
+    * Settings.defaultRaw[Foo]
     * }}}
     *
     * If you invoke this method like the following, you will get an error:
     *
     * {{{
-    * ChiselSettings.defaultRaw
+    * Settings.defaultRaw
     * }}}
     */
-  final def defaultRaw[A <: RawModule]: ChiselSettings[A] = new ChiselSettings[A](
+  final def defaultRaw[A <: RawModule]: Settings[A] = new Settings[A](
     verilogLayers = LayerControl.EnableAll,
     assertVerboseCond = None,
     printfCond = None,
@@ -177,10 +177,10 @@ object ChiselSettings {
     enableWavesAtTimeZero = false
   )
 
-  /** Simple factory for construcing a [[ChiselSettings]] from arguments.
+  /** Simple factory for construcing a [[Settings]] from arguments.
     *
     * This method primarily exists as a way to make future refactors that add
-    * options to [[ChiselSettings]] easier.
+    * options to [[Settings]] easier.
     *
     * @param layerControl determines which [[chisel3.layer.Layer]]s should be
     * @param assertVerboseCond a condition that guards the printing of assert
@@ -188,7 +188,7 @@ object ChiselSettings {
     * @param printfCond a condition that guards printing of [[chisel3.printf]]s
     * @param stopCond a condition that guards terminating the simulation (via
     * `$fatal`) for asserts created from `circt_chisel_ifelsefatal` intrinsics
-    * @return a [[ChiselSettings]] with the provided parameters set
+    * @return a [[Settings]] with the provided parameters set
     */
   def apply[A <: RawModule](
     verilogLayers:         LayerControl.Type,
@@ -197,7 +197,7 @@ object ChiselSettings {
     stopCond:              Option[MacroText.Type[A]],
     plusArgs:              Seq[svsim.PlusArg],
     enableWavesAtTimeZero: Boolean
-  ): ChiselSettings[A] = new ChiselSettings(
+  ): Settings[A] = new Settings(
     verilogLayers = verilogLayers,
     assertVerboseCond = assertVerboseCond,
     printfCond = printfCond,

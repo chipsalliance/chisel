@@ -4,7 +4,7 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
-import chisel3.simulator.{ChiselSettings, ChiselSim, HasSimulator, MacroText}
+import chisel3.simulator.{ChiselSim, HasSimulator, MacroText, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
 import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
@@ -117,7 +117,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         val a, b, c = IO(Input(Bool()))
       }
 
-      val chiselSettings = ChiselSettings
+      val chiselSettings = Settings
         .defaultRaw[Foo]
         .copy(
           assertVerboseCond = Some(MacroText.Signal(_.a)),
@@ -227,7 +227,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       vcdFile.delete
 
-      simulate(new Foo, chiselSettings = ChiselSettings.default.copy(enableWavesAtTimeZero = true)) { _ => }
+      simulate(new Foo, chiselSettings = Settings.default.copy(enableWavesAtTimeZero = true)) { _ => }
 
       info(s"$vcdFile exists")
       vcdFile should (exist)
@@ -245,7 +245,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       simulateRaw(
         new Foo,
-        chiselSettings = ChiselSettings.default.copy(
+        chiselSettings = Settings.default.copy(
           plusArgs = Seq(
             new svsim.PlusArg("value", Some("1")),
             new svsim.PlusArg("test", None)

@@ -106,7 +106,7 @@ trait Simulator[T <: Backend] {
     module:         => T,
     chiselOpts:     Array[String] = Array.empty,
     firtoolOpts:    Array[String] = Array.empty,
-    chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
+    chiselSettings: Settings[T] = Settings.defaultRaw[T]
   )(body: (SimulatedModule[T]) => U)(
     implicit commonSettingsModifications: svsim.CommonSettingsModifications,
     backendSettingsModifications:         svsim.BackendSettingsModifications

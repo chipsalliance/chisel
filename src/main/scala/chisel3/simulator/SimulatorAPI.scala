@@ -32,7 +32,7 @@ trait SimulatorAPI {
     module:         => T,
     chiselOpts:     Array[String] = Array.empty,
     firtoolOpts:    Array[String] = Array.empty,
-    chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
+    chiselSettings: Settings[T] = Settings.defaultRaw[T]
   )(stimulus: (T) => Unit)(
     implicit hasSimulator:        HasSimulator,
     testingDirectory:             HasTestingDirectory,
@@ -69,7 +69,7 @@ trait SimulatorAPI {
     module:                => T,
     chiselOpts:            Array[String] = Array.empty,
     firtoolOpts:           Array[String] = Array.empty,
-    chiselSettings:        ChiselSettings[T] = ChiselSettings.default[T],
+    chiselSettings:        Settings[T] = Settings.default[T],
     additionalResetCycles: Int = 0
   )(stimulus: (T) => Unit)(
     implicit hasSimulator:        HasSimulator,
