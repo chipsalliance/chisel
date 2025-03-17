@@ -130,7 +130,9 @@ trait Simulator[T <: Backend] {
           chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
         ),
         simulationSettings = commonCompilationSettings.simulationSettings.copy(
-          plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ chiselSettings.plusArgs
+          plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ chiselSettings.plusArgs,
+          enableWavesAtTimeZero =
+            commonCompilationSettings.simulationSettings.enableWavesAtTimeZero || chiselSettings.enableWavesAtTimeZero
         )
       )
     )

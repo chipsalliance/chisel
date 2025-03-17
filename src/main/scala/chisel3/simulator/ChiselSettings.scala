@@ -63,7 +63,7 @@ object MacroText {
 
 }
 
-/** This struct describes settings related to controlling a Chisel simulation.  Thes
+/** This struct describes settings related to controlling ChiselSim.
   *
   * These setings are only intended to be associated with Chisel, FIRRTL, and
   * FIRRTL's Verilog ABI and not to do with lower-level control of the FIRRTL
@@ -78,24 +78,28 @@ object MacroText {
   * enabled _during Verilog elaboration_.
   * @param plusArgs Verilog `$value$plusargs` or `$test$plusargs` to set at
   * simulation runtime.
+  * @param enableWavesAtTimeZero enable waveform dumping at time zero. This
+  * requires a simulator capable of dumping waves.
   */
 final class ChiselSettings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
-  val verilogLayers:     LayerControl.Type,
-  val assertVerboseCond: Option[MacroText.Type[A]],
-  val printfCond:        Option[MacroText.Type[A]],
-  val stopCond:          Option[MacroText.Type[A]],
-  val plusArgs:          Seq[svsim.PlusArg]
+  val verilogLayers:         LayerControl.Type,
+  val assertVerboseCond:     Option[MacroText.Type[A]],
+  val printfCond:            Option[MacroText.Type[A]],
+  val stopCond:              Option[MacroText.Type[A]],
+  val plusArgs:              Seq[svsim.PlusArg],
+  val enableWavesAtTimeZero: Boolean = false
 ) {
 
   def copy(
-    verilogLayers:     LayerControl.Type = verilogLayers,
-    assertVerboseCond: Option[MacroText.Type[A]] = assertVerboseCond,
-    printfCond:        Option[MacroText.Type[A]] = printfCond,
-    stopCond:          Option[MacroText.Type[A]] = stopCond,
-    plusArgs:          Seq[svsim.PlusArg] = plusArgs
+    verilogLayers:         LayerControl.Type = verilogLayers,
+    assertVerboseCond:     Option[MacroText.Type[A]] = assertVerboseCond,
+    printfCond:            Option[MacroText.Type[A]] = printfCond,
+    stopCond:              Option[MacroText.Type[A]] = stopCond,
+    plusArgs:              Seq[svsim.PlusArg] = plusArgs,
+    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero
   ) =
-    new ChiselSettings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs)
+    new ChiselSettings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero)
 
   private[simulator] def preprocessorDefines(
     elaboratedModule: ElaboratedModule[A]
@@ -141,7 +145,8 @@ object ChiselSettings {
     assertVerboseCond = Some(MacroText.NotSignal(get = _.reset)),
     printfCond = Some(MacroText.NotSignal(get = _.reset)),
     stopCond = Some(MacroText.NotSignal(get = _.reset)),
-    plusArgs = Seq.empty
+    plusArgs = Seq.empty,
+    enableWavesAtTimeZero = false
   )
 
   /** Retun a default [[ChiselSettings]] for a [[RawModule]].
@@ -168,7 +173,8 @@ object ChiselSettings {
     assertVerboseCond = None,
     printfCond = None,
     stopCond = None,
-    plusArgs = Seq.empty
+    plusArgs = Seq.empty,
+    enableWavesAtTimeZero = false
   )
 
   /** Simple factory for construcing a [[ChiselSettings]] from arguments.
@@ -185,17 +191,19 @@ object ChiselSettings {
     * @return a [[ChiselSettings]] with the provided parameters set
     */
   def apply[A <: RawModule](
-    verilogLayers:     LayerControl.Type,
-    assertVerboseCond: Option[MacroText.Type[A]],
-    printfCond:        Option[MacroText.Type[A]],
-    stopCond:          Option[MacroText.Type[A]],
-    plusArgs:          Seq[svsim.PlusArg]
+    verilogLayers:         LayerControl.Type,
+    assertVerboseCond:     Option[MacroText.Type[A]],
+    printfCond:            Option[MacroText.Type[A]],
+    stopCond:              Option[MacroText.Type[A]],
+    plusArgs:              Seq[svsim.PlusArg],
+    enableWavesAtTimeZero: Boolean
   ): ChiselSettings[A] = new ChiselSettings(
     verilogLayers = verilogLayers,
     assertVerboseCond = assertVerboseCond,
     printfCond = printfCond,
     stopCond = stopCond,
-    plusArgs = plusArgs
+    plusArgs = plusArgs,
+    enableWavesAtTimeZero = enableWavesAtTimeZero
   )
 
 }
