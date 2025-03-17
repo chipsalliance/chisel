@@ -3,6 +3,7 @@
 package chisel3
 
 import chisel3.experimental.SourceInfo
+import chisel3.Mem.HasVecDataType
 
 private[chisel3] trait Mem$Intf { self: Mem.type =>
 
@@ -89,7 +90,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     data: T,
     mask: Seq[Bool]
   )(
-    using T <:< Vec[_],
+    using HasVecDataType[T],
     SourceInfo
   ): Unit = _writeImpl(idx, data, mask)
 
@@ -110,7 +111,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     mask:  Seq[Bool],
     clock: Clock
   )(
-    using T <:< Vec[_],
+    using HasVecDataType[T],
     SourceInfo
   ): Unit = _writeImpl(idx, data, mask, clock)
 }
@@ -246,7 +247,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] { self: SyncReadMem[T] =>
     en:        Bool,
     isWrite:   Bool
   )(
-    using T <:< Vec[_],
+    using HasVecDataType[T],
     SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite)
 
@@ -276,7 +277,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] { self: SyncReadMem[T] =>
     isWrite:   Bool,
     clock:     Clock
   )(
-    using T <:< Vec[_],
+    using HasVecDataType[T],
     SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite, clock)
 }

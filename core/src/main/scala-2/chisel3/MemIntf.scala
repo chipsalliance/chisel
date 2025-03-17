@@ -6,6 +6,7 @@ import scala.language.experimental.macros
 
 import chisel3.internal.sourceinfo.{MemTransform, SourceInfoTransform}
 import chisel3.experimental.SourceInfo
+import chisel3.Mem.HasVecDataType
 
 private[chisel3] trait Mem$Intf extends SourceInfoDoc { self: Mem.type =>
 
@@ -120,7 +121,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     writeData: T,
     mask:      Seq[Bool]
   )(
-    implicit evidence: T <:< Vec[_]
+    implicit evidence: HasVecDataType[T]
   ): Unit = macro SourceInfoTransform.idxDataMaskArg
 
   def do_write(
@@ -128,7 +129,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     data: T,
     mask: Seq[Bool]
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): Unit = _writeImpl(idx, data, mask)
 
@@ -149,7 +150,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     mask:      Seq[Bool],
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_]
+    implicit evidence: HasVecDataType[T]
   ): Unit = macro SourceInfoTransform.idxDataMaskClockArg
 
   def do_write(
@@ -158,7 +159,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     mask:  Seq[Bool],
     clock: Clock
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): Unit = _writeImpl(idx, data, mask, clock)
 }
@@ -334,7 +335,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] extends SourceInfoDoc { self: 
     en:        Bool,
     isWrite:   Bool
   )(
-    implicit evidence: T <:< Vec[_]
+    implicit evidence: HasVecDataType[T]
   ): T = macro SourceInfoTransform.idxDataMaskEnIswArg
 
   def do_readWrite(
@@ -344,7 +345,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] extends SourceInfoDoc { self: 
     en:        Bool,
     isWrite:   Bool
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): T = _readWriteImpl(idx, writeData, mask, en, isWrite)
 
@@ -374,7 +375,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] extends SourceInfoDoc { self: 
     isWrite:   Bool,
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_]
+    implicit evidence: HasVecDataType[T]
   ): T = macro SourceInfoTransform.idxDataMaskEnIswClockArg
 
   def do_readWrite(
@@ -385,7 +386,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] extends SourceInfoDoc { self: 
     isWrite:   Bool,
     clock:     Clock
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ) = _readWriteImpl(idx, writeData, mask, en, isWrite, clock)
 }
