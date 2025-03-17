@@ -161,6 +161,8 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         hasSimulator = implicitly[HasSimulator],
         testingDirectory = fooDirectory,
         implicitly,
+        implicitly,
+        implicitly,
         implicitly
       )
 

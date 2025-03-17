@@ -2,7 +2,7 @@
 
 package chisel3.simulator.scalatest
 
-import chisel3.simulator.HasSimulator
+import chisel3.simulator.{ChiselOptionsModifications, FirtoolOptionsModifications, HasSimulator}
 import chisel3.testing.scalatest.HasConfigMap
 import firrtl.options.StageUtils.dramaticMessage
 import org.scalatest.TestSuite
@@ -33,6 +33,8 @@ object HasCliOptions {
     name:                  String,
     help:                  String,
     convert:               (String) => A,
+    updateChiselOptions:   (A, Array[String]) => Array[String],
+    updateFirtoolOptions:  (A, Array[String]) => Array[String],
     updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
     updateBackendSettings: (A, Backend.Settings) => Backend.Settings
   )
@@ -53,6 +55,8 @@ object HasCliOptions {
       name = name,
       help = help,
       convert = convert,
+      updateChiselOptions = (_, a) => a,
+      updateFirtoolOptions = (_, a) => a,
       updateCommonSettings = (_, a) => a,
       updateBackendSettings = (_, a) => a
     )
@@ -144,6 +148,28 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     }
   }
 
+  implicit def chiselOptionsModifications: ChiselOptionsModifications = (original: Array[String]) => {
+    illegalOptionCheck()
+    options.values.foldLeft(original) { case (acc, option) =>
+      configMap.getOptional[String](option.name) match {
+        case None => acc
+        case Some(value) =>
+          option.updateChiselOptions.apply(option.convert(value), acc)
+      }
+    }
+  }
+
+  implicit def firtoolOptionsModifications: FirtoolOptionsModifications = (original: Array[String]) => {
+    illegalOptionCheck()
+    options.values.foldLeft(original) { case (acc, option) =>
+      configMap.getOptional[String](option.name) match {
+        case None => acc
+        case Some(value) =>
+          option.updateFirtoolOptions.apply(option.convert(value), acc)
+      }
+    }
+  }
+
   implicit def commonSettingsModifications: svsim.CommonSettingsModifications = (original: CommonCompilationSettings) =>
     {
       illegalOptionCheck()
@@ -168,7 +194,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
   }
 
   addOption(
-    CliOption[Unit](
+    CliOption.simple[Unit](
       name = "help",
       help = "display this help text",
       convert = _ => {
@@ -178,9 +204,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
             body = helpBody
           )
         ) with NoStackTrace
-      },
-      updateCommonSettings = (_, a) => a,
-      updateBackendSettings = (_, a) => a
+      }
     )
   )
 

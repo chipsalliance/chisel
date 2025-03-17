@@ -36,6 +36,8 @@ trait SimulatorAPI {
   )(stimulus: (T) => Unit)(
     implicit hasSimulator:        HasSimulator,
     testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
   ): Unit = {
@@ -74,6 +76,8 @@ trait SimulatorAPI {
   )(stimulus: (T) => Unit)(
     implicit hasSimulator:        HasSimulator,
     testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
   ): Unit = simulateRaw(

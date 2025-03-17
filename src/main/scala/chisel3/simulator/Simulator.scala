@@ -108,13 +108,19 @@ trait Simulator[T <: Backend] {
     firtoolOpts:    Array[String] = Array.empty,
     chiselSettings: Settings[T] = Settings.defaultRaw[T]
   )(body: (SimulatedModule[T]) => U)(
-    implicit commonSettingsModifications: svsim.CommonSettingsModifications,
-    backendSettingsModifications:         svsim.BackendSettingsModifications
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
   ): Simulator.BackendInvocationDigest[U] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val elaboratedModule =
-      workspace.elaborateGeneratedModule(() => module, args = chiselOpts.toSeq, firtoolArgs = firtoolOpts.toSeq)
+      workspace.elaborateGeneratedModule(
+        () => module,
+        args = chiselOptsModifications(chiselOpts).toSeq,
+        firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
+      )
     workspace.generateAdditionalSources()
 
     val commonCompilationSettingsUpdated = commonSettingsModifications(

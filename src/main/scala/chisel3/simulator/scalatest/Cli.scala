@@ -43,6 +43,8 @@ object Cli {
               ) with NoStackTrace
           }
         },
+        updateChiselOptions = (_, a) => a,
+        updateFirtoolOptions = (_, a) => a,
         updateCommonSettings = (_, options) => {
           options.copy(
             verilogPreprocessorDefines =
@@ -101,6 +103,8 @@ object Cli {
               ) with NoStackTrace
           }
         },
+        updateChiselOptions = (_, a) => a,
+        updateFirtoolOptions = (_, a) => a,
         updateCommonSettings = (_, options) => {
           options.copy(
             verilogPreprocessorDefines =
@@ -156,6 +160,8 @@ object Cli {
               ) with NoStackTrace
           }
         },
+        updateChiselOptions = (_, a) => a,
+        updateFirtoolOptions = (_, a) => a,
         updateCommonSettings = (_, options) => {
           options.copy(
             verilogPreprocessorDefines =
