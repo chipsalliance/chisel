@@ -192,6 +192,27 @@ object Backend {
 
   }
 
+  /** Container of all simple flag options to VCS.
+    *
+    * All these options take no arguments.
+    */
+  object Flag {
+
+    /** A simple flag option
+      *
+      * This option only has a name and has no parameter.  The option name is
+      * the class name.  Force this to be a `Singleton` so that it must be an
+      * object/case object.  Because Scala will add a trailing `$` to objects,
+      * drop that when generating the flag.
+      */
+    sealed trait Type { this: Singleton =>
+      def compileFlag: String = s"-${this.getClass.getSimpleName.dropRight(1)}"
+    }
+
+    case object cm_seqnoconst extends Type
+
+  }
+
   case class CompilationSettings(
     xProp:                       Option[CompilationSettings.XProp] = None,
     randomlyInitializeRegisters: Boolean = false,
