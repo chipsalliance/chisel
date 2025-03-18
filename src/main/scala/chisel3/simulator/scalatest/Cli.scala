@@ -16,6 +16,32 @@ import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
   */
 object Cli {
 
+  /** Adds `-DchiselOpts=<space-delimited-chisel-options>`
+    *
+    * This allows for extra options to be passed directly to Chisel
+    * elaboration. Options are space-delimited.  To pass multiple options use
+    * single quotes, e.g.:
+    *
+    * {{{
+    * -DchiselOpts='-foo -bar'
+    * }}}
+    */
+  trait ChiselOpts { this: HasCliOptions =>
+
+    addOption(
+      CliOption[Seq[String]](
+        name = "chiselOpts",
+        convert = a => a.split(' ').toSeq,
+        help = "additional options to pass to the Chisel elaboration",
+        updateChiselOptions = (value, old) => old ++ value,
+        updateFirtoolOptions = (_, a) => a,
+        updateCommonSettings = (_, a) => a,
+        updateBackendSettings = (_, a) => a
+      )
+    )
+
+  }
+
   /** Adds `-DemitFsdb=[1,true]`
     *
     * This causes a simulation to dump an FSDB wave starting at time zero.
@@ -180,6 +206,31 @@ object Cli {
             case options: svsim.verilator.Backend.CompilationSettings =>
               throw new IllegalArgumentException("Verilator does not support VPD waveforms.")
           }
+      )
+    )
+
+  }
+
+  /** Adds `-DfirtoolOpts=<space-delimited-firtool-options>`
+    *
+    * This allows for extra options to be passed directly to `firtool`.  Options
+    * are space-delimited.  To pass multiple options use single quotes, e.g.:
+    *
+    * {{{
+    * -DfirtoolOpts='-foo -bar'
+    * }}}
+    */
+  trait FirtoolOpts { this: HasCliOptions =>
+
+    addOption(
+      CliOption[Seq[String]](
+        name = "firtoolOpts",
+        convert = a => a.split(' ').toSeq,
+        help = "additional options to pass to the firtool compiler",
+        updateChiselOptions = (_, a) => a,
+        updateFirtoolOptions = (value, old) => old ++ value,
+        updateCommonSettings = (_, a) => a,
+        updateBackendSettings = (_, a) => a
       )
     )
 
