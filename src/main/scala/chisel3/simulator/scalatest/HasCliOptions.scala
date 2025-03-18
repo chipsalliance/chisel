@@ -61,6 +61,27 @@ object HasCliOptions {
       updateBackendSettings = (_, a) => a
     )
 
+    /** Add a double option to a test.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      * @throws IllegalArgumentException if the value is not convertible to a
+      * double precision floating point number
+      */
+    def double(name: String, help: String): CliOption[Double] = simple[Double](
+      name = name,
+      help = help,
+      convert = value =>
+        try {
+          value.toDouble
+        } catch {
+          case e: NumberFormatException =>
+            throw new java.lang.IllegalArgumentException(
+              s"illegal value '$value' for ChiselSim ScalaTest option '$name'.  The value must be convertible to a floating point number."
+            ) with NoStackTrace
+        }
+    )
+
     /** Add an integer option to a test.
       *
       * @param name the name of the option
