@@ -170,8 +170,6 @@ object Backend {
     count:               Boolean = false,
     structarr:           Boolean = false,
     modportarr:          Boolean = false,
-    union_excl:          Boolean = false,
-    union_adv:           Boolean = false,
     unencrypted_signals: Boolean = false,
     old:                 Boolean = false
   ) extends PlusSeparated {

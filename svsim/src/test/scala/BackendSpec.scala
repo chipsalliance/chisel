@@ -98,13 +98,12 @@ class VCSSpec extends BackendSpec {
               toggleCoverageSettings = vcs.Backend.ToggleCoverageSettings(
                 assign = true,
                 portsonly = true,
-                fullintf = true,
+                // This requires an additional option.
+                fullintf = false,
                 mda = true,
                 count = true,
                 structarr = true,
                 modportarr = true,
-                union_excl = true,
-                union_adv = true,
                 unencrypted_signals = true,
                 old = true
               ),
