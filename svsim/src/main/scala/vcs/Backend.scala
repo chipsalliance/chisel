@@ -128,6 +128,9 @@ object Backend {
 
     }
 
+    /** Return true if any of the flags are set. */
+    final def any: Boolean = productIterator.collect(_.isInstanceOf[Boolean]).foldLeft(false)(_ || _)
+
   }
 
   /** Settings for controlling VCS coverage.
