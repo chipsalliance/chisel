@@ -110,8 +110,8 @@ object Backend {
     /** The name of the option. */
     def name: String
 
-    /** Convert the option into  */
-    final def compileFlags: Seq[String] = {
+    /** Convert the option into command line flags */
+    final def toFlags: Seq[String] = {
       val setFlags: Seq[String] = productElementNames
         .zip(productIterator)
         .flatMap {
@@ -206,7 +206,7 @@ object Backend {
       * drop that when generating the flag.
       */
     sealed trait Type { this: Singleton =>
-      def compileFlag: String = s"-${this.getClass.getSimpleName.dropRight(1)}"
+      def toFlag: String = s"-${this.getClass.getSimpleName.dropRight(1)}"
     }
 
     case object cm_seqnoconst extends Type
@@ -361,13 +361,13 @@ final class Backend(
 
           backendSpecificSettings.traceSettings.compileFlags,
 
-          backendSpecificSettings.coverageSettings.compileFlags,
+          backendSpecificSettings.coverageSettings.toFlags,
 
-          backendSpecificSettings.toggleCoverageSettings.compileFlags,
+          backendSpecificSettings.toggleCoverageSettings.toFlags,
 
-          backendSpecificSettings.branchCoverageSettings.compileFlags,
+          backendSpecificSettings.branchCoverageSettings.toFlags,
 
-          backendSpecificSettings.flags.map(_.compileFlag),
+          backendSpecificSettings.flags.map(_.toFlag),
 
           Seq(
             commonSettings.verilogPreprocessorDefines,
