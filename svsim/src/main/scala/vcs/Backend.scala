@@ -115,8 +115,8 @@ object Backend {
       val setFlags: Seq[String] = productElementNames
         .zip(productIterator)
         .flatMap {
-          case (_, false)   => None
           case (name, true) => Some(name)
+          case _            => None
         }
         .toSeq
 
