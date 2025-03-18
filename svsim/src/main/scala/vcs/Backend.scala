@@ -94,7 +94,9 @@ object Backend {
   final case class SimulationSettings(
     customWorkingDirectory: Option[String] = None,
     assertionSettings:      Option[AssertionSettings] = None,
-    coverageSettings:       CoverageSettings = CoverageSettings()
+    coverageSettings:       CoverageSettings = CoverageSettings(),
+    coverageDirectory:      Option[CoverageDirectory] = None,
+    coverageName:           Option[CoverageName] = None
   )
 
   /** Trait that encodes a VCS "plus" option.
@@ -155,6 +157,30 @@ object Backend {
   ) extends PlusSeparated {
 
     override def name = "cm"
+
+  }
+
+  /** Settings for controlling the coverage directory
+    *
+    * This maps to the `-cm_dir` option.
+    */
+  final case class CoverageDirectory(
+    directory: String
+  ) {
+
+    def toFlags: Seq[String] = Seq("-cm_dir", directory)
+
+  }
+
+  /** Sets a unique name used for this coverage run
+    *
+    * This maps to the `-cm_name` option.
+    */
+  final case class CoverageName(
+    name: String
+  ) {
+
+    def toFlags: Seq[String] = Seq("-cm_name", name)
 
   }
 
@@ -220,6 +246,7 @@ object Backend {
     traceSettings:               CompilationSettings.TraceSettings = CompilationSettings.TraceSettings(),
     simulationSettings:          SimulationSettings = SimulationSettings(),
     coverageSettings:            CoverageSettings = CoverageSettings(),
+    coverageDirectory:           Option[CoverageDirectory] = None,
     toggleCoverageSettings:      ToggleCoverageSettings = ToggleCoverageSettings(),
     branchCoverageSettings:      BranchCoverageSettings = BranchCoverageSettings(),
     flags:                       Seq[Flag.Type] = Seq.empty,
@@ -364,6 +391,8 @@ final class Backend(
 
           backendSpecificSettings.coverageSettings.toFlags,
 
+          backendSpecificSettings.coverageDirectory.map(_.toFlags).getOrElse(Seq.empty),
+
           backendSpecificSettings.toggleCoverageSettings.toFlags,
 
           backendSpecificSettings.branchCoverageSettings.toFlags,
@@ -390,6 +419,8 @@ final class Backend(
             case Some(Backend.AssertGlobalMaxFailCount(count)) => Seq("-assert", s"global_finish_maxfail=$count")
           },
           backendSpecificSettings.simulationSettings.coverageSettings.toFlags,
+          backendSpecificSettings.simulationSettings.coverageDirectory.map(_.toFlags).getOrElse(Seq.empty),
+          backendSpecificSettings.simulationSettings.coverageName.map(_.toFlags).getOrElse(Seq.empty),
           commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags),
         ).flatten,
         environment = environment
