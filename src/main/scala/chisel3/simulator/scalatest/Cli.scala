@@ -185,6 +185,39 @@ object Cli {
 
   }
 
+  /** Adds `-Dscale=<double>`
+    *
+    * This adds an option which can be used to control the "scaling factor" of
+    * the test.  This option can be used by the test author to "scale" the test
+    * to make it longer or shorter.
+    *
+    * This is inteded to be used with randomized testing or some testing which
+    * does not have a natural end point or an end point which may be dependent
+    * on execution context.  E.g., you can use this to make a test which runs
+    * for briefly in a pre-merge Continuous Integration (CI) flow, but runs for
+    * much longer in nightly CI.
+    *
+    * While this adds the low-level `scale` option.  A user of this should use
+    * the member functions that this trait adds, e.d., `scaled`.
+    */
+  trait Scale { this: HasCliOptions =>
+
+    /** Scale an integer by the scaling factor, if set.
+      *
+      * If no scaling factor is set, this will scale by `1.0`, i.e., the input
+      * is unchanged.
+      */
+    final def scaled(a: Int): Int = (a * getOption[Double]("scale").getOrElse(1.0)).toInt
+
+    addOption(
+      CliOption.double(
+        name = "scale",
+        help = "scale the test up or down by a floating point number"
+      )
+    )
+
+  }
+
   /** Adds `-Dsimulator` to choose the simulator at runtime.
     *
     * This trait adds an option for controlling the simulator at runtime.
