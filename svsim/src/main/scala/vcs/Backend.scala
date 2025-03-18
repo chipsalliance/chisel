@@ -93,7 +93,8 @@ object Backend {
 
   final case class SimulationSettings(
     customWorkingDirectory: Option[String] = None,
-    assertionSettings:      Option[AssertionSettings] = None
+    assertionSettings:      Option[AssertionSettings] = None,
+    coverageSettings:       CoverageSettings = CoverageSettings()
   )
 
   /** Trait that encodes a VCS "plus" option.
@@ -388,6 +389,7 @@ final class Backend(
             case None                                          => Seq()
             case Some(Backend.AssertGlobalMaxFailCount(count)) => Seq("-assert", s"global_finish_maxfail=$count")
           },
+          backendSpecificSettings.simulationSettings.coverageSettings.toFlags,
           commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags),
         ).flatten,
         environment = environment
