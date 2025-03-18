@@ -125,7 +125,9 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
 
   final def addOption(option: CliOption[_]): Unit = {
     if (options.contains(option.name))
-      throw new Exception("unable to add option with name '$name' because this is already taken by another option")
+      throw new Exception(
+        s"unable to add option with name '${option.name}' because this is already taken by another option"
+      )
 
     options += option.name -> option
   }
