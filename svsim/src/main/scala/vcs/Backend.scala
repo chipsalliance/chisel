@@ -341,6 +341,10 @@ final class Backend(
 
           backendSpecificSettings.coverageSettings.compileFlags,
 
+          backendSpecificSettings.toggleCoverageSettings.compileFlags,
+
+          backendSpecificSettings.branchCoverageSettings.compileFlags,
+
           Seq(
             commonSettings.verilogPreprocessorDefines,
             Seq(
