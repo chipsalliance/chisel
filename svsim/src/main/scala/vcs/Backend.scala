@@ -221,6 +221,7 @@ object Backend {
     coverageSettings:            CoverageSettings = CoverageSettings(),
     toggleCoverageSettings:      ToggleCoverageSettings = ToggleCoverageSettings(),
     branchCoverageSettings:      BranchCoverageSettings = BranchCoverageSettings(),
+    flags:                       Seq[Flag.Type] = Seq.empty,
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false
@@ -365,6 +366,8 @@ final class Backend(
           backendSpecificSettings.toggleCoverageSettings.compileFlags,
 
           backendSpecificSettings.branchCoverageSettings.compileFlags,
+
+          backendSpecificSettings.flags.map(_.compileFlag),
 
           Seq(
             commonSettings.verilogPreprocessorDefines,
