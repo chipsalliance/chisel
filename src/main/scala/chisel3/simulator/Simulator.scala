@@ -92,7 +92,7 @@ trait Simulator[T <: Backend] {
     * @param module a Chisel module to simulate
     * @param chiselOpts command line options to pass to Chisel
     * @param firtoolOpts command line options to pass to firtool
-    * @param chiselSettings Chisel-related settings used for simulation
+    * @param settings ChiselSim-related settings used for simulation
     * @param body stimulus to apply to the module
     * @param commonSettingsModifications modifications to common compilation
     * settings
@@ -103,10 +103,10 @@ trait Simulator[T <: Backend] {
     * by default and if you set incompatible options, the simulation will fail.
     */
   final def simulate[T <: RawModule, U](
-    module:         => T,
-    chiselOpts:     Array[String] = Array.empty,
-    firtoolOpts:    Array[String] = Array.empty,
-    chiselSettings: Settings[T] = Settings.defaultRaw[T]
+    module:      => T,
+    chiselOpts:  Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty,
+    settings:    Settings[T] = Settings.defaultRaw[T]
   )(body: (SimulatedModule[T]) => U)(
     implicit chiselOptsModifications: ChiselOptionsModifications,
     firtoolOptsModifications:         FirtoolOptionsModifications,
@@ -130,16 +130,16 @@ trait Simulator[T <: Backend] {
         // ensures that `` `include `` directives can be resolved.
         includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
         verilogPreprocessorDefines =
-          commonCompilationSettings.verilogPreprocessorDefines ++ chiselSettings.preprocessorDefines(elaboratedModule),
+          commonCompilationSettings.verilogPreprocessorDefines ++ settings.preprocessorDefines(elaboratedModule),
         fileFilter =
-          commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
+          commonCompilationSettings.fileFilter.orElse(settings.verilogLayers.shouldIncludeFile(elaboratedModule)),
         directoryFilter = commonCompilationSettings.directoryFilter.orElse(
-          chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
+          settings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
         ),
         simulationSettings = commonCompilationSettings.simulationSettings.copy(
-          plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ chiselSettings.plusArgs,
+          plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ settings.plusArgs,
           enableWavesAtTimeZero =
-            commonCompilationSettings.simulationSettings.enableWavesAtTimeZero || chiselSettings.enableWavesAtTimeZero
+            commonCompilationSettings.simulationSettings.enableWavesAtTimeZero || settings.enableWavesAtTimeZero
         )
       )
     )

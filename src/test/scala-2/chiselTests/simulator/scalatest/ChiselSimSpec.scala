@@ -117,7 +117,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         val a, b, c = IO(Input(Bool()))
       }
 
-      val chiselSettings = Settings
+      val settings = Settings
         .defaultRaw[Foo]
         .copy(
           assertVerboseCond = Some(MacroText.Signal(_.a)),
@@ -125,7 +125,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
           stopCond = Some(MacroText.NotSignal(_.c))
         )
 
-      simulateRaw(new Foo, chiselSettings = chiselSettings) { _ => }
+      simulateRaw(new Foo, settings = settings) { _ => }
 
       io.Source
         .fromFile(
@@ -229,7 +229,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       vcdFile.delete
 
-      simulate(new Foo, chiselSettings = Settings.default.copy(enableWavesAtTimeZero = true)) { _ => }
+      simulate(new Foo, settings = Settings.default.copy(enableWavesAtTimeZero = true)) { _ => }
 
       info(s"$vcdFile exists")
       vcdFile should (exist)
@@ -247,7 +247,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       simulateRaw(
         new Foo,
-        chiselSettings = Settings.default.copy(
+        settings = Settings.default.copy(
           plusArgs = Seq(
             new svsim.PlusArg("value", Some("1")),
             new svsim.PlusArg("test", None)
