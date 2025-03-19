@@ -594,7 +594,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         i.mem(0) := 100.U // should be illegal!
       }
       intercept[ChiselException] {
-        ChiselStage.convert(new Top)
+        ChiselStage.elaborate(new Top)
       }.getMessage should include(
         "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
       )

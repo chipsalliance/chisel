@@ -337,7 +337,7 @@ class SparseVecSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   "SparseVec error behavior" should "disallow indices large than the size" in {
     val exception = intercept[IllegalArgumentException] {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         new SparseVec(1, UInt(1.W), Seq(0, 1))
       })
     }
@@ -346,7 +346,7 @@ class SparseVecSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   it should "disallow non-unique indices" in {
     val exception = intercept[ChiselException] {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         new SparseVec(2, UInt(1.W), Seq(0, 0))
       })
     }
@@ -355,7 +355,7 @@ class SparseVecSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   it should "disallow a SparseVec write" in {
     val exception = intercept[ChiselException] {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val vec = Wire(new SparseVec(2, UInt(1.W), Seq(0, 1)))
         vec(0.U(1.W)) := 1.U
       })

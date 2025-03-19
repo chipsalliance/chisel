@@ -16,7 +16,7 @@ private[experimental] object ExtensionMethods {
       */
     def getModule[A <: RawModule](gen: => A): A = {
       var res: Any = null
-      obj.convert {
+      obj.elaborate {
         res = gen
         res.asInstanceOf[A]
       }

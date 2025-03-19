@@ -162,7 +162,7 @@ class Top extends Module {
 ```scala mdoc:passthrough
 println("```")
 // Run elaboration so that the println above shows up
-circt.stage.ChiselStage.convert(new Top)
+circt.stage.ChiselStage.elaborate(new Top)
 println("```")
 ```
 

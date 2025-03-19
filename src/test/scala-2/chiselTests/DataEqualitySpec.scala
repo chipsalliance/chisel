@@ -176,7 +176,7 @@ class DataEqualitySpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
   it should "throw a ChiselException with differing sizes" in {
     intercept[ChiselException] {
-      ChiselStage.convert(
+      ChiselStage.elaborate(
         new EqualityTester(
           Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
           Vec(4, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U, 3 -> 4.U)
@@ -214,7 +214,7 @@ class DataEqualitySpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
   it should "throw a ChiselException with differing runtime types" in {
     intercept[ChiselException] {
-      ChiselStage.convert(
+      ChiselStage.elaborate(
         new EqualityTester(
           (new RuntimeSensitiveBundle(new MyBundle)).Lit(
             _.a -> 1.U,
@@ -262,7 +262,7 @@ class DataEqualitySpec extends AnyFlatSpec with Matchers with ChiselSim {
 
   behavior.of("Analog === Analog")
   it should "throw a ChiselException" in {
-    intercept[ChiselException] { ChiselStage.convert(new AnalogExceptionTester) }.getMessage should include(
+    intercept[ChiselException] { ChiselStage.elaborate(new AnalogExceptionTester) }.getMessage should include(
       "Equality isn't defined for Analog values"
     )
   }
