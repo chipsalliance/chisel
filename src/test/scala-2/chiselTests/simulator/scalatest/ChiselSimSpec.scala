@@ -182,6 +182,30 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
     }
 
+    it("should allow the user to change the subdirectory on SimulatorAPI methods") {
+      class Foo extends Module {
+        stop()
+      }
+
+      var file = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "foo", "workdir-verilator", "Makefile")
+        .toFile
+      file.delete()
+      simulate(new Foo, subdirectory = Some("foo")) { _ => }
+      info(s"$file exists")
+      file should (exist)
+
+      file = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "bar", "workdir-verilator", "Makefile")
+        .toFile
+      file.delete()
+      simulateRaw(new Foo, subdirectory = Some("bar")) { _ => }
+      info(s"$file exists")
+      file should (exist)
+    }
+
     // Return a Verilator `HasSimulator` that will dump waves to `trace.vcd`.
     def verilatorWithWaves = HasSimulator.simulators
       .verilator(verilatorSettings =
