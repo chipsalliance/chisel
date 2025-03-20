@@ -67,11 +67,11 @@ object ChiselStage {
     )
   )
 
-  /** Run elaboration and return the [[ElaboratedCircuit]]
+  /** Run elaboration and return the `ElaboratedCircuit`
     *
     * @param gen  a call-by-name Chisel module
     * @param args additional command line arguments to pass to Chisel
-    * @return     the [[ElaboratedCircuit]]
+    * @return     the `ElaboratedCircuit`
     */
   def elaborate(
     gen:  => RawModule,
