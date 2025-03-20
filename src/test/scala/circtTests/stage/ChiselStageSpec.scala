@@ -1042,7 +1042,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.Utils {
 
     it("should convert a module to FIRRTL IR") {
 
-      ChiselStage.convert(new ChiselStageSpec.Foo).main should be("Foo")
+      ChiselStage.elaborate(new ChiselStageSpec.Foo).name should be("Foo")
 
     }
 

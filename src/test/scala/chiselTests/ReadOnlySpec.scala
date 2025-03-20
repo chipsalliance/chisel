@@ -83,7 +83,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
 
   def check(m: => RawModule)(implicit pos: Position): Unit = {
     val e = the[ChiselException] thrownBy {
-      ChiselStage.convert(m, Array("--throw-on-first-error"))
+      ChiselStage.elaborate(m, Array("--throw-on-first-error"))
     }
     e.getMessage should include("Cannot connect to read-only value")
   }
@@ -263,7 +263,7 @@ class ReadOnlySpec extends ChiselFlatSpec with Utils {
         op(out, z)
       })
       // But note that it's fine if x (not flipped) is readOnly.
-      ChiselStage.convert(new RawModule {
+      ChiselStage.elaborate(new RawModule {
         val x, y = Wire(UInt(8.W))
         val z = (x.readOnly, y).viewAs[BidirectionalBundle]
         val out = IO(new BidirectionalBundle)

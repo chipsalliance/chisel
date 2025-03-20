@@ -60,9 +60,7 @@ class MyModule(gen: () => MyBundle) extends Module {
 
 ```scala mdoc:invisible
 // Just here to compile check the above
-def elaborate(module: => chisel3.RawModule) = {
-  circt.stage.ChiselStage.convert(module)
-}
+import circt.stage.ChiselStage.elaborate
 elaborate(new MyModule(() => new MyBundle(3)))
 ```
 

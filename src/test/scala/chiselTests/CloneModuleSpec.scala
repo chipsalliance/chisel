@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import chisel3.aop.Select
 import chisel3.util.{log2Ceil, Decoupled, DeqIO, EnqIO, Queue, QueueIO}
 import chisel3.experimental.CloneModuleAsRecord
 import chisel3.testers.BasicTester
@@ -93,8 +94,9 @@ class CloneModuleSpec extends ChiselPropSpec {
   }
 
   property("QueueClone's cloned queues should share the same module") {
-    val c = ChiselStage.convert(new QueueClone)
-    assert(c.modules.length == 2)
+    val c = ChiselStage.elaborate(new QueueClone)
+    val modules = Select.allDefinitionsOf[RawModule](c.topDefinition)
+    assert(modules.length == 2)
   }
 
   property("Clone of Module should simulate correctly") {
@@ -104,14 +106,15 @@ class CloneModuleSpec extends ChiselPropSpec {
   }
 
   property("Clones of Modules should share the same module") {
-    val c = ChiselStage.convert(new QueueClone(multiIO = true))
-    assert(c.modules.length == 3)
+    val c = ChiselStage.elaborate(new QueueClone(multiIO = true))
+    val modules = Select.allDefinitionsOf[RawModule](c.topDefinition)
+    assert(modules.length == 3)
   }
 
   property("Cloned Modules should annotate correctly") {
     // Hackily get the actually Module object out
     var mod: CloneModuleAsRecordAnnotate = null
-    val res = ChiselStage.convert {
+    val res = ChiselStage.elaborate {
       mod = new CloneModuleAsRecordAnnotate
       mod
     }

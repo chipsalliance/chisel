@@ -165,8 +165,16 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     }
   }
   it should "throw a ChiselException with differing sizes" in {
+<<<<<<< HEAD:src/test/scala/chiselTests/DataEqualitySpec.scala
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       assertTesterFails {
+||||||| parent of f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/DataEqualitySpec.scala
+    intercept[ChiselException] {
+      ChiselStage.convert(
+=======
+    intercept[ChiselException] {
+      ChiselStage.elaborate(
+>>>>>>> f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/DataEqualitySpec.scala
         new EqualityTester(
           Vec(3, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U),
           Vec(4, UInt(8.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U, 3 -> 4.U)
@@ -201,8 +209,16 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
     }
   }
   it should "throw a ChiselException with differing runtime types" in {
+<<<<<<< HEAD:src/test/scala/chiselTests/DataEqualitySpec.scala
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       assertTesterFails {
+||||||| parent of f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/DataEqualitySpec.scala
+    intercept[ChiselException] {
+      ChiselStage.convert(
+=======
+    intercept[ChiselException] {
+      ChiselStage.elaborate(
+>>>>>>> f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/DataEqualitySpec.scala
         new EqualityTester(
           (new RuntimeSensitiveBundle(new MyBundle)).Lit(
             _.a -> 1.U,
@@ -250,8 +266,18 @@ class DataEqualitySpec extends ChiselFlatSpec with Utils {
 
   behavior.of("Analog === Analog")
   it should "throw a ChiselException" in {
+<<<<<<< HEAD:src/test/scala/chiselTests/DataEqualitySpec.scala
     (the[ChiselException] thrownBy extractCause[ChiselException] {
       assertTesterFails { new AnalogExceptionTester }
     }).getMessage should include("Equality isn't defined for Analog values")
+||||||| parent of f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/DataEqualitySpec.scala
+    intercept[ChiselException] { ChiselStage.convert(new AnalogExceptionTester) }.getMessage should include(
+      "Equality isn't defined for Analog values"
+    )
+=======
+    intercept[ChiselException] { ChiselStage.elaborate(new AnalogExceptionTester) }.getMessage should include(
+      "Equality isn't defined for Analog values"
+    )
+>>>>>>> f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/DataEqualitySpec.scala
   }
 }

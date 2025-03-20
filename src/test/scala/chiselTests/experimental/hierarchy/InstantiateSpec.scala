@@ -4,11 +4,25 @@ package chiselTests
 package experimental.hierarchy
 
 import chisel3._
+import chisel3.aop.Select
 import chisel3.util.Valid
 import chisel3.properties._
 import chisel3.experimental.hierarchy._
+<<<<<<< HEAD:src/test/scala/chiselTests/experimental/hierarchy/InstantiateSpec.scala
 import circt.stage.ChiselStage.convert
 import chisel3.experimental.{ExtModule, IntrinsicModule}
+||||||| parent of f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
+import circt.stage.ChiselStage.convert
+import chisel3.experimental.{ExtModule, IntrinsicModule, SourceLine}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+=======
+import circt.stage.ChiselStage.{elaborate, emitCHIRRTL}
+import chisel3.experimental.{BaseModule, ExtModule, IntrinsicModule, SourceLine}
+import chisel3.testing.scalatest.FileCheck
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+>>>>>>> f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -184,104 +198,140 @@ class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
   override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
 }
 
+<<<<<<< HEAD:src/test/scala/chiselTests/experimental/hierarchy/InstantiateSpec.scala
 class InstantiateSpec extends ChiselFunSpec with Utils {
+||||||| parent of f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
+class InstantiateSpec extends AnyFunSpec with Matchers with Utils {
+=======
+class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
+>>>>>>> f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
 
   import InstantiateSpec._
 
   describe("Module classes that take no arguments") {
     it("should be Instantiate-able") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new NoArgs)
         val inst1 = Instantiate(new NoArgs)
-      }).modules.map(_.name)
-      assert(modules == Seq("NoArgs", "Top"))
+      }).fileCheck()(
+        """|CHECK: module NoArgs :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
   }
 
   describe("Module classes that take only implicit arguments") {
     it("should be Instantiate-able if there are only a single implicit argument") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         implicit val n = 3
         val inst0 = Instantiate(new OneImplicitArg)
         val inst1 = Instantiate(new OneImplicitArg)
-      }).modules.map(_.name)
-      assert(modules == Seq("OneImplicitArg", "Top"))
+      }).fileCheck()(
+        """|CHECK: module OneImplicitArg :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should be Instantiate-able if there are multiple implicit arguments") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         implicit val n = 3
         implicit val str = "4"
         val inst0 = Instantiate(new TwoImplicitArgs)
         val inst1 = Instantiate(new TwoImplicitArgs)
-      }).modules.map(_.name)
-      assert(modules == Seq("TwoImplicitArgs", "Top"))
+      }).fileCheck()(
+        """|CHECK: module TwoImplicitArgs :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should be Instantiate-able when arguments are passed manually") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         implicit val n = 5
         implicit val str = "6"
         val inst0 = Instantiate(new TwoImplicitArgs)
         val inst1 = Instantiate(new TwoImplicitArgs()(n, str))
-      }).modules.map(_.name)
-      assert(modules == Seq("TwoImplicitArgs", "Top"))
+      }).fileCheck()(
+        """|CHECK: module TwoImplicitArgs :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
   }
 
   describe("Module classes that take a single argument list") {
     it("should be Instantiate-able when there is only a single argument") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val n = 3
         val inst0 = Instantiate(new OneArg(3))
         val inst1 = Instantiate(new OneArg(n))
-      }).modules.map(_.name)
-      assert(modules == Seq("OneArg", "Top"))
+      }).fileCheck()(
+        """|CHECK: module OneArg :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should be Instantiate-able when there are 3 arguments") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new ThreeArgs(3, 4, "5"))
         val inst1 = Instantiate(new ThreeArgs(3, 4, "5"))
-      }).modules.map(_.name)
-      assert(modules == Seq("ThreeArgs", "Top"))
+      }).fileCheck()(
+        """|CHECK: module ThreeArgs :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
   }
 
   describe("Module classes that take default argument lists") {
     it("should be Instantiable-able with all arguments as defaults") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new DefaultArguments)
         val inst1 = Instantiate(new DefaultArguments)
-      }).modules.map(_.name)
-      assert(modules == Seq("DefaultArguments", "Top"))
+      }).fileCheck()(
+        """|CHECK: module DefaultArguments :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should be Instantiable-able with arguments passed explicitly") {
       val m = 13
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new DefaultArguments(10, 13))
         val inst1 = Instantiate(new DefaultArguments(10, m))
-      }).modules.map(_.name)
-      assert(modules == Seq("DefaultArguments", "Top"))
+      }).fileCheck()(
+        """|CHECK: module DefaultArguments :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should be Instantiable-able with only some default arguments passed explicitly") {
       val n = 11
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new DefaultArguments(n))
         val inst1 = Instantiate(new DefaultArguments(11))
-      }).modules.map(_.name)
-      assert(modules == Seq("DefaultArguments", "Top"))
+      }).fileCheck()(
+        """|CHECK: module DefaultArguments :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should be Instantiable-able with mixed regular and default arguments") {
       val n = 7
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new MixedDefaultArguments(7))
         val inst1 = Instantiate(new MixedDefaultArguments(n, 2))
-      }).modules.map(_.name)
-      assert(modules == Seq("MixedDefaultArguments", "Top"))
+      }).fileCheck()(
+        """|CHECK: module MixedDefaultArguments :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should NOT compile with named arguments") {
@@ -301,54 +351,72 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       val n = 7
       val m = 18
       val s = "3"
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new HogWild()(7)(18, "3"))
         val inst1 = Instantiate(new HogWild()(n)(m, s))
-      }).modules.map(_.name)
-      assert(modules == Seq("HogWild", "Top"))
+      }).fileCheck()(
+        """|CHECK: module HogWild :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
   }
 
   describe("Module classes with type parameters") {
     it("should work for non-Data type parameters") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val n = "17"
         val inst0 = Instantiate(new TypeParameterized("17"))
         val inst1 = Instantiate(new TypeParameterized(n))
-      }).modules.map(_.name)
-      assert(modules == Seq("TypeParameterized", "Top"))
+      }).fileCheck()(
+        """|CHECK: module TypeParameterized :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should work for UInt type parameters") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new DataTypeParameterized(UInt(8.W)))
         val inst1 = Instantiate(new DataTypeParameterized(UInt(8.W)))
-      }).modules.map(_.name)
-      assert(modules == Seq("DataTypeParameterized_UInt8", "Top"))
+      }).fileCheck()(
+        """|CHECK: module DataTypeParameterized_UInt8 :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should work for Vec type parameters") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new DataTypeParameterized(Vec(2, UInt(8.W))))
         val inst1 = Instantiate(new DataTypeParameterized(Vec(2, UInt(8.W))))
-      }).modules.map(_.name)
-      assert(modules == Seq("DataTypeParameterized_Vec_2_UInt8", "Top"))
+      }).fileCheck()(
+        """|CHECK: module DataTypeParameterized_Vec_2_UInt8 :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should work for Bundle type parameters") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new DataTypeParameterized(Valid(UInt(8.W))))
         val inst1 = Instantiate(new DataTypeParameterized(Valid(UInt(8.W))))
-      }).modules.map(_.name)
-      assert(modules == Seq("DataTypeParameterized_Valid", "Top"))
+      }).fileCheck()(
+        """|CHECK: module DataTypeParameterized_Valid :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should work for by name Data gen parameters") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new DataTypeParameterizedByName(UInt(8.W)))
         val inst1 = Instantiate(new DataTypeParameterizedByName(UInt(8.W)))
-      }).modules.map(_.name)
-      assert(modules == Seq("DataTypeParameterizedByName_UInt8", "Top"))
+      }).fileCheck()(
+        """|CHECK: module DataTypeParameterizedByName_UInt8 :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
   }
 
@@ -357,11 +425,17 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       class MyTop extends Top {
         val inst = Instantiate(new OneArg(3))
       }
-      val modules = convert(new MyTop).modules.map(_.name)
-      assert(modules == Seq("OneArg", "Top"))
+      emitCHIRRTL(new MyTop).fileCheck()(
+        """|CHECK: module OneArg :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
       // Building the same thing a second time should work
-      val modules2 = convert(new MyTop).modules.map(_.name)
-      assert(modules2 == Seq("OneArg", "Top"))
+      emitCHIRRTL(new MyTop).fileCheck()(
+        """|CHECK: module OneArg :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should properly handle case objects as parameters") {
@@ -369,9 +443,11 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
         val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FooEnum))
         val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BarEnum))
       }
-      val modules = convert(new MyTop).modules.map(_.name)
-      assert(
-        modules == Seq("ModuleParameterizedByProductTypes_FooEnum", "ModuleParameterizedByProductTypes_BarEnum", "Top")
+      emitCHIRRTL(new MyTop).fileCheck()(
+        """|CHECK: module ModuleParameterizedByProductTypes_FooEnum :
+           |CHECK: module ModuleParameterizedByProductTypes_BarEnum :
+           |CHECK: module Top :
+           |""".stripMargin
       )
     }
 
@@ -380,13 +456,11 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
         val inst0 = Instantiate(new ModuleParameterizedByProductTypes(FizzEnum(3)))
         val inst1 = Instantiate(new ModuleParameterizedByProductTypes(BuzzEnum(3)))
       }
-      val modules = convert(new MyTop).modules.map(_.name)
-      assert(
-        modules == Seq(
-          "ModuleParameterizedByProductTypes_FizzEnum3",
-          "ModuleParameterizedByProductTypes_BuzzEnum3",
-          "Top"
-        )
+      emitCHIRRTL(new MyTop).fileCheck()(
+        """|CHECK: module ModuleParameterizedByProductTypes_FizzEnum3 :
+           |CHECK: module ModuleParameterizedByProductTypes_BuzzEnum3 :
+           |CHECK: module Top :
+           |""".stripMargin
       )
     }
 
@@ -395,12 +469,10 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
         val inst0 = Instantiate(new ModuleParameterizedBySeq(List(1, 2, 3)))
         val inst1 = Instantiate(new ModuleParameterizedBySeq(Vector(1, 2, 3)))
       }
-      val modules = convert(new MyTop).modules.map(_.name)
-      assert(
-        modules == Seq(
-          "ModuleParameterizedBySeq_1_2_3",
-          "Top"
-        )
+      emitCHIRRTL(new MyTop).fileCheck()(
+        """|CHECK: module ModuleParameterizedBySeq_1_2_3 :
+           |CHECK: module Top :
+           |""".stripMargin
       )
     }
   }
@@ -409,57 +481,73 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
     it("should provide source locators for module instances") {
       // Materialize the source info so we can use it in the check
       implicit val info = implicitly[chisel3.experimental.SourceInfo]
-      val chirrtl = convert(new Top {
+      val chirrtl = emitCHIRRTL(new Top {
         val inst = Instantiate(new OneArg(3))
+<<<<<<< HEAD:src/test/scala/chiselTests/experimental/hierarchy/InstantiateSpec.scala
       }).serialize
       chirrtl should include(s"inst inst of OneArg ${info.makeMessage(x => x)}")
+||||||| parent of f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
+      }).serialize
+      chirrtl should include(s"inst inst of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
+=======
+      })
+      // Exact check simpler without FileCheck
+      chirrtl should include(s"inst inst of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
+>>>>>>> f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
     }
 
     it("should support BlackBoxes") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new InstantiableBlackBox)
         val inst1 = Instantiate(new InstantiableBlackBox)
-      }).modules.map(_.name)
-      assert(modules == Seq("InstantiableBlackBox", "Top"))
+      }).fileCheck()(
+        """|CHECK: extmodule InstantiableBlackBox :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should support ExtModules") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new InstantiableExtModule)
         val inst1 = Instantiate(new InstantiableExtModule)
-      }).modules.map(_.name)
-      assert(modules == Seq("InstantiableExtModule", "Top"))
+      }).fileCheck()(
+        """|CHECK: extmodule InstantiableExtModule :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
 
     it("should support Intrinsics") {
-      val modules = convert(new Top {
+      emitCHIRRTL(new Top {
         val inst0 = Instantiate(new InstantiableIntrinsic)
         val inst1 = Instantiate(new InstantiableIntrinsic)
-      }).modules.map(_.name)
-      assert(modules == Seq("InstantiableIntrinsic", "Top"))
+      }).fileCheck()(
+        """|CHECK: intmodule InstantiableIntrinsic :
+           |CHECK: module Top :
+           |""".stripMargin
+      )
     }
   }
 
   describe("Arguments not of the proper form `new ModuleSubclass(...)(...)`") {
     it("should NOT compile if the `new Module` call is outside `Instantiate(...)`") {
-      """val modules = convert(new Top {
+      """emitCHIRRTL(new Top {
         val gen0 = new NoArgs
         val gen1 = new NoArgs
         val inst0 = Instantiate(gen0)
         val inst1 = Instantiate(gen1)
-      }).modules.map(_.name)
-      assert(modules == Seq("Should", "Not", "Get", "Here"))
+      })
       """ shouldNot compile
     }
     it("should NOT compile if what we are Instantiating is not a Module") {
-      """val modules = convert(new Top {
+      """emitCHIRRTL(new Top {
         class NotAModule(n: Int){
           val foo = n
         }
         val inst0 = Instantiate(new NotAModule(3))
         val inst1 = Instantiate(new NotAModule(3))
-      }).modules.map(_.name)
-      assert(modules == Seq("Should", "Not", "Get", "Here"))
+      })
       """ shouldNot compile
     }
   }
@@ -482,13 +570,11 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
         }
       }
     }
-    val modules = convert(new MyTop).modules.map(_.name)
-    assert(
-      modules == Seq(
-        "ParameterizedReset",
-        "ParameterizedReset_1",
-        "Top"
-      )
+    emitCHIRRTL(new MyTop).fileCheck()(
+      """|CHECK: module ParameterizedReset :
+         |CHECK: module ParameterizedReset_1 :
+         |CHECK: module Top :
+         |""".stripMargin
     )
   }
 
@@ -497,6 +583,43 @@ class InstantiateSpec extends ChiselFunSpec with Utils {
       val inst0 = Instantiate(new Foo(0))
       val inst1 = Instantiate(new Foo(1))
     }
-    assert(convert(new MyTop).modules.map(_.name).sorted == Seq("Bar", "Bar_1", "Baz", "Foo", "Foo_1", "Top").sorted)
+    emitCHIRRTL(new MyTop).fileCheck()(
+      """|CHECK: module Baz :
+         |CHECK: module Bar :
+         |CHECK: module Bar_1 :
+         |CHECK: module Foo :
+         |CHECK: module Foo_1 :
+         |CHECK: module Top :
+         |""".stripMargin
+    )
   }
+<<<<<<< HEAD:src/test/scala/chiselTests/experimental/hierarchy/InstantiateSpec.scala
+||||||| parent of f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
+
+  it("Instantiate.definition should work") {
+    class MyTop extends Top {
+      val def0 = Instantiate.definition(new Foo(1))
+      val inst0 = def0.toInstance
+      val inst1 = Instantiate(new Foo(1))
+    }
+    assert(convert(new MyTop).modules.map(_.name).sorted == Seq("Bar", "Bar_1", "Baz", "Foo", "Top").sorted)
+  }
+=======
+
+  it("Instantiate.definition should work") {
+    class MyTop extends Top {
+      val def0 = Instantiate.definition(new Foo(1))
+      val inst0 = def0.toInstance
+      val inst1 = Instantiate(new Foo(1))
+    }
+    emitCHIRRTL(new MyTop).fileCheck()(
+      """|CHECK: module Baz :
+         |CHECK: module Bar :
+         |CHECK: module Bar_1 :
+         |CHECK: module Foo :
+         |CHECK: module Top :
+         |""".stripMargin
+    )
+  }
+>>>>>>> f30eae3c (Deprecate ChiselStage.convert, replace with elaborate (#4816)):src/test/scala-2/chiselTests/experimental/hierarchy/InstantiateSpec.scala
 }
