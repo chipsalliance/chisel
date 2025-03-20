@@ -93,7 +93,10 @@ object Backend {
 
   final case class SimulationSettings(
     customWorkingDirectory: Option[String] = None,
-    assertionSettings:      Option[AssertionSettings] = None
+    assertionSettings:      Option[AssertionSettings] = None,
+    coverageSettings:       CoverageSettings = CoverageSettings(),
+    coverageDirectory:      Option[CoverageDirectory] = None,
+    coverageName:           Option[CoverageName] = None
   )
 
   /** Trait that encodes a VCS "plus" option.
@@ -110,13 +113,13 @@ object Backend {
     /** The name of the option. */
     def name: String
 
-    /** Convert the option into  */
-    final def compileFlags: Seq[String] = {
+    /** Convert the option into command line flags */
+    final def toFlags: Seq[String] = {
       val setFlags: Seq[String] = productElementNames
         .zip(productIterator)
         .flatMap {
-          case (_, false)   => None
           case (name, true) => Some(name)
+          case _            => None
         }
         .toSeq
 
@@ -127,6 +130,9 @@ object Backend {
       }
 
     }
+
+    /** Return true if any of the flags are set. */
+    final def any: Boolean = productIterator.collect(_.isInstanceOf[Boolean]).foldLeft(false)(_ || _)
 
   }
 
@@ -154,6 +160,30 @@ object Backend {
 
   }
 
+  /** Settings for controlling the coverage directory
+    *
+    * This maps to the `-cm_dir` option.
+    */
+  final case class CoverageDirectory(
+    directory: String
+  ) {
+
+    def toFlags: Seq[String] = Seq("-cm_dir", directory)
+
+  }
+
+  /** Sets a unique name used for this coverage run
+    *
+    * This maps to the `-cm_name` option.
+    */
+  final case class CoverageName(
+    name: String
+  ) {
+
+    def toFlags: Seq[String] = Seq("-cm_name", name)
+
+  }
+
   /** Settings for controlling VCS toggle coverage.
     *
     * These options map to the `-cm_tgl` option.  Consult the Synopsys VCS user
@@ -167,8 +197,6 @@ object Backend {
     count:               Boolean = false,
     structarr:           Boolean = false,
     modportarr:          Boolean = false,
-    union_excl:          Boolean = false,
-    union_adv:           Boolean = false,
     unencrypted_signals: Boolean = false,
     old:                 Boolean = false
   ) extends PlusSeparated {
@@ -191,14 +219,37 @@ object Backend {
 
   }
 
+  /** Container of all simple flag options to VCS.
+    *
+    * All these options take no arguments.
+    */
+  object Flag {
+
+    /** A simple flag option
+      *
+      * This option only has a name and has no parameter.  The option name is
+      * the class name.  Force this to be a `Singleton` so that it must be an
+      * object/case object.  Because Scala will add a trailing `$` to objects,
+      * drop that when generating the flag.
+      */
+    sealed trait Type { this: Singleton =>
+      def toFlag: String = s"-${this.getClass.getSimpleName.dropRight(1)}"
+    }
+
+    case object cm_seqnoconst extends Type
+
+  }
+
   case class CompilationSettings(
     xProp:                       Option[CompilationSettings.XProp] = None,
     randomlyInitializeRegisters: Boolean = false,
     traceSettings:               CompilationSettings.TraceSettings = CompilationSettings.TraceSettings(),
     simulationSettings:          SimulationSettings = SimulationSettings(),
     coverageSettings:            CoverageSettings = CoverageSettings(),
+    coverageDirectory:           Option[CoverageDirectory] = None,
     toggleCoverageSettings:      ToggleCoverageSettings = ToggleCoverageSettings(),
     branchCoverageSettings:      BranchCoverageSettings = BranchCoverageSettings(),
+    flags:                       Seq[Flag.Type] = Seq.empty,
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false
@@ -241,7 +292,7 @@ final class Backend(
 ) extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
-  def generateParameters(
+  override def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,
     additionalHeaderPaths:   Seq[String],
@@ -338,7 +389,15 @@ final class Backend(
 
           backendSpecificSettings.traceSettings.compileFlags,
 
-          backendSpecificSettings.coverageSettings.compileFlags,
+          backendSpecificSettings.coverageSettings.toFlags,
+
+          backendSpecificSettings.coverageDirectory.map(_.toFlags).getOrElse(Seq.empty),
+
+          backendSpecificSettings.toggleCoverageSettings.toFlags,
+
+          backendSpecificSettings.branchCoverageSettings.toFlags,
+
+          backendSpecificSettings.flags.map(_.toFlag),
 
           Seq(
             commonSettings.verilogPreprocessorDefines,
@@ -359,6 +418,10 @@ final class Backend(
             case None                                          => Seq()
             case Some(Backend.AssertGlobalMaxFailCount(count)) => Seq("-assert", s"global_finish_maxfail=$count")
           },
+          backendSpecificSettings.simulationSettings.coverageSettings.toFlags,
+          backendSpecificSettings.simulationSettings.coverageDirectory.map(_.toFlags).getOrElse(Seq.empty),
+          backendSpecificSettings.simulationSettings.coverageName.map(_.toFlags).getOrElse(Seq.empty),
+          commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags),
         ).flatten,
         environment = environment
       )

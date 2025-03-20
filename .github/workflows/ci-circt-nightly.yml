@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Update Staging Branch
-        uses: circt/update-staging-branch@v1.2.0
+        uses: circt/update-staging-branch@c05f7e8f8357e1f05f351694593c8c13f835fe76 # v1.2.0
         with:
           user: chiselbot
           email: chiselbot@users.noreply.github.com

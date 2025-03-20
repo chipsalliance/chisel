@@ -20,7 +20,9 @@ trait SimulatorAPI {
     * @param module the Chisel module to generate
     * @param chiselOpts command line options to pass to Chisel
     * @param firtoolOpts command line options to pass to firtool
-    * @param chiselSettings Chisel-related settings used for simulation
+    * @param settings ChiselSim-related settings used for simulation
+    * @param subdirectory an optional subdirectory for the test.  This will be a
+    * subdirectory under what is provided by `testingDirectory`.
     * @param stimulus directed stimulus to use
     * @param testingDirectory a type class implementation that can be used to
     * change the behavior of where files will be created
@@ -29,21 +31,29 @@ trait SimulatorAPI {
     * by default and if you set incompatible options, the simulation will fail.
     */
   def simulateRaw[T <: RawModule](
-    module:         => T,
-    chiselOpts:     Array[String] = Array.empty,
-    firtoolOpts:    Array[String] = Array.empty,
-    chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
+    module:       => T,
+    chiselOpts:   Array[String] = Array.empty,
+    firtoolOpts:  Array[String] = Array.empty,
+    settings:     Settings[T] = Settings.defaultRaw[T],
+    subdirectory: Option[String] = None
   )(stimulus: (T) => Unit)(
     implicit hasSimulator:        HasSimulator,
     testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
   ): Unit = {
 
-    hasSimulator.getSimulator
-      .simulate(module = module, chiselOpts = chiselOpts, firtoolOpts = firtoolOpts, chiselSettings = chiselSettings) {
-        module =>
-          stimulus(module.wrapped)
+    val modifiedTestingDirectory = subdirectory match {
+      case Some(subdir) => testingDirectory.withSubdirectory(subdir)
+      case None         => testingDirectory
+    }
+
+    hasSimulator
+      .getSimulator(modifiedTestingDirectory)
+      .simulate(module = module, chiselOpts = chiselOpts, firtoolOpts = firtoolOpts, settings = settings) { module =>
+        stimulus(module.wrapped)
       }
       .result
   }
@@ -55,9 +65,11 @@ trait SimulatorAPI {
     * @param module the Chisel module to generate
     * @param chiselOpts command line options to pass to Chisel
     * @param firtoolOpts command line options to pass to firtool
-    * @param chiselSettings Chisel-related settings used for simulation
+    * @param settings ChiselSim-related settings used for simulation
     * @param additionalResetCycles a number of _additional_ cycles to assert
     * reset for
+    * @param subdirectory an optional subdirectory for the test.  This will be a
+    * subdirectory under what is provided by `testingDirectory`.
     * @param stimulus directed stimulus to use
     * @param testingDirectory a type class implementation that can be used to
     * change the behavior of where files will be created
@@ -69,18 +81,22 @@ trait SimulatorAPI {
     module:                => T,
     chiselOpts:            Array[String] = Array.empty,
     firtoolOpts:           Array[String] = Array.empty,
-    chiselSettings:        ChiselSettings[T] = ChiselSettings.default[T],
-    additionalResetCycles: Int = 0
+    settings:              Settings[T] = Settings.default[T],
+    additionalResetCycles: Int = 0,
+    subdirectory:          Option[String] = None
   )(stimulus: (T) => Unit)(
     implicit hasSimulator:        HasSimulator,
     testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
   ): Unit = simulateRaw(
     module = module,
     chiselOpts = chiselOpts,
     firtoolOpts = firtoolOpts,
-    chiselSettings = chiselSettings
+    settings = settings,
+    subdirectory = subdirectory
   ) { dut =>
     ResetProcedure.module(additionalResetCycles)(dut)
     stimulus(dut)

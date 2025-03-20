@@ -2,8 +2,7 @@ package svsim
 
 import java.io.{BufferedReader, BufferedWriter, File, FileWriter, InputStreamReader, PrintWriter}
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, FileVisitor}
-import java.nio.file.{FileVisitor, Files, Path, Paths}
+import java.nio.file.{FileVisitResult, FileVisitor, Files, Path, Paths, SimpleFileVisitor}
 import java.lang.ProcessBuilder.Redirect
 import java.util.Comparator
 import scala.annotation.meta.param
@@ -21,6 +20,22 @@ object ModuleInfo {
 
 object Workspace {
   val testbenchModuleName: String = "svsimTestbench"
+
+  private class FileDeleter extends SimpleFileVisitor[Path] {
+    override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+      Files.delete(file)
+      FileVisitResult.CONTINUE
+    }
+    override def postVisitDirectory(dir: Path, ioe: java.io.IOException): FileVisitResult = {
+      try {
+        Files.delete(dir)
+      } catch {
+        // This is best effort, leave directories if we can't delete them due to things like FUSE.
+        case _: java.nio.file.DirectoryNotEmptyException => ()
+      }
+      FileVisitResult.CONTINUE
+    }
+  }
 }
 final class Workspace(
   path: String,
@@ -55,10 +70,7 @@ final class Workspace(
     // Create a path type object from the absolute path string.
     val absolutePathObject = Paths.get(absolutePath)
     if (Files.exists(absolutePathObject)) {
-      Files
-        .walk(absolutePathObject)
-        .sorted(Comparator.reverseOrder())
-        .forEach(Files.delete)
+      Files.walkFileTree(absolutePathObject, new Workspace.FileDeleter)
     }
 
     val pathsToCreate = Seq(

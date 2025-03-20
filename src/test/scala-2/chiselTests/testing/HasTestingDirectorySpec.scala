@@ -31,4 +31,47 @@ class HasTestingDirectorySpec extends AnyFlatSpec with Matchers {
 
   }
 
+  behavior of ("HasTestingDirectory.timestamp")
+
+  it should ("return the same directory for a given instance of the type class") in {
+
+    val foo = HasTestingDirectory.timestamp
+
+    foo.getDirectory should be(foo.getDirectory)
+
+  }
+
+  it should ("return different directories for separate instances of the type class") in {
+
+    val foo = HasTestingDirectory.timestamp
+    val bar = HasTestingDirectory.timestamp
+
+    foo.getDirectory should not be (bar.getDirectory)
+
+  }
+
+  behavior of ("HasTestingDirectory.default")
+
+  it should ("return different directories for different functions that require a type class implementation") in {
+
+    def foo(implicit testingDirectory: HasTestingDirectory) = {
+      testingDirectory.getDirectory
+    }
+
+    foo should not be (foo)
+
+  }
+
+  it should ("allow the user to force the same directory by creating an implicit val") in {
+
+    def foo(implicit testingDirectory: HasTestingDirectory) = {
+      testingDirectory.getDirectory
+    }
+
+    implicit val bar = implicitly[HasTestingDirectory]
+
+    foo should be(foo)
+
+  }
+
 }

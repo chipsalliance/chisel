@@ -221,7 +221,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       val width = 8
       // Run a simulation with zero width foo
       new VerilatorSimulator("test_run_dir/simulator/foo_non_zero_width")
-        .simulate(new OptionalIOModule(n = width), Array("--strip-debug-info", "-g")) { module =>
+        .simulate(new OptionalIOModule(n = width), firtoolOpts = Array("--strip-debug-info", "-g")) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
           dut.clock.step(2)
@@ -308,16 +308,14 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-enabledf")
           .simulate(
             new Foo,
-            chiselSettings = ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.EnableAll)
+            settings = Settings.default[Foo].copy(verilogLayers = LayerControl.EnableAll)
           ) { _ => }
           .result
       }.getMessage() should include("Unsupported: s_eventually")
 
       info("disabling unsupported constracts causes compilation to succeed")
       new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
-        .simulate(new Foo, chiselSettings = ChiselSettings.default[Foo].copy(verilogLayers = LayerControl.DisableAll)) {
-          _ =>
-        }
+        .simulate(new Foo, settings = Settings.default[Foo].copy(verilogLayers = LayerControl.DisableAll)) { _ => }
         .result
 
     }

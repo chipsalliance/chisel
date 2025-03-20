@@ -71,7 +71,7 @@ jobs:
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
-        uses: circt/install-circt@v1.1.1
+        uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
@@ -107,7 +107,7 @@ jobs:
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
-        uses: circt/install-circt@v1.1.1
+        uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
@@ -167,7 +167,7 @@ jobs:
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
-        uses: circt/install-circt@v1.1.1
+        uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}
@@ -232,9 +232,9 @@ jobs:
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Cache Scala
-        uses: coursier/cache-action@v6
+        uses: coursier/cache-action@142d2738bd29f0eb9d44610828acb3a19809feab # v6.4.6
       - name: Setup Scala
-        uses: VirtusLab/scala-cli-setup@v1
+        uses: VirtusLab/scala-cli-setup@28971dc5a5d4e155d2e410220ab21948383baaf9 # v1.7.0
         with:
           jvm: adoptium:17
       - name: Setup Node
@@ -244,7 +244,7 @@ jobs:
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
-        uses: circt/install-circt@v1.1.1
+        uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
         with:
           version: ${{ inputs.circt }}
           github-token: ${{ github.token }}

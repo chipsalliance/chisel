@@ -27,7 +27,7 @@ object EphemeralSimulator extends PeekPokeAPI {
     implicit val temporary: HasTestingDirectory = HasTestingDirectory.temporary(deleteOnExit = true)
     chiselSim.simulateRaw(
       module,
-      chiselSettings = ChiselSettings.defaultRaw[T].copy(verilogLayers = layerControl)
+      settings = Settings.defaultRaw[T].copy(verilogLayers = layerControl)
     )(body)
   }
 

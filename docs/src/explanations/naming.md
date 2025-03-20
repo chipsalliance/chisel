@@ -43,16 +43,16 @@ line which fits this criteria, it rewrites that line. In the following examples,
 line above is rewritten to.
 
 If the line is within a bundle declaration or is a module instantiation, it is rewritten to replace the right hand
-side with a call to `autoNameRecursively`, which names the signal/module.
+side with a call to `withName`, which names the signal/module.
 
 ```scala mdoc
 class MyBundle extends Bundle {
   val foo = Input(UInt(3.W))
-  // val foo = autoNameRecursively("foo")(Input(UInt(3.W)))
+  // val foo = withName("foo")(Input(UInt(3.W)))
 }
 class Example1 extends Module {
   val io = IO(new MyBundle())
-  // val io = autoNameRecursively("io")(IO(new MyBundle()))
+  // val io = withName("io")(IO(new MyBundle()))
 }
 ```
 ```scala mdoc:verilog
@@ -65,26 +65,26 @@ side of the val declaration:
 ```scala mdoc
 class Example2 extends Module {
   val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
+  // val in = withName("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
   val out1 = IO(Output(UInt(4.W)))
-  // val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
+  // val out1 = withName("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
   val out2 = IO(Output(UInt(4.W)))
-  // val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
+  // val out2 = withName("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
   val out3 = IO(Output(UInt(4.W)))
-  // val out3 = autoNameRecursively("out3")(prefix("out3")(IO(Output(UInt(4.W)))))
+  // val out3 = withName("out3")(prefix("out3")(IO(Output(UInt(4.W)))))
 
   def func() = {
     val squared = in * in
-    // val squared = autoNameRecursively("squared")(prefix("squared")(in * in))
+    // val squared = withName("squared")(prefix("squared")(in * in))
     out1 := squared
     val delay = RegNext(squared)
-    // val delay = autoNameRecursively("delay")(prefix("delay")(RegNext(squared)))
+    // val delay = withName("delay")(prefix("delay")(RegNext(squared)))
     delay
   }
 
   val masked = 0xa.U & func()
-  // val masked = autoNameRecursively("masked")(prefix("masked")(0xa.U & func()))
+  // val masked = withName("masked")(prefix("masked")(0xa.U & func()))
   // Note that values created inside of `func()`` are prefixed with `masked`
 
   out2 := masked + 1.U
@@ -101,19 +101,19 @@ While this is not implemented via the compiler plugin, the behavior should feel 
 ```scala mdoc
 class ConnectPrefixing extends Module {
   val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
+  // val in = withName("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
   val out1 = IO(Output(UInt(4.W)))
-  // val out1 = autoNameRecursively("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
+  // val out1 = withName("out1")(prefix("out1")(IO(Output(UInt(4.W)))))
   val out2 = IO(Output(UInt(4.W)))
-  // val out2 = autoNameRecursively("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
+  // val out2 = withName("out2")(prefix("out2")(IO(Output(UInt(4.W)))))
 
-  out1 := { // technically this is not wrapped in autoNameRecursively nor prefix
+  out1 := { // technically this is not wrapped in withName nor prefix
     // But the Chisel runtime will still use the name of `out1` as a prefix
     val squared = in * in
     out2 := squared
     val delayed = RegNext(squared)
-    // val delayed = autoNameRecursively("delayed")(prefix("delayed")(RegNext(squared)))
+    // val delayed = withName("delayed")(prefix("delayed")(RegNext(squared)))
     delayed + 1.U
   }
 }
@@ -127,10 +127,10 @@ Note that the naming also works if the hardware type is nested in an `Option` or
 ```scala mdoc
 class Example3 extends Module {
   val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
+  // val in = withName("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
   val out = IO(Output(UInt(4.W)))
-  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(4.W)))))
+  // val out = withName("out")(prefix("out")(IO(Output(UInt(4.W)))))
 
   def func() = {
     val delay = RegNext(in)
@@ -139,7 +139,7 @@ class Example3 extends Module {
 
   val opt = Some(func())
   // Note that the register in func() is prefixed with `opt`:
-  // val opt = autoNameRecursively("opt")(prefix("opt")(Some(func()))
+  // val opt = withName("opt")(prefix("opt")(Some(func()))
 
   out := opt.get + 1.U
 }
@@ -148,14 +148,15 @@ class Example3 extends Module {
 emitSystemVerilog(new Example3)
 ```
 
-There is also a slight variant (`autoNameRecursivelyProduct`) for naming hardware with names provided by an unapply:
+There is also an overloaded variant for naming hardware with names provided by an unapply:
 ```scala mdoc
 class UnapplyExample extends Module {
-  def mkIO() = (IO(Input(UInt(2.W))), IO(Output(UInt(2.W))))
-  val (in, out) = mkIO()
-  // val (in, out) = autoNameRecursivelyProduct(List(Some("in"), Some("out")))(mkIO())
+  val foo = IO(Input(UInt(2.W)))
+  def mkIO() = (IO(Input(UInt(2.W))), foo, IO(Output(UInt(2.W))))
+  val (in, _, out) = mkIO()
+  // val (in, _, out) = withName("in", "", "out")(mkIO())
 
-  out := in
+  out := in & foo
 }
 ```
 ```scala mdoc:verilog

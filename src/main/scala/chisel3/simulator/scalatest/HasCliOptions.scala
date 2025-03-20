@@ -2,16 +2,21 @@
 
 package chisel3.simulator.scalatest
 
+import chisel3.simulator.{ChiselOptionsModifications, FirtoolOptionsModifications, HasSimulator}
 import chisel3.testing.scalatest.HasConfigMap
 import firrtl.options.StageUtils.dramaticMessage
 import org.scalatest.TestSuite
 import scala.collection.mutable
 import scala.util.control.NoStackTrace
-import svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport
+import svsim.Backend.HarnessCompilationFlags.{
+  enableFsdbTracingSupport,
+  enableVcdTracingSupport,
+  enableVpdTracingSupport
+}
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.{Backend, CommonCompilationSettings}
 
-object HasCliArguments {
+object HasCliOptions {
 
   /** A ScalaTest command line option of the form `-D<name>=<value>`.
     *
@@ -28,31 +33,120 @@ object HasCliArguments {
     name:                  String,
     help:                  String,
     convert:               (String) => A,
+    updateChiselOptions:   (A, Array[String]) => Array[String],
+    updateFirtoolOptions:  (A, Array[String]) => Array[String],
     updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
     updateBackendSettings: (A, Backend.Settings) => Backend.Settings
   )
 
+  object CliOption {
+
+    /** A simple command line option which does not affect common or backend settings.
+      *
+      * This is intended to be used to create options which are passed directly
+      * to tests as opposed to creating options which are used to affect
+      * compilation or simulation settings.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      * @param convert convert the `<value>` to type `A`
+      */
+    def simple[A](name: String, help: String, convert: (String => A)): CliOption[A] = new CliOption[A](
+      name = name,
+      help = help,
+      convert = convert,
+      updateChiselOptions = (_, a) => a,
+      updateFirtoolOptions = (_, a) => a,
+      updateCommonSettings = (_, a) => a,
+      updateBackendSettings = (_, a) => a
+    )
+
+    /** Add a double option to a test.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      * @throws IllegalArgumentException if the value is not convertible to a
+      * double precision floating point number
+      */
+    def double(name: String, help: String): CliOption[Double] = simple[Double](
+      name = name,
+      help = help,
+      convert = value =>
+        try {
+          value.toDouble
+        } catch {
+          case e: NumberFormatException =>
+            throw new java.lang.IllegalArgumentException(
+              s"illegal value '$value' for ChiselSim ScalaTest option '$name'.  The value must be convertible to a floating point number."
+            ) with NoStackTrace
+        }
+    )
+
+    /** Add an integer option to a test.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      * @throws IllegalArgumentException if the value is not convertible to an
+      * integer
+      */
+    def int(name: String, help: String): CliOption[Int] = simple[Int](
+      name = name,
+      help = help,
+      convert = value =>
+        try {
+          value.toInt
+        } catch {
+          case e: NumberFormatException =>
+            throw new java.lang.IllegalArgumentException(
+              s"illegal value '$value' for ChiselSim ScalaTest option '$name'.  The value must be convertible to an integer."
+            ) with NoStackTrace
+        }
+    )
+
+    /** Add a string option to a test.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      */
+    def string(name: String, help: String): CliOption[String] = simple[String](
+      name = name,
+      help = help,
+      convert = identity
+    )
+  }
+
 }
 
-trait HasCliArguments extends HasConfigMap { this: TestSuite =>
+trait HasCliOptions extends HasConfigMap { this: TestSuite =>
 
-  import HasCliArguments._
+  import HasCliOptions._
 
   private val options = mutable.HashMap.empty[String, CliOption[_]]
 
   final def addOption(option: CliOption[_]): Unit = {
     if (options.contains(option.name))
-      throw new Exception("unable to add option with name '$name' because this is already taken by another option")
+      throw new Exception(
+        s"unable to add option with name '${option.name}' because this is already taken by another option"
+      )
 
     options += option.name -> option
   }
 
+  final def getOption[A](name: String): Option[A] = {
+    val value: Option[Any] = configMap.get(name)
+    value.map(_.asInstanceOf[String]).map(options(name).convert(_)).map(_.asInstanceOf[A])
+  }
+
   private def helpBody = {
-    val optionsHelp = options.map { case (_, option) =>
-      s"""|  ${option.name}
-          |      ${option.help}
-          |""".stripMargin
-    }.mkString
+    // Sort the options by name to give predictable output.
+    val optionsHelp = options.keys.toSeq.sorted
+      .map(options)
+      .map { case option =>
+        s"""|  ${option.name}
+            |      ${option.help}
+            |""".stripMargin
+      }
+      .mkString
     s"""|Usage: <ScalaTest> [-D<name>=<value>...]
         |
         |This ChiselSim ScalaTest test supports passing command line arguments via
@@ -73,6 +167,28 @@ trait HasCliArguments extends HasConfigMap { this: TestSuite =>
             body = helpBody
           )
         ) with NoStackTrace
+      }
+    }
+  }
+
+  implicit def chiselOptionsModifications: ChiselOptionsModifications = (original: Array[String]) => {
+    illegalOptionCheck()
+    options.values.foldLeft(original) { case (acc, option) =>
+      configMap.getOptional[String](option.name) match {
+        case None => acc
+        case Some(value) =>
+          option.updateChiselOptions.apply(option.convert(value), acc)
+      }
+    }
+  }
+
+  implicit def firtoolOptionsModifications: FirtoolOptionsModifications = (original: Array[String]) => {
+    illegalOptionCheck()
+    options.values.foldLeft(original) { case (acc, option) =>
+      configMap.getOptional[String](option.name) match {
+        case None => acc
+        case Some(value) =>
+          option.updateFirtoolOptions.apply(option.convert(value), acc)
       }
     }
   }
@@ -101,7 +217,7 @@ trait HasCliArguments extends HasConfigMap { this: TestSuite =>
   }
 
   addOption(
-    CliOption[Unit](
+    CliOption.simple[Unit](
       name = "help",
       help = "display this help text",
       convert = _ => {
@@ -111,57 +227,8 @@ trait HasCliArguments extends HasConfigMap { this: TestSuite =>
             body = helpBody
           )
         ) with NoStackTrace
-      },
-      updateCommonSettings = (_, a) => a,
-      updateBackendSettings = (_, a) => a
+      }
     )
   )
-
-}
-
-object CLI {
-
-  import HasCliArguments.CliOption
-
-  trait VcdCapability { this: HasCliArguments =>
-
-    addOption(
-      CliOption[Unit](
-        name = "withVcdCapability",
-        help = "compiles the simulator with VCD support. (Use `enableWaves` to dump a VCD.)",
-        convert = value => {
-          val trueValue = Set("true", "1")
-          trueValue.contains(value) match {
-            case true => ()
-            case false =>
-              throw new IllegalArgumentException(
-                s"""invalid argument '$value' for option 'enableVcdSupport', must be one of ${trueValue
-                    .mkString("[", ", ", "]")}"""
-              ) with NoStackTrace
-          }
-        },
-        updateCommonSettings = (_, options) => {
-          options.copy(verilogPreprocessorDefines =
-            options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVcdTracingSupport)
-          )
-        },
-        updateBackendSettings = (_, options) =>
-          options match {
-            case options: svsim.vcs.Backend.CompilationSettings =>
-              options.copy(
-                traceSettings = options.traceSettings.copy(enableVcd = true)
-              )
-            case options: svsim.verilator.Backend.CompilationSettings =>
-              options.copy(
-                traceStyle = options.traceStyle match {
-                  case None => Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(filename = "trace.vcd"))
-                  case alreadySet => alreadySet
-                }
-              )
-          }
-      )
-    )
-
-  }
 
 }

@@ -3,11 +3,11 @@ package chisel3.util
 import chisel3._
 import chisel3.internal.{Builder, NamedComponent}
 import chisel3.internal.binding.{FirrtlMemTypeBinding, SramPortBinding}
-import chisel3.internal.plugin.autoNameRecursively
 import chisel3.experimental.{OpaqueType, SourceInfo}
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance, Instantiate}
 import chisel3.internal.sourceinfo.MemTransform
 import chisel3.internal.firrtl.ir.{Arg, FirrtlMemory, LitIndex, Node, Ref, Slot}
+import chisel3.Mem.HasVecDataType
 import chisel3.util.experimental.loadMemoryFromFileInline
 import chisel3.reflect.DataMirror
 import firrtl.annotations.{IsMember, MemoryLoadFileType}
@@ -487,7 +487,7 @@ object SRAM {
     numWritePorts:     Int,
     numReadwritePorts: Int
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
@@ -527,7 +527,7 @@ object SRAM {
     numReadwritePorts: Int,
     memoryFile:        MemoryFile
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] = {
     val clock = Builder.forcedClock
@@ -565,7 +565,7 @@ object SRAM {
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock]
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(
@@ -603,7 +603,7 @@ object SRAM {
     readwritePortClocks: Seq[Clock],
     memoryFile:          MemoryFile
   )(
-    implicit evidence: T <:< Vec[_],
+    implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
   ): SRAMInterface[T] =
     memInterface_impl(
@@ -624,7 +624,7 @@ object SRAM {
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
     memoryFile:          Option[MemoryFile],
-    evidenceOpt:         Option[T <:< Vec[_]],
+    evidenceOpt:         Option[HasVecDataType[T]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
     val numReadPorts = readPortClocks.size
@@ -729,7 +729,7 @@ object SRAM {
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
     memoryFile:          Option[MemoryFile],
-    evidenceOpt:         Option[T <:< Vec[_]],
+    evidenceOpt:         Option[HasVecDataType[T]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
     if (Builder.useSRAMBlackbox)
@@ -762,7 +762,7 @@ object SRAM {
     }
 
     // underlying target
-    val mem = autoNameRecursively("sram")(new SramTarget)
+    val mem = withName("sram")(new SramTarget)
 
     val includeMetadata = Builder.includeUtilMetadata
 

@@ -63,7 +63,7 @@ object v extends Module {
   val scalatest = ivy"org.scalatest::scalatest:3.2.19"
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-18:3.2.19.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.7"
-  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.6"
+  val dataclass = ivy"io.github.alexarchambault::data-class:0.2.7"
   val commonText = ivy"org.apache.commons:commons-text:1.13.0"
   val scopt = ivy"com.github.scopt::scopt:4.1.0"
   val mdoc = ivy"org.scalameta::mdoc:2.6.4"
@@ -91,7 +91,10 @@ object v extends Module {
     // Deprecated for external users, will eventually be removed.
     "cat=deprecation&msg=Looking up Modules is deprecated:s",
     // Only for testing of deprecated APIs
-    "cat=deprecation&msg=Use of @instantiable on user-defined types is deprecated:s"
+    "cat=deprecation&msg=Use of @instantiable on user-defined types is deprecated:s",
+    // FirtoolResolver uses package shading which causes issues with metadata for inlining.
+    // We don't want to inline from it anyway so just suppress the warning.
+    "msg=reading InlineInfoAttribute from firtoolresolver:s"
   )
 
   // ScalacOptions
@@ -107,6 +110,12 @@ object v extends Module {
     "-Xlint:infer-any",
     "-Xlint:missing-interpolator",
     "-language:reflectiveCalls",
+    // It is crucial to only ever inline from within the same artifact.
+    // Despite having several comilation units, we publish them together as a
+    // single artifact so it is safe to inline anything in the chisel3 package.
+    // See documentation: https://docs.scala-lang.org/overviews/compiler-options/optimizer.html
+    "-opt:l:inline",
+    "-opt-inline-from:chisel3.**",
     s"-Wconf:${(scala2WarnConf ++ extraWarnConf).mkString(",")}"
   )
 }

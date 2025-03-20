@@ -92,7 +92,7 @@ trait Simulator[T <: Backend] {
     * @param module a Chisel module to simulate
     * @param chiselOpts command line options to pass to Chisel
     * @param firtoolOpts command line options to pass to firtool
-    * @param chiselSettings Chisel-related settings used for simulation
+    * @param settings ChiselSim-related settings used for simulation
     * @param body stimulus to apply to the module
     * @param commonSettingsModifications modifications to common compilation
     * settings
@@ -103,30 +103,44 @@ trait Simulator[T <: Backend] {
     * by default and if you set incompatible options, the simulation will fail.
     */
   final def simulate[T <: RawModule, U](
-    module:         => T,
-    chiselOpts:     Array[String] = Array.empty,
-    firtoolOpts:    Array[String] = Array.empty,
-    chiselSettings: ChiselSettings[T] = ChiselSettings.defaultRaw[T]
+    module:      => T,
+    chiselOpts:  Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty,
+    settings:    Settings[T] = Settings.defaultRaw[T]
   )(body: (SimulatedModule[T]) => U)(
-    implicit commonSettingsModifications: svsim.CommonSettingsModifications,
-    backendSettingsModifications:         svsim.BackendSettingsModifications
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
   ): Simulator.BackendInvocationDigest[U] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
-    val elaboratedModule = workspace.elaborateGeneratedModule({ () => module }, firtoolArgs = firtoolOpts.toSeq)
+    val elaboratedModule =
+      workspace.elaborateGeneratedModule(
+        () => module,
+        args = chiselOptsModifications(chiselOpts).toSeq,
+        firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
+      )
     workspace.generateAdditionalSources()
 
-    val commonCompilationSettingsUpdated = commonSettingsModifications(commonCompilationSettings).copy(
-      // Append to the include directorires based on what the
-      // workspace indicates is the path for primary sources.  This
-      // ensures that `` `include `` directives can be resolved.
-      includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
-      verilogPreprocessorDefines =
-        commonCompilationSettings.verilogPreprocessorDefines ++ chiselSettings.preprocessorDefines(elaboratedModule),
-      fileFilter =
-        commonCompilationSettings.fileFilter.orElse(chiselSettings.verilogLayers.shouldIncludeFile(elaboratedModule)),
-      directoryFilter = commonCompilationSettings.directoryFilter.orElse(
-        chiselSettings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
+    val commonCompilationSettingsUpdated = commonSettingsModifications(
+      commonCompilationSettings.copy(
+        // Append to the include directorires based on what the
+        // workspace indicates is the path for primary sources.  This
+        // ensures that `` `include `` directives can be resolved.
+        includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
+        verilogPreprocessorDefines =
+          commonCompilationSettings.verilogPreprocessorDefines ++ settings.preprocessorDefines(elaboratedModule),
+        fileFilter =
+          commonCompilationSettings.fileFilter.orElse(settings.verilogLayers.shouldIncludeFile(elaboratedModule)),
+        directoryFilter = commonCompilationSettings.directoryFilter.orElse(
+          settings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
+        ),
+        simulationSettings = commonCompilationSettings.simulationSettings.copy(
+          plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ settings.plusArgs,
+          enableWavesAtTimeZero =
+            commonCompilationSettings.simulationSettings.enableWavesAtTimeZero || settings.enableWavesAtTimeZero
+        )
       )
     )
 
@@ -165,7 +179,10 @@ trait Simulator[T <: Backend] {
     // Note: this would be much better to handle with extensions to the FIRRTL
     // ABI which would abstract away these differences.
     val simulationOutcome = Try {
-      simulation.runElaboratedModule(elaboratedModule = elaboratedModule) { (module: SimulatedModule[T]) =>
+      simulation.runElaboratedModule(
+        elaboratedModule = elaboratedModule,
+        traceEnabled = commonCompilationSettingsUpdated.simulationSettings.enableWavesAtTimeZero
+      ) { (module: SimulatedModule[T]) =>
         val outcome = body(module)
         module.completeSimulation()
         outcome

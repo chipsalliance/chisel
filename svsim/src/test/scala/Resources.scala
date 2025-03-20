@@ -146,5 +146,25 @@ object Resources {
         )
       )
     }
+    def elaboratePlusArgTest(): Unit = {
+      workspace.addPrimarySourceFromResource(getClass, "/PlusArg.sv")
+      workspace.elaborate(
+        ModuleInfo(
+          name = "PlusArg",
+          ports = Seq(
+            new ModuleInfo.Port(
+              name = "value",
+              isSettable = false,
+              isGettable = true
+            ),
+            new ModuleInfo.Port(
+              name = "test",
+              isSettable = false,
+              isGettable = true
+            )
+          )
+        )
+      )
+    }
   }
 }

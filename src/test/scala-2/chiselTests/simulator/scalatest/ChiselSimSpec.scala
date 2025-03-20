@@ -4,9 +4,10 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
-import chisel3.simulator.{ChiselSettings, ChiselSim, HasSimulator, MacroText}
+import chisel3.simulator.{ChiselSim, HasSimulator, MacroText, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
+import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -116,7 +117,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         val a, b, c = IO(Input(Bool()))
       }
 
-      val chiselSettings = ChiselSettings
+      val settings = Settings
         .defaultRaw[Foo]
         .copy(
           assertVerboseCond = Some(MacroText.Signal(_.a)),
@@ -124,7 +125,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
           stopCond = Some(MacroText.NotSignal(_.c))
         )
 
-      simulateRaw(new Foo, chiselSettings = chiselSettings) { _ => }
+      simulateRaw(new Foo, settings = settings) { _ => }
 
       io.Source
         .fromFile(
@@ -160,6 +161,8 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         hasSimulator = implicitly[HasSimulator],
         testingDirectory = fooDirectory,
         implicitly,
+        implicitly,
+        implicitly,
         implicitly
       )
 
@@ -179,15 +182,42 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
     }
 
+    it("should allow the user to change the subdirectory on SimulatorAPI methods") {
+      class Foo extends Module {
+        stop()
+      }
+
+      var file = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "foo", "workdir-verilator", "Makefile")
+        .toFile
+      file.delete()
+      simulate(new Foo, subdirectory = Some("foo")) { _ => }
+      info(s"$file exists")
+      file should (exist)
+
+      file = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "bar", "workdir-verilator", "Makefile")
+        .toFile
+      file.delete()
+      simulateRaw(new Foo, subdirectory = Some("bar")) { _ => }
+      info(s"$file exists")
+      file should (exist)
+    }
+
+    // Return a Verilator `HasSimulator` that will dump waves to `trace.vcd`.
+    def verilatorWithWaves = HasSimulator.simulators
+      .verilator(verilatorSettings =
+        svsim.verilator.Backend.CompilationSettings(
+          traceStyle =
+            Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
+        )
+      )
+
     it("should dump a waveform when enableWaves is used") {
 
-      implicit val verilator = HasSimulator.simulators
-        .verilator(verilatorSettings =
-          svsim.verilator.Backend.CompilationSettings(
-            traceStyle =
-              Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
-          )
-        )
+      implicit val vaerilator = verilatorWithWaves
 
       class Foo extends Module {
         stop()
@@ -206,6 +236,52 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       info(s"$vcdFile exists")
       vcdFile should (exist)
+    }
+
+    it("should dump a waveform using ChiselSim settings") {
+
+      implicit val vaerilator = verilatorWithWaves
+
+      class Foo extends Module {
+        stop()
+      }
+
+      val vcdFile = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.vcd")
+        .toFile
+
+      vcdFile.delete
+
+      simulate(new Foo, settings = Settings.default.copy(enableWavesAtTimeZero = true)) { _ => }
+
+      info(s"$vcdFile exists")
+      vcdFile should (exist)
+    }
+
+    it("should support passing '$value$plusargs' and '$test$plusargs'") {
+
+      class Foo extends Module {
+        val value = IO(Output(Bool()))
+        val test = IO(Output(Bool()))
+
+        value :<= PlusArgsValue(chiselTypeOf(value), "value=%d", false.B)
+        test :<= PlusArgsTest("test")
+      }
+
+      simulateRaw(
+        new Foo,
+        settings = Settings.default.copy(
+          plusArgs = Seq(
+            new svsim.PlusArg("value", Some("1")),
+            new svsim.PlusArg("test", None)
+          )
+        )
+      ) { dut =>
+        dut.value.expect(true.B)
+        dut.test.expect(true.B)
+      }
+
     }
   }
 

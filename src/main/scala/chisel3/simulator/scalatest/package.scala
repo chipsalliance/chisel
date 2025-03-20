@@ -22,7 +22,14 @@ package object scalatest {
     *
     * @see [[chisel3.simulator.ChiselSim]]
     */
-  trait ChiselSim extends chisel3.simulator.ChiselSim with HasConfigMap with TestingDirectory {
+  trait ChiselSim
+      extends HasCliOptions
+      with HasConfigMap
+      with Cli.ChiselOpts
+      with Cli.EmitVcd
+      with Cli.FirtoolOpts
+      with TestingDirectory
+      with chisel3.simulator.ChiselSim {
     self: TestSuite =>
   }
 
