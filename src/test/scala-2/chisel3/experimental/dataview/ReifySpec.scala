@@ -79,7 +79,7 @@ class ReifySpec extends AnyFunSpec {
   describe("dataview.reify") {
 
     it("should reify single targets and identity for all non-view Elements") {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val wires = (new AllElementsBundle).getElements.map(Wire(_))
 
         // .getElements returns Data so we have to match that these are Elements.
@@ -92,7 +92,7 @@ class ReifySpec extends AnyFunSpec {
     }
 
     it("should reify single targets and identity for all non-view Elements even as children of an Aggregate") {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val bundle = IO(new AllElementsBundle)
 
         // .getElements returns Data so we have to match that these are Elements.
@@ -105,7 +105,7 @@ class ReifySpec extends AnyFunSpec {
     }
 
     it("should reify single targets and identity for all Elements in an Aggregate identity-view") {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val bundle = IO(new AllElementsBundle)
         val view = bundle.viewAs[AllElementsBundle]
 
@@ -122,7 +122,7 @@ class ReifySpec extends AnyFunSpec {
     }
 
     it("should reify single targets and identity for all Elements in an Aggregate non-identity and non-1-1 view") {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val wires = (new AllElementsBundle).getElements.map(Wire(_))
         val view = wires.viewAs[AllElementsBundle]
 
@@ -139,7 +139,7 @@ class ReifySpec extends AnyFunSpec {
     }
 
     it("should distinguish identity views from single-target views (even if the single target is the same type!") {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val vec = IO(Vec(2, UInt(8.W)))
         val view = vec.viewAs[ReversedVec[UInt]]
 
@@ -159,7 +159,7 @@ class ReifySpec extends AnyFunSpec {
     }
 
     it("should correctly reify single-target views despite complex hierarchy") {
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val in0 = IO(Input(UInt(8.W)))
         val in1 = IO(Input(new TargetBundle))
         val view = (in0, in1).viewAs[ViewBundle]
@@ -186,7 +186,7 @@ class ReifySpec extends AnyFunSpec {
       class MyModule extends RawModule {
         @public val ios = (new AllElementsBundle).getElements.map(IO(_))
       }
-      ChiselStage.convert(new RawModule {
+      ChiselStage.elaborate(new RawModule {
 
         val child = Instantiate(new MyModule)
 
@@ -204,7 +204,7 @@ class ReifySpec extends AnyFunSpec {
       class MyModule extends RawModule {
         @public val bundle = IO(new AllElementsBundle)
       }
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val child = Instantiate(new MyModule)
 
         // .getElements returns Data so we have to match that these are Elements.
@@ -222,7 +222,7 @@ class ReifySpec extends AnyFunSpec {
         @public val bundle = IO(new AllElementsBundle)
         @public val view = bundle.viewAs[AllElementsBundle]
       }
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val child = Instantiate(new MyModule)
 
         _reifyIdentityView(child.view) should be(Some(child.bundle))
@@ -243,7 +243,7 @@ class ReifySpec extends AnyFunSpec {
         @public val wires = (new AllElementsBundle).getElements.map(Wire(_))
         @public val view = wires.viewAs[AllElementsBundle]
       }
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val child = Instantiate(new MyModule)
 
         _reifyIdentityView(child.view) should be(None)
@@ -264,7 +264,7 @@ class ReifySpec extends AnyFunSpec {
         @public val vec = IO(Vec(2, UInt(8.W)))
         @public val view = vec.viewAs[ReversedVec[UInt]]
       }
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val child = Instantiate(new MyModule)
         val vec = child.vec
         val view = child.view
@@ -291,7 +291,7 @@ class ReifySpec extends AnyFunSpec {
         @public val in1 = IO(Input(new TargetBundle))
         @public val view = (in0, in1).viewAs[ViewBundle]
       }
-      ChiselStage.convert(new Module {
+      ChiselStage.elaborate(new Module {
         val child = Instantiate(new MyModule)
         val in0 = child.in0
         val in1 = child.in1

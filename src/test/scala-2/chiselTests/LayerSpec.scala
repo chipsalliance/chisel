@@ -179,7 +179,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
       define(y, ProbeValue(b))
     }
 
-    ChiselStage.convert(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   they should "allow for defines to layer-colored probes regardless of enabled layers" in {
@@ -193,7 +193,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
       define(y, ProbeValue(b))
     }
 
-    ChiselStage.convert(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   they should "be enabled with a trait" in {
@@ -432,7 +432,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     }
 
-    intercept[ChiselException] { ChiselStage.convert(new Foo, Array("--throw-on-first-error")) }
+    intercept[ChiselException] { ChiselStage.elaborate(new Foo, Array("--throw-on-first-error")) }
       .getMessage() should include("cannot return probe of color 'C' from a layer block associated with layer 'A'")
   }
 
@@ -505,7 +505,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
       }
     }
 
-    intercept[ChiselException] { ChiselStage.convert(new Foo, Array("--throw-on-first-error")) }
+    intercept[ChiselException] { ChiselStage.elaborate(new Foo, Array("--throw-on-first-error")) }
       .getMessage() should include(
       "Cannot define 'Foo.a: IO[Probe[A]<Bool>]' from colors {'C'} since at least one of these is NOT enabled when 'Foo.a: IO[Probe[A]<Bool>]' is enabled"
     )
