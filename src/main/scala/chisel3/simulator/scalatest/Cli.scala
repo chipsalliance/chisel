@@ -248,10 +248,27 @@ object Cli {
     * for briefly in a pre-merge Continuous Integration (CI) flow, but runs for
     * much longer in nightly CI.
     *
+    * Note that the interpretation of the "scaling factor" is test dependent.
+    * In order to document this and help end users, this trait has an abstract
+    * member `scaleHelpText` which must be overridden to document what the scale
+    * affects in the test.  E.g., if the scale is used to lengthen a test, a
+    * test author could write:
+    *
+    * {{{
+    * override protected def scaleHelpText = "scales the runtime of a test"
+    * }}}
+    *
     * While this adds the low-level `scale` option.  A user of this should use
     * the member functions that this trait adds, e.d., `scaled`.
     */
   trait Scale { this: HasCliOptions =>
+
+    /** Help text that describes what the `-Dscale` parameter does for this test.
+      *
+      * This is used to populate the help text that an end user sees when
+      * invoking this test with `-Dhelp=1`.
+      */
+    protected def scaleHelpText: String
 
     /** Scale an integer by the scaling factor, if set.
       *
@@ -263,7 +280,7 @@ object Cli {
     addOption(
       CliOption.double(
         name = "scale",
-        help = "scale the test up or down by a floating point number"
+        help = scaleHelpText
       )
     )
 
