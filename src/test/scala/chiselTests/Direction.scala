@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.experimental.{ExtModule, OpaqueType}
 
 import circt.stage.ChiselStage
+import scala.annotation.nowarn
 import scala.collection.immutable.SeqMap
 
 class DirectionedBundle extends Bundle {
@@ -44,6 +45,7 @@ class TopDirectionOutput extends Module {
   io.out := 117.U
 }
 
+@nowarn("msg=method convert in object ChiselStage is deprecated")
 class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?

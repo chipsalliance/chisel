@@ -69,6 +69,9 @@ final case class Definition[+A] private[chisel3] (private[chisel3] val underlyin
 object Definition extends SourceInfoDoc {
   implicit class DefinitionBaseModuleExtensions[T <: BaseModule](d: Definition[T]) {
 
+    /** The name of the Module definition */
+    def name: String = d.proto.name
+
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */

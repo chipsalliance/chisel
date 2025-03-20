@@ -10,6 +10,8 @@ import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.convert
 import chisel3.experimental.{ExtModule, IntrinsicModule}
 
+import scala.annotation.nowarn
+
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
 // cache
@@ -184,6 +186,7 @@ class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
   override def resetType = if (hasAsyncNotSyncReset) Module.ResetType.Asynchronous else Module.ResetType.Synchronous
 }
 
+@nowarn("msg=method convert in object ChiselStage is deprecated")
 class InstantiateSpec extends ChiselFunSpec with Utils {
 
   import InstantiateSpec._

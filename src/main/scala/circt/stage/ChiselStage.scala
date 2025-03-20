@@ -67,6 +67,27 @@ object ChiselStage {
     )
   )
 
+  /** Run elaboration and return the `ElaboratedCircuit`
+    *
+    * @param gen  a call-by-name Chisel module
+    * @param args additional command line arguments to pass to Chisel
+    * @return     the `ElaboratedCircuit`
+    */
+  def elaborate(
+    gen:  => RawModule,
+    args: Array[String] = Array.empty
+  ): ElaboratedCircuit = {
+    val annos = Seq(
+      ChiselGeneratorAnnotation(() => gen),
+      CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
+    ) ++ (new Shell("circt")).parse(args)
+
+    phase
+      .transform(annos)
+      .collectFirst { case a: ChiselCircuitAnnotation => a.elaboratedCircuit }
+      .get
+  }
+
   /** Elaborate a Chisel circuit into a CHIRRTL string */
   def emitCHIRRTL(
     gen:  => RawModule,
@@ -110,6 +131,7 @@ object ChiselStage {
     *
     * @param gen a call-by-name Chisel module
     */
+  @deprecated("Use elaborate or one of the emit* methods instead", "Chisel 6.8.0")
   def convert(
     gen:  => RawModule,
     args: Array[String] = Array.empty
