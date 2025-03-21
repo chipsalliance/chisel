@@ -316,3 +316,19 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 }
 
 object unipublish extends release.Unipublish
+
+object foo extends ScalaModule {
+  override def scalaVersion = v.scalaVersion
+
+  def pluginModule = plugin.cross(v.scalaVersion)
+
+  override def scalacOptions = Task {
+    super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}", "-Wconf:any:e")
+  }
+
+  override def scalacPluginClasspath = Task {
+      super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
+  }
+
+  override def moduleDeps = Seq(chisel(v.scalaVersion))
+}

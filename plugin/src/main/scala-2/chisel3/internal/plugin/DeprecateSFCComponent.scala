@@ -62,18 +62,46 @@ class DeprecateSFCComponent(val global: Global, arguments: ChiselPluginArguments
       case _                                        => false
     }
 
+    @tailrec private def firrtlSymbol(sym: Symbol, rec: Int = 0): Boolean = sym match {
+      case null | NoSymbol => false
+      case sym if sym.name.toString == "firrtl" => true
+      case _ if rec > 5 => throw new Exception(s"Stuck on ${showRaw(sym)}: ${sym.getClass()} with ${sym.enclosingPackage}") with scala.util.control.NoStackTrace
+      case _ => firrtlSymbol(sym.enclosingPackage, rec + 1)
+    }
+
+    val debug = unit.source.file.name == "chisel-example.scala"
+
+    private def warnOnSymbol(sym: Symbol): Unit = {
+      // Can supress with adding "-Wconf:msg=firrtl:s" to scalacOptions
+      global.runReporting.warning(
+        sym.pos,
+        s"Importing from firrtl is deprecated as of Chisel's 3.6.0 release.",
+        WarningCategory.Deprecation,
+        sym
+      )
+    }
+  
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
       case imp @ Import(expr: Tree, selectors: List[ImportSelector]) if isRootFirrtl(expr) =>
-        // Can supress with adding "-Wconf:msg=firrtl:s" to scalacOptions
+        warnOnSymbol(imp.symbol)
+        super.transform(imp)
+      // case tree if firrtlSymbol(tree.symbol) =>
+      //   println(s"Warning on $tree : ${showRaw(tree)}")
+      //   warnOnSymbol(tree.symbol)
+      //   super.transform(tree)
+      case sel @ Select(expr, _) if isRootFirrtl(expr) =>
         global.runReporting.warning(
-          imp.symbol.pos,
+          sel.pos,
           s"Importing from firrtl is deprecated as of Chisel's 3.6.0 release.",
           WarningCategory.Deprecation,
-          imp.symbol
+          sel.symbol
         )
-        super.transform(imp)
-      case _ => super.transform(tree)
+        super.transform(sel)
+      case _ => 
+        // println(tree)
+        // println(showRaw(tree))
+        super.transform(tree)
     }
   }
 }
