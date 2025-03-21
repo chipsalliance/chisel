@@ -23,7 +23,7 @@ private[chisel3] object Converter {
         (fmts.mkString, args.flatten.toSeq)
       case PString(str) => (str.replaceAll("%", "%%"), List.empty)
       case format: FirrtlFormat =>
-        ("%" + format.specifier, List(format.bits.ref))
+        (s"%${format.modifier}${format.specifier}", List(format.bits.ref))
       case Name(data)       => (data.ref.name, List.empty)
       case FullName(data)   => (data.ref.fullName(ctx), List.empty)
       case Percent          => ("%%", List.empty)
