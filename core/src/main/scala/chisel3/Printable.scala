@@ -64,16 +64,21 @@ sealed abstract class Printable {
 }
 object Printable {
 
+  private[chisel3] def isNoArgSpecifier(c: Char): Boolean = c == '%' || c == 'm'
+
   /** Pack standard printf fmt, args* style into Printable
     */
   def pack(fmt: String, data: Data*): Printable = {
     val args = data.iterator
     // Error handling
     def carrotAt(index: Int) = (" " * index) + "^"
-    def errorMsg(index: Int) =
-      s"""|    fmt = "$fmt"
+    def errorMsg(index: Int) = {
+      // Escape newlines because they mess up the error message
+      val fmtEsc = fmt.replaceAll("\n", "\\\\n")
+      s"""|    fmt = "$fmtEsc"
           |           ${carrotAt(index)}
           |    data = ${data.mkString(", ")}""".stripMargin
+    }
 
     def checkArg(i: Int): Unit = {
       if (!args.hasNext) {
@@ -89,11 +94,11 @@ object Printable {
     while (iter < fmt.size) {
       // Encountered % which is either
       // 1. Describing a format specifier.
-      // 2. Literal Percent
+      // 2. %% or %m
       // 3. Dangling percent - most likely due to a typo - intended literal percent or forgot the specifier.
       // Try to give meaningful error reports
       if (fmt(iter) == '%') {
-        if (iter != fmt.size - 1 && (fmt(iter + 1) != '%' && !fmt(iter + 1).isWhitespace)) {
+        if (iter != fmt.size - 1 && (!isNoArgSpecifier(fmt(iter + 1)) && !fmt(iter + 1).isWhitespace)) {
           checkArg(iter)
           buf += fmt.substring(curr_start, iter)
           curr_start = iter
@@ -112,7 +117,7 @@ object Printable {
           throw new UnknownFormatConversionException(msg)
         }
 
-        // A literal percent - hence increment by 2.
+        // %% or %m - hence increment by 2.
         else {
           iter += 2
         }
@@ -233,5 +238,11 @@ case class FullName(data: Data) extends Printable {
 /** Represents escaped percents */
 case object Percent extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%%", List.empty)
+  final def unpackArgs:                                        Seq[Bits] = List.empty
+}
+
+/** Represents the hierarchical name in the Verilog (`%m`) */
+case object HierarchicalName extends Printable {
+  final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%m", List.empty)
   final def unpackArgs:                                        Seq[Bits] = List.empty
 }

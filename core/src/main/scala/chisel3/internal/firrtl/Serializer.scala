@@ -84,9 +84,10 @@ private[chisel3] object Serializer {
       case PString(str) => (str.replaceAll("%", "%%"), List.empty)
       case format: FirrtlFormat =>
         ("%" + format.specifier, List(format.bits.ref))
-      case Name(data)     => (data.ref.name, List.empty)
-      case FullName(data) => (data.ref.fullName(ctx), List.empty)
-      case Percent        => ("%%", List.empty)
+      case Name(data)       => (data.ref.name, List.empty)
+      case FullName(data)   => (data.ref.fullName(ctx), List.empty)
+      case Percent          => ("%%", List.empty)
+      case HierarchicalName => ("%m", List.empty)
     }
   }
 
