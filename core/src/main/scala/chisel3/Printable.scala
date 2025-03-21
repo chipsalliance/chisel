@@ -179,9 +179,10 @@ case class PString(str: String) extends Printable {
 
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends Printable {
-  def bits: Bits
+  def bits:     Bits
+  def modifier: String
   def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = {
-    (s"%$specifier", List(bits.ref.fullName(ctx)))
+    (s"%$modifier$specifier", List(bits.ref.fullName(ctx)))
   }
 
   def unpackArgs: Seq[Bits] = List(bits)
@@ -192,8 +193,15 @@ object FirrtlFormat {
   def unapply(x: Char): Option[Char] =
     Option(x).filter(x => legalSpecifiers contains x)
 
+  // The leading % is optional because this API used to expect just the character
+  // But % is required for newer API when including modifiers and is also supported with just the character
+  private val SpecifierRegex = """(%-?[0-9]*)?([dxbc])""".r
+
   /** Helper for constructing Firrtl Formats
-    * Accepts data to simplify pack
+    *
+    * Accepts data to simplify pack.
+    *
+    * @param specifier the format specifier, e.g. `%0d`
     */
   def apply(specifier: String, data: Data): FirrtlFormat = {
     val bits = data match {
@@ -201,26 +209,31 @@ object FirrtlFormat {
       case d => throw new Exception(s"Trying to construct FirrtlFormat with non-bits $d!")
     }
     specifier match {
-      case "d" => Decimal(bits)
-      case "x" => Hexadecimal(bits)
-      case "b" => Binary(bits)
-      case "c" => Character(bits)
-      case c   => throw new Exception(s"Illegal format specifier '$c'!")
+      case SpecifierRegex(mod, spec) =>
+        val modifier = if (mod == null) "" else mod.drop(1) // drop leading %
+        spec match {
+          case "d" => Decimal(bits, modifier)
+          case "x" => Hexadecimal(bits, modifier)
+          case "b" => Binary(bits, modifier)
+          case "c" => Character(bits, modifier)
+          case _   => throw new Exception(s"Unreachable! specifier = '$spec'")
+        }
+      case bad => throw new Exception(s"Illegal format specifier '$bad'!")
     }
   }
 }
 
 /** Format bits as Decimal */
-case class Decimal(bits: Bits) extends FirrtlFormat('d')
+case class Decimal(bits: Bits, modifier: String = "") extends FirrtlFormat('d')
 
 /** Format bits as Hexidecimal */
-case class Hexadecimal(bits: Bits) extends FirrtlFormat('x')
+case class Hexadecimal(bits: Bits, modifier: String = "") extends FirrtlFormat('x')
 
 /** Format bits as Binary */
-case class Binary(bits: Bits) extends FirrtlFormat('b')
+case class Binary(bits: Bits, modifier: String = "") extends FirrtlFormat('b')
 
 /** Format bits as Character */
-case class Character(bits: Bits) extends FirrtlFormat('c')
+case class Character(bits: Bits, modifier: String = "") extends FirrtlFormat('c')
 
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
