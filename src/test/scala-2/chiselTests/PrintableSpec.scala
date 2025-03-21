@@ -4,12 +4,13 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import chisel3.testing.scalatest.FileCheck
 import org.scalactic.source.Position
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 /* Printable Tests */
-class PrintableSpec extends AnyFlatSpec with Matchers {
+class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
@@ -309,5 +310,17 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     }
     generateAndCheck(new MyModule) { case Seq(Printf("\\\\ \\\\]", Seq())) =>
     }
+  }
+
+  it should "support all legal format specifiers" in {
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      printf(cf"$HierarchicalName $in%d $in%x $in%b $in%c %%\n")
+    }
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """CHECK: printf(clock, UInt<1>(0h1), "%m %d %x %b %c %%\n", in, in, in, in)"""
+      )
   }
 }

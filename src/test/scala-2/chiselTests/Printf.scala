@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import circt.stage.ChiselStage
+import chisel3.testing.scalatest.FileCheck
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -38,7 +39,7 @@ class ScopeTesterModule extends Module {
   val wp = cf"$w"
 }
 
-class PrintfSpec extends AnyFlatSpec with Matchers {
+class PrintfSpec extends AnyFlatSpec with Matchers with FileCheck {
   "A printf with a single argument" should "elaborate" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new SinglePrintfTester)
 
@@ -71,5 +72,16 @@ class PrintfSpec extends AnyFlatSpec with Matchers {
         }
       }
     }
+  }
+  "printf" should "support all legal format specifiers" in {
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      printf("%m %d %x %b %c %%\n", in, in, in, in)
+    }
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """CHECK: printf(clock, UInt<1>(0h1), "%m %d %x %b %c %%\n", in, in, in, in)"""
+      )
   }
 }
