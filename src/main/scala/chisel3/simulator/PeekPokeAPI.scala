@@ -225,6 +225,8 @@ trait PeekPokeAPI {
 
     def poke(value: Boolean): Unit = poke(value.B)
 
+    def peekBoolean(): Boolean = peek().litToBoolean
+
     def expect(value: Boolean)(implicit sourceInfo: SourceInfo): Unit = expect(value.B)
   }
 
