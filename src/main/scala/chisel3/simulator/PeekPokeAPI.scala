@@ -152,19 +152,14 @@ trait PeekPokeAPI {
     }
 
     final override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
-      require(expected.isLit, "Expected value must be a literal")
       expect(
-        expected.litValue,
-        encode(_).litValue,
-        (observed: BigInt, expected: BigInt) => s"Expectation failed: observed value $observed != $expected",
-        sourceInfo
+        expected,
+        (observed, expected) => s"Expectation failed: observed value $observed != $expected"
       )
     }
 
     override def expect(expected: T, buildMessage: (T, T) => String)(implicit sourceInfo: SourceInfo): Unit = {
-      if (!expected.isLit) {
-        throw new Exception(s"Expected value: $expected must be a literal")
-      }
+      require(expected.isLit, s"Expected value: $expected must be a literal")
 
       simulatedModule.willPeek()
 
@@ -199,7 +194,7 @@ trait PeekPokeAPI {
     }
 
     final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit = {
-      data.expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message, sourceInfo)
+      expect(expected, _.asBigInt, (_: BigInt, _: BigInt) => message, sourceInfo)
     }
 
   }
@@ -276,7 +271,7 @@ trait PeekPokeAPI {
     }
 
     override def expect(expected: T, buildMessage: (T, T) => String)(implicit sourceInfo: SourceInfo): Unit = {
-      // require(expected.isLit, "Expected value must be a literal")
+      // TODO: not checking for isLit to allow partially specified expected record
       require(DataMirror.checkTypeEquivalence(data, expected), "Type mismatch")
 
       // FIXME: I can't understand why but _not_ getting the peeked value as a `val` beforehand results in infinite recursion
@@ -294,38 +289,6 @@ trait PeekPokeAPI {
       }
     }
   }
-
-  // class testableVec[T <: Data](val data: Vec[T]) extends PeekPokable[Vec[T]] {
-  //   override def peek(): Vec[T] = {
-  //     val elementValueFns = data.getElements.map(_.peek().asInstanceOf[T])
-  //     Vec.Lit(elementValueFns: _*)
-  //   }
-
-  //   override def poke(value: Vec[T]): Unit = {
-  //     require(DataMirror.checkTypeEquivalence(data, value), "Type mismatch")
-  //     require(
-  //       value.length == data.length,
-  //       s"Vec length mismatch: expected ${data.length}, got ${value.length}"
-  //     )
-  //     data.zip(value).foreach { case (portEl, valueEl) =>
-  //       portEl.poke(valueEl)
-  //     }
-  //   }
-
-  //   override def expect(expected: Vec[T], buildMessage: (Vec[T], Vec[T]) => String)(
-  //     implicit sourceInfo: SourceInfo
-  //   ): Unit = {
-  //     // require(expected.isLit, "Expected value must be a literal")
-  //     require(DataMirror.checkTypeEquivalence(data, expected), "Type mismatch")
-  //     require(
-  //       expected.length == data.length,
-  //       s"Vec length mismatch: expected ${data.length}, got ${expected.length}"
-  //     )
-  //     data.zip(expected).foreach { case (portEl, valEl) =>
-  //       portEl.expect(valEl)
-  //     }
-  //   }
-  // }
 
   implicit class testableData[T <: Data](val data: T) extends PeekPokable[T] {
 
