@@ -66,7 +66,10 @@ There are special values you can include in your `cf` interpolated string:
 
 ```scala mdoc:compile-only
 printf(cf"hierarchical path = $HierarchicalName\n") // hierarchical path = <verilog.module.path>
-printf(cf"100%%\n") // 100%
+printf(cf"hierarchical path = %m\n") // equivalent to the above
+
+printf(cf"100$Percent\n") // 100%
+printf(cf"100%%\n") // equivalent to the above
 ```
 
 
