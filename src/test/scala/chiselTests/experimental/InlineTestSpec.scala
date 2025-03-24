@@ -20,28 +20,28 @@ class TestResultBundle extends Bundle {
 // Here is a testharness that consumes some kind of hardware from the test body, e.g.
 // a finish and pass/fail interface.
 object TestHarnessWithResultIO {
-  class TestHarnessWithResultIOModule[M <: RawModule](test: TestParameters[M, TestResultBundle])
-      extends TestHarness[M, TestResultBundle](test) {
+  class TestHarnessWithResultIOModule[M <: RawModule](test: TestHarnessParameters[M, TestResultBundle])
+      extends BaseTestHarness[M, TestResultBundle](test) {
     finish := testResult.finish
     success := testResult.success
   }
   implicit def testharnessGenerator[M <: RawModule]: TestHarnessGenerator[M, TestResultBundle] =
     new TestHarnessGenerator[M, TestResultBundle] {
-      def generate(test: TestParameters[M, TestResultBundle]) = new TestHarnessWithResultIOModule(test)
+      def generate(test: TestHarnessParameters[M, TestResultBundle]) = new TestHarnessWithResultIOModule(test)
     }
 }
 
 object TestHarnessWithMonitorSocket {
   // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
   // socket to which to attach a monitor.
-  class TestHarnessWithMonitorSocketModule[M <: RawModule with HasMonitorSocket](test: TestParameters[M, Unit])
-      extends TestHarness[M, Unit](test) {
+  class TestHarnessWithMonitorSocketModule[M <: RawModule with HasMonitorSocket](test: TestHarnessParameters[M, Unit])
+      extends BaseTestHarness[M, Unit](test) {
     val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
     monitor.io :#= probe.read(dut.monProbe)
   }
   implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket]: TestHarnessGenerator[M, Unit] =
     new TestHarnessGenerator[M, Unit] {
-      def generate(test: TestParameters[M, Unit]) = new TestHarnessWithMonitorSocketModule(test)
+      def generate(test: TestHarnessParameters[M, Unit]) = new TestHarnessWithMonitorSocketModule(test)
     }
 }
 
