@@ -151,7 +151,7 @@ trait PeekPokeAPI {
       simulationPort.set(value)
     }
 
-    final override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
+    override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
       expect(
         expected,
         (observed, expected) => s"Expectation failed: observed value $observed != $expected"
@@ -226,6 +226,8 @@ trait PeekPokeAPI {
     def poke(value: Boolean): Unit = poke(value.B)
 
     def peekBoolean(): Boolean = peek().litToBoolean
+
+    override def expect(expected: Bool)(implicit sourceInfo: SourceInfo): Unit = expect(expected.litValue)
 
     def expect(value: Boolean)(implicit sourceInfo: SourceInfo): Unit = expect(value.B)
   }
