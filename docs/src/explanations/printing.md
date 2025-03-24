@@ -57,6 +57,22 @@ printf(cf"myUInt = $myUInt%b") // myUInt = 100001
 printf(cf"myUInt = $myUInt%c") // myUInt = !
 ```
 
+#### Special values
+
+There are special values you can include in your `cf` interpolated string:
+
+* `HierarchicalName` (`%m`): The hierarchical name of the signal
+* `Percent` (`%%`): A literal `%`
+
+```scala mdoc:compile-only
+printf(cf"hierarchical path = $HierarchicalName\n") // hierarchical path = <verilog.module.path>
+printf(cf"hierarchical path = %m\n") // equivalent to the above
+
+printf(cf"100$Percent\n") // 100%
+printf(cf"100%%\n") // equivalent to the above
+```
+
+
 #### Aggregate data-types
 
 Chisel provides default custom "pretty-printing" for Vecs and Bundles. The default printing of a Vec is similar to printing a Seq or List in Scala while printing a Bundle is similar to printing a Scala Map.
@@ -126,6 +142,7 @@ Chisel provides `printf` in a similar style to its C namesake. It accepts a doub
 | `%b` | binary number |
 | `%c` | 8-bit ASCII character |
 | `%%` | literal percent |
+| `%m` | hierarchical name |
 
 It also supports a small set of escape characters:
 
