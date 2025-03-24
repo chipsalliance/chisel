@@ -5,8 +5,10 @@ package chiselTests.simulator.scalatest
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
 import chisel3.simulator.{ChiselSim, HasSimulator, MacroText, Settings}
+import chisel3.simulator.stimulus.RunUntilSuccess
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
+import chisel3.util.Counter
 import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
@@ -283,6 +285,25 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
 
     }
+  }
+
+  describe("ChiselSim RunUntilSuccess stimulus") {
+
+    class SuccessAfterFourCycles extends Module {
+      val success = IO(Output(Bool()))
+      success :<= Counter(true.B, 4)._2
+    }
+
+    it("should report success for a passing Module") {
+      simulate(new SuccessAfterFourCycles)(RunUntilSuccess(maxCycles = 8, getSuccess = _.success))
+    }
+
+    it("should throw an exception for a failing Module") {
+      intercept[chisel3.simulator.Exceptions.Timeout] {
+        simulate(new SuccessAfterFourCycles)(RunUntilSuccess(maxCycles = 2, getSuccess = _.success))
+      }
+    }
+
   }
 
 }
