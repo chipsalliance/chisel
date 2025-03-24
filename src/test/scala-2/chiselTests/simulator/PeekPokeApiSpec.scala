@@ -189,9 +189,8 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
 
           dut.io.out.bits.c.expect(5.U)
         }
-        // .result
       }
-      thrown.getMessage must include("observed value 3 != 5")
+      thrown.getMessage must include("observed value UInt<32>(3) != UInt<3>(5)")
       (thrown.getMessage must include).regex(
         """ @\[.*chiselTests/simulator/PeekPokeApiSpec\.scala:\d+:\d+\]"""
       )
