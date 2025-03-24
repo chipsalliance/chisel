@@ -489,7 +489,8 @@ private[chisel3] class DynamicContext(
   val loggerOptions: LoggerOptions,
   val definitions:   ArrayBuffer[Definition[_]],
   val contextCache:  BuilderContextCache,
-  val layerMap:      Map[layer.Layer, layer.Layer]
+  val layerMap:      Map[layer.Layer, layer.Layer],
+  val elaborateInlineTests: Boolean,
 ) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 

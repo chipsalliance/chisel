@@ -69,8 +69,11 @@ class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
 }
 
 @instantiable
-class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetType.Type = Module.ResetType.Synchronous)
-    extends Module
+class ModuleWithTests(
+  ioWidth:                     Int = 32,
+  override val resetType:      Module.ResetType.Type = Module.ResetType.Synchronous,
+  override val elaborateTests: Boolean = true
+) extends Module
     with HasMonitorSocket
     with HasTests[ModuleWithTests] {
   @public val io = IO(new ProtocolBundle(ioWidth))
@@ -128,8 +131,10 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests[RawM
 }
 
 class InlineTestSpec extends AnyFlatSpec with FileCheck {
+  private val defaultArgs = Array("--elaborate-inline-tests")
+
   it should "generate a public module for each test" in {
-    emitCHIRRTL(new ModuleWithTests).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests, args = defaultArgs).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
@@ -163,9 +168,37 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
     )
   }
 
+  it should "not elaborate tests without flag" in {
+    emitCHIRRTL(new ModuleWithTests).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK-NOT:    module test_ModuleWithTests_foo
+      | CHECK-NOT:    module test_ModuleWithTests_bar
+      | CHECK-NOT:    module test_ModuleWithTests_with_result
+      | CHECK-NOT:    module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "not elaborate tests with HasTests.elaborateTests set to false" in {
+    emitCHIRRTL(new ModuleWithTests(elaborateTests = false), defaultArgs).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK-NOT:    module test_ModuleWithTests_foo
+      | CHECK-NOT:    module test_ModuleWithTests_bar
+      | CHECK-NOT:    module test_ModuleWithTests_with_result
+      | CHECK-NOT:    module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
   it should "compile to verilog" in {
     ChiselStage
-      .emitSystemVerilog(new ModuleWithTests)
+      .emitSystemVerilog(new ModuleWithTests, args = defaultArgs)
       .fileCheck()(
         """
       | CHECK: module ModuleWithTests
@@ -201,17 +234,17 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   input reset : ${resetType}
       """
 
-    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Synchronous)).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Synchronous), args = defaultArgs).fileCheck()(
       fileCheckString("UInt<1>")
     )
-    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Asynchronous)).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Asynchronous), args = defaultArgs).fileCheck()(
       fileCheckString("AsyncReset")
     )
-    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default)).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default), args = defaultArgs).fileCheck()(
       fileCheckString("UInt<1>")
     )
 
-    emitCHIRRTL(new RawModuleWithTests()).fileCheck()(
+    emitCHIRRTL(new RawModuleWithTests(), args = defaultArgs).fileCheck()(
       """
       | CHECK:      module RawModuleWithTests
       | CHECK-NEXT:   output io
