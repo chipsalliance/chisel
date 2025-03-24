@@ -328,8 +328,7 @@ trait PeekPokeAPI {
         case (dat: Record, exp: Record) =>
           new testableRecord(dat).expect(exp, buildMsgFn _)
         case (dat: Vec[_], exp: Vec[_]) =>
-          require(DataMirror.checkTypeEquivalence(dat, exp), s"Vec type mismatch")
-          require( // TODO: this should'nt really be needed, right?
+          require(
             exp.length == dat.length,
             s"Vec length mismatch: Data port has ${dat.length} elements while the expected value is of length ${exp.length}"
           )
