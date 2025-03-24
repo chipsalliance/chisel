@@ -357,7 +357,6 @@ trait PeekPokeAPI {
       case (x: EnumType, lit: EnumType) => x.poke(lit)
       case (x: Record, lit: Record)     => x.poke(lit)
       case (x: Vec[_], lit: Vec[_]) =>
-        require(DataMirror.checkTypeEquivalence(x, lit), "Type mismatch")
         require(x.length == lit.length, s"Vec length mismatch: expected ${x.length}, got ${lit.length}")
         x.getElements.zip(lit.getElements).foreach { case (portEl, valueEl) =>
           portEl.poke(valueEl)
