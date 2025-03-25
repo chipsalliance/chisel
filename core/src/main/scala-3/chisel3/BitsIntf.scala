@@ -190,7 +190,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
 private[chisel3] trait UIntIntf { self: UInt =>
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
-  /** Unary negation (expanding width)
+  /** Unary negation (constant width)
     *
     * @return a $coll equal to zero minus this $coll
     * $constantWidth
@@ -204,6 +204,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $constantWidth
     * @group Arithmetic
     */
+  @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   def unary_-%(using SourceInfo): UInt = _impl_unary_-%
 
   override def +(that: UInt): UInt = _impl_+(that)
@@ -398,10 +399,11 @@ private[chisel3] trait SIntIntf { self: SInt =>
 
   /** Unary negation (constant width)
     *
-    * @return a hardware $coll equal to zero minus `this` shifted right by one
+    * @return a hardware $coll equal to zero minus `this` $coll
     * $constantWidth
     * @group Arithmetic
     */
+  @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   def unary_-%(using SourceInfo): SInt = _impl_unary_-%
 
   /** add (default - no growth) operator */

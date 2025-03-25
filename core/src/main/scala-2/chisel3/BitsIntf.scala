@@ -277,7 +277,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
 private[chisel3] trait UIntIntf { self: UInt =>
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
-  /** Unary negation (expanding width)
+  /** Unary negation (constant width)
     *
     * @return a $coll equal to zero minus this $coll
     * $constantWidth
@@ -287,16 +287,18 @@ private[chisel3] trait UIntIntf { self: UInt =>
 
   /** Unary negation (constant width)
     *
-    * @return a $coll equal to zero minus this $coll shifted right by one.
+    * @return a $coll equal to zero minus this $coll
     * $constantWidth
     * @group Arithmetic
     */
+  @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   final def unary_-% : UInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
   def do_unary_-(implicit sourceInfo: SourceInfo): UInt = _impl_unary_-
 
   /** @group SourceInfoTransformMacro */
+  @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   def do_unary_-%(implicit sourceInfo: SourceInfo): UInt = _impl_unary_-%
 
   override def do_+(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_+(that)
@@ -553,12 +555,14 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $constantWidth
     * @group Arithmetic
     */
+  @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   final def unary_-% : SInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
   def do_unary_-(implicit sourceInfo: SourceInfo): SInt = _impl_unary_-
 
   /** @group SourceInfoTransformMacro */
+  @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   def do_unary_-%(implicit sourceInfo: SourceInfo): SInt = _impl_unary_-%
 
   /** add (default - no growth) operator */
