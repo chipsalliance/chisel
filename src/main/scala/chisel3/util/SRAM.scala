@@ -226,9 +226,9 @@ object SRAM {
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
-    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
-    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param readPortClocks A sequence of clocks for each read port; and (numReadPorts + numReadwritePorts) > 0
+    * @param writePortClocks A sequence of clocks for each write port; and (numWritePorts + numReadwritePorts) > 0
+    * @param readwritePortClocks A sequence of clocks for each read-write port; and the above two conditions must hold
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
@@ -261,9 +261,9 @@ object SRAM {
     *
     * @param size The desired size of the inner `SyncReadMem`
     * @tparam T The data type of the memory element
-    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
-    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
-    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param readPortClocks A sequence of clocks for each read port; and (numReadPorts + numReadwritePorts) > 0
+    * @param writePortClocks A sequence of clocks for each write port; and (numWritePorts + numReadwritePorts) > 0
+    * @param readwritePortClocks A sequence of clocks for each read-write port; and the above two conditions must hold
     * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
