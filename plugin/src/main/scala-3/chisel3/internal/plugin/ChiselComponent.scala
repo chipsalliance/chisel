@@ -84,15 +84,14 @@ class ChiselComponentPhase extends PluginPhase {
 
     val valName: String = tree.name.show
     val nameLiteral = Literal(Constant(valName))
+    val pluginModule = requiredModule("chisel3.internal.plugin")
+    val autoNameMethod = pluginModule.requiredMethod("autoNameRecursively")
+    val prefixModule = requiredModule("chisel3.experimental.prefix")
 
     val compTpe = tree.tpt.tpe
+
     if ((compTpe <:< dataTpe || compTpe <:< prefixTpe) && !(compTpe <:< bundleTpe)) {
-      val pluginModule = requiredModule("chisel3.internal.plugin")
-      val autoNameMethod = pluginModule.requiredMethod("autoNameRecursively")
-      val prefixModule = requiredModule("chisel3.experimental.prefix")
-
       val newRhs = tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tree.rhs.tpe).appliedTo(nameLiteral).appliedTo(tree.rhs)
-
       val prefixLiteral = if (valName.head == '_') Literal(Constant(valName.tail)) else Literal(Constant(valName))
       val prefixApplyMethod = prefixModule.requiredMethod("applyString")
       val prefixed = tpd.ref(prefixModule).select(prefixApplyMethod).appliedToType(tree.rhs.tpe).appliedTo(prefixLiteral).appliedTo(newRhs)

@@ -28,7 +28,7 @@ object prefix {
     * @tparam T The return type of the provided function
     * @return The return value of the provided function
     */
-  def apply[T](name: HasId)(f: => T): T = {
+  def applyHasId[T](name: HasId)(f: => T): T = {
     val pushed = Builder.pushPrefix(name)
     val ret = f
     if (pushed) {
@@ -45,7 +45,7 @@ object prefix {
     * @tparam T The return type of the provided function
     * @return The return value of the provided function
     */
-  def apply[T](name: String)(f: => T): T = {
+  def applyString[T](name: String)(f: => T): T = {
     Builder.pushPrefix(name)
     val ret = f
     // Sometimes val's can occur between the Module.apply and Module constructor
@@ -54,6 +54,14 @@ object prefix {
     // was an incorrect one, to not pop off an empty stack
     if (Builder.getPrefix.nonEmpty) Builder.popPrefix()
     ret
+  }
+
+  def apply[T, K](name: K)(f: => T): T = {
+    name match {
+      case _: HasId => applyString[T](name.asInstanceOf[String])(f)
+      case _: String => applyHasId[T](name.asInstanceOf[HasId])(f)
+      case _ => f
+    }
   }
 }
 

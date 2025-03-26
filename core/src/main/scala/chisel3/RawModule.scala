@@ -280,8 +280,7 @@ abstract class RawModule extends BaseModule {
             // Use `connect lhs, read(probe(rhs))` if lhs is passive version of rhs.
             // This provides solution for this: https://github.com/chipsalliance/chisel/issues/3557
             case (_, _)
-                if !DataMirror.checkAlignmentTypeEquivalence(left, right) &&
-                  DataMirror.checkAlignmentTypeEquivalence(left, Output(chiselTypeOf(right))) =>
+                if false =>
               Connect(si, Node(left), ProbeRead(ProbeExpr(Node(right))))
             case (_, _) => Connect(si, Node(left), Node(right))
           }
