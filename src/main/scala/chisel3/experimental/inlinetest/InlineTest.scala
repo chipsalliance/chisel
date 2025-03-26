@@ -100,15 +100,8 @@ trait HasTests[M <: RawModule] { module: M =>
 
   private val builderContext = internal.Builder.captureContext()
 
-  private val thisModuleShouldElaborateTests =
-    builderContext.includeInlineTestsForModule.exists { glob =>
-      glob.replace("*", ".*").r.matches(desiredName)
-    }
-
   private def shouldElaborateTest(testName: String) =
-    builderContext.includeInlineTestsWithName.exists { glob =>
-      glob.replace("*", ".*").r.matches(testName)
-    }
+    builderContext.inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
 
   /** A Definition of the DUT to be used for each of the tests. */
   private lazy val moduleDefinition =
@@ -130,7 +123,7 @@ trait HasTests[M <: RawModule] { module: M =>
   protected final def test[R](
     testName: String
   )(testBody: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
-    if (thisModuleShouldElaborateTests && elaborateTests && shouldElaborateTest(testName)) {
+    if (elaborateTests && shouldElaborateTest(testName)) {
       elaborateParentModule { moduleDefinition =>
         val resetType = module match {
           case module: Module => Some(module.resetType)

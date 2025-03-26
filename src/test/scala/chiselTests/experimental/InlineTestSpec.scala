@@ -205,6 +205,34 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
     )
   }
 
+  it should "elaborate tests whose name matches the test name glob when module glob is omitted" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Nil, testGlobs = Seq("foo"))).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "elaborate all tests when module glob is provided but test name glob is omitted" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Nil)).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      module test_ModuleWithTests_foo
+      | CHECK:      module test_ModuleWithTests_bar
+      | CHECK:      module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
   it should "only elaborate tests whose name matches the test name glob with multiple globs" in {
     emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*"), testGlobs = Seq("foo", "with_*"))).fileCheck()(
       """

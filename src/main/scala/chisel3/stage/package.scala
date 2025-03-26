@@ -35,9 +35,9 @@ package object stage {
           case IncludeUtilMetadata            => c.copy(includeUtilMetadata = true)
           case UseSRAMBlackbox                => c.copy(useSRAMBlackbox = true)
           case IncludeInlineTestsForModuleAnnotation(glob) =>
-            c.copy(includeInlineTestsForModule = c.includeInlineTestsForModule ++ Seq(glob))
+            c.copy(inlineTestIncluder = c.inlineTestIncluder.includeModule(glob))
           case IncludeInlineTestsWithNameAnnotation(glob) =>
-            c.copy(includeInlineTestsWithName = c.includeInlineTestsWithName ++ Seq(glob))
+            c.copy(inlineTestIncluder = c.inlineTestIncluder.includeTest(glob))
         }
       }
 
