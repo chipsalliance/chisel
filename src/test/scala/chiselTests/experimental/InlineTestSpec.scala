@@ -70,7 +70,7 @@ class ModuleWithTests(
   override val elaborateTests: Boolean = true
 ) extends Module
     with HasMonitorSocket
-    with HasTests[ModuleWithTests] {
+    with HasTests {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
   override val monProbe = makeProbe(io)
@@ -116,7 +116,7 @@ class ModuleWithTests(
 }
 
 @instantiable
-class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests[RawModuleWithTests] {
+class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   @public val io = IO(new ProtocolBundle(ioWidth))
   io.out := io.in
   test("foo") { instance =>

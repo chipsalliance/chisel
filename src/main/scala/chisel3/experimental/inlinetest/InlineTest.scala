@@ -103,7 +103,8 @@ private class TestGenerator[M <: RawModule, R](
   *  @tparam TestResult the type returned from each test body generator, typically
   *  hardware indicating completion and/or exit code to the testharness.
   */
-trait HasTests[M <: RawModule] { module: M =>
+trait HasTests { module: RawModule =>
+  type M = module.type
 
   /** Whether inline tests will be elaborated as a top-level definition to the circuit. */
   protected def elaborateTests: Boolean = true
