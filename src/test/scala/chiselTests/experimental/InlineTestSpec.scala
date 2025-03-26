@@ -72,7 +72,7 @@ class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
 class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetType.Type = Module.ResetType.Synchronous)
     extends Module
     with HasMonitorSocket
-    with HasTests[ModuleWithTests] {
+    with HasTests {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
   override val monProbe = makeProbe(io)
@@ -118,7 +118,7 @@ class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetTyp
 }
 
 @instantiable
-class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests[RawModuleWithTests] {
+class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   @public val io = IO(new ProtocolBundle(ioWidth))
   io.out := io.in
   test("foo") { instance =>
