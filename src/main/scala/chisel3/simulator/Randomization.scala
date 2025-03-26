@@ -84,7 +84,7 @@ object Randomization {
     registers = true,
     memories = true,
     delay = Some(1),
-    randomValue = Some("$random")
+    randomValue = Some("$urandom")
   )
 
 }
