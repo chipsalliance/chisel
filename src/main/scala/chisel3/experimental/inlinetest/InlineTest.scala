@@ -2,6 +2,8 @@
 
 package chisel3.experimental.inlinetest
 
+import scala.collection.mutable
+
 import chisel3._
 import chisel3.experimental.hierarchy.{Definition, Instance}
 
@@ -88,6 +90,17 @@ object TestHarnessGenerator {
   }
 }
 
+private class TestGenerator[M <: RawModule, R](
+  dutName:              String,
+  testName:             String,
+  testBody:             Instance[M] => R,
+  resetType:            Option[Module.ResetType.Type],
+  testHarnessGenerator: TestHarnessGenerator[M, R]
+) {
+  def generate(dutDefinition: Definition[M]) =
+    testHarnessGenerator.generate(new TestParameters(dutName, testName, dutDefinition, testBody, resetType))
+}
+
 /** Provides methods to build unit testharnesses inline after this module is elaborated.
   *
   *  @tparam TestResult the type returned from each test body generator, typically
@@ -95,32 +108,31 @@ object TestHarnessGenerator {
   */
 trait HasTests[M <: RawModule] { module: M =>
 
-  /** A Definition of the DUT to be used for each of the tests. */
-  private lazy val moduleDefinition =
-    module.toDefinition.asInstanceOf[Definition[module.type]]
-
-  /** Generate an additional parent around this module.
-    *
-    *  @param parent generator function, should instantiate the [[Definition]]
-    */
-  protected final def elaborateParentModule(parent: Definition[module.type] => RawModule with Public): Unit =
-    afterModuleBuilt { Definition(parent(moduleDefinition)) }
+  /** Generators for inline tests by name. */
+  private val testGenerators = new mutable.HashMap[String, (Int, TestGenerator[M, _])]
 
   /** Generate a public module that instantiates this module. The default
     *  testharness has clock and synchronous reset IOs and contains the test
     *  body.
     *
-    *  @param testBody the circuit to elaborate inside the testharness
+    *  @param testBody the circuit to generate inside the testharness
     */
   protected final def test[R](
     testName: String
-  )(testBody: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
-    elaborateParentModule { moduleDefinition =>
-      val resetType = module match {
-        case module: Module => Some(module.resetType)
-        case _ => None
-      }
-      val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, testBody, resetType)
-      th.generate(test)
+  )(testBody: Instance[M] => R)(implicit testHarnessGenerator: TestHarnessGenerator[M, R]): Unit = {
+    val resetType = module match {
+      case module: Module => Some(module.resetType)
+      case _ => None
     }
+    require(!testGenerators.contains(testName), s"test '${testName}' already declared")
+    val testGenerator = new TestGenerator(module.desiredName, testName, testBody, resetType, testHarnessGenerator)
+    testGenerators.addOne(testName -> (testGenerators.size, testGenerator))
+  }
+
+  afterModuleBuilt {
+    lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]
+    testGenerators.values.toSeq.sortBy(_._1).foreach { case (_, t) =>
+      Definition(t.generate(moduleDefinition))
+    }
+  }
 }
