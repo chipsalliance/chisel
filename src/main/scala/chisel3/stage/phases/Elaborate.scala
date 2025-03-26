@@ -53,7 +53,9 @@ class Elaborate extends Phase {
             loggerOptions,
             ArrayBuffer[Definition[_]](),
             BuilderContextCache.empty,
-            chiselOptions.layerMap
+            chiselOptions.layerMap,
+            chiselOptions.includeInlineTestsForModule,
+            chiselOptions.includeInlineTestsWithName
           )
         val (elaboratedCircuit, dut) = {
           Builder.build(Module(gen()), context)
