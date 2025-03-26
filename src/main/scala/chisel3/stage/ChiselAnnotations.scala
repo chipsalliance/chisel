@@ -593,7 +593,7 @@ case object IncludeInlineTestsForModule extends HasShellOptions {
     new ShellOption[String](
       longOption = "include-tests-module",
       toAnnotationSeq = glob => Seq(IncludeInlineTestsForModuleAnnotation(glob)),
-      helpText = "Elaborate inline tests to the circuit when modules containing them are defined"
+      helpText = "Elaborate inline tests when the module-under-test name matches this glob"
     )
   )
 }
@@ -608,7 +608,7 @@ case object IncludeInlineTestsWithName extends HasShellOptions {
     new ShellOption[String](
       longOption = "include-tests-name",
       toAnnotationSeq = glob => Seq(IncludeInlineTestsWithNameAnnotation(glob)),
-      helpText = "Elaborate inline tests to the circuit when modules containing them are defined"
+      helpText = "Elaborate inline tests whose name matches this glob"
     )
   )
 }
