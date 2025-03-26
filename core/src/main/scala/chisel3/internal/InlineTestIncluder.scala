@@ -6,12 +6,12 @@ import java.nio.file.{FileSystems, PathMatcher, Paths}
 
 class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNameGlobs: Seq[String]) {
   private def copy(
-    includeModuleGlobs: Seq[String] = this.includeModuleGlobs,
+    includeModuleGlobs:   Seq[String] = this.includeModuleGlobs,
     includeTestNameGlobs: Seq[String] = this.includeTestNameGlobs
   ) = new InlineTestIncluder(includeModuleGlobs, includeTestNameGlobs)
 
   def includeModule(glob: String) = copy(includeModuleGlobs = includeModuleGlobs ++ Seq(glob))
-  def includeTest(glob: String) = copy(includeTestNameGlobs = includeTestNameGlobs ++ Seq(glob))
+  def includeTest(glob:   String) = copy(includeTestNameGlobs = includeTestNameGlobs ++ Seq(glob))
 
   private val filesystem = FileSystems.getDefault()
 
@@ -23,13 +23,13 @@ class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNa
   def shouldElaborateTest(moduleDesiredName: String, testName: String): Boolean = {
     val (resolvedModuleGlobs, resolvedTestNameGlobs) = (includeModuleGlobs, includeTestNameGlobs) match {
       case x @ (Nil, Nil) => x
-      case (Nil, ts) => (Seq("*"), ts)
-      case (ms, Nil) => (ms, Seq("*"))
-      case x => x
+      case (Nil, ts)      => (Seq("*"), ts)
+      case (ms, Nil)      => (ms, Seq("*"))
+      case x              => x
     }
 
     resolvedModuleGlobs.exists { glob => matchesGlob(glob, moduleDesiredName) } &&
-      resolvedTestNameGlobs.exists { glob => matchesGlob(glob, testName) }
+    resolvedTestNameGlobs.exists { glob => matchesGlob(glob, testName) }
   }
 }
 
