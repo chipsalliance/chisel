@@ -88,7 +88,7 @@ final class Settings[A <: RawModule] private[simulator] (
   val printfCond:            Option[MacroText.Type[A]],
   val stopCond:              Option[MacroText.Type[A]],
   val plusArgs:              Seq[svsim.PlusArg],
-  val enableWavesAtTimeZero: Boolean,
+  val enableWavesAtTimeZero: Boolean
 ) {
 
   def copy(
