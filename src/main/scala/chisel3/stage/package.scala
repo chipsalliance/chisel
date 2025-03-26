@@ -34,7 +34,10 @@ package object stage {
           case RemapLayer(oldLayer, newLayer) => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
           case IncludeUtilMetadata            => c.copy(includeUtilMetadata = true)
           case UseSRAMBlackbox                => c.copy(useSRAMBlackbox = true)
-          case ElaborateInlineTests           => c.copy(elaborateInlineTests = true)
+          case IncludeInlineTestsForModuleAnnotation(glob) =>
+            c.copy(includeInlineTestsForModule = c.includeInlineTestsForModule ++ Seq(glob))
+          case IncludeInlineTestsWithNameAnnotation(glob) =>
+            c.copy(includeInlineTestsWithName = c.includeInlineTestsWithName ++ Seq(glob))
         }
       }
 

@@ -583,11 +583,31 @@ case object UseSRAMBlackbox extends NoTargetAnnotation with ChiselOption with Ha
   )
 }
 
-case object ElaborateInlineTests extends NoTargetAnnotation with ChiselOption with HasShellOptions with Unserializable {
+case class IncludeInlineTestsForModuleAnnotation(glob: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption
+
+case object IncludeInlineTestsForModule extends HasShellOptions {
   val options = Seq(
-    new ShellOption[Unit](
-      longOption = "elaborate-inline-tests",
-      toAnnotationSeq = _ => Seq(ElaborateInlineTests),
+    new ShellOption[String](
+      longOption = "include-tests-module",
+      toAnnotationSeq = glob => Seq(IncludeInlineTestsForModuleAnnotation(glob)),
+      helpText = "Elaborate inline tests to the circuit when modules containing them are defined"
+    )
+  )
+}
+
+case class IncludeInlineTestsWithNameAnnotation(glob: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption
+
+case object IncludeInlineTestsWithName extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "include-tests-name",
+      toAnnotationSeq = glob => Seq(IncludeInlineTestsWithNameAnnotation(glob)),
       helpText = "Elaborate inline tests to the circuit when modules containing them are defined"
     )
   )

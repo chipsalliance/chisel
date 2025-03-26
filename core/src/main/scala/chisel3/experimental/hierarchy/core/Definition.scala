@@ -121,7 +121,8 @@ object Definition extends SourceInfoDoc {
         context.definitions,
         context.contextCache,
         context.layerMap,
-        context.elaborateInlineTests,
+        context.includeInlineTestsForModule,
+        context.includeInlineTestsWithName
       )
     }
     dynamicContext.inDefinition = true
