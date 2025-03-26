@@ -115,7 +115,7 @@ trait HasTests[M <: RawModule] { module: M =>
     *  testharness has clock and synchronous reset IOs and contains the test
     *  body.
     *
-    *  @param testBody the circuit to generate inside the testharness
+    *  @param testBody the circuit to elaborate inside the testharness
     */
   protected final def test[R](
     testName: String
