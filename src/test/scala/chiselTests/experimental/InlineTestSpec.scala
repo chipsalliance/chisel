@@ -14,38 +14,33 @@ import circt.stage.ChiselStage.emitCHIRRTL
 
 class TestResultBundle extends Bundle {
   val finish = Output(Bool())
-  val code = Output(UInt(8.W))
+  val success = Output(UInt(8.W))
 }
 
 // Here is a testharness that consumes some kind of hardware from the test body, e.g.
 // a finish and pass/fail interface.
+class TestHarnessWithResultIO[M <: RawModule](test: TestParameters[M, TestResultBundle])
+    extends TestHarness.Module[M, TestResultBundle](test) {
+  finish := testResult.finish
+  success := testResult.success
+}
+
 object TestHarnessWithResultIO {
-  class TestHarnessWithResultIOModule[M <: RawModule](val test: TestParameters[M, TestResultBundle])
-      extends Module
-      with TestHarness.Module[M, TestResultBundle] {
-    val result = IO(new TestResultBundle)
-    result := elaborateTest()
-  }
-  implicit def testharnessGenerator[M <: RawModule]: TestHarnessGenerator[M, TestResultBundle] =
-    new TestHarnessGenerator[M, TestResultBundle] {
-      def generate(test: TestParameters[M, TestResultBundle]) = new TestHarnessWithResultIOModule(test)
-    }
+  implicit def testharnessGenerator[M <: RawModule] =
+    TestHarnessGenerator[M, TestResultBundle](new TestHarnessWithResultIO(_))
+}
+
+// Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
+// socket to which to attach a monitor.
+class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M, Unit])
+    extends TestHarness.Module[M, Unit](test) {
+  val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
+  monitor.io :#= probe.read(dut.monProbe)
 }
 
 object TestHarnessWithMonitorSocket {
-  // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
-  // socket to which to attach a monitor.
-  class TestHarnessWithMonitorSocketModule[M <: RawModule with HasMonitorSocket](val test: TestParameters[M, Unit])
-      extends Module
-      with TestHarness.Module[M, Unit] {
-    val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
-    monitor.io :#= probe.read(dut.monProbe)
-    elaborateTest()
-  }
-  implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket]: TestHarnessGenerator[M, Unit] =
-    new TestHarnessGenerator[M, Unit] {
-      def generate(test: TestParameters[M, Unit]): RawModule with Public = new TestHarnessWithMonitorSocketModule(test)
-    }
+  implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket] =
+    TestHarnessGenerator[M, Unit](new TestHarnessWithMonitorSocket(_))
 }
 
 @instantiable
@@ -98,10 +93,10 @@ class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetTyp
       instance.io.in := 5.U(ioWidth.W)
       val outValid = instance.io.out =/= 0.U
       when(outValid) {
-        result.code := 0.U
+        result.success := 0.U
         result.finish := timer > 1000.U
       }.otherwise {
-        result.code := 1.U
+        result.success := 1.U
         result.finish := true.B
       }
       result
@@ -137,22 +132,29 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK:      public module test_ModuleWithTests_foo
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_bar
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_result
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset
-      | CHECK-NEXT:   output result : { finish : UInt<1>, code : UInt<8>}
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       | CHECK:        inst monitor of ProtocolMonitor
       | CHECK-NEXT:   connect monitor.clock, clock
@@ -187,18 +189,26 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK:      public module test_ModuleWithTests_foo
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_bar
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_with_result
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       """
 
     emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Synchronous)).fileCheck()(
@@ -219,6 +229,8 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK:      public module test_RawModuleWithTests_foo
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
       """
     )
   }
