@@ -196,7 +196,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage.elaborate(new Foo)
   }
 
-  they should "be enabled with a trait" in {
+  they should "be enabled with a function" in {
 
     class Foo extends RawModule {
       layer.enable(A.B)
