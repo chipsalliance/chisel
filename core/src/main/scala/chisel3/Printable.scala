@@ -52,6 +52,12 @@ sealed abstract class Printable {
     */
   def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String])
 
+  /** Unpack into format String and a sequence of arguments
+    *
+    * This is the inverse of Printable.pack
+    */
+  def unpack: (String, Seq[Data])
+
   /** Unpack into a Seq of captured Bits arguments
     */
   def unpackArgs: Seq[Bits]
@@ -166,6 +172,11 @@ case class Printables(pables: Iterable[Printable]) extends Printable {
     (fmts.mkString, args.flatten)
   }
 
+  final def unpack: (String, Seq[Data]) = {
+    val (fmts, args) = pables.map(_.unpack).unzip
+    (fmts.mkString, args.view.flatten.toSeq)
+  }
+
   final def unpackArgs: Seq[Bits] = pables.view.flatMap(_.unpackArgs).toList
 }
 
@@ -173,6 +184,8 @@ case class Printables(pables: Iterable[Printable]) extends Printable {
 case class PString(str: String) extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) =
     (str.replaceAll("%", "%%"), List.empty)
+
+  final def unpack: (String, Seq[Data]) = (str.replaceAll("%", "%%"), List.empty)
 
   final def unpackArgs: Seq[Bits] = List.empty
 }
@@ -183,6 +196,8 @@ sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends
   def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = {
     (s"%$specifier", List(bits.ref.fullName(ctx)))
   }
+
+  final def unpack: (String, Seq[Data]) = (s"%$specifier", List(bits))
 
   def unpackArgs: Seq[Bits] = List(bits)
 }
@@ -225,6 +240,7 @@ case class Character(bits: Bits) extends FirrtlFormat('c')
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = (data.ref.name, List.empty)
+  final def unpack: (String, Seq[Data]) = ("%n", List(data))
   final def unpackArgs:                                        Seq[Bits] = List.empty
 }
 
@@ -232,17 +248,20 @@ case class Name(data: Data) extends Printable {
 case class FullName(data: Data) extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) =
     (data.ref.fullName(ctx), List.empty)
+  final def unpack: (String, Seq[Data]) = ("%N", List(data))
   final def unpackArgs: Seq[Bits] = List.empty
 }
 
 /** Represents escaped percents */
 case object Percent extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%%", List.empty)
+  final def unpack: (String, Seq[Data]) = ("%%", List.empty)
   final def unpackArgs:                                        Seq[Bits] = List.empty
 }
 
 /** Represents the hierarchical name in the Verilog (`%m`) */
 case object HierarchicalName extends Printable {
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%m", List.empty)
+  final def unpack: (String, Seq[Data]) = ("%m", List.empty)
   final def unpackArgs:                                        Seq[Bits] = List.empty
 }
