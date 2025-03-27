@@ -106,15 +106,8 @@ trait HasTests { module: RawModule =>
 
   private val builderContext = internal.Builder.captureContext()
 
-  private val thisModuleShouldElaborateTests =
-    builderContext.includeInlineTestsForModule.exists { glob =>
-      glob.replace("*", ".*").r.matches(desiredName)
-    }
-
   private def shouldElaborateTest(testName: String) =
-    builderContext.includeInlineTestsWithName.exists { glob =>
-      glob.replace("*", ".*").r.matches(testName)
-    }
+    builderContext.inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
 
   /** Generators for inline tests by name. */
   private val testGenerators = new mutable.HashMap[String, (Int, TestGenerator[M, _])]
@@ -138,8 +131,8 @@ trait HasTests { module: RawModule =>
   }
 
   afterModuleBuilt {
-    lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]
-    if (thisModuleShouldElaborateTests && elaborateTests) {
+    if (elaborateTests) {
+      lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]
       testGenerators.values.toSeq.sortBy(_._1).foreach { case (_, t) =>
         if (shouldElaborateTest(t.testName)) {
           Definition(t.generate(moduleDefinition))
