@@ -216,6 +216,23 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
+  they should ", when enabled, not propagate to child modules" in {
+
+    class Bar extends RawModule
+
+    class Foo extends RawModule {
+      layer.enable(A)
+      val bar = Module(new Bar)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Bar :
+         |CHECK: module Foo enablelayer A :
+         |""".stripMargin
+    }
+
+  }
+
   they should "work correctly with Definition/Instance" in {
 
     @instantiable

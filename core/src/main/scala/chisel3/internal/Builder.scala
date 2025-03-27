@@ -1227,7 +1227,8 @@ private[chisel3] object Builder extends LazyLogging {
       Builder.setPrefix(state.prefix)
       Builder.currentClock = state.clock
       Builder.currentReset = state.reset
-      Builder.enabledLayers = enabledLayers
+      Builder.enabledLayers.clear()
+      Builder.enabledLayers ++= state.enabledLayers
     }
 
     /** Run the `thunk` with the context provided by `state`.  Save the [[Builder]]
