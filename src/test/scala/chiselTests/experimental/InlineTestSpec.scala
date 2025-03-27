@@ -64,13 +64,28 @@ class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
 }
 
 @instantiable
+trait HasProtocolInterface extends HasTests { this: RawModule =>
+  @public val io: ProtocolBundle
+
+  test("check1")(ProtocolChecks.check(1))
+}
+
+object ProtocolChecks {
+  def check(v: Int)(instance: Instance[RawModule with HasProtocolInterface]) = {
+    instance.io.in := v.U
+    assert(instance.io.out === v.U): Unit
+  }
+}
+
+@instantiable
 class ModuleWithTests(
   ioWidth:                     Int = 32,
   override val resetType:      Module.ResetType.Type = Module.ResetType.Synchronous,
   override val elaborateTests: Boolean = true
 ) extends Module
     with HasMonitorSocket
-    with HasTests {
+    with HasTests
+    with HasProtocolInterface {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
   override val monProbe = makeProbe(io)
@@ -113,6 +128,8 @@ class ModuleWithTests(
       assert(instance.io.out =/= 0.U): Unit
     }
   }
+
+  test("check2")(ProtocolChecks.check(2))
 }
 
 @instantiable
@@ -142,6 +159,11 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      public module test_ModuleWithTests_check1
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset
+      | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_foo
       | CHECK-NEXT:   input clock : Clock
@@ -175,6 +197,11 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   connect monitor.reset, reset
       | CHECK-NEXT:   connect monitor.io.out, read(dut.monProbe).out
       | CHECK-NEXT:   connect monitor.io.in, read(dut.monProbe).in
+      |
+      | CHECK:      public module test_ModuleWithTests_check2
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset
+      | CHECK:        inst dut of ModuleWithTests
       """
     )
   }
@@ -270,10 +297,12 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       .fileCheck()(
         """
       | CHECK: module ModuleWithTests
+      | CHECK: module test_ModuleWithTests_check1
       | CHECK: module test_ModuleWithTests_foo
       | CHECK: module test_ModuleWithTests_bar
       | CHECK: module test_ModuleWithTests_with_result
       | CHECK: module test_ModuleWithTests_with_monitor
+      | CHECK: module test_ModuleWithTests_check2
       """
       )
   }
@@ -282,6 +311,10 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
     def fileCheckString(resetType: String) =
       s"""
       | CHECK:      module ModuleWithTests
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      |
+      | CHECK:      public module test_ModuleWithTests_check1
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
       |
@@ -304,6 +337,12 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
+      | CHECK-NEXT:   input clock : Clock
+      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output success : UInt<1>
+      |
+      | CHECK:      public module test_ModuleWithTests_check2
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
       | CHECK-NEXT:   output finish : UInt<1>
