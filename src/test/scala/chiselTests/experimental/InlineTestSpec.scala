@@ -20,7 +20,7 @@ class TestResultBundle extends Bundle {
 // Here is a testharness that consumes some kind of hardware from the test body, e.g.
 // a finish and pass/fail interface.
 class TestHarnessWithResultIO[M <: RawModule](test: TestParameters[M, TestResultBundle])
-    extends TestHarness.Module[M, TestResultBundle](test) {
+    extends TestHarness[M, TestResultBundle](test) {
   finish := testResult.finish
   success := testResult.success
 }
@@ -33,7 +33,7 @@ object TestHarnessWithResultIO {
 // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
 // socket to which to attach a monitor.
 class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M, Unit])
-    extends TestHarness.Module[M, Unit](test) {
+    extends TestHarness[M, Unit](test) {
   val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
   monitor.io :#= probe.read(dut.monProbe)
 }
