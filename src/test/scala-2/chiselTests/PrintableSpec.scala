@@ -323,4 +323,42 @@ class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
         """CHECK: printf(clock, UInt<1>(0h1), "%m %d %x %b %c %%\n", in, in, in, in)"""
       )
   }
+
+  it should "support modifiers to format specifiers" in {
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      printf(cf"$in%0d $in%0x $in%5d $in%-013b $in%-05c $in%-x\n")
+    }
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """CHECK: printf(clock, UInt<1>(0h1), "%0d %0x %5d %-013b %-05c %-x\n", in, in, in, in, in, in)"""
+      )
+  }
+
+  "FirrtlFormat" should "support all legal format specifiers" in {
+    val x = 123.U
+    // Legacy API of just the character
+    FirrtlFormat("d", x) should be(Decimal(x))
+    FirrtlFormat("x", x) should be(Hexadecimal(x))
+    FirrtlFormat("b", x) should be(Binary(x))
+    FirrtlFormat("c", x) should be(Character(x))
+    FirrtlFormat("%d", x) should be(Decimal(x))
+    FirrtlFormat("%x", x) should be(Hexadecimal(x))
+    FirrtlFormat("%b", x) should be(Binary(x))
+    FirrtlFormat("%c", x) should be(Character(x))
+    FirrtlFormat("%0d", x) should be(Decimal(x, "0"))
+    FirrtlFormat("%0x", x) should be(Hexadecimal(x, "0"))
+    FirrtlFormat("%0b", x) should be(Binary(x, "0"))
+    FirrtlFormat("%0c", x) should be(Character(x, "0"))
+    FirrtlFormat("%-023d", x) should be(Decimal(x, "-023"))
+    FirrtlFormat("%-023x", x) should be(Hexadecimal(x, "-023"))
+    FirrtlFormat("%-023b", x) should be(Binary(x, "-023"))
+    FirrtlFormat("%-023c", x) should be(Character(x, "-023"))
+    FirrtlFormat("%-d", x) should be(Decimal(x, "-"))
+    FirrtlFormat("%-x", x) should be(Hexadecimal(x, "-"))
+    FirrtlFormat("%-b", x) should be(Binary(x, "-"))
+    FirrtlFormat("%-c", x) should be(Character(x, "-"))
+
+  }
 }
