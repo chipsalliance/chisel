@@ -1,6 +1,7 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
+import chisel3.experimental.inlinetest.{HasTests, TestHarness}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
@@ -116,13 +117,56 @@ trait Simulator[T <: Backend] {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val elaboratedModule =
-      workspace.elaborateGeneratedModule(
-        () => module,
-        args = chiselOptsModifications(chiselOpts).toSeq,
-        firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
-      )
+      workspace
+        .elaborateGeneratedModule(
+          () => module,
+          args = chiselOptsModifications(chiselOpts).toSeq,
+          firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
+        )
+        .asInstanceOf[ElaboratedModule[T]]
     workspace.generateAdditionalSources()
+    _simulate(workspace, elaboratedModule, chiselOpts, firtoolOpts, settings)(body)
+  }
 
+  final def simulateTest[T <: RawModule, U](
+    module:      => T,
+    testName:    String,
+    chiselOpts:  Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty,
+    settings:    Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]]
+  )(body: (SimulatedModule[TestHarness[T, _]]) => U)(
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
+  ): Simulator.BackendInvocationDigest[U] = {
+    val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
+    workspace.reset()
+    val elaboratedModule =
+      workspace
+        .elaborateGeneratedModule(
+          () => module,
+          args = chiselOptsModifications(chiselOpts).toSeq,
+          firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq,
+          testName = Some(testName)
+        )
+        .asInstanceOf[ElaboratedModule[TestHarness[T, _]]]
+    workspace.generateAdditionalSources()
+    _simulate(workspace, elaboratedModule, chiselOpts, firtoolOpts, settings)(body)
+  }
+
+  private def _simulate[T <: RawModule, U](
+    workspace:        Workspace,
+    elaboratedModule: ElaboratedModule[T],
+    chiselOpts:       Array[String] = Array.empty,
+    firtoolOpts:      Array[String] = Array.empty,
+    settings:         Settings[T] = Settings.defaultRaw[T]
+  )(body: (SimulatedModule[T]) => U)(
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
+  ): Simulator.BackendInvocationDigest[U] = {
     val commonCompilationSettingsUpdated = commonSettingsModifications(
       commonCompilationSettings.copy(
         // Append to the include directorires based on what the

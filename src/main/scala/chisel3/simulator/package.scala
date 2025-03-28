@@ -3,6 +3,7 @@ package chisel3
 import svsim._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
+import chisel3.experimental.inlinetest.HasTests
 import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
@@ -129,16 +130,24 @@ package object simulator {
     def elaborateGeneratedModule[T <: RawModule](
       generateModule: () => T,
       args:           Seq[String] = Seq.empty,
-      firtoolArgs:    Seq[String] = Seq.empty
-    ): ElaboratedModule[T] = {
+      firtoolArgs:    Seq[String] = Seq.empty,
+      testName:       Option[String] = None
+    ): ElaboratedModule[RawModule] = {
       // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
-      var someDut: Option[T] = None
+      var someDut: Option[() => RawModule] = None
+      val chiselArgs =
+        Array("--target", "systemverilog", "--split-verilog") ++
+          testName.map("--include-tests-name=" + _).toSeq ++
+          args
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
-        Array("--target", "systemverilog", "--split-verilog") ++ args,
+        chiselArgs,
         Seq(
           chisel3.stage.ChiselGeneratorAnnotation { () =>
             val dut = generateModule()
-            someDut = Some(dut)
+            someDut = Some(testName match {
+              case Some(name) => () => dut.asInstanceOf[HasTests].getElaboratedTestModule(name)
+              case None       => () => dut
+            })
             dut
           },
           circt.stage.FirtoolOption("-disable-annotation-unknown"),
@@ -198,7 +207,7 @@ package object simulator {
         .forEach(moveFile)
 
       // Initialize Module Info
-      val dut = someDut.get
+      val dut = someDut.get()
       val ports = {
 
         /**

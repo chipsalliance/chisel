@@ -3,7 +3,8 @@
 package chisel3.simulator
 
 import chisel3.{Module, RawModule}
-import chisel3.simulator.stimulus.ResetProcedure
+import chisel3.experimental.inlinetest.{HasTests, TestHarness}
+import chisel3.simulator.stimulus.{ResetProcedure, RunUntilFinished}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
 import java.nio.file.Files
@@ -102,4 +103,35 @@ trait SimulatorAPI {
     stimulus(dut)
   }
 
+  def simulateTest[T <: RawModule with HasTests](
+    module:       => T,
+    testName:     String,
+    timeout:      Int,
+    chiselOpts:   Array[String] = Array.empty,
+    firtoolOpts:  Array[String] = Array.empty,
+    settings:     Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]],
+    subdirectory: Option[String] = None
+  )(
+    implicit hasSimulator:        HasSimulator,
+    testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
+    commonSettingsModifications:  svsim.CommonSettingsModifications,
+    backendSettingsModifications: svsim.BackendSettingsModifications
+  ) = {
+    val modifiedTestingDirectory = subdirectory match {
+      case Some(subdir) => testingDirectory.withSubdirectory(subdir)
+      case None         => testingDirectory
+    }
+
+    hasSimulator
+      .getSimulator(modifiedTestingDirectory)
+      .simulateTest(
+        module = module,
+        testName = testName,
+        chiselOpts = chiselOpts,
+        firtoolOpts = firtoolOpts,
+        settings = settings
+      ) { module => RunUntilFinished(timeout)(module.wrapped) }
+  }
 }

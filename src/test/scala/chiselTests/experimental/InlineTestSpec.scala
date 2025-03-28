@@ -3,6 +3,8 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.{stimulus, Settings}
 import chisel3.testers._
 import chisel3.testing.scalatest.FileCheck
 import chisel3.util.Enum
@@ -10,7 +12,7 @@ import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import circt.stage.ChiselStage.emitCHIRRTL
+import circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
 
 class TestResultBundle extends Bundle {
   val finish = Output(Bool())
@@ -83,17 +85,22 @@ class ModuleWithTests(
   override val resetType:      Module.ResetType.Type = Module.ResetType.Synchronous,
   override val elaborateTests: Boolean = true
 ) extends Module
-    with HasMonitorSocket
+    // with HasMonitorSocket
     with HasTests
     with HasProtocolInterface {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
-  override val monProbe = makeProbe(io)
+  // override val monProbe = makeProbe(io)
 
   io.out := io.in
 
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
+    val printed = RegInit(false.B)
+    when(!printed) {
+      printf(cf"instance.io.in = ${instance.io.in}\n")
+      printed := 1.U
+    }
     assert(instance.io.out === 3.U): Unit
   }
 
@@ -142,7 +149,9 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   }
 }
 
-class InlineTestSpec extends AnyFlatSpec with FileCheck {
+class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
+
+
   private def makeArgs(moduleGlobs: Seq[String], testGlobs: Seq[String]): Array[String] =
     (
       moduleGlobs.map { glob => s"--include-tests-module=$glob" } ++
@@ -320,8 +329,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
   }
 
   it should "compile to verilog" in {
-    ChiselStage
-      .emitSystemVerilog(new ModuleWithTests, args = argsElaborateAllTests)
+    emitSystemVerilog(new ModuleWithTests, args = argsElaborateAllTests)
       .fileCheck()(
         """
       | CHECK: module ModuleWithTests
@@ -400,6 +408,14 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       """
+    )
+  }
+
+  it should "run a ChiselSim simulation" in {
+    simulateTest(
+      new ModuleWithTests,
+      testName = "foo",
+      timeout = 1000
     )
   }
 }

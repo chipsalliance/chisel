@@ -88,7 +88,8 @@ final class Settings[A <: RawModule] private[simulator] (
   val printfCond:            Option[MacroText.Type[A]],
   val stopCond:              Option[MacroText.Type[A]],
   val plusArgs:              Seq[svsim.PlusArg],
-  val enableWavesAtTimeZero: Boolean = false
+  val enableWavesAtTimeZero: Boolean = false,
+  val testName:              Option[String]
 ) {
 
   def copy(
@@ -97,9 +98,10 @@ final class Settings[A <: RawModule] private[simulator] (
     printfCond:            Option[MacroText.Type[A]] = printfCond,
     stopCond:              Option[MacroText.Type[A]] = stopCond,
     plusArgs:              Seq[svsim.PlusArg] = plusArgs,
-    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero
+    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
+    testName:              Option[String] = testName
   ) =
-    new Settings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero)
+    new Settings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero, testName)
 
   private[simulator] def preprocessorDefines(
     elaboratedModule: ElaboratedModule[A]
@@ -146,7 +148,8 @@ object Settings {
     printfCond = Some(MacroText.NotSignal(get = _.reset)),
     stopCond = Some(MacroText.NotSignal(get = _.reset)),
     plusArgs = Seq.empty,
-    enableWavesAtTimeZero = false
+    enableWavesAtTimeZero = false,
+    testName = None
   )
 
   /** Retun a default [[Settings]] for a [[RawModule]].
@@ -174,7 +177,8 @@ object Settings {
     printfCond = None,
     stopCond = None,
     plusArgs = Seq.empty,
-    enableWavesAtTimeZero = false
+    enableWavesAtTimeZero = false,
+    testName = None
   )
 
   /** Simple factory for construcing a [[Settings]] from arguments.
@@ -196,14 +200,16 @@ object Settings {
     printfCond:            Option[MacroText.Type[A]],
     stopCond:              Option[MacroText.Type[A]],
     plusArgs:              Seq[svsim.PlusArg],
-    enableWavesAtTimeZero: Boolean
+    enableWavesAtTimeZero: Boolean,
+    testName:              Option[String]
   ): Settings[A] = new Settings(
     verilogLayers = verilogLayers,
     assertVerboseCond = assertVerboseCond,
     printfCond = printfCond,
     stopCond = stopCond,
     plusArgs = plusArgs,
-    enableWavesAtTimeZero = enableWavesAtTimeZero
+    enableWavesAtTimeZero = enableWavesAtTimeZero,
+    testName = testName
   )
 
 }
