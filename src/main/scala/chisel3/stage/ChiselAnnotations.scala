@@ -582,3 +582,33 @@ case object UseSRAMBlackbox extends NoTargetAnnotation with ChiselOption with Ha
     )
   )
 }
+
+case class IncludeInlineTestsForModuleAnnotation(glob: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption
+
+case object IncludeInlineTestsForModule extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "include-tests-module",
+      toAnnotationSeq = glob => Seq(IncludeInlineTestsForModuleAnnotation(glob)),
+      helpText = "Elaborate inline tests when the module-under-test name matches this glob"
+    )
+  )
+}
+
+case class IncludeInlineTestsWithNameAnnotation(glob: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption
+
+case object IncludeInlineTestsWithName extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "include-tests-name",
+      toAnnotationSeq = glob => Seq(IncludeInlineTestsWithNameAnnotation(glob)),
+      helpText = "Elaborate inline tests whose name matches this glob"
+    )
+  )
+}

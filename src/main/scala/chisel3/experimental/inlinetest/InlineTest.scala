@@ -95,6 +95,14 @@ object TestHarnessGenerator {
   */
 trait HasTests[M <: RawModule] { module: M =>
 
+  /** Whether inline tests will be elaborated as a top-level definition to the circuit. */
+  protected def elaborateTests: Boolean = true
+
+  private val builderContext = internal.Builder.captureContext()
+
+  private def shouldElaborateTest(testName: String) =
+    builderContext.inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
+
   /** A Definition of the DUT to be used for each of the tests. */
   private lazy val moduleDefinition =
     module.toDefinition.asInstanceOf[Definition[module.type]]
@@ -115,12 +123,14 @@ trait HasTests[M <: RawModule] { module: M =>
   protected final def test[R](
     testName: String
   )(testBody: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
-    elaborateParentModule { moduleDefinition =>
-      val resetType = module match {
-        case module: Module => Some(module.resetType)
-        case _ => None
+    if (elaborateTests && shouldElaborateTest(testName)) {
+      elaborateParentModule { moduleDefinition =>
+        val resetType = module match {
+          case module: Module => Some(module.resetType)
+          case _ => None
+        }
+        val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, testBody, resetType)
+        th.generate(test)
       }
-      val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, testBody, resetType)
-      th.generate(test)
     }
 }
