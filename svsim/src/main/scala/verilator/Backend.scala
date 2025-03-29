@@ -172,4 +172,11 @@ final class Backend(executablePath: String) extends svsim.Backend {
 
   override val assertionFailed = "^.*Assertion failed in.*".r
 
+  def getWaveformFilename(settings: CompilationSettings): Option[String] = {
+    import Backend.CompilationSettings.TraceStyle
+    settings.traceStyle.collectFirst {
+      case TraceStyle.Vcd(_, filename: String) if filename.nonEmpty =>
+        filename.stripSuffix(".vcd")
+    }
+  }
 }

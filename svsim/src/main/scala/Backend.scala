@@ -145,6 +145,9 @@ trait Backend {
     backendSpecificSettings: CompilationSettings
   ): Backend.Parameters
 
+  /** Get the waveform filename from backend-specific settings */
+  def getWaveformFilename(settings: CompilationSettings): Option[String]
+
   /** This function will be applied to all defines (both the keys and the values).
     * This can be used to workaround subtleties in how different simulators
     * parse defines and require different escaping.
