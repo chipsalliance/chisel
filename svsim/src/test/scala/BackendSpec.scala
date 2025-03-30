@@ -145,6 +145,9 @@ case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Back
   override def escapeDefine(string: String): String = string
 
   override val assertionFailed = "^.*Assertion failed in.*".r
+
+  override def getWaveformFilename(settings: CompilationSettings): Option[String] =
+    actualBackend.getWaveformFilename(settings)
 }
 
 class VerilatorSpec extends BackendSpec {

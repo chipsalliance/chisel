@@ -52,14 +52,14 @@ object Backend {
     final object TraceSettings {
       final case class FsdbSettings(
         verdiHome: String,
-        filename: String = ""
+        filename:  String = ""
       )
     }
     final case class TraceSettings(
       enableVcd:    Boolean = false,
       enableVpd:    Boolean = false,
       fsdbSettings: Option[TraceSettings.FsdbSettings] = None,
-      filename: String = ""
+      filename:     String = ""
     ) {
       private def fsdbEnabled = fsdbSettings match {
         case Some(_) => true
@@ -86,7 +86,7 @@ object Backend {
         svsim.CommonCompilationSettings.VerilogPreprocessorDefine(value)
       }
       private[vcs] def environment = fsdbSettings match {
-        case None => Seq()
+        case None                                           => Seq()
         case Some(TraceSettings.FsdbSettings(verdiHome, _)) => Seq("VERDI_HOME" -> verdiHome)
       }
     }

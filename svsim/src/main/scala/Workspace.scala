@@ -392,7 +392,8 @@ final class Workspace(
       Files.walkFileTree(Paths.get(dir), new DirectoryVisitor)
     }
 
-    val traceFileStem = backend.getWaveformFilename(backendSpecificSettings)
+    val traceFileStem = backend
+      .getWaveformFilename(backendSpecificSettings)
       .getOrElse(s"$workingDirectoryPath/trace")
     val simulationEnvironment = Seq(
       "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
