@@ -4,10 +4,11 @@ import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
 import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator
 import chisel3.simulator.{stimulus, Settings}
 import chisel3.testers._
 import chisel3.testing.scalatest.FileCheck
-import chisel3.util.Enum
+import chisel3.util.{Counter, Enum}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -16,7 +17,7 @@ import circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
 
 class TestResultBundle extends Bundle {
   val finish = Output(Bool())
-  val success = Output(UInt(8.W))
+  val success = Output(Bool())
 }
 
 // Here is a testharness that consumes some kind of hardware from the test body, e.g.
@@ -28,7 +29,7 @@ class TestHarnessWithResultIO[M <: RawModule](test: TestParameters[M, TestResult
 }
 
 object TestHarnessWithResultIO {
-  implicit def testharnessGenerator[M <: RawModule] =
+  implicit def generator[M <: RawModule] =
     TestHarnessGenerator[M, TestResultBundle](new TestHarnessWithResultIO(_))
 }
 
@@ -41,7 +42,7 @@ class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: T
 }
 
 object TestHarnessWithMonitorSocket {
-  implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket] =
+  implicit def generator[M <: RawModule with HasMonitorSocket] =
     TestHarnessGenerator[M, Unit](new TestHarnessWithMonitorSocket(_))
 }
 
@@ -85,12 +86,12 @@ class ModuleWithTests(
   override val resetType:      Module.ResetType.Type = Module.ResetType.Synchronous,
   override val elaborateTests: Boolean = true
 ) extends Module
-    // with HasMonitorSocket
+    with HasMonitorSocket
     with HasTests
     with HasProtocolInterface {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
-  // override val monProbe = makeProbe(io)
+  override val monProbe = makeProbe(io)
 
   io.out := io.in
 
@@ -98,7 +99,6 @@ class ModuleWithTests(
     instance.io.in := 3.U(ioWidth.W)
     val printed = RegInit(false.B)
     when(!printed) {
-      printf(cf"instance.io.in = ${instance.io.in}\n")
       printed := 1.U
     }
     assert(instance.io.out === 3.U): Unit
@@ -119,7 +119,7 @@ class ModuleWithTests(
       val outValid = instance.io.out =/= 0.U
       when(outValid) {
         result.success := 0.U
-        result.finish := timer > 1000.U
+        result.finish := timer > 100.U
       }.otherwise {
         result.success := 1.U
         result.finish := true.B
@@ -137,6 +137,39 @@ class ModuleWithTests(
   }
 
   test("check2")(ProtocolChecks.check(2))
+
+  test("signal_pass") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    val result = Wire(new TestResultBundle())
+    result.success := true.B
+    result.finish := counter.value === 15.U
+    result
+  }(TestHarnessWithResultIO.generator)
+
+  test("signal_fail") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    val result = Wire(new TestResultBundle())
+    result.success := false.B
+    result.finish := counter.value === 15.U
+    result
+  }(TestHarnessWithResultIO.generator)
+
+  test("timeout") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+  }
+
+  test("assertion") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    chisel3.assert(instance.io.out < 15.U, "counter hit max"): Unit
+  }
 }
 
 @instantiable
@@ -150,8 +183,6 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
 }
 
 class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
-
-
   private def makeArgs(moduleGlobs: Seq[String], testGlobs: Seq[String]): Array[String] =
     (
       moduleGlobs.map { glob => s"--include-tests-module=$glob" } ++
@@ -411,11 +442,58 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     )
   }
 
-  it should "run a ChiselSim simulation" in {
+  it should "simulate and pass if finish asserted with success=1" in {
     simulateTest(
       new ModuleWithTests,
-      testName = "foo",
-      timeout = 1000
-    )
+      testName = "signal_pass",
+      timeout = 100
+    ).result
+  }
+
+  it should "simulate and fail if finish asserted with success=0" in {
+    intercept[simulator.Exceptions.AssertionFailed] {
+      simulateTest(
+        new ModuleWithTests,
+        testName = "signal_fail",
+        timeout = 100
+      ).result
+    }.getMessage()
+      .fileCheck() {
+        """
+        | CHECK: One or more assertions failed during Chiselsim simulation
+        | CHECK: counter hit max
+        """
+      }
+  }
+
+  it should "simulate and timeout if finish not asserted" in {
+    intercept[simulator.Exceptions.Timeout] {
+      simulateTest(
+        new ModuleWithTests,
+        testName = "timeout",
+        timeout = 100
+      ).result
+    }.getMessage()
+      .fileCheck() {
+        """
+        | CHECK: A timeout occurred after 100 timesteps
+        """
+      }
+  }
+
+  it should "simulate and fail early if assertion raised" in {
+    intercept[simulator.Exceptions.AssertionFailed] {
+      simulateTest(
+        new ModuleWithTests,
+        testName = "assertion",
+        timeout = 100
+      ).result
+    }.getMessage()
+      .fileCheck() {
+        """
+        | CHECK: One or more assertions failed during Chiselsim simulation
+        | CHECK: counter hit max
+        """
+      }
   }
 }
