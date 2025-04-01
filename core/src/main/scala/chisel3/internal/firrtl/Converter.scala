@@ -468,8 +468,9 @@ private[chisel3] object Converter {
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(block, ctx, typeAliases)
       )
-    case ctx @ DefFormalTest(name, module, params, sourceInfo) =>
-      fir.FormalTest(
+    case ctx @ DefTestMarker(kind, name, module, params, sourceInfo) =>
+      fir.TestMarker(
+        kind,
         convert(sourceInfo),
         name,
         module.name,
