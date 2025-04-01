@@ -587,9 +587,11 @@ object Serializer {
         b.toString
       }
       Iterator(start) ++ sIt(body)(indent + 1)
-    case FormalTest(info, name, moduleName, params) =>
+    case TestMarker(kind, info, name, moduleName, params) =>
       implicit val b = new StringBuilder
-      doIndent(0); b ++= "formal "; b ++= legalize(name); b ++= " of "; b ++= legalize(moduleName); b ++= " :"; s(info)
+      doIndent(0); b ++= kind.toString; b ++= " "; b ++= legalize(name); b ++= " of "; b ++= legalize(moduleName);
+      b ++= " :";
+      s(info)
       params.value.keys.toSeq.sorted.foreach { case name =>
         newLineAndIndent(1); b ++= name; b ++= " = "; s(params.value(name))
       }

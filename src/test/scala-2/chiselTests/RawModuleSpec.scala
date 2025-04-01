@@ -271,4 +271,52 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
            |""".stripMargin
       )
   }
+
+  "RawModule marked as simulation test" should "emit a simulation test declaration" in {
+    class Foo extends RawModule {
+      val clock = IO(Input(Clock()))
+      val init = IO(Input(Bool()))
+      val done = IO(Output(Bool()))
+      val success = IO(Output(Bool()))
+      done := true.B
+      success := true.B
+
+      SimulationTest(this)
+      SimulationTest(this, MapTestParam(Map("hello" -> StringTestParam("world"))))
+      SimulationTest(
+        this,
+        MapTestParam(
+          Map(
+            "a_int" -> IntTestParam(42),
+            "b_double" -> DoubleTestParam(13.37),
+            "c_string" -> StringTestParam("hello"),
+            "d_array" -> ArrayTestParam(Seq(IntTestParam(42), StringTestParam("hello"))),
+            "e_map" -> MapTestParam(
+              Map(
+                "x" -> IntTestParam(42),
+                "y" -> StringTestParam("hello")
+              )
+            )
+          )
+        ),
+        "thisBetterWork"
+      )
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: simulation Foo of [[FOO:Foo_.*]] :
+           |CHECK: simulation Foo_1 of [[FOO]] :
+           |CHECK:   hello = "world"
+           |CHECK: simulation thisBetterWork of [[FOO]] :
+           |CHECK:   a_int = 42
+           |CHECK:   b_double = 13.37
+           |CHECK:   c_string = "hello"
+           |CHECK:   d_array = [42, "hello"]
+           |CHECK:   e_map = {x = 42, y = "hello"}
+           |CHECK: module [[FOO]] :
+           |""".stripMargin
+      )
+  }
 }

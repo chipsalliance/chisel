@@ -576,7 +576,20 @@ private[chisel3] object ir {
     knownLayers: Seq[chisel3.layer.Layer]
   ) extends Component
 
-  case class DefFormalTest(
+  object DefTestMarker {
+    sealed trait Kind {
+      def toString: String
+    }
+    case object Formal extends Kind {
+      override def toString = "formal"
+    }
+    case object Simulation extends Kind {
+      override def toString = "simulation"
+    }
+  }
+
+  case class DefTestMarker(
+    kind:       DefTestMarker.Kind,
     name:       String,
     module:     BaseModule,
     params:     MapTestParam,
