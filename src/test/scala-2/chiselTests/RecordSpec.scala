@@ -16,12 +16,12 @@ import scala.collection.immutable.{ListMap, SeqMap, VectorMap}
 
 object RecordSpec {
   class MyBundle extends Bundle {
-    val foo = UInt(16.W)
-    val bar = UInt(16.W)
+    val foo = UInt(32.W)
+    val bar = UInt(32.W)
   }
   // Useful for constructing types from CustomBundle
   // This is a def because each call to this needs to return a new instance
-  def fooBarType: CustomBundle = new CustomBundle("foo" -> UInt(16.W), "bar" -> UInt(16.W))
+  def fooBarType: CustomBundle = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
 
   class MyModule(output: => Record, input: => Record) extends Module {
     val io = IO(new Bundle {
