@@ -20,7 +20,8 @@ object CommonSettingsModifications {
   */
 final class CommonSimulationSettings private[svsim] (
   val plusArgs:              Seq[PlusArg],
-  val enableWavesAtTimeZero: Boolean
+  val enableWavesAtTimeZero: Boolean,
+  val traceFileStem:         String
 ) {
 
   /** Return a copy of this [[CommonSimulationSettings]] with some fields
@@ -28,10 +29,12 @@ final class CommonSimulationSettings private[svsim] (
     */
   def copy(
     plusArgs:              Seq[PlusArg] = plusArgs,
-    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero
+    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
+    traceFileStem:         String = traceFileStem
   ) = new CommonSimulationSettings(
     plusArgs = plusArgs,
-    enableWavesAtTimeZero = enableWavesAtTimeZero
+    enableWavesAtTimeZero = enableWavesAtTimeZero,
+    traceFileStem = traceFileStem
   )
 }
 
@@ -44,7 +47,8 @@ object CommonSimulationSettings {
     */
   def default = new CommonSimulationSettings(
     plusArgs = Seq.empty,
-    enableWavesAtTimeZero = false
+    enableWavesAtTimeZero = false,
+    traceFileStem = ""
   )
 
 }
@@ -145,8 +149,8 @@ trait Backend {
     backendSpecificSettings: CompilationSettings
   ): Backend.Parameters
 
-  /** Get the waveform filename from backend-specific settings */
-  def getWaveformFilename(settings: CompilationSettings): Option[String]
+  /** Get the trace file stem from backend-specific settings */
+  def getTraceFileStem(settings: CommonCompilationSettings): Option[String]
 
   /** This function will be applied to all defines (both the keys and the values).
     * This can be used to workaround subtleties in how different simulators

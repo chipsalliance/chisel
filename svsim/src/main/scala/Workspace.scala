@@ -393,7 +393,7 @@ final class Workspace(
     }
 
     val traceFileStem = backend
-      .getWaveformFilename(backendSpecificSettings)
+      .getTraceFileStem(commonSettings)
       .getOrElse(s"$workingDirectoryPath/trace")
     val simulationEnvironment = Seq(
       "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",

@@ -146,8 +146,8 @@ case class CustomVerilatorBackend(actualBackend: verilator.Backend) extends Back
 
   override val assertionFailed = "^.*Assertion failed in.*".r
 
-  override def getWaveformFilename(settings: CompilationSettings): Option[String] =
-    actualBackend.getWaveformFilename(settings)
+  override def getTraceFileStem(settings: CommonCompilationSettings): Option[String] =
+    actualBackend.getTraceFileStem(settings)
 }
 
 class VerilatorSpec extends BackendSpec {

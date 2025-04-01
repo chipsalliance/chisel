@@ -50,16 +50,12 @@ object Backend {
     }
 
     final object TraceSettings {
-      final case class FsdbSettings(
-        verdiHome: String,
-        filename:  String = ""
-      )
+      final case class FsdbSettings(verdiHome: String)
     }
     final case class TraceSettings(
       enableVcd:    Boolean = false,
       enableVpd:    Boolean = false,
-      fsdbSettings: Option[TraceSettings.FsdbSettings] = None,
-      filename:     String = ""
+      fsdbSettings: Option[TraceSettings.FsdbSettings] = None
     ) {
       private def fsdbEnabled = fsdbSettings match {
         case Some(_) => true
@@ -69,7 +65,7 @@ object Backend {
         if (enableVpd || fsdbEnabled) Seq("-debug_acc+pp+dmptf") else Seq(),
         fsdbSettings match {
           case None => Seq()
-          case Some(TraceSettings.FsdbSettings(verdiHome, _)) =>
+          case Some(TraceSettings.FsdbSettings(verdiHome)) =>
             Seq(
               "-kdb",
               "-P",
@@ -86,8 +82,8 @@ object Backend {
         svsim.CommonCompilationSettings.VerilogPreprocessorDefine(value)
       }
       private[vcs] def environment = fsdbSettings match {
-        case None                                           => Seq()
-        case Some(TraceSettings.FsdbSettings(verdiHome, _)) => Seq("VERDI_HOME" -> verdiHome)
+        case None                                        => Seq()
+        case Some(TraceSettings.FsdbSettings(verdiHome)) => Seq("VERDI_HOME" -> verdiHome)
       }
     }
   }
@@ -447,13 +443,11 @@ final class Backend(
   override val assertionFailed =
     "^((Assertion failed:)|(Error: )|(Fatal: )|(.* started at .* failed at .*)|(.*Offending)).*$".r
 
-  def getWaveformFilename(settings: CompilationSettings): Option[String] = {
-    settings.traceSettings.fsdbSettings.flatMap { fsdbSettings =>
-      if (fsdbSettings.filename.nonEmpty) {
-        Some(fsdbSettings.filename.stripSuffix(".fsdb"))
-      } else {
-        None
-      }
+  def getTraceFileStem(settings: CommonCompilationSettings): Option[String] = {
+    if (settings.simulationSettings.traceFileStem.nonEmpty) {
+      Some(settings.simulationSettings.traceFileStem)
+    } else {
+      None
     }
   }
 }
