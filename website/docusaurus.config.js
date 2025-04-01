@@ -155,7 +155,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} ChipsAlliance. Built with Docusaurus.`,
+        copyright: `Copyright © Chisel a Series of LF Projects, LLC For web site terms of use, trademark policy and other project policies please see https://lfprojects.org. Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,
