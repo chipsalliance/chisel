@@ -28,6 +28,14 @@ object Exceptions {
       )
       with NoStackTrace
 
+  class TestFailed private[simulator]
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some(s"The test finished and signaled failure"),
+          body = ""
+        )
+      )
+      with NoStackTrace
 }
 
 final object Simulator {

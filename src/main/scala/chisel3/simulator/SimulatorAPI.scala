@@ -4,7 +4,7 @@ package chisel3.simulator
 
 import chisel3.{Module, RawModule}
 import chisel3.experimental.inlinetest.{HasTests, TestHarness}
-import chisel3.simulator.stimulus.{ResetProcedure, RunUntilFinished}
+import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
 import java.nio.file.Files
@@ -132,6 +132,6 @@ trait SimulatorAPI {
         chiselOpts = chiselOpts,
         firtoolOpts = firtoolOpts,
         settings = settings
-      ) { module => RunUntilFinished(timeout)(module.wrapped) }
+      ) { dut => InlineTestStimulus(timeout)(dut.wrapped) }
   }
 }

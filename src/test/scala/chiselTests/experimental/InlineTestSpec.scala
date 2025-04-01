@@ -97,10 +97,6 @@ class ModuleWithTests(
 
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    val printed = RegInit(false.B)
-    when(!printed) {
-      printed := 1.U
-    }
     assert(instance.io.out === 3.U): Unit
   }
 
@@ -451,7 +447,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   }
 
   it should "simulate and fail if finish asserted with success=0" in {
-    intercept[simulator.Exceptions.AssertionFailed] {
+    intercept[simulator.Exceptions.TestFailed] {
       simulateTest(
         new ModuleWithTests,
         testName = "signal_fail",
@@ -460,8 +456,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     }.getMessage()
       .fileCheck() {
         """
-        | CHECK: One or more assertions failed during Chiselsim simulation
-        | CHECK: counter hit max
+        | CHECK: The test finished and signaled failure
         """
       }
   }
