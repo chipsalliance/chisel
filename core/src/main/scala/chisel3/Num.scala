@@ -33,10 +33,10 @@ trait Num[T <: Data] extends NumIntf[T] {
     Mux(this < that, that, this.asInstanceOf[T])
 }
 
-/** Convenience methods for converting between
+/** NumObject has a lot of convenience methods for converting between
   * BigInts and Double and BigDecimal
   */
-object Num {
+trait NumObject {
   val MaxBitsBigIntToBigDecimal = 108
   val MaxBitsBigIntToDouble = 53
 
@@ -108,3 +108,8 @@ object Num {
   }
 
 }
+
+/** Convenience methods for converting between
+  * BigInts and Double and BigDecimal
+  */
+object Num extends NumObject
