@@ -20,18 +20,23 @@ object CommonSettingsModifications {
   */
 final class CommonSimulationSettings private[svsim] (
   val plusArgs:              Seq[PlusArg],
-  val enableWavesAtTimeZero: Boolean
+  val enableWavesAtTimeZero: Boolean,
+  val traceFileStem:         String
 ) {
+
+  require(traceFileStem.nonEmpty, "traceFileStem must be a non-empty String")
 
   /** Return a copy of this [[CommonSimulationSettings]] with some fields
     * modified.
     */
   def copy(
     plusArgs:              Seq[PlusArg] = plusArgs,
-    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero
+    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
+    traceFileStem:         String = traceFileStem
   ) = new CommonSimulationSettings(
     plusArgs = plusArgs,
-    enableWavesAtTimeZero = enableWavesAtTimeZero
+    enableWavesAtTimeZero = enableWavesAtTimeZero,
+    traceFileStem = traceFileStem
   )
 }
 
@@ -44,7 +49,8 @@ object CommonSimulationSettings {
     */
   def default = new CommonSimulationSettings(
     plusArgs = Seq.empty,
-    enableWavesAtTimeZero = false
+    enableWavesAtTimeZero = false,
+    traceFileStem = "trace"
   )
 
 }
