@@ -104,7 +104,8 @@ object VerifStmtMacrosCompat {
     ): chisel3.assert.Assert = {
       block(layers.Verification.Assert, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
         val id = Builder.forcedUserModule // It should be safe since we push commands anyway.
-        IfElseFatalIntrinsic(id, format, "chisel3_builtin", clock, predicate, enable, format.unpackArgs: _*)(sourceInfo)
+        val args = Printable.unpackFirrtlArgs(format)
+        IfElseFatalIntrinsic(id, format, "chisel3_builtin", clock, predicate, enable, args: _*)(sourceInfo)
       }
       new chisel3.assert.Assert()
     }

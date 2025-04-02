@@ -14,22 +14,12 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{Queue, VectorBuilder, VectorMap}
 
 private[chisel3] object Converter {
-  // TODO modeled on unpack method on Printable, refactor?
+
   def unpack(pable: Printable, ctx: Component, sourceInfo: SourceInfo): (String, Seq[Arg]) = {
     implicit val info: SourceInfo = sourceInfo
-    pable match {
-      case Printables(pables) =>
-        val (fmts, args) = pables.map(p => unpack(p, ctx, sourceInfo)).unzip
-        (fmts.mkString, args.flatten.toSeq)
-      case PString(str) => (str.replaceAll("%", "%%"), List.empty)
-      case format: FirrtlFormat =>
-        val (str, bits) = format.unpack
-        (str, List(bits.ref))
-      case Name(data)       => (data.ref.name, List.empty)
-      case FullName(data)   => (data.ref.fullName(ctx), List.empty)
-      case Percent          => ("%%", List.empty)
-      case HierarchicalName => ("%m", List.empty)
-    }
+    val resolved = Printable.resolve(pable, ctx)
+    val (fmt, data) = resolved.unpack
+    (fmt, data.map(_.ref))
   }
 
   private def reportInternalError(msg: String): Nothing = {

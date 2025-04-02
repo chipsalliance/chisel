@@ -232,6 +232,11 @@ package object chisel3 {
       // Handle special escapes like %% and %m
       def escapeHandler(s: String): Seq[Printable] = {
         val pieces = mutable.ListBuffer.empty[Printable]
+        def maybeAdd(start: Int, end: Int): Unit = {
+          if (end > start) {
+            pieces += PString(s.substring(start, end))
+          }
+        }
         var start = 0
         var end = 0
         while (end < s.length) {
@@ -246,7 +251,7 @@ package object chisel3 {
               } else {
                 throw new UnknownFormatConversionException("Un-escaped %")
               }
-            pieces += PString(s.substring(start, end))
+            maybeAdd(start, end)
             pieces += piece
             start = end + 2
             end = start
@@ -254,7 +259,7 @@ package object chisel3 {
             end += 1
           }
         }
-        pieces += PString(s.substring(start, end))
+        maybeAdd(start, end)
         pieces.toList
       }
 
@@ -318,7 +323,8 @@ package object chisel3 {
           Seq(fmtArg) ++ escapeHandler(modP)
         }
       }
-      Printables(escapeHandler(parts.head) ++ pables)
+      val result = escapeHandler(parts.head) ++ pables
+      if (result.sizeIs == 1) result.head else Printables(result)
     }
   }
 
