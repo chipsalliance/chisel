@@ -72,8 +72,9 @@ trait Simulator[T <: Backend] {
     *
     * @return None if no failures found or Some if they are
     */
-  private def postProcessLog: Option[Throwable] = {
-    val log = Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt").toFile
+  private def postProcessLog(workspace: Workspace): Option[Throwable] = {
+    val log =
+      Paths.get(workspace.absolutePath, s"${workspace.workingDirectoryPrefix}-${tag}", "simulation-log.txt").toFile
     val lines = scala.io.Source
       .fromFile(log)
       .getLines()
@@ -132,7 +133,7 @@ trait Simulator[T <: Backend] {
           firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
         )
     workspace.generateAdditionalSources()
-    _simulate(workspace, elaboratedModule, chiselOpts, firtoolOpts, settings)(body)
+    _simulate(workspace, elaboratedModule, settings)(body)
   }
 
   final def simulateTests[T <: RawModule with HasTests, U](
@@ -146,27 +147,25 @@ trait Simulator[T <: Backend] {
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
-  ): Seq[Simulator.BackendInvocationDigest[U]] = testNames.map { testName =>
+  ): Seq[Simulator.BackendInvocationDigest[U]] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
-    // val elaboratedModule =
-    //   workspace
-    //     .elaborateGeneratedTestHarness(
-    //       () => module,
-    //       testName = Some(testName),
-    //       args = chiselOptsModifications(chiselOpts).toSeq,
-    //       firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
-    //     )
-    // workspace.generateAdditionalSources()
-    // _simulate(workspace, elaboratedModule, chiselOpts, firtoolOpts, settings)(body)
-    ???
+    workspace
+      .elaborateAndMakeTestHarnessWorkspaces(
+        () => module,
+        testNames = testNames,
+        args = chiselOptsModifications(chiselOpts).toSeq,
+        firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
+      )
+      .map { case (testWorkspace, elaboratedModule) =>
+        testWorkspace.generateAdditionalSources()
+        _simulate(testWorkspace, elaboratedModule, settings)(body)
+      }
   }
 
   private def _simulate[T <: RawModule, U](
     workspace:        Workspace,
     elaboratedModule: ElaboratedModule[T],
-    chiselOpts:       Array[String] = Array.empty,
-    firtoolOpts:      Array[String] = Array.empty,
     settings:         Settings[T] = Settings.defaultRaw[T]
   )(body: (SimulatedModule[T]) => U)(
     implicit chiselOptsModifications: ChiselOptionsModifications,
@@ -241,13 +240,13 @@ trait Simulator[T <: Backend] {
       }
     }.transform(
       s /*success*/ = { case success =>
-        postProcessLog match {
+        postProcessLog(workspace) match {
           case None        => Success(success)
           case Some(error) => Failure(error)
         }
       },
       f /*failure*/ = { case originalError =>
-        postProcessLog match {
+        postProcessLog(workspace) match {
           case None           => Failure(originalError)
           case Some(newError) => Failure(newError)
         }

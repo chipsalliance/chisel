@@ -502,11 +502,31 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       }
   }
 
-  it should "run multiple simulations" in {
+  it should "run multiple passing simulations" in {
     simulateTests(
       new ModuleWithTests,
       testNames = Seq("signal_pass", "signal_pass_2"),
       timeout = 100
     ).map(_.result)
+  }
+
+  it should "run one passing and one failing simulation" in {
+    simulateTests(
+      new ModuleWithTests,
+      testNames = Seq("signal_pass", "signal_fail"),
+      timeout = 100
+    ).zipWithIndex.map {
+      case (digest, 0) => digest.result
+      case (digest, 1) => {
+        intercept[simulator.Exceptions.TestFailed](digest.result)
+          .getMessage()
+          .fileCheck() {
+            """
+            | CHECK: The test finished and signaled failure
+            """
+          }
+      }
+      case _ => ()
+    }
   }
 }

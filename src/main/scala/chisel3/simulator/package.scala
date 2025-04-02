@@ -148,7 +148,13 @@ package object simulator {
     ): Seq[(Workspace, ElaboratedModule[TestHarness[T, _]])] = {
       val updatedArgs = args ++ testNames.map("--include-tests-name=" + _)
       val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
-      ???
+      generated.testHarnesses.map { case (testName, testHarness) =>
+        val testWorkspace = workspace.shallowCopy(workspace.absolutePath + "/tests/" + testName)
+        val ports = getModuleInfoPorts(testHarness)
+        val moduleInfo = testWorkspace.initializeModuleInfo(testHarness, ports.map(_._2))
+        val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
+        (testWorkspace, new ElaboratedModule(testHarness.asInstanceOf[TestHarness[T, _]], ports, layers))
+      }
     }
 
     case class GeneratedWorkspaceInfo[T <: RawModule](
