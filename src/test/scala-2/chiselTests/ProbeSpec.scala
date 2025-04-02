@@ -742,6 +742,26 @@ class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
       )
   }
 
+  "Layer colored writable probes" should "emit correct FIRRTL" in {
+    object LayerA extends Layer(LayerConfig.Extract()) {
+      object LayerB extends Layer(LayerConfig.Extract())
+    }
+    class Foo extends RawModule {
+      val a = IO(Output(RWProbe.apply(UInt(1.W), LayerA)))
+      val b = IO(Output(RWProbe.apply(UInt(2.W), LayerA.LayerB)))
+    }
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK-LABEL: layer LayerA,
+           |CHECK-NEXT:    layer LayerB,
+           |CHECK-LABEL: public module Foo :
+           |CHECK:         output a : RWProbe<UInt<1>, LayerA>
+           |CHECK:         output b : RWProbe<UInt<2>, LayerA.LayerB>
+           |""".stripMargin
+      )
+  }
+
   "Probes" should "have valid names" in {
     class TestMod extends RawModule {
       val a = IO(Output(Probe(UInt(32.W))))

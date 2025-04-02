@@ -20,5 +20,9 @@ object RWProbe extends ProbeBase with SourceInfoDoc {
 
   /** Mark a Chisel type with a writable probe modifier.
     */
-  def apply[T <: Data](source: => T)(using SourceInfo): T = super.apply(source, true)
+  def apply[T <: Data](source: => T)(using SourceInfo): T =
+    super.apply(source, true, None)
+
+  def apply[T <: Data](source: => T, color: layer.Layer)(using SourceInfo): T =
+    super.apply(source, true, Some(color))
 }

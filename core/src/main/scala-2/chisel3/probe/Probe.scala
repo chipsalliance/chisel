@@ -31,6 +31,14 @@ object RWProbe extends ProbeBase with SourceInfoDoc {
     */
   def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  def apply[T <: Data](source: => T, color: layer.Layer): T =
+    macro chisel3.internal.sourceinfo.ProbeTransform.sourceApplyWithColor[T]
+
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = super.apply(source, true)
+  def do_apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T =
+    super.apply(source, true, None)
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply[T <: Data](source: => T, color: Option[layer.Layer])(implicit sourceInfo: SourceInfo): T =
+    super.apply(source, true, color)
 }
