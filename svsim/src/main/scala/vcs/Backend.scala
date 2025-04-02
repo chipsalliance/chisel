@@ -442,12 +442,4 @@ final class Backend(
 
   override val assertionFailed =
     "^((Assertion failed:)|(Error: )|(Fatal: )|(.* started at .* failed at .*)|(.*Offending)).*$".r
-
-  def getTraceFileStem(settings: CommonCompilationSettings): Option[String] = {
-    if (settings.simulationSettings.traceFileStem.nonEmpty) {
-      Some(settings.simulationSettings.traceFileStem)
-    } else {
-      None
-    }
-  }
 }

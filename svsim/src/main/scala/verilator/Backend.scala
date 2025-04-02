@@ -171,12 +171,4 @@ final class Backend(executablePath: String) extends svsim.Backend {
   override def escapeDefine(string: String): String = string
 
   override val assertionFailed = "^.*Assertion failed in.*".r
-
-  def getTraceFileStem(settings: CommonCompilationSettings): Option[String] = {
-    if (settings.simulationSettings.traceFileStem.nonEmpty) {
-      Some(settings.simulationSettings.traceFileStem)
-    } else {
-      None
-    }
-  }
 }

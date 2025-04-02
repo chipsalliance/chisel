@@ -24,6 +24,8 @@ final class CommonSimulationSettings private[svsim] (
   val traceFileStem:         String
 ) {
 
+  require(traceFileStem.nonEmpty, "traceFileStem must be a non-empty String")
+
   /** Return a copy of this [[CommonSimulationSettings]] with some fields
     * modified.
     */
@@ -48,7 +50,7 @@ object CommonSimulationSettings {
   def default = new CommonSimulationSettings(
     plusArgs = Seq.empty,
     enableWavesAtTimeZero = false,
-    traceFileStem = ""
+    traceFileStem = "trace"
   )
 
 }
@@ -148,9 +150,6 @@ trait Backend {
     commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): Backend.Parameters
-
-  /** Get the trace file stem from backend-specific settings */
-  def getTraceFileStem(settings: CommonCompilationSettings): Option[String]
 
   /** This function will be applied to all defines (both the keys and the values).
     * This can be used to workaround subtleties in how different simulators
