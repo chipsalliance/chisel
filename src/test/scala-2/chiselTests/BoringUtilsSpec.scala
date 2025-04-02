@@ -18,6 +18,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileCheck with ChiselSim {
+  val args = Array("--throw-on-first-error", "--full-stacktrace")
+
   behavior.of("BoringUtils.bore")
 
   it should "pass a basic test" in {
@@ -139,7 +141,7 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
       BoringUtils.bore(bar.a_wire)
     }
     val e = intercept[Exception] {
-      circt.stage.ChiselStage.emitCHIRRTL(new Foo, Array("--throw-on-first-error"))
+      circt.stage.ChiselStage.emitCHIRRTL(new Foo, args)
     }
     e.getMessage should include("Cannot bore across a Definition/Instance boundary")
   }
@@ -225,7 +227,7 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
       val postBore = DataMirror.modulePorts(bar)
       postBore.size should be(1)
     }
-    circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    circt.stage.ChiselStage.emitCHIRRTL(new Foo, args)
   }
   it should "fail if bore after calling DataMirror.modulePorts" in {
     import chisel3.reflect.DataMirror
