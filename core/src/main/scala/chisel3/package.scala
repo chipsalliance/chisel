@@ -287,9 +287,13 @@ package object chisel3 {
           val fmtArg: Printable = arg match {
             case d: Data => {
               fmt match {
-                case Some("%n")                          => Name(d)
-                case Some("%N")                          => FullName(d)
-                case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1, 2), d)
+                case Some("%n") => Name(d)
+                case Some("%N") => FullName(d)
+                case Some(fForm) if d.isInstanceOf[Bits] =>
+                  FirrtlFormat.parse(fForm, d.asInstanceOf[Bits]) match {
+                    case Left(err) => throw new UnknownFormatConversionException(err)
+                    case Right(p)  => p
+                  }
                 case Some(x) => {
                   val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
                   throw new UnknownFormatConversionException(msg)

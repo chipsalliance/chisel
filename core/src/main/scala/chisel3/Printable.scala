@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3.experimental.SourceInfo
 import chisel3.internal.firrtl.ir.Component
+import chisel3.FirrtlFormat.FormatWidth
 
 import scala.collection.mutable
 
@@ -179,9 +180,11 @@ case class PString(str: String) extends Printable {
 
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends Printable {
-  def bits: Bits
+  def bits:   Bits
+  def unpack: (String, Bits)
   def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = {
-    (s"%$specifier", List(bits.ref.fullName(ctx)))
+    val (str, bits) = unpack
+    (str, List(bits.ref.fullName(ctx)))
   }
 
   def unpackArgs: Seq[Bits] = List(bits)
@@ -192,9 +195,34 @@ object FirrtlFormat {
   def unapply(x: Char): Option[Char] =
     Option(x).filter(x => legalSpecifiers contains x)
 
+  /** Width modifiers for format specifiers */
+  sealed trait FormatWidth {
+    def toFormatString: String
+  }
+  object FormatWidth {
+
+    /** Display using the minimum number of characters */
+    case object Minimum extends FormatWidth {
+      def toFormatString: String = "0"
+    }
+
+    /** Pad the display to the number of characters needed to display the maximum possible value for the signal width and formatting */
+    case object Automatic extends FormatWidth {
+      def toFormatString: String = ""
+    }
+
+    /** Display using the specified number of characters */
+    case class Fixed(value: Int) extends FormatWidth {
+      require(value != 0, s"For minimum width, use FormatWidth.Minimum, not FormatWidth.Fixed(0)")
+      require(value > 0, s"Width.Fixed must be positive, got $value")
+      def toFormatString: String = value.toString
+    }
+  }
+
   /** Helper for constructing Firrtl Formats
     * Accepts data to simplify pack
     */
+  @deprecated("Use FirrtlFormat.parse instead", "Chisel 7.0.0")
   def apply(specifier: String, data: Data): FirrtlFormat = {
     val bits = data match {
       case b: Bits => b
@@ -208,19 +236,58 @@ object FirrtlFormat {
       case c   => throw new Exception(s"Illegal format specifier '$c'!")
     }
   }
+
+  /** Helper for parsing Firrtl Formats
+    *
+    * @param specifier the format specifier, e.g. `%0d`
+    */
+  def parse(specifier: String, bits: Bits): Either[String, FirrtlFormat] = {
+    if (!specifier.startsWith("%")) return Left(s"Format specifier '$specifier' must start with '%'!")
+    specifier.last match {
+      case 'c' =>
+        if (specifier.length != 2) Left(s"'%c' does not support width modifiers!")
+        else Right(Character(bits))
+      case 'd' | 'x' | 'b' =>
+        val modifier = specifier.slice(1, specifier.length - 1)
+        if (modifier.headOption.contains('-'))
+          return Left("Chisel does not support non-standard Verilog left-justified format specifiers!")
+        if (modifier.headOption.contains('0') && modifier.length > 1)
+          return Left("Chisel does not support non-standard Verilog zero-padded format specifiers!")
+        if (!modifier.forall(_.isDigit)) return Left("Width modifier must be a positive integer!")
+        val width = modifier match {
+          case ""    => FormatWidth.Automatic
+          case "0"   => FormatWidth.Minimum
+          case value => FormatWidth.Fixed(value.toInt)
+        }
+        specifier.last match {
+          case 'd' => Right(Decimal(bits, width))
+          case 'x' => Right(Hexadecimal(bits, width))
+          case 'b' => Right(Binary(bits, width))
+        }
+      case bad => Left(s"Illegal format specifier '$bad'!")
+    }
+  }
 }
 
 /** Format bits as Decimal */
-case class Decimal(bits: Bits) extends FirrtlFormat('d')
+case class Decimal(bits: Bits, width: FormatWidth = FormatWidth.Automatic) extends FirrtlFormat('d') {
+  def unpack: (String, Bits) = ("%" + width.toFormatString + "d", bits)
+}
 
 /** Format bits as Hexidecimal */
-case class Hexadecimal(bits: Bits) extends FirrtlFormat('x')
+case class Hexadecimal(bits: Bits, width: FormatWidth = FormatWidth.Automatic) extends FirrtlFormat('x') {
+  def unpack: (String, Bits) = ("%" + width.toFormatString + "x", bits)
+}
 
 /** Format bits as Binary */
-case class Binary(bits: Bits) extends FirrtlFormat('b')
+case class Binary(bits: Bits, width: FormatWidth = FormatWidth.Automatic) extends FirrtlFormat('b') {
+  def unpack: (String, Bits) = ("%" + width.toFormatString + "b", bits)
+}
 
 /** Format bits as Character */
-case class Character(bits: Bits) extends FirrtlFormat('c')
+case class Character(bits: Bits) extends FirrtlFormat('c') {
+  def unpack: (String, Bits) = ("%c", bits)
+}
 
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {

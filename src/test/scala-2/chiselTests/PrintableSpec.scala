@@ -3,13 +3,16 @@
 package chiselTests
 
 import chisel3._
+import chisel3.FirrtlFormat.FormatWidth
 import circt.stage.ChiselStage
 import chisel3.testing.scalatest.FileCheck
 import org.scalactic.source.Position
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.annotation.nowarn
 
 /* Printable Tests */
+@nowarn("msg=method apply in object FirrtlFormat is deprecated")
 class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
@@ -322,5 +325,52 @@ class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
       .fileCheck()(
         """CHECK: printf(clock, UInt<1>(0h1), "%m %d %x %b %c %%\n", in, in, in, in)"""
       )
+  }
+
+  it should "support modifiers to format specifiers" in {
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      printf(cf"$in%0d $in%0x $in%5d $in%13b $in%c $in%5x\n")
+    }
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """CHECK: printf(clock, UInt<1>(0h1), "%0d %0x %5d %13b %c %5x\n", in, in, in, in, in, in)"""
+      )
+  }
+
+  "FirrtlFormat" should "support all legal format specifiers" in {
+    val x = 123.U
+    // Legacy API of just the character
+    FirrtlFormat("d", x) should be(Decimal(x))
+    FirrtlFormat("x", x) should be(Hexadecimal(x))
+    FirrtlFormat("b", x) should be(Binary(x))
+    FirrtlFormat("c", x) should be(Character(x))
+    FirrtlFormat.parse("%d", x) should be(Right(Decimal(x)))
+    FirrtlFormat.parse("%x", x) should be(Right(Hexadecimal(x)))
+    FirrtlFormat.parse("%b", x) should be(Right(Binary(x)))
+    FirrtlFormat.parse("%c", x) should be(Right(Character(x)))
+    FirrtlFormat.parse("%0d", x) should be(Right(Decimal(x, FormatWidth.Minimum)))
+    FirrtlFormat.parse("%0x", x) should be(Right(Hexadecimal(x, FormatWidth.Minimum)))
+    FirrtlFormat.parse("%0b", x) should be(Right(Binary(x, FormatWidth.Minimum)))
+    FirrtlFormat.parse("%23d", x) should be(Right(Decimal(x, FormatWidth.Fixed(23))))
+    FirrtlFormat.parse("%23x", x) should be(Right(Hexadecimal(x, FormatWidth.Fixed(23))))
+    FirrtlFormat.parse("%23b", x) should be(Right(Binary(x, FormatWidth.Fixed(23))))
+  }
+  it should "not support illegal format specifiers" in {
+    val x = 123.U
+    an[Exception] should be thrownBy {
+      FirrtlFormat("a", x)
+    }
+    FirrtlFormat.parse("%a", x) should be(Left("Illegal format specifier 'a'!"))
+    FirrtlFormat.parse("d", x) should be(Left("Format specifier 'd' must start with '%'!"))
+    FirrtlFormat.parse("%0c", x) should be(Left("'%c' does not support width modifiers!"))
+    FirrtlFormat.parse("%-d", x) should be(
+      Left("Chisel does not support non-standard Verilog left-justified format specifiers!")
+    )
+    FirrtlFormat.parse("%02d", x) should be(
+      Left("Chisel does not support non-standard Verilog zero-padded format specifiers!")
+    )
+    FirrtlFormat.parse("%5c", x) should be(Left("'%c' does not support width modifiers!"))
   }
 }

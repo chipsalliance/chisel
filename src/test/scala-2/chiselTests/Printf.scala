@@ -84,4 +84,16 @@ class PrintfSpec extends AnyFlatSpec with Matchers with FileCheck {
         """CHECK: printf(clock, UInt<1>(0h1), "%m %d %x %b %c %%\n", in, in, in, in)"""
       )
   }
+
+  "printf" should "support modifiers to format specifiers" in {
+    class MyModule extends Module {
+      val in = IO(Input(UInt(8.W)))
+      printf("%0d %0x %5d %13b %c %5x\n", in, in, in, in, in, in)
+    }
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """CHECK: printf(clock, UInt<1>(0h1), "%0d %0x %5d %13b %c %5x\n", in, in, in, in, in, in)"""
+      )
+  }
 }
