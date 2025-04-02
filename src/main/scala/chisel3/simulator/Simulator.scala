@@ -131,14 +131,13 @@ trait Simulator[T <: Backend] {
           args = chiselOptsModifications(chiselOpts).toSeq,
           firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
         )
-        .asInstanceOf[ElaboratedModule[T]]
     workspace.generateAdditionalSources()
     _simulate(workspace, elaboratedModule, chiselOpts, firtoolOpts, settings)(body)
   }
 
-  final def simulateTest[T <: RawModule, U](
+  final def simulateTests[T <: RawModule with HasTests, U](
     module:      => T,
-    testName:    String,
+    testNames:   Seq[String],
     chiselOpts:  Array[String] = Array.empty,
     firtoolOpts: Array[String] = Array.empty,
     settings:    Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]]
@@ -147,20 +146,20 @@ trait Simulator[T <: Backend] {
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
-  ): Simulator.BackendInvocationDigest[U] = {
+  ): Seq[Simulator.BackendInvocationDigest[U]] = testNames.map { testName =>
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
-    val elaboratedModule =
-      workspace
-        .elaborateGeneratedModule(
-          () => module,
-          args = chiselOptsModifications(chiselOpts).toSeq,
-          firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq,
-          testName = Some(testName)
-        )
-        .asInstanceOf[ElaboratedModule[TestHarness[T, _]]]
-    workspace.generateAdditionalSources()
-    _simulate(workspace, elaboratedModule, chiselOpts, firtoolOpts, settings)(body)
+    // val elaboratedModule =
+    //   workspace
+    //     .elaborateGeneratedTestHarness(
+    //       () => module,
+    //       testName = Some(testName),
+    //       args = chiselOptsModifications(chiselOpts).toSeq,
+    //       firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
+    //     )
+    // workspace.generateAdditionalSources()
+    // _simulate(workspace, elaboratedModule, chiselOpts, firtoolOpts, settings)(body)
+    ???
   }
 
   private def _simulate[T <: RawModule, U](

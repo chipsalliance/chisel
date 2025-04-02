@@ -144,6 +144,16 @@ class ModuleWithTests(
     result
   }(TestHarnessWithResultIO.generator)
 
+  test("signal_pass_2") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    val result = Wire(new TestResultBundle())
+    result.success := true.B
+    result.finish := counter.value === 15.U
+    result
+  }(TestHarnessWithResultIO.generator)
+
   test("signal_fail") { instance =>
     val counter = Counter(16)
     counter.inc()
@@ -490,5 +500,13 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
         | CHECK: counter hit max
         """
       }
+  }
+
+  it should "run multiple simulations" in {
+    simulateTests(
+      new ModuleWithTests,
+      testNames = Seq("signal_pass", "signal_pass_2"),
+      timeout = 100
+    ).map(_.result)
   }
 }

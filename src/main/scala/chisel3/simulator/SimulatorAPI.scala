@@ -103,9 +103,9 @@ trait SimulatorAPI {
     stimulus(dut)
   }
 
-  def simulateTest[T <: RawModule with HasTests](
+  def simulateTests[T <: RawModule with HasTests](
     module:       => T,
-    testName:     String,
+    testNames:    Seq[String],
     timeout:      Int,
     chiselOpts:   Array[String] = Array.empty,
     firtoolOpts:  Array[String] = Array.empty,
@@ -126,12 +126,37 @@ trait SimulatorAPI {
 
     hasSimulator
       .getSimulator(modifiedTestingDirectory)
-      .simulateTest(
+      .simulateTests(
         module = module,
-        testName = testName,
+        testNames = testNames,
         chiselOpts = chiselOpts,
         firtoolOpts = firtoolOpts,
         settings = settings
       ) { dut => InlineTestStimulus(timeout)(dut.wrapped) }
   }
+
+  def simulateTest[T <: RawModule with HasTests](
+    module:       => T,
+    testName:     String,
+    timeout:      Int,
+    chiselOpts:   Array[String] = Array.empty,
+    firtoolOpts:  Array[String] = Array.empty,
+    settings:     Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]],
+    subdirectory: Option[String] = None
+  )(
+    implicit hasSimulator:        HasSimulator,
+    testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
+    commonSettingsModifications:  svsim.CommonSettingsModifications,
+    backendSettingsModifications: svsim.BackendSettingsModifications
+  ) = simulateTests(
+    module = module,
+    testNames = Seq(testName),
+    timeout = timeout,
+    chiselOpts = chiselOpts,
+    firtoolOpts = firtoolOpts,
+    settings = settings,
+    subdirectory = subdirectory
+  ).head
 }

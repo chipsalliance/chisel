@@ -113,8 +113,12 @@ trait HasTests { module: RawModule =>
   private val testGenerators = new mutable.HashMap[String, (Int, TestGenerator[M, _])]
 
   private val elaboratedTests = new mutable.HashMap[String, TestHarness[M, _]]
+
   private[chisel3] def getElaboratedTestModule(testName: String): TestHarness[M, _] =
     elaboratedTests(testName)
+
+  private[chisel3] def getElaboratedTestModules: Seq[(String, TestHarness[M, _])] =
+    elaboratedTests.toSeq
 
   /** Generate a public module that instantiates this module. The default
     *  testharness has clock and synchronous reset IOs and contains the test

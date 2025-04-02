@@ -100,10 +100,12 @@ final class Workspace(
     copyResource(klass, name, primarySourcesPath)
   }
 
-  /** `svsim` elaboration simply stores the provided `ModuleInfo` for use by the `compile` method. The idea is that packages that actually do elaboration (like Chisel) will add an overload of this method in an implicit class that then calls this method with the appropriate `ModuleInfo`.
+  /** `svsim` elaboration simply stores the provided `ModuleInfo` for use by the `compile` method.
+   *  The idea is that packages that actually do elaboration (like Chisel) will add an overload of
+   *  this method in an implicit class that then calls this method with the appropriate `ModuleInfo`.
     */
   def elaborate(moduleInfo: ModuleInfo) = {
-    assert(_moduleInfo.isEmpty)
+    assert(_moduleInfo.isEmpty, "moduleInfo has already been set")
     _moduleInfo = Some(moduleInfo)
   }
 
