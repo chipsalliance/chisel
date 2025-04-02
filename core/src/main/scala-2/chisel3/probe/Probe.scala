@@ -13,6 +13,8 @@ object Probe extends ProbeBase with SourceInfoDoc {
     */
   def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  /** Mark a Chisel type as with a probe modifier and a layer color.
+    */
   def apply[T <: Data](source: => T, color: layer.Layer): T =
     macro chisel3.internal.sourceinfo.ProbeTransform.sourceApplyWithColor[T]
 
@@ -31,6 +33,8 @@ object RWProbe extends ProbeBase with SourceInfoDoc {
     */
   def apply[T <: Data](source: => T): T = macro chisel3.internal.sourceinfo.ProbeTransform.sourceApply[T]
 
+  /** Mark a Chisel type with a writable probe modifier and a layer color.
+    */
   def apply[T <: Data](source: => T, color: layer.Layer): T =
     macro chisel3.internal.sourceinfo.ProbeTransform.sourceApplyWithColor[T]
 

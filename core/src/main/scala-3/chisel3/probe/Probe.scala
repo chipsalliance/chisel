@@ -7,11 +7,13 @@ import chisel3.experimental.SourceInfo
 
 object Probe extends ProbeBase {
 
-  /** Mark a Chisel type as with a probe modifier.
+  /** Mark a Chisel type with a probe modifier.
     */
   def apply[T <: Data](source: => T)(using SourceInfo): T =
     super.apply(source, false, None)
 
+  /** Mark a Chisel type with a probe modifier and layer color.
+    */
   def apply[T <: Data](source: => T, color: layer.Layer)(using SourceInfo): T =
     super.apply(source, false, Some(color))
 }
@@ -23,6 +25,8 @@ object RWProbe extends ProbeBase with SourceInfoDoc {
   def apply[T <: Data](source: => T)(using SourceInfo): T =
     super.apply(source, true, None)
 
+  /** Mark a Chisel type with a wirtable probe modifier and layer color.
+    */
   def apply[T <: Data](source: => T, color: layer.Layer)(using SourceInfo): T =
     super.apply(source, true, Some(color))
 }
