@@ -1,6 +1,6 @@
 package chiselTests
 
-import chisel3._
+import chisel3.{assert => _, _}
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
 import chisel3.simulator.scalatest.ChiselSim
@@ -63,7 +63,7 @@ class ProtocolBundle(width: Int) extends Bundle {
 
 class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
   val io = IO(Input(bundleType))
-  assert(io.in === io.out, "in === out")
+  chisel3.assert(io.in === io.out, "in === out")
 }
 
 @instantiable
@@ -76,7 +76,7 @@ trait HasProtocolInterface extends HasTests { this: RawModule =>
 object ProtocolChecks {
   def check(v: Int)(instance: Instance[RawModule with HasProtocolInterface]) = {
     instance.io.in := v.U
-    assert(instance.io.out === v.U): Unit
+    chisel3.assert(instance.io.out === v.U): Unit
   }
 }
 
@@ -97,12 +97,12 @@ class ModuleWithTests(
 
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    assert(instance.io.out === 3.U): Unit
+    chisel3.assert(instance.io.out === 3.U): Unit
   }
 
   test("bar") { instance =>
     instance.io.in := 5.U(ioWidth.W)
-    assert(instance.io.out =/= 0.U): Unit
+    chisel3.assert(instance.io.out =/= 0.U): Unit
   }
 
   {
@@ -128,7 +128,7 @@ class ModuleWithTests(
     import TestHarnessWithMonitorSocket._
     test("with_monitor") { instance =>
       instance.io.in := 5.U(ioWidth.W)
-      assert(instance.io.out =/= 0.U): Unit
+      chisel3.assert(instance.io.out =/= 0.U): Unit
     }
   }
 
@@ -184,7 +184,7 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   io.out := io.in
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    assert(instance.io.out === 3.U): Unit
+    chisel3.assert(instance.io.out === 3.U): Unit
   }
 }
 
@@ -448,85 +448,116 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     )
   }
 
-  it should "simulate and pass if finish asserted with success=1" in {
-    simulateTest(
-      new ModuleWithTests,
-      testName = "signal_pass",
-      timeout = 100
-    ).result
-  }
+  def assertPass(digest: simulator.Simulator.BackendInvocationDigest[_]): Unit =
+    digest.result
 
-  it should "simulate and fail if finish asserted with success=0" in {
-    intercept[simulator.Exceptions.TestFailed] {
-      simulateTest(
-        new ModuleWithTests,
-        testName = "signal_fail",
-        timeout = 100
-      ).result
-    }.getMessage()
+  def assertFail(digest: simulator.Simulator.BackendInvocationDigest[_]): Unit =
+    intercept[simulator.Exceptions.TestFailed](digest.result)
+      .getMessage()
       .fileCheck() {
         """
         | CHECK: The test finished and signaled failure
         """
       }
-  }
 
-  it should "simulate and timeout if finish not asserted" in {
-    intercept[simulator.Exceptions.Timeout] {
-      simulateTest(
-        new ModuleWithTests,
-        testName = "timeout",
-        timeout = 100
-      ).result
-    }.getMessage()
+  def assertTimeout(timeout: Int)(digest: simulator.Simulator.BackendInvocationDigest[_]): Unit =
+    intercept[simulator.Exceptions.Timeout](digest.result)
+      .getMessage()
       .fileCheck() {
-        """
-        | CHECK: A timeout occurred after 100 timesteps
+        s"""
+        | CHECK: A timeout occurred after ${timeout} timesteps
         """
       }
-  }
 
-  it should "simulate and fail early if assertion raised" in {
-    intercept[simulator.Exceptions.AssertionFailed] {
-      simulateTest(
-        new ModuleWithTests,
-        testName = "assertion",
-        timeout = 100
-      ).result
-    }.getMessage()
+  def assertAssertion(message: String)(digest: simulator.Simulator.BackendInvocationDigest[_]) =
+    intercept[simulator.Exceptions.AssertionFailed](digest.result)
+      .getMessage()
       .fileCheck() {
         """
         | CHECK: One or more assertions failed during Chiselsim simulation
         | CHECK: counter hit max
         """
       }
+
+  it should "simulate and pass if finish asserted with success=1" in {
+    assertPass {
+      simulateTest(
+        new ModuleWithTests,
+        testName = "signal_pass",
+        timeout = 100
+      )
+    }
+  }
+
+  it should "simulate and fail if finish asserted with success=0" in {
+    assertFail {
+      simulateTest(
+        new ModuleWithTests,
+        testName = "signal_fail",
+        timeout = 100
+      )
+    }
+  }
+
+  it should "simulate and timeout if finish not asserted" in {
+    assertTimeout(100) {
+      simulateTest(
+        new ModuleWithTests,
+        testName = "timeout",
+        timeout = 100
+      )
+    }
+  }
+
+  it should "simulate and fail early if assertion raised" in {
+    assertAssertion("counter hit max") {
+      simulateTest(
+        new ModuleWithTests,
+        testName = "assertion",
+        timeout = 100
+      )
+    }
   }
 
   it should "run multiple passing simulations" in {
     simulateTests(
       new ModuleWithTests,
-      testNames = Seq("signal_pass", "signal_pass_2"),
+      testGlobs = Seq("signal_pass", "signal_pass_2"),
       timeout = 100
-    ).map(_.result)
+    ).map(_._2).foreach(assertPass)
   }
 
   it should "run one passing and one failing simulation" in {
     simulateTests(
       new ModuleWithTests,
-      testNames = Seq("signal_pass", "signal_fail"),
+      testGlobs = Seq("signal_pass", "signal_fail"),
       timeout = 100
-    ).zipWithIndex.map {
-      case (digest, 0) => digest.result
-      case (digest, 1) => {
-        intercept[simulator.Exceptions.TestFailed](digest.result)
-          .getMessage()
-          .fileCheck() {
-            """
-            | CHECK: The test finished and signaled failure
-            """
-          }
-      }
-      case _ => ()
+    ).map {
+      case ("signal_pass", digest) => assertPass(digest)
+      case ("signal_fail", digest) => assertFail(digest)
+      case _                       => fail("unexpected test name")
+    }
+  }
+
+  it should "simulate all tests" in {
+    val results = simulateAllTests(
+      new ModuleWithTests,
+      timeout = 100
+    )
+    assert(results.size == 11)
+    results.map {
+      case ("signal_fail", digest)   => assertFail(digest)
+      case ("timeout", digest)       => assertTimeout(100)(digest)
+      case ("assertion", digest)     => assertAssertion("counter hit max")(digest)
+      case ("check1", digest)        => assertTimeout(100)(digest)
+      case ("check2", digest)        => assertTimeout(100)(digest)
+      case ("bar", digest)           => assertTimeout(100)(digest)
+      case ("signal_pass", digest)   => assertPass(digest)
+      case ("signal_pass_2", digest) => assertPass(digest)
+      case ("with_monitor", digest)  => assertTimeout(100)(digest)
+      case ("with_result", digest)   => assertTimeout(100)(digest)
+      case ("foo", digest)           => assertTimeout(100)(digest)
+      case (testName, digest)        => fail(s"unexpected test name: $testName")
     }
   }
 }

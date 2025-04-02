@@ -141,19 +141,19 @@ package object simulator {
     }
 
     def elaborateAndMakeTestHarnessWorkspaces[T <: RawModule with HasTests](
-      generateModule: () => T,
-      testNames:      Seq[String],
-      args:           Seq[String] = Seq.empty,
-      firtoolArgs:    Seq[String] = Seq.empty
-    ): Seq[(Workspace, ElaboratedModule[TestHarness[T, _]])] = {
-      val updatedArgs = args ++ testNames.map("--include-tests-name=" + _)
+      generateModule:   () => T,
+      includeTestGlobs: Seq[String],
+      args:             Seq[String] = Seq.empty,
+      firtoolArgs:      Seq[String] = Seq.empty
+    ): Seq[(Workspace, String, ElaboratedModule[TestHarness[T, _]])] = {
+      val updatedArgs = args ++ includeTestGlobs.map("--include-tests-name=" + _)
       val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
       generated.testHarnesses.map { case (testName, testHarness) =>
         val testWorkspace = workspace.shallowCopy(workspace.absolutePath + "/tests/" + testName)
         val ports = getModuleInfoPorts(testHarness)
         val moduleInfo = testWorkspace.initializeModuleInfo(testHarness, ports.map(_._2))
         val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
-        (testWorkspace, new ElaboratedModule(testHarness.asInstanceOf[TestHarness[T, _]], ports, layers))
+        (testWorkspace, testName, new ElaboratedModule(testHarness.asInstanceOf[TestHarness[T, _]], ports, layers))
       }
     }
 

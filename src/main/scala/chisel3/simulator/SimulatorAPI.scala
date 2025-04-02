@@ -105,7 +105,7 @@ trait SimulatorAPI {
 
   def simulateTests[T <: RawModule with HasTests](
     module:       => T,
-    testNames:    Seq[String],
+    testGlobs:    Seq[String],
     timeout:      Int,
     chiselOpts:   Array[String] = Array.empty,
     firtoolOpts:  Array[String] = Array.empty,
@@ -118,7 +118,7 @@ trait SimulatorAPI {
     firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
-  ) = {
+  ): Seq[(String, Simulator.BackendInvocationDigest[_])] = {
     val modifiedTestingDirectory = subdirectory match {
       case Some(subdir) => testingDirectory.withSubdirectory(subdir)
       case None         => testingDirectory
@@ -128,12 +128,36 @@ trait SimulatorAPI {
       .getSimulator(modifiedTestingDirectory)
       .simulateTests(
         module = module,
-        testNames = testNames,
+        includeTestGlobs = testGlobs,
         chiselOpts = chiselOpts,
         firtoolOpts = firtoolOpts,
         settings = settings
       ) { dut => InlineTestStimulus(timeout)(dut.wrapped) }
   }
+
+  def simulateAllTests[T <: RawModule with HasTests](
+    module:       => T,
+    timeout:      Int,
+    chiselOpts:   Array[String] = Array.empty,
+    firtoolOpts:  Array[String] = Array.empty,
+    settings:     Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]],
+    subdirectory: Option[String] = None
+  )(
+    implicit hasSimulator:        HasSimulator,
+    testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
+    commonSettingsModifications:  svsim.CommonSettingsModifications,
+    backendSettingsModifications: svsim.BackendSettingsModifications
+  ): Seq[(String, Simulator.BackendInvocationDigest[_])] = simulateTests(
+    module = module,
+    testGlobs = Seq("*"),
+    timeout = timeout,
+    chiselOpts = chiselOpts,
+    firtoolOpts = firtoolOpts,
+    settings = settings,
+    subdirectory = subdirectory
+  )
 
   def simulateTest[T <: RawModule with HasTests](
     module:       => T,
@@ -150,13 +174,13 @@ trait SimulatorAPI {
     firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
-  ) = simulateTests(
+  ): Simulator.BackendInvocationDigest[_] = simulateTests(
     module = module,
-    testNames = Seq(testName),
+    testGlobs = Seq(testName),
     timeout = timeout,
     chiselOpts = chiselOpts,
     firtoolOpts = firtoolOpts,
     settings = settings,
     subdirectory = subdirectory
-  ).head
+  ).head._2
 }

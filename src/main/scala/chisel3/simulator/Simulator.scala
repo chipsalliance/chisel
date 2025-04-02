@@ -3,7 +3,7 @@ package chisel3.simulator
 import chisel3.{Data, RawModule}
 import chisel3.experimental.inlinetest.{HasTests, TestHarness}
 import firrtl.options.StageUtils.dramaticMessage
-import java.nio.file.Paths
+import java.nio.file.{FileSystems, PathMatcher, Paths}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
@@ -137,29 +137,35 @@ trait Simulator[T <: Backend] {
   }
 
   final def simulateTests[T <: RawModule with HasTests, U](
-    module:      => T,
-    testNames:   Seq[String],
-    chiselOpts:  Array[String] = Array.empty,
-    firtoolOpts: Array[String] = Array.empty,
-    settings:    Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]]
+    module:           => T,
+    includeTestGlobs: Seq[String],
+    chiselOpts:       Array[String] = Array.empty,
+    firtoolOpts:      Array[String] = Array.empty,
+    settings:         Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]]
   )(body: (SimulatedModule[TestHarness[T, _]]) => U)(
     implicit chiselOptsModifications: ChiselOptionsModifications,
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
-  ): Seq[Simulator.BackendInvocationDigest[U]] = {
+  ): Seq[(String, Simulator.BackendInvocationDigest[U])] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
+    val filesystem = FileSystems.getDefault()
     workspace
       .elaborateAndMakeTestHarnessWorkspaces(
         () => module,
-        testNames = testNames,
+        includeTestGlobs = includeTestGlobs,
         args = chiselOptsModifications(chiselOpts).toSeq,
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
-      .map { case (testWorkspace, elaboratedModule) =>
-        testWorkspace.generateAdditionalSources()
-        _simulate(testWorkspace, elaboratedModule, settings)(body)
+      .flatMap { case (testWorkspace, testName, elaboratedModule) =>
+        val includeTest = includeTestGlobs.map { glob =>
+          filesystem.getPathMatcher(s"glob:$glob")
+        }.exists(_.matches(Paths.get(testName)))
+        Option.when(includeTest) {
+          testWorkspace.generateAdditionalSources()
+          testName -> _simulate(testWorkspace, elaboratedModule, settings)(body)
+        }
       }
   }
 
