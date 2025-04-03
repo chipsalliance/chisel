@@ -373,4 +373,30 @@ class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
     )
     FirrtlFormat.parse("%5c", x) should be(Left("'%c' does not support width modifiers!"))
   }
+
+  "Printable.unpack" should "be the inverse of Printable.pack" in {
+    val x = 123.U
+    val pairs: Seq[(Printable, (String, Seq[Data]))] = Seq(
+      (Decimal(x), ("%d", Seq(x))),
+      (Hexadecimal(x), ("%x", Seq(x))),
+      (Binary(x), ("%b", Seq(x))),
+      (Character(x), ("%c", Seq(x))),
+      (PString("foo"), ("foo", Seq())),
+      (Percent, ("%%", Seq())),
+      (HierarchicalName, ("%m", Seq())),
+      (Name(x), ("%n", Seq(x))),
+      (FullName(x), ("%N", Seq(x)))
+    )
+    for ((pable, (fmt, args)) <- pairs) {
+      pable.unpack should be((fmt, args))
+      Printable.pack(fmt, args: _*) should be(pable)
+    }
+    // Now all together
+    val (pables, fmts, args) = pairs.map { case (p, (f, a)) => (p, f, a) }.unzip3
+    val pable = pables.reduce(_ + _)
+    val fmt = fmts.mkString
+    val arg = args.flatten
+    pable.unpack should be((fmt, arg))
+    Printable.pack(fmt, arg: _*) should be(pable)
+  }
 }

@@ -7,6 +7,7 @@ import chisel3.internal.firrtl.ir.Component
 import chisel3.FirrtlFormat.FormatWidth
 
 import scala.collection.mutable
+import scala.annotation.nowarn
 
 import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 
@@ -51,18 +52,24 @@ sealed abstract class Printable {
     * @note This must be called after elaboration when Chisel nodes actually
     *   have names
     */
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String])
 
   /** Unpack into a Seq of captured Bits arguments
     */
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   def unpackArgs: Seq[Bits]
 
+  /** Unpack into format String and a List of Data arguments */
+  def unpack: (String, Seq[Data])
+
   /** Allow for appending Printables like Strings */
-  final def +(that: Printable): Printables = Printables(List(this, that))
+  def +(that: Printable): Printables = Printables(List(this, that))
 
   /** Allow for appending Strings to Printables */
-  final def +(that: String): Printables = Printables(List(this, PString(that)))
+  final def +(that: String): Printables = this + PString(that)
 }
+
 object Printable {
 
   private[chisel3] def isNoArgSpecifier(c: Char): Boolean = c == '%' || c == 'm'
@@ -146,6 +153,20 @@ object Printable {
     StringContext(bufEscapeBackSlash.toSeq: _*).cf(data: _*)
   }
 
+  /** Extensions for Printable */
+  implicit class Extensions(pable: Printable) {
+
+    /** Build a new Printable by applying a function to all sub-Printables
+     *
+     * @note This is an extension method instead of normal method to avoid conflicts with the implicit conversion from String to Printable
+     */
+    def map(f: Printable => Printable): Printable = pable match {
+      case Printables(pables) =>
+        Printables(pables.map(_.map(f))) // Note the nested map, Printables can contain Printables
+      case _ => f(pable)
+    }
+  }
+
   private[chisel3] def checkScope(message: Printable)(implicit info: SourceInfo): Unit = {
     def getData(x: Printable): Seq[Data] = {
       x match {
@@ -158,35 +179,73 @@ object Printable {
     }
     getData(message).foreach(_.requireVisible())
   }
+
+  /** Extract the Data that will be arguments to Firrtl
+    *
+    * This ignores Printables that are resolved at Chisel-time (e.g. [[Name]] and [[FullName]])
+    */
+  private[chisel3] def unpackFirrtlArgs(pable: Printable): Seq[Data] =
+    pable.map {
+      case _: Name | _: FullName => PString("")
+      case x                     => x
+    }.unpack._2
+
+  /** Resolve Printables that are resolved at Chisel-time */
+  private[chisel3] def resolve(pable: Printable, ctx: Component)(implicit info: SourceInfo): Printable =
+    pable.map {
+      case Name(data)     => PString(data.ref.name)
+      case FullName(data) => PString(data.ref.fullName(ctx))
+      case other          => other
+    }
 }
 
+@nowarn("msg=Use unpack with no arguments instead")
 case class Printables(pables: Iterable[Printable]) extends Printable {
   require(pables.hasDefiniteSize, "Infinite-sized iterables are not supported!")
+
+  // Optimize to reduce object allocations
+  final override def +(that: Printable): Printables = that match {
+    case that: Printables => Printables(pables ++ that.pables)
+    case other => Printables(pables.toVector :+ other)
+  }
+
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = {
     val (fmts, args) = pables.map(_.unpack(ctx)).unzip
     (fmts.mkString, args.flatten)
   }
 
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpackArgs: Seq[Bits] = pables.view.flatMap(_.unpackArgs).toList
+
+  final def unpack: (String, Seq[Data]) = {
+    val (fmts, args) = pables.toSeq.map(_.unpack).unzip
+    (fmts.mkString, args.flatten)
+  }
 }
 
 /** Wrapper for printing Scala Strings */
 case class PString(str: String) extends Printable {
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) =
     (str.replaceAll("%", "%%"), List.empty)
 
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpackArgs: Seq[Bits] = List.empty
+
+  final def unpack: (String, Seq[Data]) = (str.replaceAll("%", "%%"), List.empty)
 }
 
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends Printable {
-  def bits:   Bits
-  def unpack: (String, Bits)
+  def bits: Bits
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = {
-    val (str, bits) = unpack
+    val (str, Seq(bits)) = unpack
     (str, List(bits.ref.fullName(ctx)))
   }
 
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   def unpackArgs: Seq[Bits] = List(bits)
 }
 object FirrtlFormat {
@@ -271,45 +330,57 @@ object FirrtlFormat {
 
 /** Format bits as Decimal */
 case class Decimal(bits: Bits, width: FormatWidth = FormatWidth.Automatic) extends FirrtlFormat('d') {
-  def unpack: (String, Bits) = ("%" + width.toFormatString + "d", bits)
+  def unpack: (String, Seq[Data]) = ("%" + width.toFormatString + "d", List(bits))
 }
 
 /** Format bits as Hexidecimal */
 case class Hexadecimal(bits: Bits, width: FormatWidth = FormatWidth.Automatic) extends FirrtlFormat('x') {
-  def unpack: (String, Bits) = ("%" + width.toFormatString + "x", bits)
+  def unpack: (String, Seq[Data]) = ("%" + width.toFormatString + "x", List(bits))
 }
 
 /** Format bits as Binary */
 case class Binary(bits: Bits, width: FormatWidth = FormatWidth.Automatic) extends FirrtlFormat('b') {
-  def unpack: (String, Bits) = ("%" + width.toFormatString + "b", bits)
+  def unpack: (String, Seq[Data]) = ("%" + width.toFormatString + "b", List(bits))
 }
 
 /** Format bits as Character */
 case class Character(bits: Bits) extends FirrtlFormat('c') {
-  def unpack: (String, Bits) = ("%c", bits)
+  def unpack: (String, Seq[Data]) = ("%c", List(bits))
 }
 
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = (data.ref.name, List.empty)
-  final def unpackArgs:                                        Seq[Bits] = List.empty
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
+  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpack:     (String, Seq[Data]) = ("%n", List(data))
 }
 
 /** Put full name within parent namespace (eg. bundleName.field) */
 case class FullName(data: Data) extends Printable {
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) =
     (data.ref.fullName(ctx), List.empty)
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpackArgs: Seq[Bits] = List.empty
+  final def unpack:     (String, Seq[Data]) = ("%N", List(data))
 }
 
 /** Represents escaped percents */
 case object Percent extends Printable {
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%%", List.empty)
-  final def unpackArgs:                                        Seq[Bits] = List.empty
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
+  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpack:     (String, Seq[Data]) = ("%%", List.empty)
 }
 
 /** Represents the hierarchical name in the Verilog (`%m`) */
 case object HierarchicalName extends Printable {
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%m", List.empty)
-  final def unpackArgs:                                        Seq[Bits] = List.empty
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
+  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpack:     (String, Seq[Data]) = ("%m", List.empty)
 }
