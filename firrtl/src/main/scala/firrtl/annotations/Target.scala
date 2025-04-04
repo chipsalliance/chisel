@@ -45,9 +45,6 @@ sealed trait Target extends Named {
       case OfModule(o)          => s":$o"
       case TargetToken.Field(f) => s".$f"
       case Index(v)             => s"[$v]"
-      case Clock                => s"@clock"
-      case Reset                => s"@reset"
-      case Init                 => s"@init"
     }.mkString("")
     if (moduleOpt.isEmpty && tokens.isEmpty) {
       circuitString
@@ -71,9 +68,6 @@ sealed trait Target extends Named {
       case OfModule(o) => val ox = s"of $o:"; depth += 4; ox
       case Field(f)    => s".$f"
       case Index(v)    => s"[$v]"
-      case Clock       => s"@clock"
-      case Reset       => s"@reset"
-      case Init        => s"@init"
     }.mkString("")
 
     (moduleOpt.isEmpty, tokens.isEmpty) match {
@@ -116,11 +110,6 @@ object Target {
     case r: ir.Reference => m.ref(r.name)
     case s: ir.SubIndex  => asTarget(m)(s.expr).index(s.value)
     case s: ir.SubField  => asTarget(m)(s.expr).field(s.name)
-    case s: ir.SubAccess => asTarget(m)(s.expr).field("@" + s.index.serialize)
-    case d: DoPrim       => m.ref("@" + d.serialize)
-    case d: Mux          => m.ref("@" + d.serialize)
-    case d: ValidIf      => m.ref("@" + d.serialize)
-    case d: Literal      => m.ref("@" + d.serialize)
     case other => sys.error(s"Unsupported: $other")
   }
 
@@ -170,7 +159,7 @@ object Target {
 
   /** @return [[Target]] from human-readable serialization */
   def deserialize(s: String): Target = {
-    val regex = """(?=[~|>/:.\[@])"""
+    val regex = """(?=[~|>/:.\[])"""
     s.split(regex)
       .foldLeft(GenericTarget(None, None, Vector.empty)) { (t, tokenString) =>
         val value = tokenString.tail
@@ -184,9 +173,6 @@ object Target {
           case '>'                                  => t.add(Ref(value))
           case '.'                                  => t.add(Field(value))
           case '[' if value.dropRight(1).toInt >= 0 => t.add(Index(value.dropRight(1).toInt))
-          case '@' if value == "clock"              => t.add(Clock)
-          case '@' if value == "init"               => t.add(Init)
-          case '@' if value == "reset"              => t.add(Reset)
           case other                                => throw NamedException(s"Cannot deserialize Target: $s")
         }
       }
@@ -224,9 +210,6 @@ object Target {
           .dropWhile({
             case x: Field => true
             case x: Index => true
-            case Clock => true
-            case Init  => true
-            case Reset => true
             case other => false
           })
           .reverse
@@ -332,11 +315,8 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
       case _: Instance => requireLast(true, "inst", "of")
       case _: OfModule => requireLast(false, "inst")
       case _: Ref      => requireLast(true, "inst", "of")
-      case _: Field    => requireLast(true, "ref", "[]", ".", "init", "clock", "reset")
-      case _: Index    => requireLast(true, "ref", "[]", ".", "init", "clock", "reset")
-      case Init  => requireLast(true, "ref", "[]", ".", "init", "clock", "reset")
-      case Clock => requireLast(true, "ref", "[]", ".", "init", "clock", "reset")
-      case Reset => requireLast(true, "ref", "[]", ".", "init", "clock", "reset")
+      case _: Field    => requireLast(true, "ref", "[]", ".")
+      case _: Index    => requireLast(true, "ref", "[]", ".")
     }
     this.copy(tokens = tokens :+ token)
   }
@@ -635,15 +615,6 @@ case class ReferenceTarget(
     */
   def field(value: String): ReferenceTarget = ReferenceTarget(circuit, module, path, ref, component :+ Field(value))
 
-  /** @return The initialization value of this reference, must be to a [[firrtl.ir.DefRegister]] */
-  def init: ReferenceTarget = ReferenceTarget(circuit, module, path, ref, component :+ Init)
-
-  /** @return The reset signal of this reference, must be to a [[firrtl.ir.DefRegister]] */
-  def reset: ReferenceTarget = ReferenceTarget(circuit, module, path, ref, component :+ Reset)
-
-  /** @return The clock signal of this reference, must be to a [[firrtl.ir.DefRegister]] */
-  def clock: ReferenceTarget = ReferenceTarget(circuit, module, path, ref, component :+ Clock)
-
   /** @param the type of this target's ref
     * @return the type of the subcomponent specified by this target's component
     */
@@ -706,12 +677,6 @@ case class ReferenceTarget(
     ReferenceTarget(newPath.circuit, newPath.module, newPath.asPath, ref, component)
 
   override def asPath: Seq[(Instance, OfModule)] = path
-
-  def isClock: Boolean = tokens.last == Clock
-
-  def isInit: Boolean = tokens.last == Init
-
-  def isReset: Boolean = tokens.last == Reset
 
   def noComponents: ReferenceTarget = this.copy(component = Nil)
 

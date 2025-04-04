@@ -21,7 +21,7 @@ class TargetSpec extends FirrtlPropSpec {
         (top, "~Circuit|Top"),
         (top.instOf("i", "I"), "~Circuit|Top/i:I"),
         (top.ref("r"), "~Circuit|Top>r"),
-        (top.ref("r").index(1).field("hi").clock, "~Circuit|Top>r[1].hi@clock"),
+        (top.ref("r").index(1).field("hi"), "~Circuit|Top>r[1].hi"),
         (GenericTarget(None, None, Vector(Ref("r"))), "~???|???>r")
       )
     targets.foreach { case (t, str) =>
@@ -52,7 +52,7 @@ class TargetSpec extends FirrtlPropSpec {
         top,
         top.instOf("i", "I"),
         top.ref("r"),
-        top.ref("r").index(1).field("hi").clock,
+        top.ref("r").index(1).field("hi"),
         GenericTarget(None, None, Vector(Ref("r")))
       )
     targets.foreach { t =>
@@ -82,10 +82,10 @@ class TargetSpec extends FirrtlPropSpec {
            |    └── r""".stripMargin
       ),
       (
-        top.ref("r").index(1).field("hi").clock,
+        top.ref("r").index(1).field("hi"),
         """|circuit A:
            |└── module B:
-           |    └── r[1].hi@clock""".stripMargin
+           |    └── r[1].hi""".stripMargin
       ),
       (
         GenericTarget(None, None, Vector(Ref("r"))),
