@@ -65,7 +65,7 @@ case class LoadMemoryAnnotation(
       case componentName: ComponentName =>
         this.copy(target = componentName, originalMemoryNameOpt = Some(target.name))
       case _ =>
-        throw new Exception(s"Cannot annotate anything but a memory, invalid target ${newNamed.serialize}")
+        throw new Exception(s"Cannot annotate anything but a memory, invalid target ${newNamed.toTarget.serialize}")
     }
   }
 }
