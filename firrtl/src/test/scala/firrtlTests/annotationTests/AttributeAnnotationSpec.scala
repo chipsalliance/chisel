@@ -11,7 +11,7 @@ import org.json4s.convertToJsonInput
 class AttributeAnnotationSpec extends AnyFreeSpec with Matchers {
   "AttributeAnnotation should be correctly parsed from a string" in {
     val attribAnno = new AttributeAnnotation(
-      ComponentName("attrib", ModuleName("ModuleAttrib", CircuitName("CircuitAttrib"))),
+      ComponentName("attrib", ModuleName("ModuleAttrib")),
       "X_INTERFACE_INFO = \"some:interface:type:1.0 SIGNAL\""
     )
 

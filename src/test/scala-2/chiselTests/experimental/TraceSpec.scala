@@ -18,10 +18,10 @@ import org.scalatest.matchers.should.Matchers
 class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory {
 
   def refTarget(topName: String, ref: String, path: Seq[(Instance, OfModule)] = Seq()) =
-    ReferenceTarget(topName, topName, path, ref, Seq())
+    ReferenceTarget(topName, path, ref, Seq())
 
   def instTarget(topName: String, instance: String, ofModule: String, path: Seq[(Instance, OfModule)] = Seq()) =
-    InstanceTarget(topName, topName, path, instance, ofModule)
+    InstanceTarget(topName, path, instance, ofModule)
 
   def compile(testName: String, gen: () => Module)(
     implicit testingDirectory: HasTestingDirectory
@@ -104,8 +104,9 @@ class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory {
 
     def verilatorTemplate(data: Seq[Data], annos: AnnotationSeq): String = {
       val vpiNames = data.flatMap(finalTarget(annos)).map { ct =>
-        s"""TOP.${ct.circuit}.${ct.path.map { case (Instance(i), _) => i }.mkString(".")}.${ct.tokens.collectFirst {
-            case Ref(r) => r
+        s"""TOP.${topName}.${ct.path.map { case (Instance(i), _) => i }.mkString(".")}.${ct.tokens.collectFirst {
+            case Ref(r) =>
+              r
           }.get}"""
       }
       s"""
