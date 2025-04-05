@@ -1924,8 +1924,8 @@ object PanamaCIRCTConverter {
   def visitDefBlackBox(defBlackBox: DefBlackBox)(implicit cvt: PanamaCIRCTConverter): Unit = {
     cvt.visitDefBlackBox(defBlackBox)
   }
-  def visitDefModule(defModule: DefModule)(implicit cvt: PanamaCIRCTConverter): Unit = {
-    cvt.visitDefModule(defModule)
+  def visitDefModule(defModule: DefModule, circuitName: String)(implicit cvt: PanamaCIRCTConverter): Unit = {
+    cvt.visitDefModule(defModule, circuitName)
     val commands = defModule.block.getAllCommands()
     commands.foreach(visitCommand(defModule, _))
   }
