@@ -26,38 +26,32 @@ class TestParameters[M <: RawModule, R] private[inlinetest] (
   final def desiredTestModuleName = s"test_${dutName}_${testName}"
 }
 
-/** Contains traits that implement behavior common to generators for unit test testharness modules. */
-object TestHarness {
-  import chisel3.{Module => ChiselModule, RawModule => ChiselRawModule}
-
-  /** TestHarnesses for inline tests without clock and reset IOs should extend this. This
-    * trait sets the correct desiredName for the module, instantiates the DUT, and provides
-    * methods to elaborate the test.
-    *
-    *  @tparam M the type of the DUT module
-    *  @tparam R the type of the result returned by the test body
-    */
-  trait RawModule[M <: ChiselRawModule, R] extends Public { this: ChiselRawModule =>
-    def test: TestParameters[M, R]
-    override def desiredName = test.desiredTestModuleName
-    val dut = Instance(test.dutDefinition)
-    final def elaborateTest(): R = test.testBody(dut)
-  }
-
-  /** TestHarnesses for inline tests should extend this. This trait sets the correct desiredName for
-   *  the module, instantiates the DUT, and provides methods to elaborate the test. By default, the
+/** TestHarnesses for inline tests should extend this. This trait sets the correct desiredName for
+   *  the module, instantiates the DUT, and provides methods to generate the test. By default, the
    *  reset is synchronous, but this can be changed by overriding [[resetType]].
    *
    *  @tparam M the type of the DUT module
    *  @tparam R the type of the result returned by the test body
    */
-  trait Module[M <: ChiselRawModule, R] extends RawModule[M, R] { this: ChiselModule =>
-    override def resetType = test.resetType match {
-      case Some(rt @ Module.ResetType.Synchronous)  => rt
-      case Some(rt @ Module.ResetType.Asynchronous) => rt
-      case _                                        => Module.ResetType.Synchronous
-    }
+abstract class TestHarness[M <: RawModule, R](test: TestParameters[M, R]) extends Module with Public {
+  override def desiredName = test.desiredTestModuleName
+
+  override def resetType = test.resetType match {
+    case Some(rt @ Module.ResetType.Synchronous)  => rt
+    case Some(rt @ Module.ResetType.Asynchronous) => rt
+    case _                                        => Module.ResetType.Synchronous
   }
+
+  final val finish = IO(Output(Bool()))
+  final val success = IO(Output(Bool()))
+
+  // Handle the base case where a test has no result. In this case, we expect
+  // the test to end the simulation and signal pass/fail.
+  finish := false.B
+  success := true.B
+
+  protected val dut = Instance(test.dutDefinition)
+  protected val testResult = test.testBody(dut)
 }
 
 /** An implementation of a testharness generator. This is a type class that defines how to
@@ -69,22 +63,20 @@ object TestHarness {
 trait TestHarnessGenerator[M <: RawModule, R] {
 
   /** Generate a testharness module given the test parameters. */
-  def generate(test: TestParameters[M, R]): RawModule with Public
+  def generate(test: TestParameters[M, R]): TestHarness[M, R]
 }
 
 object TestHarnessGenerator {
 
-  /** The minimal implementation of a unit testharness. Has a clock input and a synchronous reset
-    *  input. Connects these to the DUT and does nothing else.
-    */
-  class UnitTestHarness[M <: RawModule](val test: TestParameters[M, Unit])
-      extends Module
-      with TestHarness.Module[M, Unit] {
-    elaborateTest()
-  }
+  /** Factory for a TestHarnessGenerator typeclass. */
+  def apply[M <: RawModule, R](gen: TestParameters[M, R] => TestHarness[M, R]) =
+    new TestHarnessGenerator[M, R] {
+      override def generate(test: TestParameters[M, R]) = gen(test)
+    }
 
-  implicit def unitTestHarness[M <: RawModule]: TestHarnessGenerator[M, Unit] = new TestHarnessGenerator[M, Unit] {
-    override def generate(test: TestParameters[M, Unit]) = new UnitTestHarness(test)
+  /** Typeclass for base [[TestHarness]] generator. */
+  implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, Unit] = {
+    TestHarnessGenerator(new TestHarness[M, Unit](_) {})
   }
 }
 
