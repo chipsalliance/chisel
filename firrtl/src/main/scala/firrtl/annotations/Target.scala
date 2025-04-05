@@ -758,26 +758,22 @@ case class InstanceTarget(
 
 /** Named classes associate an annotation with a component in a Firrtl circuit */
 sealed trait Named {
-  def serialize: String
-  def toTarget:  CompleteTarget
+  def toTarget: CompleteTarget
 }
 
 final case class CircuitName(name: String) extends Named {
   if (!validModuleName(name)) throw AnnotationException(s"Illegal circuit name: $name")
-  def serialize: String = name
-  def toTarget:  CircuitTarget = CircuitTarget(name)
+  def toTarget: CircuitTarget = CircuitTarget(name)
 }
 
 final case class ModuleName(name: String, circuit: CircuitName) extends Named {
   if (!validModuleName(name)) throw AnnotationException(s"Illegal module name: $name")
-  def serialize: String = circuit.serialize + "." + name
-  def toTarget:  ModuleTarget = ModuleTarget(circuit.name, name)
+  def toTarget: ModuleTarget = ModuleTarget(circuit.name, name)
 }
 
 final case class ComponentName(name: String, module: ModuleName) extends Named {
   if (!validComponentName(name)) throw AnnotationException(s"Illegal component name: $name")
-  def expr:      Expression = toExp(name)
-  def serialize: String = module.serialize + "." + name
+  def expr: Expression = toExp(name)
   def toTarget: ReferenceTarget = {
     Target.toTargetTokens(name).toList match {
       case Ref(r) :: components => ReferenceTarget(module.circuit.name, module.name, Nil, r, components)
