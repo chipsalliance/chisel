@@ -1086,10 +1086,10 @@ class PanamaCIRCTConverter(val circt: PanamaCIRCT, fos: Option[FirtoolOptions], 
     firCtx.innerSymCache.setPortSlots(firModule.op, defPorts)
   }
 
-  def visitDefModule(defModule: DefModule): Unit = {
+  def visitDefModule(defModule: DefModule, circuitName: String): Unit = {
     val defPorts = defModule.ports ++ defModule.id.secretPorts
     val ports = util.convert(defPorts)
-    val isMainModule = defModule.id.circuitName == defModule.name
+    val isMainModule = circuitName == defModule.name
 
     val builder = util
       .OpBuilder("firrtl.module", firCtx.circuitBlock, circt.unkLoc)
@@ -1917,7 +1917,7 @@ object PanamaCIRCTConverter {
     cvt.visitCircuit(circuit.name)
     circuit.components.foreach {
       case defBlackBox:        DefBlackBox        => visitDefBlackBox(defBlackBox)
-      case defModule:          DefModule          => visitDefModule(defModule)
+      case defModule:          DefModule          => visitDefModule(defModule, circuit.name)
       case defIntrinsicModule: DefIntrinsicModule => visitDefIntrinsicModule(defIntrinsicModule)
     }
   }
