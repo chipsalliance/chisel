@@ -57,7 +57,7 @@ def printTreeString(t: String, accum: String = "", indent: Int = 0): String = {
 class ChiselComponentPhase extends PluginPhase {
 
   val phaseName: String = "chiselComponentPhase"
-  override val runsAfter = Set(Typer.name)
+  override val runsAfter = Set(TyperPhase.name)
 
 
   override def transformValDef(tree: tpd.ValDef)(using Context): tpd.Tree = {
@@ -85,25 +85,36 @@ class ChiselComponentPhase extends PluginPhase {
     val valName: String = tree.name.show
     val nameLiteral = Literal(Constant(valName))
     val pluginModule = requiredModule("chisel3.internal.plugin")
+    // println("pluginModule")
     val autoNameMethod = pluginModule.requiredMethod("autoNameRecursively")
     val prefixModule = requiredModule("chisel3.experimental.prefix")
 
     val compTpe = tree.tpt.tpe
+    // println(s"src: ${tree.mySrc}")
+    val src = tree.mySrc
+    if (src.toString contains "Basic.scala") {
+      if ((compTpe <:< dataTpe || compTpe <:< prefixTpe) && !(compTpe <:< bundleTpe)) {
+        // println(s"SS: $valName, $nameLiteral, $compTpe")
+        // println(s"mods: ${tree.mods}")
+        val newRhs = tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tree.tpt.tpe).appliedTo(nameLiteral).appliedTo(tree.rhs)
+        val prefixLiteral = if (valName.head == '_') Literal(Constant(valName.tail)) else Literal(Constant(valName))
+        val prefixApplyMethod = prefixModule.requiredMethod("applyString")
+        val prefixed = tpd.ref(prefixModule).select(prefixApplyMethod).appliedToType(tree.tpt.tpe).appliedTo(prefixLiteral).appliedTo(newRhs)
 
-    if ((compTpe <:< dataTpe || compTpe <:< prefixTpe) && !(compTpe <:< bundleTpe)) {
-      val newRhs = tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tree.tpt.tpe).appliedTo(nameLiteral).appliedTo(tree.rhs)
-      val prefixLiteral = if (valName.head == '_') Literal(Constant(valName.tail)) else Literal(Constant(valName))
-      val prefixApplyMethod = prefixModule.requiredMethod("applyString")
-      val prefixed = tpd.ref(prefixModule).select(prefixApplyMethod).appliedToType(tree.tpt.tpe).appliedTo(prefixLiteral).appliedTo(newRhs)
-
-      if (isNamedComponent(compTpe)) {
-        tpd.cpy.ValDef(tree)(rhs = newRhs)
-      } else {
-        tpd.cpy.ValDef(tree)(rhs = prefixed)
+        if (isNamedComponent(compTpe)) {
+          val t = tpd.cpy.ValDef(tree)(rhs = newRhs)
+          // println(s"t1: $t")
+          t
+        } else {
+          val t = tpd.cpy.ValDef(tree)(rhs = prefixed)
+          // println(s"t2: $t")
+          t
+        }
       }
-    }
-    else {
-      tree
-    }
+      else {
+        // println(s"tree: $tree")
+        tree
+      }
+    } else tree
   }
 }

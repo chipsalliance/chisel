@@ -58,8 +58,8 @@ object prefix {
 
   def apply[T, K](name: K)(f: => T): T = {
     name match {
-      case _: HasId => applyString[T](name.asInstanceOf[String])(f)
-      case _: String => applyHasId[T](name.asInstanceOf[HasId])(f)
+      case x: HasId => applyHasId[T](x)(f)
+      case x: String => applyString[T](x)(f)
       case _ => f
     }
   }
