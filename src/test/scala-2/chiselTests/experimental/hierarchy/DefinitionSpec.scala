@@ -14,7 +14,6 @@ import org.scalatest.matchers.should.Matchers
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
-// - CircuitTarget for annotations on the definition are wrong - needs to be fixed.
 class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
   import Annotations._
   import Examples._
@@ -131,7 +130,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOne"
+             |CHECK-NEXT: "target":"~|AddOne"
              |CHECK-NEXT: "tag":"mark"
              |""".stripMargin
         )
@@ -145,7 +144,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddOne>innerWire"
              |CHECK-NEXT: "tag":"i0.innerWire"
              |""".stripMargin
         )
@@ -159,7 +158,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOne"
+             |CHECK-NEXT: "target":"~|AddOne"
              |CHECK-NEXT: "tag":"i0.i0"
              |""".stripMargin
         )
@@ -173,7 +172,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne"
              |CHECK-NEXT: "tag":"i0.i0"
              |""".stripMargin
         )
@@ -188,7 +187,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOne"
+             |CHECK-NEXT: "target":"~|AddOne"
              |CHECK-NEXT: "tag":"i0.i0"
              |""".stripMargin
         )
@@ -202,7 +201,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne>innerWire"
              |CHECK-NEXT: "tag":"i0.i0.innerWire"
              |""".stripMargin
         )
@@ -216,7 +215,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwoMixedModules/i1:AddOne_1"
+             |CHECK-NEXT: "target":"~|AddTwoMixedModules/i1:AddOne_1"
              |CHECK-NEXT: "tag":"i0.i1"
              |""".stripMargin
         )
@@ -232,7 +231,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOneWithInstantiableWire>innerWire"
+             |CHECK-NEXT: "target":"~|AddOneWithInstantiableWire>innerWire"
              |CHECK-NEXT: "tag":"i0.innerWire"
              |""".stripMargin
         )
@@ -246,7 +245,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOneWithInstantiableModule/i0:AddOne"
+             |CHECK-NEXT: "target":"~|AddOneWithInstantiableModule/i0:AddOne"
              |CHECK-NEXT: "tag":"i0.i0"
              |""".stripMargin
         )
@@ -260,7 +259,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOneWithInstantiableInstance/i0:AddOne"
+             |CHECK-NEXT: "target":"~|AddOneWithInstantiableInstance/i0:AddOne"
              |CHECK-NEXT: "tag":"i0.i0"
              |""".stripMargin
         )
@@ -274,7 +273,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOneWithInstantiableInstantiable/i0:AddOne"
+             |CHECK-NEXT: "target":"~|AddOneWithInstantiableInstantiable/i0:AddOne"
              |CHECK-NEXT: "tag":"i0.i0"
              |""".stripMargin
         )
@@ -288,7 +287,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOneWithInstantiableInstantiable/i0:AddOne"
+             |CHECK-NEXT: "target":"~|AddOneWithInstantiableInstantiable/i0:AddOne"
              |CHECK-NEXT: "tag":"i0.i0"
              |""".stripMargin
         )
@@ -301,7 +300,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOneWithAnnotation>innerWire"
+             |CHECK-NEXT: "target":"~|AddOneWithAnnotation>innerWire"
              |CHECK-NEXT: "tag":"innerWire"
              |""".stripMargin
         )
@@ -319,13 +318,13 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasUserDefinedType>wire"
+             |CHECK-NEXT: "target":"~|HasUserDefinedType>wire"
              |CHECK-NEXT: "tag":"data"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasUserDefinedType/inst0:AddOne"
+             |CHECK-NEXT: "target":"~|HasUserDefinedType/inst0:AddOne"
              |CHECK-NEXT: "tag":"inst"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasUserDefinedType/inst1:AddOne"
+             |CHECK-NEXT: "target":"~|HasUserDefinedType/inst1:AddOne"
              |CHECK-NEXT: "tag":"inst2"
              |""".stripMargin
         )
@@ -342,7 +341,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top(first))
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~AddTwo|AddTwo/i0:AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne>innerWire"
              |CHECK-NEXT: "tag":"first"
              |""".stripMargin
         )
@@ -355,7 +354,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top(first))
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~AddTwo|AddTwo/i0:AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne>innerWire"
              |CHECK-NEXT: "tag":"second"
              |""".stripMargin
         )
@@ -369,7 +368,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top(first))
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~AddTwo|AddTwo/i0:AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne>innerWire"
              |CHECK-NEXT: "tag":"third"
              |""".stripMargin
         )
@@ -385,7 +384,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|MultiVal>x"
+             |CHECK-NEXT: "target":"~|MultiVal>x"
              |CHECK-NEXT: "tag":"mv.x"
              |""".stripMargin
         )
@@ -399,7 +398,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|LazyVal>x"
+             |CHECK-NEXT: "target":"~|LazyVal>x"
              |CHECK-NEXT: "tag":"Hi"
              |""".stripMargin
         )
@@ -414,7 +413,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|UsesParameters>x"
+             |CHECK-NEXT: "target":"~|UsesParameters>x"
              |CHECK-NEXT: "tag":"hi0"
              |""".stripMargin
         )
@@ -428,7 +427,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasList>x_1"
+             |CHECK-NEXT: "target":"~|HasList>x_1"
              |CHECK-NEXT: "tag":"2"
              |""".stripMargin
         )
@@ -442,7 +441,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasSeq>x_1"
+             |CHECK-NEXT: "target":"~|HasSeq>x_1"
              |CHECK-NEXT: "tag":"2"
              |""".stripMargin
         )
@@ -456,7 +455,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasOption>x"
+             |CHECK-NEXT: "target":"~|HasOption>x"
              |CHECK-NEXT: "tag":"x"
              |""".stripMargin
         )
@@ -470,7 +469,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasVec>x"
+             |CHECK-NEXT: "target":"~|HasVec>x"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -484,7 +483,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasVec>x[1]"
+             |CHECK-NEXT: "target":"~|HasVec>x[1]"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -498,7 +497,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasIndexedVec>x[1]"
+             |CHECK-NEXT: "target":"~|HasIndexedVec>x[1]"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -512,7 +511,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasPublicConstructorArgs>x"
+             |CHECK-NEXT: "target":"~|HasPublicConstructorArgs>x"
              |CHECK-NEXT: "tag":"10"
              |""".stripMargin
         )
@@ -529,7 +528,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ConcreteHasBlah"
+             |CHECK-NEXT: "target":"~|ConcreteHasBlah"
              |CHECK-NEXT: "tag":"10"
              |""".stripMargin
         )
@@ -544,10 +543,10 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasEither>x"
+             |CHECK-NEXT: "target":"~|HasEither>x"
              |CHECK-NEXT: "tag":"xright"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasEither>y"
+             |CHECK-NEXT: "target":"~|HasEither>y"
              |CHECK-NEXT: "tag":"yleft"
              |""".stripMargin
         )
@@ -562,10 +561,10 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasTuple2>x"
+             |CHECK-NEXT: "target":"~|HasTuple2>x"
              |CHECK-NEXT: "tag":"x"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasTuple2>y"
+             |CHECK-NEXT: "target":"~|HasTuple2>y"
              |CHECK-NEXT: "tag":"y"
              |""".stripMargin
         )
@@ -580,10 +579,10 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasMems>mem"
+             |CHECK-NEXT: "target":"~|HasMems>mem"
              |CHECK-NEXT: "tag":"Mem"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasMems>syncReadMem"
+             |CHECK-NEXT: "target":"~|HasMems>syncReadMem"
              |CHECK-NEXT: "tag":"SyncReadMem"
              |""".stripMargin
         )
@@ -608,7 +607,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasHasTarget>sram_sram"
+             |CHECK-NEXT: "target":"~|HasHasTarget>sram_sram"
              |CHECK-NEXT: "tag":"x"
              |""".stripMargin
         )
@@ -625,10 +624,10 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasTuple5>wire"
+             |CHECK-NEXT: "target":"~|HasTuple5>wire"
              |CHECK-NEXT: "tag":"wire"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|HasTuple5/inst:AddOne"
+             |CHECK-NEXT: "target":"~|HasTuple5/inst:AddOne"
              |CHECK-NEXT: "tag":"inst"
              |""".stripMargin
         )
@@ -645,7 +644,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddOne>innerWire"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -660,7 +659,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne>innerWire"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -675,7 +674,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne>innerWire"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -691,7 +690,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwo>in"
+             |CHECK-NEXT: "target":"~|AddTwo>in"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -705,7 +704,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwo/i0:AddOne>innerWire"
+             |CHECK-NEXT: "target":"~|AddTwo/i0:AddOne>innerWire"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -719,7 +718,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|AddTwoMixedModules/i1:AddOne_1>in"
+             |CHECK-NEXT: "target":"~|AddTwoMixedModules/i1:AddOne_1>in"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -733,7 +732,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|InstantiatesHasVec/i1:HasVec_1>x[0]"
+             |CHECK-NEXT: "target":"~|InstantiatesHasVec/i1:HasVec_1>x[0]"
              |CHECK-NEXT: "tag":"blah"
              |""".stripMargin
         )
@@ -767,10 +766,10 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntf>io.in"
+             |CHECK-NEXT: "target":"~|ModuleWithCommonIntf>io.in"
              |CHECK-NEXT: "tag":"gotcha"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntf"
+             |CHECK-NEXT: "target":"~|ModuleWithCommonIntf"
              |CHECK-NEXT: "tag":"inst"
              |""".stripMargin
         )
@@ -788,13 +787,13 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntf>io.in"
+             |CHECK-NEXT: "target":"~|ModuleWithCommonIntf>io.in"
              |CHECK-NEXT: "tag":"gotcha"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntf>sum"
+             |CHECK-NEXT: "target":"~|ModuleWithCommonIntf>sum"
              |CHECK-NEXT: "tag":"also this"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntf"
+             |CHECK-NEXT: "target":"~|ModuleWithCommonIntf"
              |CHECK-NEXT: "tag":"inst"
              |""".stripMargin
         )
@@ -810,10 +809,10 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|BlackBoxWithCommonIntf>in"
+             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>in"
              |CHECK-NEXT: "tag":"gotcha"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|BlackBoxWithCommonIntf"
+             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf"
              |CHECK-NEXT: "tag":"module"
              |""".stripMargin
         )
@@ -834,13 +833,13 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntfY>io.in"
+             |CHECK-NEXT: "target":"~|ModuleWithCommonIntfY>io.in"
              |CHECK-NEXT: "tag":"foo"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|BlackBoxWithCommonIntf>in"
+             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>in"
              |CHECK-NEXT: "tag":"bar"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|ModuleWithCommonIntfX>io.in"
+             |CHECK-NEXT: "target":"~|ModuleWithCommonIntfX>io.in"
              |CHECK-NEXT: "tag":"fizz"
              |""".stripMargin
         )
@@ -873,13 +872,13 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|MyModule>out"
+             |CHECK-NEXT: "target":"~|MyModule>out"
              |CHECK-NEXT: "tag":"out"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|MyModule>in"
+             |CHECK-NEXT: "target":"~|MyModule>in"
              |CHECK-NEXT: "tag":"foo"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|MyModule>sum"
+             |CHECK-NEXT: "target":"~|MyModule>sum"
              |CHECK-NEXT: "tag":"bar"
              |
              |CHECK:      public module Top :
@@ -912,10 +911,10 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|MyModule>a"
+             |CHECK-NEXT: "target":"~|MyModule>a"
              |CHECK-NEXT: "tag":"in"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~Top|MyModule>a.foo"
+             |CHECK-NEXT: "target":"~|MyModule>a.foo"
              |CHECK-NEXT: "tag":"in_bar"
              |
              |CHECK:      public module Top :

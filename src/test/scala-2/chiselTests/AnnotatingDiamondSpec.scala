@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{annotate, AnyTargetable}
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.ChiselStage
-import firrtl.annotations.{CircuitTarget, SingleTargetAnnotation, Target}
+import firrtl.annotations.{ModuleTarget, SingleTargetAnnotation, Target}
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -130,11 +130,11 @@ class AnnotatingDiamondSpec extends AnyFreeSpec with Matchers {
       info("Found ten (10) 'IdentityAnnotation's")
       (annos should have).length(10)
 
-      info("Found IdentityAnnotation targeting '~*|ModC' with value 'ModC(16)'")
-      annos should contain(IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC"), "ModC(16)"))
+      info("Found IdentityAnnotation targeting '~|ModC' with value 'ModC(16)'")
+      annos should contain(IdentityAnnotation(ModuleTarget("ModC"), "ModC(16)"))
 
-      info("Found IdentityAnnotation targeting '~*|ModC_1:seen' with value 'ModC(32)'")
-      annos should contain(IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC_1"), "ModC(32)"))
+      info("Found IdentityAnnotation targeting '~|ModC_1:seen' with value 'ModC(32)'")
+      annos should contain(IdentityAnnotation(ModuleTarget("ModC_1"), "ModC(32)"))
     }
   }
 }

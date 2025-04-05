@@ -187,15 +187,15 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
       }
     }.fileCheck()(
       """|CHECK-LABEL: module Foo :
-         |CHECK:         propassign localPropOut, path("OMReferenceTarget:~Top|Foo>data")
+         |CHECK:         propassign localPropOut, path("OMReferenceTarget:~|Foo>data")
          |CHECK-LABEL: public module Top :
-         |CHECK:         propassign propOutA, path("OMInstanceTarget:~Top|Top/inst:Foo")
-         |CHECK:         propassign propOutB, path("OMReferenceTarget:~Top|Top/inst:Foo>data")
-         |CHECK:         propassign propOutC, path("OMReferenceTarget:~Top|Top/inst:Foo>mem")
-         |CHECK:         propassign propOutD, path("OMInstanceTarget:~Top|Top")
+         |CHECK:         propassign propOutA, path("OMInstanceTarget:~|Top/inst:Foo")
+         |CHECK:         propassign propOutB, path("OMReferenceTarget:~|Top/inst:Foo>data")
+         |CHECK:         propassign propOutC, path("OMReferenceTarget:~|Top/inst:Foo>mem")
+         |CHECK:         propassign propOutD, path("OMInstanceTarget:~|Top")
          |CHECK:         propassign propOutE, inst.localPropOut
-         |CHECK:         propassign propOutF, path("OMReferenceTarget:~Top|Top/inst:Foo>sram_sram")
-         |CHECK:         propassign propOutG, path("OMMemberReferenceTarget:~Top|Top/inst:Foo>sram_sram")
+         |CHECK:         propassign propOutF, path("OMReferenceTarget:~|Top/inst:Foo>sram_sram")
+         |CHECK:         propassign propOutG, path("OMMemberReferenceTarget:~|Top/inst:Foo>sram_sram")
          |""".stripMargin
     )
   }
@@ -222,11 +222,11 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
       }
     }.fileCheck()(
       """|CHECK-LABEL: module Foo :
-         |CHECK:         propassign localPropOut, path("OMMemberReferenceTarget:~Top|Foo>data")
+         |CHECK:         propassign localPropOut, path("OMMemberReferenceTarget:~|Foo>data")
          |CHECK-LABEL: public module Top :
-         |CHECK:         propassign propOutA, path("OMMemberInstanceTarget:~Top|Top/inst:Foo")
-         |CHECK:         propassign propOutB, path("OMMemberReferenceTarget:~Top|Top/inst:Foo>data")
-         |CHECK:         propassign propOutC, path("OMMemberReferenceTarget:~Top|Top/inst:Foo>mem")
+         |CHECK:         propassign propOutA, path("OMMemberInstanceTarget:~|Top/inst:Foo")
+         |CHECK:         propassign propOutB, path("OMMemberReferenceTarget:~|Top/inst:Foo>data")
+         |CHECK:         propassign propOutC, path("OMMemberReferenceTarget:~|Top/inst:Foo>mem")
          |CHECK:         propassign propOutD, inst.localPropOut
          |""".stripMargin
     )
@@ -759,7 +759,7 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
           val c = a + b
         })
 
-        mod.c.toTarget.toString should equal("~Top|Foo>c")
+        mod.c.toTarget.toString should equal("~|Foo>c")
       }
     }.fileCheck()(
       """|CHECK: wire c : Integer

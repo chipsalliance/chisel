@@ -20,7 +20,7 @@ class OutputDirAnnotationSpec extends AnyFunSpec with Matchers {
       val chirrtl = ChiselStage.emitCHIRRTL(new ParentModule)
       (chirrtl.split('\n').map(_.takeWhile(_ != '@').trim) should contain).allOf(
         """"class":"circt.OutputDirAnnotation",""",
-        """"target":"~ParentModule|TestModule",""",
+        """"target":"~|TestModule",""",
         """"dirname":"foo""""
       )
 

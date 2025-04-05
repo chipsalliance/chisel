@@ -11,7 +11,7 @@ class LoadMemoryAnnotationSpec extends AnyFreeSpec with Matchers {
   "LoadMemoryAnnotation getFileName" - {
     "add name of subcomponent to file name when a memory was split" in {
       val lma = new LoadMemoryAnnotation(
-        ComponentName("init_mem_subdata", ModuleName("b", CircuitName("c"))),
+        ComponentName("init_mem_subdata", ModuleName("b")),
         "somepath/init_mem",
         originalMemoryNameOpt = Some("init_mem")
       )
@@ -20,7 +20,7 @@ class LoadMemoryAnnotationSpec extends AnyFreeSpec with Matchers {
     }
     "and do that properly when there are dots in earlier sections of the path" in {
       val lma = new LoadMemoryAnnotation(
-        ComponentName("init_mem_subdata", ModuleName("b", CircuitName("c"))),
+        ComponentName("init_mem_subdata", ModuleName("b")),
         "./target/scala-2.12/test-classes/init_mem",
         originalMemoryNameOpt = Some("init_mem")
       )
@@ -30,7 +30,7 @@ class LoadMemoryAnnotationSpec extends AnyFreeSpec with Matchers {
   }
   "LoadMemoryAnnotation should be correctly parsed from a string" in {
     val lma = new LoadMemoryAnnotation(
-      ComponentName("ram", ModuleName("ModuleMem", CircuitName("CircuitMem"))),
+      ComponentName("ram", ModuleName("ModuleMem")),
       "CircuitMem.ModuleMem.ram.dat",
       hexOrBinary = MemoryLoadFileType.Binary,
       originalMemoryNameOpt = Some("memory")

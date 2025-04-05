@@ -692,7 +692,7 @@ package experimental {
       *
       * @note Should not be called until circuit elaboration is complete
       */
-    final def toNamed: ModuleName = ModuleTarget(this.circuitName, this.name).toNamed
+    final def toNamed: ModuleName = ModuleTarget(this.name).toNamed
 
     /** Returns a FIRRTL ModuleTarget that references this object
       *
@@ -703,7 +703,7 @@ package experimental {
         throwException(s"Internal Error! It's not legal to call .toTarget on an InstanceClone. $m")
       case m: experimental.hierarchy.DefinitionClone[_] =>
         throwException(s"Internal Error! It's not legal to call .toTarget on an DefinitionClone. $m")
-      case _ => ModuleTarget(this.circuitName, this.name)
+      case _ => ModuleTarget(this.name)
     }
 
     /** Returns the real target of a Module which may be an [[InstanceTarget]]
@@ -724,7 +724,7 @@ package experimental {
         m._parent.get.getTarget.instOf(instanceName, name)
       // Without this, we get the wrong CircuitName for the Definition
       case m: experimental.hierarchy.DefinitionClone[_] if m._circuit.nonEmpty =>
-        ModuleTarget(this._circuit.get.circuitName, this.name)
+        ModuleTarget(this.name)
       case _ => this.toTarget
     }
 
@@ -813,7 +813,6 @@ package experimental {
       else {
         val thisAbsolute = this.toAbsoluteTarget
         val rootAbsolute = root.get.toAbsoluteTarget
-        if (thisAbsolute.circuit != thisAbsolute.circuit) fail()
         recurse(thisAbsolute, rootAbsolute)
       }
     }

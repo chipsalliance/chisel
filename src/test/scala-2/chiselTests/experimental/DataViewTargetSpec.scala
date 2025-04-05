@@ -127,13 +127,13 @@ class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new MyParent)
       .fileCheck()(
-        """|CHECK:      "target":"~MyParent|MyChild>out.foo"
+        """|CHECK:      "target":"~|MyChild>out.foo"
            |CHECK-NEXT: "id":0
-           |CHECK:      "target":"~MyParent|MyChild>out.foo"
+           |CHECK:      "target":"~|MyChild>out.foo"
            |CHECK-NEXT: "id":1
-           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out.foo"
+           |CHECK:      "target":"~|MyParent/inst:MyChild>out.foo"
            |CHECK-NEXT: "id":2
-           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK:      "target":"~|MyParent/inst:MyChild>out"
            |CHECK-NEXT: "id":3
            |""".stripMargin
       )
@@ -165,25 +165,25 @@ class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new MyParent)
       .fileCheck()(
-        """|CHECK:      "target":"~MyParent|MyChild>io.b"
+        """|CHECK:      "target":"~|MyChild>io.b"
            |CHECK-NEXT: "id":0
-           |CHECK:      "target":"~MyParent|MyChild>io.a"
+           |CHECK:      "target":"~|MyChild>io.a"
            |CHECK-NEXT: "id":0
-           |CHECK:      "target":"~MyParent|MyChild>io.d"
+           |CHECK:      "target":"~|MyChild>io.d"
            |CHECK-NEXT: "id":1
-           |CHECK:      "target":"~MyParent|MyChild>io.c"
+           |CHECK:      "target":"~|MyChild>io.c"
            |CHECK-NEXT: "id":1
-           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.b"
+           |CHECK:      "target":"~|MyParent/inst:MyChild>io.b"
            |CHECK-NEXT: "id":2
-           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.a"
+           |CHECK:      "target":"~|MyParent/inst:MyChild>io.a"
            |CHECK-NEXT: "id":2
-           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.d"
+           |CHECK:      "target":"~|MyParent/inst:MyChild>io.d"
            |CHECK-NEXT: "id":3
-           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>io.c"
+           |CHECK:      "target":"~|MyParent/inst:MyChild>io.c"
            |CHECK-NEXT: "id":3
-           |CHECK:      "target":"~MyParent|MyChild>io.d"
+           |CHECK:      "target":"~|MyChild>io.d"
            |CHECK-NEXT: "id":4
-           |CHECK:      "target":"~MyParent|MyChild>io.b"
+           |CHECK:      "target":"~|MyChild>io.b"
            |CHECK-NEXT: "id":4
            |""".stripMargin
       )
@@ -212,11 +212,11 @@ class DataViewTargetSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new MyParent)
       .fileCheck()(
-        """|CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+        """|CHECK:      "target":"~|MyParent/inst:MyChild>out"
            |CHECK-NEXT: "id":0
-           |CHECK:      "target":"~MyParent|MyChild>out"
+           |CHECK:      "target":"~|MyChild>out"
            |CHECK-NEXT: "id":1
-           |CHECK:      "target":"~MyParent|MyParent/inst:MyChild>out"
+           |CHECK:      "target":"~|MyParent/inst:MyChild>out"
            |CHECK-NEXT: "id":2
            |""".stripMargin
       )

@@ -175,7 +175,7 @@ class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     chirrtl.fileCheck()(
       """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
-         |CHECK-NEXT: "target":"~ModuleWithIntrinsic|ModuleWithIntrinsic"
+         |CHECK-NEXT: "target":"~|ModuleWithIntrinsic"
          |CHECK-NEXT: "group":"ModuleWithIntrinsic"
          |""".stripMargin
     )
@@ -197,7 +197,7 @@ class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     chirrtl.fileCheck()(
       """|CHECK:      "class":"firrtl.transforms.DedupGroupAnnotation"
-         |CHECK-NEXT: "target":"~ModuleWithClass|ModuleWithClass"
+         |CHECK-NEXT: "target":"~|ModuleWithClass"
          |CHECK-NEXT: "group":"ModuleWithClass"
          |""".stripMargin
     )

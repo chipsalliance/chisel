@@ -121,12 +121,12 @@ class DontTouchSpec extends AnyFlatSpec with Matchers with FileCheck {
       .emitCHIRRTL(new HasDeadCodeLeaves())
       .fileCheck(
         "--implicit-check-not",
-        """"target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a""""
+        """"target":"~|HasDeadCodeChildLeaves>io.a""""
       )(
         """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
-           |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a2"
+           |CHECK-NEXT: "target":"~|HasDeadCodeChildLeaves>io.a.a2"
            |CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
-           |CHECK-NEXT: "target":"~HasDeadCodeLeaves|HasDeadCodeChildLeaves>io.a.a1"
+           |CHECK-NEXT: "target":"~|HasDeadCodeChildLeaves>io.a.a1"
            |""".stripMargin
       )
   }
@@ -138,12 +138,12 @@ class DontTouchSpec extends AnyFlatSpec with Matchers with FileCheck {
       )
       .fileCheck(
         "--implicit-check-not",
-        """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.probe"""",
+        """"target":"~|HasProbesAndProperties>io.probe"""",
         "--implicit-check-not",
-        """"target":"~HasProbesAndProperties|HasProbesAndProperties>io.prop""""
+        """"target":"~|HasProbesAndProperties>io.prop""""
       )(
         """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation",
-           |CHECK-NEXT: "target":"~HasProbesAndProperties|HasProbesAndProperties>io.a"
+           |CHECK-NEXT: "target":"~|HasProbesAndProperties>io.a"
            |""".stripMargin
       )
 

@@ -152,7 +152,7 @@ class OpaqueTypeSpec extends AnyFlatSpec with Matchers {
       mod.inst.io.foo.k.elements.head._2.toTarget.serialize,
       mod.inst.io.foo.k.k.elements.head._2.toTarget.serialize
     )
-    testStrings.foreach(x => assert(x == "~NestedRecordModule|InnerModule>io.foo"))
+    testStrings.foreach(x => assert(x == "~|InnerModule>io.foo"))
   }
 
   they should "work correctly with DataMirror in nested OpaqueType Records" in {
@@ -222,7 +222,7 @@ class OpaqueTypeSpec extends AnyFlatSpec with Matchers {
     var m: SingleElementRecordModule = null
     ChiselStage.emitCHIRRTL { m = new SingleElementRecordModule; m }
     val q = m.in1.toTarget.toString
-    assert(q == "~SingleElementRecordModule|SingleElementRecordModule>in1")
+    assert(q == "~|SingleElementRecordModule>in1")
   }
 
   they should "NOT work with .toTarget on non-data OpaqueType Record" in {

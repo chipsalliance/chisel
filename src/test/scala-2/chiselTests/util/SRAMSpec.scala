@@ -39,7 +39,7 @@ class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
       .emitCHIRRTL(new Top, Array("--include-util-metadata"))
       .fileCheck()(
         """|CHECK:      "class":"chiselTests.util.SRAMSpec$DummyAnno"
-           |CHECK-NEXT: "target":"~Top|Top>sram_sram"
+           |CHECK-NEXT: "target":"~|Top>sram_sram"
            |
            |CHECK:      public module Top :
            |CHECK:        wire sram : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1], description : Inst<SRAMDescription>}
@@ -56,7 +56,7 @@ class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
            |CHECK:        connect sram.readwritePorts[0].readData, sram_sram.RW0.rdata
            |CHECK:        connect sram_sram.RW0.wdata, sram.readwritePorts[0].writeData
            |CHECK:        connect sram_sram.RW0.wmode, sram.readwritePorts[0].isWrite
-           |CHECK:        propassign sram_descriptionInstance.hierarchyIn, path("OMReferenceTarget:~Top|Top>sram_sram")
+           |CHECK:        propassign sram_descriptionInstance.hierarchyIn, path("OMReferenceTarget:~|Top>sram_sram")
            |CHECK:        propassign sram.description, sram_descriptionInstance
            |""".stripMargin
       )
@@ -80,7 +80,7 @@ class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
       .emitCHIRRTL(new Top)
       .fileCheck()(
         """|CHECK:      "class":"chiselTests.util.SRAMSpec$DummyAnno"
-           |CHECK-NEXT: "target":"~Top|Top>carrot"
+           |CHECK-NEXT: "target":"~|Top>carrot"
            |
            |CHECK:      public module Top :
            |CHECK:        wire sramInterface : { readPorts : { flip address : UInt<5>, flip enable : UInt<1>, data : UInt<8>}[0], writePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip data : UInt<8>}[0], readwritePorts : { flip address : UInt<5>, flip enable : UInt<1>, flip isWrite : UInt<1>, readData : UInt<8>, flip writeData : UInt<8>}[1]}

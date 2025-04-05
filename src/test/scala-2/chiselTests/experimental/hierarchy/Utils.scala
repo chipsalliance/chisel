@@ -2,7 +2,7 @@
 
 package chiselTests.experimental.hierarchy
 
-import firrtl.annotations.{CircuitTarget, InstanceTarget, ModuleTarget, ReferenceTarget, Target}
+import firrtl.annotations.{InstanceTarget, ModuleTarget, ReferenceTarget, Target}
 
 trait Utils {
   // TODO promote to standard API (in FIRRTL) and perhaps even implement with a macro
@@ -10,6 +10,5 @@ trait Utils {
     def rt: ReferenceTarget = Target.deserialize(str).asInstanceOf[ReferenceTarget]
     def it: InstanceTarget = Target.deserialize(str).asInstanceOf[InstanceTarget]
     def mt: ModuleTarget = Target.deserialize(str).asInstanceOf[ModuleTarget]
-    def ct: CircuitTarget = Target.deserialize(str).asInstanceOf[CircuitTarget]
   }
 }

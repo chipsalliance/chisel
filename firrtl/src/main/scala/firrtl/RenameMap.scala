@@ -10,12 +10,14 @@ import firrtl.renamemap._
 import scala.collection.mutable
 
 object RenameMap {
-  def apply(map: collection.Map[Named, Seq[Named]]): RenameMap = MutableRenameMap.fromNamed(map)
+  def apply(map: collection.Map[Named, Seq[Named]], circuitName: String): RenameMap =
+    MutableRenameMap.fromNamed(map, circuitName)
 
-  def create(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): RenameMap = MutableRenameMap(map)
+  def create(map: collection.Map[CompleteTarget, Seq[CompleteTarget]], circuitName: String): RenameMap =
+    MutableRenameMap(map, circuitName)
 
   /** Initialize a new RenameMap */
-  def apply(): RenameMap = new MutableRenameMap
+  def apply(circuitName: String): RenameMap = new MutableRenameMap(circuitName)
 
   abstract class RenameTargetException(reason: String) extends Exception(reason)
   case class IllegalRenameException(reason: String) extends RenameTargetException(reason)
@@ -30,6 +32,12 @@ object RenameMap {
   */
 // TODO This should probably be refactored into immutable and mutable versions
 sealed trait RenameMap {
+
+  // Records the name of the circuit to which this rename map applies.  This is
+  // used for checking if a module or path is "absolute".
+  //
+  // Note: This has bugs
+  protected def circuitName: String
 
   protected def _underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]]
 
@@ -47,18 +55,17 @@ sealed trait RenameMap {
     */
   def andThen(next: RenameMap): RenameMap = {
     if (next._chained.isEmpty) {
-      new MutableRenameMap(next._underlying, Some(this))
+      new MutableRenameMap(circuitName, next._underlying, Some(this))
     } else {
-      new MutableRenameMap(next._underlying, next._chained.map(this.andThen(_)))
+      new MutableRenameMap(circuitName, next._underlying, next._chained.map(this.andThen(_)))
     }
   }
 
   protected def _recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit =
     map.foreach {
-      case (from: IsComponent, tos: Seq[_])   => completeRename(from, tos)
-      case (from: IsModule, tos: Seq[_])      => completeRename(from, tos)
-      case (from: CircuitTarget, tos: Seq[_]) => completeRename(from, tos)
-      case other                              => Utils.throwInternalError(s"Illegal rename: ${other._1} -> ${other._2}")
+      case (from: IsComponent, tos: Seq[_]) => completeRename(from, tos)
+      case (from: IsModule, tos: Seq[_])    => completeRename(from, tos)
+      case other                            => Utils.throwInternalError(s"Illegal rename: ${other._1} -> ${other._2}")
     }
 
   /** Renames a [[firrtl.annotations.CompleteTarget CompleteTarget]]
@@ -67,17 +74,11 @@ sealed trait RenameMap {
     */
   def apply(t: CompleteTarget): Seq[CompleteTarget] = completeGet(t).getOrElse(Seq(t))
 
-  /** Get renames of a [[firrtl.annotations.CircuitTarget CircuitTarget]]
+  /** Get renames of a [[firrtl.annotations.CompleteTarget CompleteTarget]]
     * @param key Target referencing the original circuit
     * @return Optionally return sequence of targets that key remaps to
     */
   def get(key: CompleteTarget): Option[Seq[CompleteTarget]] = completeGet(key)
-
-  /** Get renames of a [[firrtl.annotations.CircuitTarget CircuitTarget]]
-    * @param key Target referencing the original circuit
-    * @return Optionally return sequence of targets that key remaps to
-    */
-  def get(key: CircuitTarget): Option[Seq[CircuitTarget]] = completeGet(key).map(_.map { case x: CircuitTarget => x })
 
   /** Get renames of a [[firrtl.annotations.IsMember IsMember]]
     * @param key Target referencing the original member of the circuit
@@ -95,11 +96,11 @@ sealed trait RenameMap {
     } else {
       _chained.map(_._copy())
     }
-    new MutableRenameMap(_underlying ++ renameMap._underlying, newChained)
+    new MutableRenameMap(circuitName, _underlying ++ renameMap._underlying, newChained)
   }
 
   private def _copy(chained: Option[RenameMap] = _chained): RenameMap = {
-    val ret = new MutableRenameMap(_chained = _chained.map(_._copy()))
+    val ret = new MutableRenameMap(circuitName, _chained = _chained.map(_._copy()))
     ret.recordAll(_underlying)
     ret
   }
@@ -198,7 +199,7 @@ sealed trait RenameMap {
           Some(_underlying(key).flatMap {
             case comp: IsComponent => Some(comp)
             case other =>
-              errors += s"reference ${key.targetParent} cannot be renamed to a non-component ${other}"
+              errors += s"reference ${key} cannot be renamed to a non-component ${other}"
               None
           })
         } else {
@@ -212,7 +213,7 @@ sealed trait RenameMap {
                   case (t2: ReferenceTarget, Field(f)) => Some(t2.field(f))
                   case (t2: ReferenceTarget, Index(i)) => Some(t2.index(i))
                   case other =>
-                    errors += s"Illegal rename: ${key.targetParent} cannot be renamed to ${other._1} - must rename $key directly"
+                    errors += s"Illegal rename: ${key} cannot be renamed to ${other._1} - must rename $key directly"
                     None
                 }
               })
@@ -283,8 +284,8 @@ sealed trait RenameMap {
               val (Instance(outerInst), OfModule(outerMod)) = t.path.head
               val stripped = t.copy(path = t.path.tail, module = outerMod)
               traverseLeft(stripped).map(_.map {
-                case absolute if absolute.circuit == absolute.module => absolute
-                case relative                                        => relative.addHierarchy(t.module, outerInst)
+                case absolute if circuitName == absolute.module => absolute
+                case relative                                   => relative.addHierarchy(t.module, outerInst)
               })
           }
         }
@@ -309,18 +310,6 @@ sealed trait RenameMap {
     )
 
     traverseRight(key)
-  }
-
-  private def circuitGet(errors: mutable.ArrayBuffer[String])(key: CircuitTarget): Seq[CircuitTarget] = {
-    _underlying
-      .get(key)
-      .map(_.flatMap {
-        case c: CircuitTarget => Some(c)
-        case other =>
-          errors += s"Illegal rename: $key cannot be renamed to non-circuit target: $other"
-          None
-      })
-      .getOrElse(Seq(key))
   }
 
   private def moduleGet(errors: mutable.ArrayBuffer[String])(key: ModuleTarget): Option[Seq[IsModule]] = {
@@ -375,12 +364,10 @@ sealed trait RenameMap {
     * @return rename results (see examples)
     */
   private def ofModuleGet(errors: mutable.ArrayBuffer[String])(key: IsComponent): OfModuleRenameResult = {
-    val circuit = key.circuit
     def renameOfModules(
-      path:          Seq[(Instance, OfModule)],
-      foundRename:   Boolean,
-      newCircuitOpt: Option[String],
-      children:      Seq[(Instance, OfModule)]
+      path:        Seq[(Instance, OfModule)],
+      foundRename: Boolean,
+      children:    Seq[(Instance, OfModule)]
     ): OfModuleRenameResult = {
       if (path.isEmpty && foundRename) {
         RenamedOfModules(children)
@@ -388,39 +375,34 @@ sealed trait RenameMap {
         NoOfModuleRenames
       } else {
         val pair = path.head
-        val pathMod = ModuleTarget(circuit, pair._2.value)
+        val pathMod = ModuleTarget(pair._2.value)
         moduleGet(errors)(pathMod) match {
-          case None => renameOfModules(path.tail, foundRename, newCircuitOpt, pair +: children)
+          case None => renameOfModules(path.tail, foundRename, pair +: children)
           case Some(rename) =>
-            if (newCircuitOpt.isDefined && rename.exists(_.circuit != newCircuitOpt.get)) {
-              val error = s"ofModule ${pathMod} of target ${key.serialize} cannot be renamed to $rename " +
-                s"- renamed ofModules must have the same circuit name, expected circuit ${newCircuitOpt.get}"
-              errors += error
-            }
             rename match {
-              case Seq(absolute: IsModule) if absolute.module == absolute.circuit =>
+              case Seq(absolute: IsModule) if absolute.module == circuitName =>
                 val withChildren = children.foldLeft(absolute) { case (target, (inst, ofMod)) =>
                   target.instOf(inst.value, ofMod.value)
                 }
                 AbsoluteOfModule(withChildren)
               case Seq(isMod: ModuleTarget) =>
                 val newPair = pair.copy(_2 = OfModule(isMod.module))
-                renameOfModules(path.tail, true, Some(isMod.circuit), newPair +: children)
+                renameOfModules(path.tail, true, newPair +: children)
               case Seq(isMod: InstanceTarget) =>
                 val newPair = pair.copy(_2 = OfModule(isMod.module))
-                renameOfModules(path.tail, true, Some(isMod.circuit), newPair +: (isMod.asPath ++ children))
+                renameOfModules(path.tail, true, newPair +: (isMod.asPath ++ children))
               case Nil =>
                 DeletedOfModule
               case other =>
                 val error = s"ofModule ${pathMod} of target ${key.serialize} cannot be renamed to $other " +
                   "- an ofModule can only be deleted or renamed to a single IsModule"
                 errors += error
-                renameOfModules(path.tail, foundRename, newCircuitOpt, pair +: children)
+                renameOfModules(path.tail, foundRename, pair +: children)
             }
         }
       }
     }
-    renameOfModules(key.asPath.reverse, false, None, Nil)
+    renameOfModules(key.asPath.reverse, false, Nil)
   }
 
   /** Recursively renames a target so the returned targets are complete renamed
@@ -431,17 +413,16 @@ sealed trait RenameMap {
   private def recursiveGet(errors: mutable.ArrayBuffer[String])(key: CompleteTarget): Seq[CompleteTarget] = {
     // rename just the component portion; path/ref/component for ReferenceTargets or path/instance for InstanceTargets
     val componentRename = key match {
-      case t:   CircuitTarget                  => None
       case t:   ModuleTarget                   => None
       case t:   InstanceTarget                 => instanceGet(errors)(t)
       case ref: ReferenceTarget if ref.isLocal => referenceGet(errors)(ref)
-      case ref @ ReferenceTarget(c, m, p, r, t) =>
+      case ref @ ReferenceTarget(m, p, r, t) =>
         val (Instance(inst), OfModule(ofMod)) = p.last
         val refGet = referenceGet(errors)(ref)
         if (refGet.isDefined) {
           refGet
         } else {
-          val parent = InstanceTarget(c, m, p.dropRight(1), inst, ofMod)
+          val parent = InstanceTarget(m, p.dropRight(1), inst, ofMod)
           instanceGet(errors)(parent).map(_.map(ref.setPathTarget(_)))
         }
     }
@@ -451,28 +432,26 @@ sealed trait RenameMap {
       componentRename
     } else {
       key match {
-        case t: CircuitTarget => None
-        case t: ModuleTarget  => moduleGet(errors)(t)
+        case t: ModuleTarget => moduleGet(errors)(t)
         case t: IsComponent =>
           ofModuleGet(errors)(t) match {
             case AbsoluteOfModule(absolute) =>
               t match {
                 case ref: ReferenceTarget =>
-                  Some(Seq(ref.copy(circuit = absolute.circuit, module = absolute.module, path = absolute.asPath)))
+                  Some(Seq(ref.copy(module = absolute.module, path = absolute.asPath)))
                 case inst: InstanceTarget => Some(Seq(absolute))
               }
             case RenamedOfModules(children) =>
               // rename the root module and set the new path
-              val modTarget = ModuleTarget(t.circuit, t.module)
+              val modTarget = ModuleTarget(t.module)
               val result = moduleGet(errors)(modTarget).getOrElse(Seq(modTarget)).map { mod =>
                 val newPath = mod.asPath ++ children
 
                 t match {
-                  case ref:  ReferenceTarget => ref.copy(circuit = mod.circuit, module = mod.module, path = newPath)
+                  case ref:  ReferenceTarget => ref.copy(module = mod.module, path = newPath)
                   case inst: InstanceTarget =>
                     val (Instance(newInst), OfModule(newOfMod)) = newPath.last
                     inst.copy(
-                      circuit = mod.circuit,
                       module = mod.module,
                       path = newPath.dropRight(1),
                       instance = newInst,
@@ -483,17 +462,16 @@ sealed trait RenameMap {
               Some(result)
             case DeletedOfModule => Some(Nil)
             case NoOfModuleRenames =>
-              val modTarget = ModuleTarget(t.circuit, t.module)
+              val modTarget = ModuleTarget(t.module)
               val children = t.asPath
               moduleGet(errors)(modTarget).map(_.map { mod =>
                 val newPath = mod.asPath ++ children
 
                 t match {
-                  case ref:  ReferenceTarget => ref.copy(circuit = mod.circuit, module = mod.module, path = newPath)
+                  case ref:  ReferenceTarget => ref.copy(module = mod.module, path = newPath)
                   case inst: InstanceTarget =>
                     val (Instance(newInst), OfModule(newOfMod)) = newPath.last
                     inst.copy(
-                      circuit = mod.circuit,
                       module = mod.module,
                       path = newPath.dropRight(1),
                       instance = newInst,
@@ -505,27 +483,7 @@ sealed trait RenameMap {
       }
     }
 
-    // if no module renames were found, look for circuit renames;
-    val circuitRename = if (moduleRename.isDefined) {
-      moduleRename.get
-    } else {
-      key match {
-        case t: CircuitTarget => circuitGet(errors)(t)
-        case t: ModuleTarget =>
-          circuitGet(errors)(CircuitTarget(t.circuit)).map { case CircuitTarget(c) =>
-            t.copy(circuit = c)
-          }
-        case t: IsComponent =>
-          circuitGet(errors)(CircuitTarget(t.circuit)).map { case CircuitTarget(c) =>
-            t match {
-              case ref:  ReferenceTarget => ref.copy(circuit = c)
-              case inst: InstanceTarget  => inst.copy(circuit = c)
-            }
-          }
-      }
-    }
-
-    circuitRename
+    moduleRename.getOrElse(Seq.empty)
   }
 
   /** Fully rename `from` to `tos`
@@ -546,10 +504,6 @@ sealed trait RenameMap {
     traverseRightCache.clear()
   }
 
-  def get(key: CircuitName): Option[Seq[CircuitName]] = {
-    get(Target.convertCircuitName2CircuitTarget(key)).map(_.collect { case c: CircuitTarget => c.toNamed })
-  }
-
   def get(key: ModuleName): Option[Seq[ModuleName]] = {
     get(Target.convertModuleName2ModuleTarget(key)).map(_.collect { case m: ModuleTarget => m.toNamed })
   }
@@ -568,46 +522,29 @@ sealed trait RenameMap {
 // This must be in same file as RenameMap because RenameMap is sealed
 package object renamemap {
   object MutableRenameMap {
-    def fromNamed(map: collection.Map[Named, Seq[Named]]): MutableRenameMap = {
-      val rm = new MutableRenameMap
+    def fromNamed(map: collection.Map[Named, Seq[Named]], circuitName: String): MutableRenameMap = {
+      val rm = new MutableRenameMap(circuitName)
       rm.addMap(map)
       rm
     }
 
-    def apply(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): MutableRenameMap = {
-      val rm = new MutableRenameMap
+    def apply(map: collection.Map[CompleteTarget, Seq[CompleteTarget]], circuitName: String): MutableRenameMap = {
+      val rm = new MutableRenameMap(circuitName)
       rm.recordAll(map)
       rm
     }
 
     /** Initialize a new RenameMap */
-    def apply(): MutableRenameMap = new MutableRenameMap
+    def apply(circuitName: String): MutableRenameMap = new MutableRenameMap(circuitName)
   }
 
   final class MutableRenameMap private[firrtl] (
+    override protected val circuitName: String,
     protected val _underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]] =
       mutable.HashMap[CompleteTarget, Seq[CompleteTarget]](),
     protected val _chained:   Option[RenameMap] = None,
     protected val doDistinct: Boolean = true
   ) extends RenameMap {
-
-    /** Record that the from [[firrtl.annotations.CircuitTarget CircuitTarget]] is renamed to another
-      * [[firrtl.annotations.CircuitTarget CircuitTarget]]
-      * @param from
-      * @param to
-      * $noteSelfRename
-      * $noteDistinct
-      */
-    def record(from: CircuitTarget, to: CircuitTarget): Unit = completeRename(from, Seq(to))
-
-    /** Record that the from [[firrtl.annotations.CircuitTarget CircuitTarget]] is renamed to another sequence of
-      * [[firrtl.annotations.CircuitTarget CircuitTarget]]s
-      * @param from
-      * @param tos
-      * $noteSelfRename
-      * $noteDistinct
-      */
-    def record(from: CircuitTarget, tos: Seq[CircuitTarget]): Unit = completeRename(from, tos)
 
     /** Record that the from [[firrtl.annotations.IsMember Member]] is renamed to another [[firrtl.annotations.IsMember
       * IsMember]]
@@ -627,10 +564,9 @@ package object renamemap {
       */
     def record(from: IsMember, tos: Seq[IsMember]): Unit = completeRename(from, tos)
 
-    /** Records that the keys in map are also renamed to their corresponding value seqs. Only
-      * ([[firrtl.annotations.CircuitTarget CircuitTarget]] -> Seq[ [[firrtl.annotations.CircuitTarget CircuitTarget]] ])
-      * and ([[firrtl.annotations.IsMember IsMember]] -> Seq[ [[firrtl.annotations.IsMember IsMember]] ]) key/value
-      * allowed
+    /** Records that the keys in map are also renamed to their corresponding value
+      * seqs. Only ([[firrtl.annotations.IsMember IsMember]] -> Seq[
+      * [[firrtl.annotations.IsMember IsMember]] ]) key/value allowed
       * @param map
       * $noteSelfRename
       * $noteDistinct
@@ -650,8 +586,6 @@ package object renamemap {
     def rename(from: ComponentName, to: ComponentName): Unit = record(from, to)
 
     def rename(from: ComponentName, tos: Seq[ComponentName]): Unit = record(from, tos.map(_.toTarget))
-
-    def delete(name: CircuitName): Unit = _underlying(name) = Seq.empty
 
     def delete(name: ModuleName): Unit = _underlying(name) = Seq.empty
 
