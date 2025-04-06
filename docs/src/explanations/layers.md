@@ -376,8 +376,8 @@ class Bar extends RawModule {
 
 In implementation, a returned value from a layer block will cause a wire to be
 created before the layer block.  I.e., what is shown in module `Bar` is just a
-Chisel shorthand for what is written in `Foo`.  Laye blocks, as described in the
-FIRRTL specification, do not have the ability to return values.
+Chisel shorthand for what is written in `Foo`.  Layer blocks, as described in
+the FIRRTL specification, do not have the ability to return values.
 
 :::
 
