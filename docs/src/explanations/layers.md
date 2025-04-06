@@ -353,7 +353,7 @@ class Foo extends RawModule {
 ```
 
 Additionally, as the pattern of driving a layer-colored probe wire from within a
-layer block is common, layer blocks are also caapable of directly returning a
+layer block is common, layer blocks are also capable of directly returning a
 layer-colored wire.  To do this, the return value of a layer block must be a
 subtype of `Data`.
 
