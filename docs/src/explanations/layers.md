@@ -314,6 +314,13 @@ or wire may be `read` from if the color of the probe or wire is enabled when the
 `read` is enabled.  Put differently, you may write to your layer or a child
 layer and you may read from your layer or a parent layer.
 
+:::info
+
+For more information, see the layer coloring section of the [FIRRTL
+Specification](https://github.com/chipsalliance/firrtl-spec/releases/latest/download/spec.pdf).
+
+:::
+
 The example below shows two layer-colored probe ports and one layer-colored
 probe wire driven in legal ways:
 
@@ -345,10 +352,32 @@ class Foo extends RawModule {
 }
 ```
 
+Additionally, as the pattern of driving a layer-colored probe wire from within a
+layer block is common, layer blocks are also caapable of directly returning a
+layer-colored wire.  To do this, the return value of a layer block must be a
+subtype of `Data`.
+
+Using this feature, the second layer block can be rewritten as follows:
+
+``` scala mdoc:silent
+class Bar extends RawModule {
+  val b = IO(Output(Probe(Bool(), B)))
+
+  val b_wire_probe = layer.block(B) {
+    val b_wire = WireInit(false.B)
+    define(b_wire_probe, ProbeValue(b_wire))
+  }
+
+  define(b, b_wire_probe)
+}
+```
+
 :::info
 
-For more information, see the layer coloring section of the [FIRRTL
-Specification](https://github.com/chipsalliance/firrtl-spec/releases/latest/download/spec.pdf).
+In implementation, a returned value from a layer block will cause a wire to be
+created before the layer block.  I.e., what is shown in module `Bar` is just a
+Chisel shorthand for what is written in `Foo`.  Laye blocks, as described in the
+FIRRTL specification, do not have the ability to return values.
 
 :::
 
