@@ -75,17 +75,19 @@ the test harness.
 
 :::
 
-Simulation APIs take user provided stimulus and apply it to the module.  Some
-useful stimulus is provided in the `chisel3.simulator.stimulus` package.  For
-example, the `RunUntilFinished` stimulus will toggle a `Module`'s clock for a
-number of cycles and throw an exception if the module does net execute a
-`chisel3.stop` before that number of clock cycles has elapsed.
-
 For more information see the [Chisel API
 documentation](https://www.chisel-lang.org/api) for
-`chisel3.simulator.SimulatorAPI`.
+`chisel3.simulator.SimulatorAPI`
 
-### Peek/Poke APIs
+### Stimulus
+
+Simulation APIs take user provided stimulus and apply it to the
+design-under-test (DUT).  There are two mechanisms provided for applying
+stimulus: (1) Peek/Poke APIs and (2) reusable stimulus patterns.  The former
+provide simple, freeform ways to apply simple directed stimulus.  The latter
+provide common stimulus applicable to a wide range of modules.
+
+#### Peek/Poke APIs
 
 ChiselSim provides basic "peek", "poke", and "expect" APIs for providing simple
 stimulus to Chisel modules.  This API is implemented as [extension
@@ -104,6 +106,43 @@ These APIs are summarized below:
 For more information see the [Chisel API
 documentation](https://www.chisel-lang.org/api) for
 `chisel3.simulator.PeekPokeAPI`.
+
+#### Reusable Stimulus Patterns
+
+While the Peek/Poke APIs are useful for freeform tests, there are a number of
+common stimulus patterns that are frequently applied during testing.  E.g.,
+bringing a module out of reset or running a simulation until it finishes.  These
+patterns are provided in the `chisel3.simulator.stimulus` package.  Currently,
+the following stimuli are available:
+
+- `ResetProcedure` will reset a module in a predictable fashion.  This provides
+  sufficient spacing for initial values to occur, register/memory randomization
+  to happen, and is parametric over the number of cycles to assert reset
+  for. (This is the same stimulus used by the `simulate` API.)
+- `RunUntilFinished` runs the module for a user-provided number of cycles
+  expecting that the simulation will finish cleanly (via `chisel3.stop`) or
+  error (via a Chisel assertion).  If the unit runs for the number of cycles
+  without asserting or finishing, a simulation assertion is thrown.
+- `RunUntilSuccess` runs the module for a user-provided number of cycles
+  expecting that the module will assert a success port (indicating success) or
+  error (via a Chisel assertion).  The success port must be provided to the
+  stimulus as a parameter.
+
+These stimuli are intended to be used via their factory methods.  Most stimuli
+provide different factories for different module types.  E.g., the
+`ResetProcedure` factory has two methods: `any` which will generate stimulus for
+_any_ Chisel module and `module` which can only generate stimulus for subtypes
+of `Module`.  The reason for this split is that this specific stimulus needs to
+know what the clock and reset ports are in order to apply reset stimulus to
+them.  Chisel `Module`s have known clock and reset ports allowing the `module`
+stimulus to have just one parameter---the number of cycles to apply the reset
+for.  However, a Chisel `RawModule` does not have known clock and reset ports
+and user needs to provide more parameters to the factory---the number of reset
+cycles _and_ functions to get the clock and reset ports.
+
+For more information see the [Chisel API
+documentation](https://www.chisel-lang.org/api) for
+`chisel3.simulator.stimulus`.
 
 ### Example
 
