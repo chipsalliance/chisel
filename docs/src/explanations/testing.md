@@ -247,7 +247,7 @@ the testing experience.
 #### Directory Naming
 
 When using ChiselSim in a Scalatest environment, by default a testing directory
-strucutre will be created that matches the Scalatest test "scopes" that are
+structure will be created that matches the Scalatest test "scopes" that are
 provided.  Practically, this results in your tests being organized based on how
 you organized them in Scalatest.
 
