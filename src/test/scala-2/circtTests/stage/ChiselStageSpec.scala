@@ -3,7 +3,8 @@
 package circtTests.stage
 
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
-import chisel3.experimental.SourceLine
+import chisel3.experimental.{ExtModule, SourceLine}
+import chisel3.util.HasExtModuleInline
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
 
@@ -66,6 +67,31 @@ object ChiselStageSpec {
     val qux = Module(new Qux)
     qux.a := a
     b := qux.b
+  }
+
+  class Corge extends ExtModule with HasExtModuleInline {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    setInline(
+      "Corge.v",
+      """|module Corge(
+         |  input a,
+         |  output b
+         |);
+         |  assign b = a;
+         |endmodule
+         |""".stripMargin
+    )
+  }
+
+  class Gralp extends RawModule {
+    val a = IO(Input(Bool()))
+    val b = IO(Output(Bool()))
+    val corge = Module(new Corge)
+    corge.a := a
+    val quz = Module(new Quz)
+    quz.a := corge.b
+    b := quz.b
   }
 
   import firrtl.annotations.NoTargetAnnotation
@@ -591,7 +617,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 95:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 121:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -612,7 +638,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 95:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 121:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -1157,7 +1183,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
 
     }
 
-    it("emitSystemVerilogFile should support custom Chisel args and firtool options") {
+    it("emitSystemVerilogFile should write to multiple files by default") {
       val targetDir = new File("test_run_dir/ChiselStageSpec/generated")
 
       val args: Array[String] = Array(
@@ -1168,19 +1194,14 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       info(s"output contains a case statement using --lowering-options=disallowPackedArrays")
       ChiselStage
         .emitSystemVerilogFile(
-          new ChiselStageSpec.Bar,
-          args,
-          Array("--lowering-options=disallowPackedArrays")
+          new ChiselStageSpec.Gralp,
+          args
         )
-        .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
-          a
-        }
-        .get
-        .value should include("case")
 
-      val expectedOutput = new File(targetDir, "Bar.sv")
-      expectedOutput should (exist)
-      info(s"'$expectedOutput' exists")
+      Seq("Corge.v", "Gralp.sv", "Qux.sv", "Qux.sv").map(new File(targetDir, _)).foreach { file =>
+        info(s"'$file' exists")
+        file should (exist)
+      }
     }
 
     it("should emit btor2 to string") {
