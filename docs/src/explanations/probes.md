@@ -7,7 +7,7 @@ section: "chisel3"
 # Probes
 
 _Probes_ are a way to encode a _reference_ to hardware that will be later
-referred to by-name.  Mecahnistically, probes are a way to genereate
+referred to by-name.  Mechanistically, probes are a way to genereate
 SystemVerilog which includes hierarchical names (see: Section 23.6 of the
 SystemVerilog 2023 specification).
 
@@ -43,7 +43,7 @@ APIs for working with probes are in the `chisel3.probe` package.
 ### Read Probes
 
 To create a read probe of a hardware value, use the `ProbeValue` API.  To create
-a read probe _type_, use the `Probe` API.  Probes are legal types for prots and
+a read probe _type_, use the `Probe` API.  Probes are legal types for ports and
 wires, but not for stateful elements (e.g., registers or memories).
 
 :::note
@@ -132,7 +132,7 @@ There are several things that are worth highlighting in the above SystemVerilog:
 
 To create a read--write probe of a hardware value, use the `RWProbeValue` API.
 To create a read--write probe _type_, use the `RWProbe` API.  As with read
-probes, read--write probes are legal types for prots and wires, but not for
+probes, read--write probes are legal types for ports and wires, but not for
 stateful elements (e.g., registers or memories).
 
 As with read probes, read--write probes forward references using the `define`
