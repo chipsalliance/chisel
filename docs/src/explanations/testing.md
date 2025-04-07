@@ -270,7 +270,9 @@ build/chiselsim
 #### Command Line Arguments
 
 Scalatest has support for passing command line arguments to Scalatest using its
-`ConfigMap` feature.  ChiselSim wraps this with an improved API for adding command line arguments to tests, displaying help text, and checking that only legal arguments are passed.
+`ConfigMap` feature.  ChiselSim wraps this with an improved API for adding
+command line arguments to tests, displaying help text, and checking that only
+legal arguments are passed.
 
 By default, several command line options are already available for ChiselSim
 tests using Scalatest.  You can see these by passing the `-Dhelp=1` argument to
