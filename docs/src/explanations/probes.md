@@ -248,10 +248,10 @@ import chisel3.probe.{Probe, ProbeValue}
 class Foo extends Module {
 
   val d = IO(Input(UInt(32.W)))
-  val q = IO(Output(chiselTypeOf(d)))
-  val r_probe = IO(Output(Probe(chiselTypeOf(d))))
+  val q = IO(Output(UInt(32.W)))
+  val r_probe = IO(Output(Probe(UInt(32.W))))
 
-  private val r = Reg(chiselTypeOf(d))
+  private val r = Reg(UInt(32.W))
 
   q :<= r
 
@@ -480,16 +480,3 @@ hardware generators where the port-level interfaces are unpredictable.
 
 If a `BoringUtils` API is used in a situation which would create an input probe,
 it will instead create a non-probe input port.
-
-## Type Cloning and Probes
-
-Chisel internally treats probes as not full types, but as type modifiers.  This
-is similar to its treatment of direction (e.g., input or output) and constness.
-For this reason, care should be taken when trying to "clone" a probe type and an
-understanding of what different APIs do with probes is necessary.  Each API and
-its behavior with probes is described below:
-
-- `cloneType`: this will _not_ propagate probe information
-- `chiselTypeClone`: this will propagate probe information
-- `chiselTypeOf`: this will propagate probe information, but can only be run on
-  real hardware
