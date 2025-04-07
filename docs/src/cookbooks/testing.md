@@ -18,9 +18,9 @@ The example below changes the testing directory to `test/`:
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import java.nio.file.Paths
-import org.scalatest.anyfunspec.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-class FooSpec extends AnyFunSpec with ChiselSim {
+class FooSpec extends FunSpec with ChiselSim {
 
   override def buildDir: Path = Paths.get("test")
 
