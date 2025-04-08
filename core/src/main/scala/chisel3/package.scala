@@ -247,7 +247,7 @@ package object chisel3 {
               } else if (s(end + 1) == '%') {
                 Percent
               } else if (s(end + 1) == 'm') {
-                HierarchicalName
+                HierarchicalModuleName
               } else {
                 throw new UnknownFormatConversionException("Un-escaped %")
               }

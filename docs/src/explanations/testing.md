@@ -379,7 +379,8 @@ writing multiple Scalatest tests.
 
 Sometimes, it is sufficient to directly inspect the result of a generator.  This
 testing strategy is particularly relevent if you are trying to create very
-specific Verilog structures or to guarantee exact naming of specific constructs.
+specific FIRRTL or SystemVerilog structures or to guarantee exact naming of
+specific constructs.
 
 While simple testing can be done with string comparisons, this is often
 insufficient as it is necessary to both have a mixture of regular expression
@@ -426,6 +427,36 @@ the FIRRTL that Chisel produces into SystemVerilog, makes heavy use of FileCheck
 for its own testing.
 
 :::
+
+When writing FileCheck tests, you will often be using a Chisel API to convert
+your Chisel circuit into FIRRTL or SystemVerilog.  Two methods exist to do this
+in the `circt.stage.ChiselStage` object:
+
+- `emitCHIRRTL` to generate FIRRTL with a few Chisel extensions
+- `emitSystemVerilog` to generate SystemVerilog
+
+Both of these methods take an optional `args` parameter which sets the Chisel
+elaboration options.  The latter method has an additional, optional
+`firtoolOpts` parameter which controls the `firtool` (FIRRTL compiler) options.
+
+Without any `firtoolOpts` provided to `emitSystemVerilog`, the generated
+SystemVerilog may be difficult for you to use FileCheck with due to the default
+SystemVerilog lowering, emission, and pretty printing used by `firtool`.  To
+make it easier to write your tests, we suggest using the following options:
+
+- `-loweringOptions=emittedLineLength=160` to increase the allowable line
+  length.  By default, `firtool` will wrap lines that exceed 80 characters.  You
+  may consider using a _very long_ line length (e.g., 8192) to avoid this
+  problem altogether.
+
+- `-loweringOptions=disallowLocalVariables` to disable generation of `automatic
+  logic` temporaries in always blocks.  This can cause temporaries to spill
+  within an always block which may be slightly unexpected.
+
+For more information about `firtool` and its lowering options see the [CIRCT's
+Verilog Generation
+documentation](https://circt.llvm.org/docs/VerilogGeneration/#controlling-output-style-with-loweringoptions)
+or invoke `firtool -help` for a complete list of all supported options.
 
 ### Example
 
