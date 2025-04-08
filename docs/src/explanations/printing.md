@@ -61,11 +61,11 @@ printf(cf"myUInt = $myUInt%c") // myUInt = !
 
 There are special values you can include in your `cf` interpolated string:
 
-* `HierarchicalName` (`%m`): The hierarchical name of the signal
+* `HierarchicalModuleName` (`%m`): The hierarchical name of the signal
 * `Percent` (`%%`): A literal `%`
 
 ```scala mdoc:compile-only
-printf(cf"hierarchical path = $HierarchicalName\n") // hierarchical path = <verilog.module.path>
+printf(cf"hierarchical path = $HierarchicalModuleName\n") // hierarchical path = <verilog.module.path>
 printf(cf"hierarchical path = %m\n") // equivalent to the above
 
 printf(cf"100$Percent\n") // 100%

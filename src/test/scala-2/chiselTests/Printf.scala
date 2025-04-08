@@ -81,7 +81,13 @@ class PrintfSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new MyModule)
       .fileCheck()(
-        """CHECK: printf(clock, UInt<1>(0h1), "%m %d %x %b %c %%\n", in, in, in, in)"""
+        """CHECK{LITERAL}: printf(clock, UInt<1>(0h1), "{{HierarchicalModuleName}} %d %x %b %c %%\n", in, in, in, in)"""
+      )
+    // Also check Verilog
+    ChiselStage
+      .emitSystemVerilog(new MyModule)
+      .fileCheck()(
+        """CHECK: $fwrite(`PRINTF_FD_, "%m %d %x %b %c %%\n", in, in, in, in);"""
       )
   }
 
