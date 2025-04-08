@@ -23,6 +23,7 @@ class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNa
   def shouldElaborateTest(moduleDesiredName: String, testName: String): Boolean = {
     val (resolvedModuleGlobs, resolvedTestNameGlobs) = (includeModuleGlobs, includeTestNameGlobs) match {
       case x @ (Seq(), Seq()) => x
+      // If only one type of glob is provided, default to "*" for the other.
       case (Seq(), ts)        => (Seq("*"), ts)
       case (ms, Seq())        => (ms, Seq("*"))
       case x                  => x
