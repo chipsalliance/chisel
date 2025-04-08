@@ -47,49 +47,61 @@ class RegSpec extends AnyFlatSpec with Matchers {
 }
 
 class ShiftTester(n: Int) extends Module {
-  val (cntVal, done) = Counter(true.B, n)
+  val (cntVal, _) = Counter(true.B, n + 2)
   val start = 23.U
   val sr = ShiftRegister(cntVal + start, n)
-  when(done) {
+  when(cntVal === n.U) {
     assert(sr === start)
+  }
+  when(cntVal === (n + 1).U) {
     stop()
   }
 }
 
 class ShiftResetTester(n: Int) extends Module {
-  val (cntVal, done) = Counter(true.B, n - 1)
+  val (cntVal, _) = Counter(true.B, 2)
   val start = 23.U
   val sr = ShiftRegister(cntVal + 23.U, n, 1.U, true.B)
-  when(done) {
+  when(cntVal === 0.U) {
     assert(sr === (if (n == 0) cntVal + 23.U else 1.U))
+  }
+  when(cntVal === 1.U) {
     stop()
   }
 }
 
 class ShiftRegisterSpec extends AnyPropSpec with ScalaCheckPropertyChecks with ChiselSim {
-  property("ShiftRegister should shift") {
-    forAll(Gen.choose(0, 4)) { (shift: Int) => simulate { new ShiftTester(shift) }(RunUntilFinished(shift + 2)) }
+  for (shift <- 0 to 4) {
+    property(s"ShiftRegister (size $shift) should shift") {
+      simulate { new ShiftTester(shift) }(RunUntilFinished(shift + 3))
+    }
   }
 
-  property("ShiftRegister should reset all values inside") {
-    forAll(Gen.choose(0, 4)) { (shift: Int) => simulate { new ShiftResetTester(shift) }(RunUntilFinished(shift + 2)) }
+  for (shift <- 0 to 4) {
+    property(s"ShiftRegisters (size $shift) should reset all values inside") {
+      simulate { new ShiftResetTester(shift) }(RunUntilFinished(3))
+    }
   }
 }
 
 class ShiftsTester(n: Int) extends Module {
-  val (cntVal, done) = Counter(true.B, n)
+  val (cntVal, _) = Counter(true.B, n + 2)
   val start = 23.U
   val srs = ShiftRegisters(cntVal + start, n)
-  when(RegNext(done)) {
+  when(cntVal === n.U) {
     srs.zipWithIndex.foreach { case (data, index) =>
       assert(data === (23 + n - 1 - index).U)
     }
+  }
+  when(cntVal === (n + 1).U) {
     stop()
   }
 }
 
 class ShiftRegistersSpec extends AnyPropSpec with ScalaCheckPropertyChecks with ChiselSim {
-  property("ShiftRegisters should shift") {
-    forAll(Gen.choose(0, 4)) { (shift: Int) => simulate { new ShiftsTester(shift) }(RunUntilFinished(shift + 2)) }
+  for (shift <- 0 to 4) {
+    property(s"ShiftRegisters (size $shift) should shift") {
+      simulate { new ShiftsTester(shift) }(RunUntilFinished(shift + 3))
+    }
   }
 }

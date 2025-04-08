@@ -8,6 +8,8 @@ import chisel3.simulator.Exceptions
 
 /** Stimulus that will run a simulation, expecting a [[chisel3.stop]] (a Verilog
   * `$finish`) to occur before a maximum number of cycles has elapsed.
+  *
+  * @see [[RunUntilSuccess]]
   */
 trait RunUntilFinished[A] extends Stimulus.Type[A] {
 

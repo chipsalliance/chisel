@@ -60,28 +60,6 @@ object AnnotationUtils {
     case None            => Seq(s)
   }
 
-  def toNamed(s: String): Named = s.split("\\.", 3) match {
-    case Array(n)       => CircuitName(n)
-    case Array(c, m)    => ModuleName(m, CircuitName(c))
-    case Array(c, m, x) => ComponentName(x, ModuleName(m, CircuitName(c)))
-  }
-
-  /** Converts a serialized FIRRTL component into a sequence of target tokens
-    * @param s
-    * @return
-    */
-  def toSubComponents(s: String): Seq[TargetToken] = {
-    import TargetToken._
-    def exp2subcomp(e: ir.Expression): Seq[TargetToken] = e match {
-      case ir.Reference(name, _)      => Seq(Ref(name))
-      case ir.SubField(expr, name, _) => exp2subcomp(expr) :+ Field(name)
-      case ir.SubIndex(expr, idx, _)  => exp2subcomp(expr) :+ Index(idx)
-      case ir.SubAccess(expr, idx, _) =>
-        Utils.throwInternalError(s"For string $s, cannot convert a subaccess $e into a Target")
-    }
-    exp2subcomp(toExp(s))
-  }
-
   /** Given a serialized component/subcomponent reference, subindex, subaccess,
     *  or subfield, return the corresponding IR expression.
     *  E.g. "foo.bar" becomes SubField(Reference("foo", UnknownType), "bar", UnknownType)

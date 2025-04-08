@@ -37,10 +37,6 @@
 #include <strings.h>
 #include <unistd.h>
 
-#ifdef SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
-#include <sys/personality.h>
-#endif
-
 #ifdef SVSIM_ENABLE_VERILATOR_SUPPORT
 #include "verilated-sources/VsvsimTestbench__Dpi.h"
 #define DPI_TASK_RETURN_TYPE int
@@ -187,8 +183,6 @@ static struct {
   FILE *commandStream = NULL;
 
   const char *simulationTraceFilepath = NULL;
-
-  bool aslrShenanigansDetected = false;
 
   // Track any outstanding commands that are executing while `run_simulation` is
   // called.  This will be cleared by `simulation_final` before termination.
@@ -862,10 +856,6 @@ static bool processCommand() {
 }
 
 DPI_TASK_RETURN_TYPE simulation_body() {
-  if (state.aslrShenanigansDetected) {
-    failWithError("Backend did not relaunch the executable with ASLR disabled "
-                  "as expected.");
-  }
   /// If we have made it to `simulation_body`, there were no errors on startup
   /// and the first thing we do is send a READY message.
   sendReady();
@@ -929,16 +919,6 @@ DPI_TASK_RETURN_TYPE simulation_final() {
 }
 
 int main(int argc, const char *argv[]) {
-
-#ifdef SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
-  if (!(personality(0xffffffff) & ADDR_NO_RANDOMIZE)) {
-    // See note in `Workspace.scala` on
-    // SVSIM_BACKEND_ENGAGES_IN_ASLR_SHENANIGANS
-    state.aslrShenanigansDetected = true;
-    simulation_main(argc, argv);
-    failWithError("simulation_main returned.");
-  }
-#endif
 
   // Remap `stdin` and `stdout` so we can use the original `stdin` and `stdout`
   // for commands and messages.

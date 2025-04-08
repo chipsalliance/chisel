@@ -392,14 +392,7 @@ final class Workspace(
       Files.walkFileTree(Paths.get(dir), new DirectoryVisitor)
     }
 
-    val traceFileStem = (backendSpecificSettings match {
-      case s: verilator.Backend.CompilationSettings =>
-        s.traceStyle.collectFirst {
-          case verilator.Backend.CompilationSettings.TraceStyle.Vcd(_, filename: String) if filename.nonEmpty =>
-            filename.stripSuffix(".vcd")
-        }
-      case _ => None
-    }).getOrElse(s"$workingDirectoryPath/trace")
+    val traceFileStem = commonSettings.simulationSettings.traceFileStem
     val simulationEnvironment = Seq(
       "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
       // The simulation driver appends the appropriate extension to the file path

@@ -209,12 +209,12 @@ object ChiselStage {
       .value
   }
 
-  /** Compile a Chisel circuit to SystemVerilog with file output
+  /** Compile a Chisel circuit to multiple SystemVerilog files.
     *
     * @param gen         a call-by-name Chisel module
     * @param args        additional command line arguments to pass to Chisel
     * @param firtoolOpts additional command line options to pass to firtool
-    * @return a string containing the Verilog output
+    * @return the annotations that exist after compilation
     */
   def emitSystemVerilogFile(
     gen:         => RawModule,
@@ -222,7 +222,7 @@ object ChiselStage {
     firtoolOpts: Array[String] = Array.empty
   ): AnnotationSeq =
     (new circt.stage.ChiselStage).execute(
-      Array("--target", "systemverilog") ++ args,
+      Array("--target", "systemverilog", "--split-verilog") ++ args,
       Seq(ChiselGeneratorAnnotation(() => gen)) ++ firtoolOpts.map(FirtoolOption(_))
     )
 

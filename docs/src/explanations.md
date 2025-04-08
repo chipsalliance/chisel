@@ -40,5 +40,6 @@ read these documents in the following order:
 * [Warnings](explanations/warnings)
 * [Deep Dive into Legacy Connection Operators](explanations/connection-operators)
 * [Properties](explanations/properties)
+* [Probes](explanations/probes)
 * [Layers](explanations/layers)
 * [Module Prefixing](explanations/moduleprefix)

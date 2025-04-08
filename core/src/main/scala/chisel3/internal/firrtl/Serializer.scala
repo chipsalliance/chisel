@@ -19,7 +19,7 @@ private[chisel3] object Serializer {
   private val Indent = "  "
 
   // The version supported by the serializer.
-  val version = "4.2.0"
+  val version = "5.1.0"
 
   def getRef(id: HasId, sourceInfo: SourceInfo): Arg =
     id.getOptionRef.getOrElse {
@@ -77,17 +77,9 @@ private[chisel3] object Serializer {
   // Cannot just use Printable.unpack because it doesn't work right with nested expressions
   def unpack(pable: Printable, ctx: Component, sourceInfo: SourceInfo): (String, Seq[Arg]) = {
     implicit val info: SourceInfo = sourceInfo
-    pable match {
-      case Printables(pables) =>
-        val (fmts, args) = pables.map(p => unpack(p, ctx, sourceInfo)).unzip
-        (fmts.mkString, args.flatten.toSeq)
-      case PString(str) => (str.replaceAll("%", "%%"), List.empty)
-      case format: FirrtlFormat =>
-        ("%" + format.specifier, List(format.bits.ref))
-      case Name(data)     => (data.ref.name, List.empty)
-      case FullName(data) => (data.ref.fullName(ctx), List.empty)
-      case Percent        => ("%%", List.empty)
-    }
+    val resolved = Printable.resolve(pable, ctx)
+    val (fmt, data) = resolved.unpack
+    (fmt, data.map(_.ref))
   }
 
   private def serializeArgs(args: Seq[Arg], ctx: Component, info: SourceInfo)(implicit b: StringBuilder): Unit = {

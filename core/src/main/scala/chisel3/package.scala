@@ -229,23 +229,38 @@ package object chisel3 {
     @nowarn("msg=checkLengths in class StringContext is deprecated")
     def cf(args: Any*): Printable = {
 
-      // Handle literal %
-      // Takes the part string -
-      // - this is assumed to not have any format specifiers - already handled / removed before calling this function.
-      // Only thing present is literal % if any which should ideally be with %%.
-      // If not - then flag an error.
-      // Return seq of Printables (either PString or Percent or both - nothing else
-      def percentSplitter(s: String): Seq[Printable] = {
-        if (s.isEmpty) Seq(PString(""))
-        else {
-          val pieces = s.split("%%").toList.flatMap { p =>
-            if (p.contains('%')) throw new UnknownFormatConversionException("Un-escaped % found")
-            // Wrap in PString and intersperse the escaped percentages
-            Seq(Percent, PString(p))
+      // Handle special escapes like %% and %m
+      def escapeHandler(s: String): Seq[Printable] = {
+        val pieces = mutable.ListBuffer.empty[Printable]
+        def maybeAdd(start: Int, end: Int): Unit = {
+          if (end > start) {
+            pieces += PString(s.substring(start, end))
           }
-          if (pieces.isEmpty) Seq(Percent)
-          else pieces.tail // Don't forget to drop the extra percent we put at the beginning
         }
+        var start = 0
+        var end = 0
+        while (end < s.length) {
+          if (s(end) == '%') {
+            val piece =
+              if (end == s.length - 1) {
+                throw new UnknownFormatConversionException("Trailing %")
+              } else if (s(end + 1) == '%') {
+                Percent
+              } else if (s(end + 1) == 'm') {
+                HierarchicalName
+              } else {
+                throw new UnknownFormatConversionException("Un-escaped %")
+              }
+            maybeAdd(start, end)
+            pieces += piece
+            start = end + 2
+            end = start
+          } else {
+            end += 1
+          }
+        }
+        maybeAdd(start, end)
+        pieces.toList
       }
 
       def extractFormatSpecifier(part: String): (Option[String], String) = {
@@ -253,7 +268,7 @@ package object chisel3 {
         // In the case of %f specifier there is a chance that we need more information - so capture till the 1st letter (a-zA-Z).
         // Example cf"This is $val%2.2f here" - parts - Seq("This is ","%2.2f here") - the format specifier here is %2.2f.
         val endFmtIdx =
-          if (part.length > 1 && part(0) == '%' && part(1) != '%') part.indexWhere(_.isLetter)
+          if (part.length > 1 && part(0) == '%' && !Printable.isNoArgSpecifier(part(1))) part.indexWhere(_.isLetter)
           else -1
         val (fmt, rest) = part.splitAt(endFmtIdx + 1)
 
@@ -277,9 +292,13 @@ package object chisel3 {
           val fmtArg: Printable = arg match {
             case d: Data => {
               fmt match {
-                case Some("%n")                          => Name(d)
-                case Some("%N")                          => FullName(d)
-                case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1, 2), d)
+                case Some("%n") => Name(d)
+                case Some("%N") => FullName(d)
+                case Some(fForm) if d.isInstanceOf[Bits] =>
+                  FirrtlFormat.parse(fForm, d.asInstanceOf[Bits]) match {
+                    case Left(err) => throw new UnknownFormatConversionException(err)
+                    case Right(p)  => p
+                  }
                 case Some(x) => {
                   val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
                   throw new UnknownFormatConversionException(msg)
@@ -301,10 +320,11 @@ package object chisel3 {
             case t => PString(fmt.getOrElse("%s").format(t))
 
           }
-          Seq(fmtArg) ++ percentSplitter(modP)
+          Seq(fmtArg) ++ escapeHandler(modP)
         }
       }
-      Printables(percentSplitter(parts.head) ++ pables)
+      val result = escapeHandler(parts.head) ++ pables
+      if (result.sizeIs == 1) result.head else Printables(result)
     }
   }
 

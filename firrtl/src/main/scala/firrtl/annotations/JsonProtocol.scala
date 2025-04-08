@@ -34,29 +34,29 @@ object JsonProtocol extends LazyLogging {
   class NamedSerializer
       extends CustomSerializer[Named](format =>
         (
-          { case JString(s) => AnnotationUtils.toNamed(s) },
-          { case named: Named => JString(named.serialize) }
+          { case JString(s) => Target.deserialize(s).toNamed },
+          { case named: Named => JString(named.toTarget.serialize) }
         )
       )
   class CircuitNameSerializer
       extends CustomSerializer[CircuitName](format =>
         (
-          { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[CircuitName] },
-          { case named: CircuitName => JString(named.serialize) }
+          { case JString(s) => Target.deserialize(s).toNamed.asInstanceOf[CircuitName] },
+          { case named: CircuitName => JString(named.toTarget.serialize) }
         )
       )
   class ModuleNameSerializer
       extends CustomSerializer[ModuleName](format =>
         (
-          { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[ModuleName] },
-          { case named: ModuleName => JString(named.serialize) }
+          { case JString(s) => Target.deserialize(s).toNamed.asInstanceOf[ModuleName] },
+          { case named: ModuleName => JString(named.toTarget.serialize) }
         )
       )
   class ComponentNameSerializer
       extends CustomSerializer[ComponentName](format =>
         (
-          { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[ComponentName] },
-          { case named: ComponentName => JString(named.serialize) }
+          { case JString(s) => Target.deserialize(s).toNamed.asInstanceOf[ComponentName] },
+          { case named: ComponentName => JString(named.toTarget.serialize) }
         )
       )
   class LoadMemoryFileTypeSerializer

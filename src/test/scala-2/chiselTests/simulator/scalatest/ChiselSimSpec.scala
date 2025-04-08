@@ -4,16 +4,19 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
-import chisel3.simulator.{ChiselSim, HasSimulator, MacroText, Settings}
+import chisel3.simulator.{HasSimulator, MacroText, Randomization, Settings}
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilSuccess
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
+import chisel3.util.Counter
 import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
 import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.io.Directory
 
-class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck with TestingDirectory {
+class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck {
 
   describe("scalatest.ChiselSim") {
 
@@ -283,6 +286,114 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
 
     }
+
+    class RandomizationTest extends Module {
+      val in = IO(Input(UInt(32.W)))
+      val addr = IO(Input(UInt(1.W)))
+      val we = IO(Input(Bool()))
+
+      val r = IO(Output(UInt(32.W)))
+      val cm = IO(Output(UInt(32.W)))
+      val sm = IO(Output(UInt(32.W)))
+
+      private val reg = Reg(UInt(32.W))
+      private val cmem = Mem(2, UInt(32.W))
+      private val smem = SyncReadMem(2, UInt(32.W))
+
+      when(we) {
+        reg :<= in
+        cmem.write(addr, in)
+        smem.write(addr, in)
+      }
+
+      r :<= reg
+      cm :<= cmem.read(addr)
+      sm :<= smem.read(addr)
+    }
+
+    it("should have randomization on by default") {
+
+      simulate(new RandomizationTest) { dut =>
+        dut.clock.step(2)
+
+        val regValue = dut.r.peekValue().asBigInt
+        info(s"register is not zero, has value $regValue")
+        regValue should not be (0)
+
+        val cmemValue = dut.cm.peekValue().asBigInt
+        info(s"combinational read memory index zero is not zero, has value $cmemValue")
+        cmemValue should not be (0)
+
+        val smemValue = dut.sm.peekValue().asBigInt
+        info(s"sequential read memory index zero is not zero, has value $smemValue")
+        cmemValue should not be (0)
+      }
+
+    }
+
+    it("uninitialized randomization should result in zeros (for Verilator)") {
+
+      simulate(new RandomizationTest, settings = Settings.default.copy(randomization = Randomization.uninitialized)) {
+        dut =>
+          dut.clock.step(2)
+
+          val regValue = dut.r.peekValue().asBigInt
+          info(s"register is zero")
+          regValue should be(0)
+
+          val cmemValue = dut.cm.peekValue().asBigInt
+          info(s"combinational read memory index zero is zero")
+          cmemValue should be(0)
+
+          val smemValue = dut.sm.peekValue().asBigInt
+          info(s"sequential read memory index zero is zero")
+          cmemValue should be(0)
+      }
+
+    }
+
+    it("the randomization value should be user-overridable") {
+
+      simulate(
+        new RandomizationTest,
+        settings = Settings.default.copy(randomization = Randomization.random.copy(randomValue = Some("{32'd42}")))
+      ) { dut =>
+        dut.clock.step(2)
+
+        val regValue = dut.r.peekValue().asBigInt
+        info(s"register is 42")
+        regValue should be(42)
+
+        val cmemValue = dut.cm.peekValue().asBigInt
+        info(s"combinational read memory index zero is 42")
+        cmemValue should be(42)
+
+        val smemValue = dut.sm.peekValue().asBigInt
+        info(s"sequential read memory index zero is 42")
+        cmemValue should be(42)
+      }
+
+    }
+
+  }
+
+  describe("ChiselSim RunUntilSuccess stimulus") {
+
+    class SuccessAfterFourCycles extends Module {
+      val success = IO(Output(Bool()))
+      success :<= Counter(true.B, 4)._2
+    }
+
+    it("should report success for a passing Module") {
+      simulate(new SuccessAfterFourCycles)(RunUntilSuccess(maxCycles = 8, getSuccess = _.success))
+    }
+
+    it("should throw an exception for a failing Module") {
+      intercept[chisel3.simulator.Exceptions.Timeout] {
+        simulate(new SuccessAfterFourCycles)(RunUntilSuccess(maxCycles = 2, getSuccess = _.success))
+      }
+    }
+
   }
 
 }
