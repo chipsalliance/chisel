@@ -99,10 +99,10 @@ trait HasTests { module: RawModule =>
   /** Whether inline tests will be elaborated as a top-level definition to the circuit. */
   protected def elaborateTests: Boolean = true
 
-  private val builderContext = internal.Builder.captureContext()
+  private val inlineTestIncluder = internal.Builder.captureContext().inlineTestIncluder
 
   private def shouldElaborateTest(testName: String) =
-    builderContext.inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
+    inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
 
   /** A Definition of the DUT to be used for each of the tests. */
   private lazy val moduleDefinition =
