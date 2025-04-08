@@ -61,7 +61,7 @@ printf(cf"myUInt = $myUInt%c") // myUInt = !
 
 There are special values you can include in your `cf` interpolated string:
 
-* `HierarchicalModuleName` (`%m`): The hierarchical name of the signal
+* `HierarchicalModuleName` (`%m`): The hierarchical name of the current module
 * `Percent` (`%%`): A literal `%`
 
 ```scala mdoc:compile-only
