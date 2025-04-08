@@ -35,7 +35,7 @@ object LayerControl {
     ): Seq[VerilogPreprocessorDefine] = getLayerSubset(allLayers).flatMap { case layer =>
       layer.config.abi match {
         case abi: chisel3.layer.ABI.PreprocessorDefine.type =>
-          Some(VerilogPreprocessorDefine(abi.toMacroIdentifier(layer, module.circuitName)))
+          Some(VerilogPreprocessorDefine(abi.toMacroIdentifier(layer, module.name)))
         case _ => None
       }
     }
@@ -123,7 +123,7 @@ object LayerControl {
       val layerFilenames: Seq[String] = getLayerSubset(allLayers).flatMap { case layer =>
         layer.config.abi match {
           case abi: chisel3.layer.ABI.FileInclude.type =>
-            Some(abi.toFilename(layer, module.circuitName))
+            Some(abi.toFilename(layer, module.name))
           case _ => None
         }
       }

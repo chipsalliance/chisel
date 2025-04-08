@@ -19,12 +19,10 @@ object InlineAnnotation extends HasShellOptions {
       toAnnotationSeq = (a: Seq[String]) =>
         a.map { value =>
           value.split('.') match {
-            case Array(circuit) =>
-              InlineAnnotation(CircuitName(circuit))
             case Array(circuit, module) =>
-              InlineAnnotation(ModuleName(module, CircuitName(circuit)))
+              InlineAnnotation(ModuleName(module))
             case Array(circuit, module, inst) =>
-              InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))))
+              InlineAnnotation(ComponentName(inst, ModuleName(module)))
           }
         },
       helpText = "Inline selected modules",

@@ -55,7 +55,7 @@ class DataViewIntegrationSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new MyModule)
       .fileCheck()(
-        """CHECK: "target":"~MyModule|Queue4_UInt8>enq_ptr_value""""
+        """CHECK: "target":"~|Queue4_UInt8>enq_ptr_value""""
       )
   }
 }

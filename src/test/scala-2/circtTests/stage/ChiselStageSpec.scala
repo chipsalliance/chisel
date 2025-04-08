@@ -848,7 +848,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       info("there is one final target")
       finalTargets should have size (1)
 
-      val expectedTarget = firrtl.annotations.CircuitTarget("Foo").module("Foo").ref("bar_a")
+      val expectedTarget = firrtl.annotations.ModuleTarget("Foo").ref("bar_a")
       info(s"the final target is $expectedTarget")
       finalTargets.head should be(expectedTarget)
 
@@ -881,7 +881,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       info("there is one final target")
       finalTargets should have size (1)
 
-      val expectedTarget = firrtl.annotations.CircuitTarget("Foo").module("Foo").ref("bar_a")
+      val expectedTarget = firrtl.annotations.ModuleTarget("Foo").ref("bar_a")
       info(s"the final target is $expectedTarget")
       finalTargets.head should be(expectedTarget)
 
