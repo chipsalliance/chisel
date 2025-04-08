@@ -83,8 +83,11 @@ object ProtocolChecks {
 }
 
 @instantiable
-class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetType.Type = Module.ResetType.Synchronous)
-    extends Module
+class ModuleWithTests(
+  ioWidth:                     Int = 32,
+  override val resetType:      Module.ResetType.Type = Module.ResetType.Synchronous,
+  override val elaborateTests: Boolean = true
+) extends Module
     with HasMonitorSocket
     with HasTests
     with HasProtocolInterface {
@@ -145,8 +148,19 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
 }
 
 class InlineTestSpec extends AnyFlatSpec with FileCheck {
+  private def makeArgs(moduleGlobs: Seq[String], testGlobs: Seq[String]): Array[String] =
+    (
+      moduleGlobs.map { glob => s"--include-tests-module=$glob" } ++
+        testGlobs.map { glob => s"--include-tests-name=$glob" }
+    ).toArray
+
+  private def makeArgs(moduleGlob: String, testGlob: String): Array[String] =
+    makeArgs(Seq(moduleGlob), Seq(testGlob))
+
+  private val argsElaborateAllTests: Array[String] = makeArgs(Seq("*"), Seq("*"))
+
   it should "generate a public module for each test" in {
-    emitCHIRRTL(new ModuleWithTests).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests, args = argsElaborateAllTests).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
@@ -190,9 +204,122 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
     )
   }
 
+  it should "not elaborate tests without flag" in {
+    emitCHIRRTL(new ModuleWithTests).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK-NOT:  module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "only elaborate tests whose name matches the test name glob" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlob = "*", testGlob = "foo")).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "elaborate tests whose name matches the test name glob when module glob is omitted" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Nil, testGlobs = Seq("foo"))).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "elaborate all tests when module glob is provided but test name glob is omitted" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Nil)).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      module test_ModuleWithTests_foo
+      | CHECK:      module test_ModuleWithTests_bar
+      | CHECK:      module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "only elaborate tests whose name matches the test name glob with multiple globs" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*"), testGlobs = Seq("foo", "with_*"))).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK:      module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "only elaborate tests whose name and module match their globs" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Seq("foo", "with_*")))
+      .fileCheck()(
+        """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK:      module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK:      module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_with_monitor
+      """
+      )
+  }
+
+  it should "not elaborate tests whose module does not match the glob" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlob = "*WithoutTests", testGlob = "*")).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK-NOT:  module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
+  it should "not elaborate tests with HasTests.elaborateTests set to false" in {
+    emitCHIRRTL(new ModuleWithTests(elaborateTests = false), argsElaborateAllTests).fileCheck()(
+      """
+      | CHECK:      module ModuleWithTests
+      | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
+      |
+      | CHECK-NOT:  module test_ModuleWithTests_foo
+      | CHECK-NOT:  module test_ModuleWithTests_bar
+      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_with_monitor
+      """
+    )
+  }
+
   it should "compile to verilog" in {
     ChiselStage
-      .emitSystemVerilog(new ModuleWithTests)
+      .emitSystemVerilog(new ModuleWithTests, args = argsElaborateAllTests)
       .fileCheck()(
         """
       | CHECK: module ModuleWithTests
@@ -238,17 +365,19 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   input reset : ${resetType}
       """
 
-    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Synchronous)).fileCheck()(
-      fileCheckString("UInt<1>")
-    )
-    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Asynchronous)).fileCheck()(
-      fileCheckString("AsyncReset")
-    )
-    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default)).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Synchronous), args = argsElaborateAllTests)
+      .fileCheck()(
+        fileCheckString("UInt<1>")
+      )
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Asynchronous), args = argsElaborateAllTests)
+      .fileCheck()(
+        fileCheckString("AsyncReset")
+      )
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default), args = argsElaborateAllTests).fileCheck()(
       fileCheckString("UInt<1>")
     )
 
-    emitCHIRRTL(new RawModuleWithTests()).fileCheck()(
+    emitCHIRRTL(new RawModuleWithTests(), args = argsElaborateAllTests).fileCheck()(
       """
       | CHECK:      module RawModuleWithTests
       | CHECK-NEXT:   output io
