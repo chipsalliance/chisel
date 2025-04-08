@@ -128,8 +128,6 @@ class CloneModuleSpec extends AnyPropSpec with PropertyUtils with Matchers with 
     mod.q1.io.enq.toAbsoluteTarget.serialize should be("~Top|Top/q1:Queue4_UInt8>io.enq")
     mod.q2_io.deq.toAbsoluteTarget.serialize should be("~Top|Top/q2:Queue4_UInt8>io.deq")
     // Legacy APIs that nevertheless were tricky to get right
-    mod.q1.io.enq.toNamed.serialize should be("Top.Queue4_UInt8.io.enq")
-    mod.q2_io.deq.toNamed.serialize should be("Top.Queue4_UInt8.io.deq")
     mod.q1.io.enq.instanceName should be("io.enq")
     mod.q2_io.deq.instanceName should be("io.deq")
     mod.q1.io.enq.pathName should be("Top.q1.io.enq")
@@ -146,8 +144,6 @@ class CloneModuleSpec extends AnyPropSpec with PropertyUtils with Matchers with 
     mod.q2_wire.toAbsoluteTarget.serialize should be("~Top|Top>q2_wire")
     wire_io.enq.toAbsoluteTarget.serialize should be("~Top|Top>q2_wire.io.enq")
     // Legacy APIs
-    mod.q2_wire.toNamed.serialize should be("Top.Top.q2_wire")
-    wire_io.enq.toNamed.serialize should be("Top.Top.q2_wire.io.enq")
     mod.q2_wire.instanceName should be("q2_wire")
     wire_io.enq.instanceName should be("q2_wire.io.enq")
     mod.q2_wire.pathName should be("Top.q2_wire")

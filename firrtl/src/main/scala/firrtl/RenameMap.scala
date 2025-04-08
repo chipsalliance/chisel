@@ -582,11 +582,6 @@ package object renamemap {
 
     /** Initialize a new RenameMap */
     def apply(): MutableRenameMap = new MutableRenameMap
-
-    // This is a private internal API for transforms where the .distinct operation is very expensive
-    // (eg. LowerTypes). The onus is on the user of this API to be very careful and not inject
-    // duplicates. This is a bad, hacky API that no one should use
-    private[firrtl] def noDistinct(): MutableRenameMap = new MutableRenameMap(doDistinct = false)
   }
 
   final class MutableRenameMap private[firrtl] (

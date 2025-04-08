@@ -196,7 +196,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage.elaborate(new Foo)
   }
 
-  they should "be enabled with a trait" in {
+  they should "be enabled with a function" in {
 
     class Foo extends RawModule {
       layer.enable(A.B)
@@ -211,6 +211,23 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
          |CHECK-NEXT: layer C, bind
          |
          |CHECK: module Foo enablelayer A.B enablelayer C :
+         |""".stripMargin
+    }
+
+  }
+
+  they should ", when enabled, not propagate to child modules" in {
+
+    class Bar extends RawModule
+
+    class Foo extends RawModule {
+      layer.enable(A)
+      val bar = Module(new Bar)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Bar :
+         |CHECK: module Foo enablelayer A :
          |""".stripMargin
     }
 
