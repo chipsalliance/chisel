@@ -22,10 +22,10 @@ class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNa
 
   def shouldElaborateTest(moduleDesiredName: String, testName: String): Boolean = {
     val (resolvedModuleGlobs, resolvedTestNameGlobs) = (includeModuleGlobs, includeTestNameGlobs) match {
-      case x @ (Nil, Nil) => x
-      case (Nil, ts)      => (Seq("*"), ts)
-      case (ms, Nil)      => (ms, Seq("*"))
-      case x              => x
+      case x @ (Seq(), Seq()) => x
+      case (Seq(), ts)        => (Seq("*"), ts)
+      case (ms, Seq())        => (ms, Seq("*"))
+      case x                  => x
     }
 
     resolvedModuleGlobs.exists { glob => matchesGlob(glob, moduleDesiredName) } &&
@@ -34,5 +34,16 @@ class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNa
 }
 
 object InlineTestIncluder {
+
+  /** Create an InlineTestIncluder that does not include any tests */
   def none: InlineTestIncluder = new InlineTestIncluder(Nil, Nil)
+
+  /** Create an InlineTestIncluder that includes all tests */
+  def all: InlineTestIncluder = new InlineTestIncluder(Seq("*"), Seq("*"))
+
+  /** Create an InlineTestIncluder with module and test name globs */
+  def apply(
+    includeModuleGlobs:   Seq[String],
+    includeTestNameGlobs: Seq[String]
+  ): InlineTestIncluder = new InlineTestIncluder(includeModuleGlobs, includeModuleGlobs)
 }
