@@ -24,9 +24,9 @@ class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNa
     val (resolvedModuleGlobs, resolvedTestNameGlobs) = (includeModuleGlobs, includeTestNameGlobs) match {
       case x @ (Seq(), Seq()) => x
       // If only one type of glob is provided, default to "*" for the other.
-      case (Seq(), ts)        => (Seq("*"), ts)
-      case (ms, Seq())        => (ms, Seq("*"))
-      case x                  => x
+      case (Seq(), ts) => (Seq("*"), ts)
+      case (ms, Seq()) => (ms, Seq("*"))
+      case x           => x
     }
 
     resolvedModuleGlobs.exists { glob => matchesGlob(glob, moduleDesiredName) } &&
