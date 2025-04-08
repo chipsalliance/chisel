@@ -9,7 +9,7 @@
 
 
 <link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.96e3454e.css">
-<script src="/assets/js/runtime~main.8b930d0d.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.348d99cc.js" defer="defer"></script>
 <script src="/assets/js/main.3ee5a7a6.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -189,7 +189,8 @@ writing multiple Scalatest tests.</p></div></div>
 <h2 class="anchor anchorWithStickyNavbar_LWe7" id="filecheck">FileCheck<a href="#filecheck" class="hash-link" aria-label="Direct link to FileCheck" title="Direct link to FileCheck">​</a></h2>
 <p>Sometimes, it is sufficient to directly inspect the result of a generator.  This
 testing strategy is particularly relevent if you are trying to create very
-specific Verilog structures or to guarantee exact naming of specific constructs.</p>
+specific FIRRTL or SystemVerilog structures or to guarantee exact naming of
+specific constructs.</p>
 <p>While simple testing can be done with string comparisons, this is often
 insufficient as it is necessary to both have a mixture of regular expression
 captures and ordering of specific lines.  For this, Chisel provides a native way
@@ -221,6 +222,36 @@ documentation</a>.</p>
 ecosystem.  <a href="https://github.com/llvm/circt" target="_blank" rel="noopener noreferrer">CIRCT</a>, the compiler that converts
 the FIRRTL that Chisel produces into SystemVerilog, makes heavy use of FileCheck
 for its own testing.</p></div></div>
+<p>When writing FileCheck tests, you will often be using a Chisel API to convert
+your Chisel circuit into FIRRTL or SystemVerilog.  Two methods exist to do this
+in the <code>circt.stage.ChiselStage</code> object:</p>
+<ul>
+<li><code>emitCHIRRTL</code> to generate FIRRTL with a few Chisel extensions</li>
+<li><code>emitSystemVerilog</code> to generate SystemVerilog</li>
+</ul>
+<p>Both of these methods take an optional <code>args</code> parameter which sets the Chisel
+elaboration options.  The latter method has an additional, optional
+<code>firtoolOpts</code> parameter which controls the <code>firtool</code> (FIRRTL compiler) options.</p>
+<p>Without any <code>firtoolOpts</code> provided to <code>emitSystemVerilog</code>, the generated
+SystemVerilog may be difficult for you to use FileCheck with due to the default
+SystemVerilog lowering, emission, and pretty printing used by <code>firtool</code>.  To
+make it easier to write your tests, we suggest using the following options:</p>
+<ul>
+<li>
+<p><code>-loweringOptions=emittedLineLength=160</code> to increase the allowable line
+length.  By default, <code>firtool</code> will wrap lines that exceed 80 characters.  You
+may consider using a <em>very long</em> line length (e.g., 8192) to avoid this
+problem altogether.</p>
+</li>
+<li>
+<p><code>-loweringOptions=disallowLocalVariables</code> to disable generation of <code>automatic logic</code> temporaries in always blocks.  This can cause temporaries to spill
+within an always block which may be slightly unexpected.</p>
+</li>
+</ul>
+<p>For more information about <code>firtool</code> and its lowering options see the <a href="https://circt.llvm.org/docs/VerilogGeneration/#controlling-output-style-with-loweringoptions" target="_blank" rel="noopener noreferrer">CIRCT&#x27;s
+Verilog Generation
+documentation</a>
+or invoke <code>firtool -help</code> for a complete list of all supported options.</p>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="example-1">Example<a href="#example-1" class="hash-link" aria-label="Direct link to Example" title="Direct link to Example">​</a></h3>
 <p>The example below shows a FileCheck test that checks that a module has a
 specific name and that it has some expected content inside it.  Specifically,
