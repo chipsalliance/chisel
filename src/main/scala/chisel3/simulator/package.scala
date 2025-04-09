@@ -3,10 +3,12 @@ package chisel3
 import svsim._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
+import chisel3.experimental.inlinetest.{HasTests, TestHarness}
 import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
 import firrtl.{annoSeqToSeq, seqToAnnoSeq}
+import firrtl.AnnotationSeq
 
 package object simulator {
 
@@ -131,14 +133,57 @@ package object simulator {
       args:           Seq[String] = Seq.empty,
       firtoolArgs:    Seq[String] = Seq.empty
     ): ElaboratedModule[T] = {
-      // Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts
-      var someDut: Option[T] = None
+      val generated = generateWorkspaceSources(generateModule, args, firtoolArgs)
+      val ports = getModuleInfoPorts(generated.dut)
+      val moduleInfo = initializeModuleInfo(generated.dut, ports.map(_._2))
+      val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
+      new ElaboratedModule(generated.dut, ports, layers)
+    }
+
+    def elaborateAndMakeTestHarnessWorkspaces[T <: RawModule with HasTests](
+      generateModule:   () => T,
+      includeTestGlobs: Seq[String],
+      args:             Seq[String] = Seq.empty,
+      firtoolArgs:      Seq[String] = Seq.empty
+    ): Seq[(Workspace, String, ElaboratedModule[TestHarness[T, _]])] = {
+      val updatedArgs = args ++ includeTestGlobs.map("--include-tests-name=" + _)
+      val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
+      generated.testHarnesses.map { case (testName, testHarness) =>
+        val testWorkspace = workspace.shallowCopy(workspace.absolutePath + "/tests/" + testName)
+        val ports = getModuleInfoPorts(testHarness)
+        val moduleInfo = testWorkspace.initializeModuleInfo(testHarness, ports.map(_._2))
+        val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
+        (testWorkspace, testName, new ElaboratedModule(testHarness.asInstanceOf[TestHarness[T, _]], ports, layers))
+      }
+    }
+
+    case class GeneratedWorkspaceInfo[T <: RawModule](
+      dut:               T,
+      testHarnesses:     Seq[(String, TestHarness[_, _])],
+      outputAnnotations: AnnotationSeq
+    )
+
+    /** Use CIRCT to generate SystemVerilog sources, and potentially additional artifacts */
+    def generateWorkspaceSources[T <: RawModule](
+      generateModule: () => T,
+      args:           Seq[String],
+      firtoolArgs:    Seq[String]
+    ): GeneratedWorkspaceInfo[T] = {
+      var someDut:           Option[() => T] = None
+      var someTestHarnesses: Option[() => Seq[(String, TestHarness[_, _])]] = None
+      val chiselArgs = Array("--target", "systemverilog", "--split-verilog") ++ args
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
-        Array("--target", "systemverilog", "--split-verilog") ++ args,
+        chiselArgs,
         Seq(
           chisel3.stage.ChiselGeneratorAnnotation { () =>
             val dut = generateModule()
-            someDut = Some(dut)
+            someDut = Some(() => dut)
+            someTestHarnesses = Some(() =>
+              dut match {
+                case dut: HasTests => dut.getElaboratedTestModules
+                case _ => Nil
+              }
+            )
             dut
           },
           circt.stage.FirtoolOption("-disable-annotation-unknown"),
@@ -197,53 +242,57 @@ package object simulator {
         .filter(_.getFileName.toString.startsWith("layers-"))
         .forEach(moveFile)
 
-      // Initialize Module Info
-      val dut = someDut.get
-      val ports = {
+      GeneratedWorkspaceInfo(
+        someDut.get(),
+        someTestHarnesses.get(),
+        outputAnnotations
+      )
+    }
 
-        /**
+    def getModuleInfoPorts(dut: RawModule): Seq[(Data, ModuleInfo.Port)] = {
+
+      /**
           * We infer the names of various ports since we don't currently have a good alternative when using MFC. We hope to replace this once we get better support from CIRCT.
           */
-        def leafPorts(node: Data, name: String): Seq[(Data, ModuleInfo.Port)] = {
-          node match {
-            case record: Record => {
-              record.elements.toSeq.flatMap { case (fieldName, field) =>
-                leafPorts(field, s"${name}_${fieldName}")
-              }
+      def leafPorts(node: Data, name: String): Seq[(Data, ModuleInfo.Port)] = {
+        node match {
+          case record: Record => {
+            record.elements.toSeq.flatMap { case (fieldName, field) =>
+              leafPorts(field, s"${name}_${fieldName}")
             }
-            case vec: Vec[_] => {
-              vec.zipWithIndex.flatMap { case (element, index) =>
-                leafPorts(element, s"${name}_${index}")
-              }
-            }
-            case element: Element =>
-              // Return the port only if the width is positive (firtool will optimized it out from the *.sv primary source)
-              if (element.widthKnown && element.getWidth > 0) {
-                DataMirror.directionOf(element) match {
-                  case ActualDirection.Input =>
-                    Seq((element, ModuleInfo.Port(name, isGettable = true, isSettable = true)))
-                  case ActualDirection.Output => Seq((element, ModuleInfo.Port(name, isGettable = true)))
-                  case _                      => Seq()
-                }
-              } else {
-                Seq()
-              }
           }
-        }
-        // Chisel ports can be Data or Property, but there is no ABI for Property ports, so we only return Data.
-        DataMirror.modulePorts(dut).flatMap {
-          case (name, data: Data) => leafPorts(data, name)
-          case _                  => Nil
+          case vec: Vec[_] => {
+            vec.zipWithIndex.flatMap { case (element, index) =>
+              leafPorts(element, s"${name}_${index}")
+            }
+          }
+          case element: Element =>
+            // Return the port only if the width is positive (firtool will optimized it out from the *.sv primary source)
+            if (element.widthKnown && element.getWidth > 0) {
+              DataMirror.directionOf(element) match {
+                case ActualDirection.Input =>
+                  Seq((element, ModuleInfo.Port(name, isGettable = true, isSettable = true)))
+                case ActualDirection.Output => Seq((element, ModuleInfo.Port(name, isGettable = true)))
+                case _                      => Seq()
+              }
+            } else {
+              Seq()
+            }
         }
       }
-      workspace.elaborate(
-        ModuleInfo(
-          name = dut.name,
-          ports = ports.map(_._2)
-        )
+      // Chisel ports can be Data or Property, but there is no ABI for Property ports, so we only return Data.
+      DataMirror.modulePorts(dut).flatMap {
+        case (name, data: Data) => leafPorts(data, name)
+        case _                  => Nil
+      }
+    }
+
+    def initializeModuleInfo(dut: RawModule, ports: Seq[ModuleInfo.Port]): Unit = {
+      val info = ModuleInfo(
+        name = dut.name,
+        ports = ports
       )
-      val layers = outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
-      new ElaboratedModule(dut, ports, layers)
+      workspace.elaborate(info)
     }
   }
 }
