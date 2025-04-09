@@ -82,7 +82,7 @@ class ModuleWithTests(
   test("bar") { instance =>
     instance.io.in := 5.U(ioWidth.W)
     assert(instance.io.out =/= 0.U): Unit
-  }(implicitly[TestHarnessGenerator[M, Unit]])
+  }
 
   test("with_result") { instance =>
     val result = Wire(new TestResultBundle)
@@ -98,7 +98,7 @@ class ModuleWithTests(
       result.finish := true.B
     }
     result
-  }(implicitly[TestHarnessGenerator[M, TestResultBundle]])
+  }
 
   {
     import TestHarnessWithMonitorSocket._
