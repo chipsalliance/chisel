@@ -34,7 +34,7 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   }
 
   /** The [[desiredName]] for the testharness module. */
-  private[inlinetest] final def testHarnessDesiredName = s"test_${dutName()}_${testName}"
+  def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
 sealed class TestResultBundle extends Bundle {
