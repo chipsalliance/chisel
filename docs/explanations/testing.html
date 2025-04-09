@@ -9,7 +9,7 @@
 
 
 <link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.96e3454e.css">
-<script src="/assets/js/runtime~main.d6d4d833.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.4607d433.js" defer="defer"></script>
 <script src="/assets/js/main.3ee5a7a6.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -171,11 +171,11 @@ can add a custom option to your test using one of several methods provided in
 <code>addOption</code>.  This allows you to add an option that may change anything about
 the simulation including the Chisel elaboration, FIRRTL compilation, or generic
 or backend-specific settings.</p>
-<p>More commonly, you just want to add an integer, double, or string option to a
-test.  For this, simpler options
-(<code>chisel3.simulator.scalatest.CliOption.{simple, double, int, string}</code>) are
-provided.  After an option has been declared, it can be accessed <em>within a test</em>
-using the <code>getOption</code> method.</p>
+<p>More commonly, you just want to add an integer, double, string, or flag-like
+options to a test.  For this, simpler option <em>factories</em>
+(<code>chisel3.simulator.scalatest.CliOption.{simple, double, int, string, flag}</code>)
+are provided.  After an option has been declared, it can be accessed <em>within a
+test</em> using the <code>getOption</code> method.</p>
 <div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>warning</div><div class="admonitionContent_BuS1"><p>The <code>getOption</code> method may only be used <em>inside</em> a test.  If used outside a
 test, this will cause a runtime exception.</p></div></div>
 <p>The example below shows how to use the <code>int</code> option to set a test-time
