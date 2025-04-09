@@ -19,7 +19,7 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** The user-provided name of the test. */
   val testName: String,
   /** A Definition of the DUT module. */
-  val dutDefinition: Definition[M],
+  private[inlinetest] val dutDefinition: () => Definition[M],
   /** The body for this test, returns a result. */
   private[inlinetest] val testBody: Instance[M] => R,
   /** The reset type of the DUT module. */
@@ -75,7 +75,7 @@ abstract class TestHarness[M <: RawModule, R](test: TestParameters[M, R])
   io.finish := false.B
   io.success := true.B
 
-  protected final val dut = Instance(test.dutDefinition)
+  protected final val dut = Instance(test.dutDefinition())
   protected final val testResult = test.testBody(dut)
 }
 
@@ -126,6 +126,8 @@ object TestHarnessGenerator {
 private final class TestGenerator[M <: RawModule, R](
   /** The user-provided name of the test. */
   val testName: String,
+  /** Thunk that returns a [[Definition]] of the DUT */
+  dutDefinition: () => Definition[M],
   /** The (eventually) legalized name for the DUT module */
   dutName: () => String,
   /** The body for this test, returns a result. */
@@ -135,11 +137,8 @@ private final class TestGenerator[M <: RawModule, R](
   /** The testharness generator. */
   testHarnessGenerator: TestHarnessGenerator[M, R]
 ) {
-  def params(dutDefinition: Definition[M]) =
-    new TestParameters(dutName(), testName, dutDefinition, testBody, dutResetType)
-
-  def generate(dutDefinition: Definition[M]) =
-    testHarnessGenerator.generate(params(dutDefinition))
+  val params = new TestParameters(dutName(), testName, dutDefinition, testBody, dutResetType)
+  def generate() = testHarnessGenerator.generate(params)
 }
 
 /** Provides methods to build unit testharnesses inline after this module is elaborated.
@@ -166,7 +165,7 @@ trait HasTests { module: RawModule =>
 
   /** Get the tests that will be elaborated if tests are enabled for this module. */
   private def getTests: Seq[TestParameters[M, _]] =
-    testGenerators.values.toSeq.map(_.params(moduleDefinition))
+    testGenerators.values.toSeq.map(_.params)
 
   /** Call a function for each test after module elaboration.
    *
@@ -192,6 +191,7 @@ trait HasTests { module: RawModule =>
     val testGenerator =
       new TestGenerator(
         testName,
+        () => moduleDefinition,
         () => module.name,
         testBody,
         dutResetType,
@@ -203,7 +203,7 @@ trait HasTests { module: RawModule =>
   afterModuleBuilt {
     testGenerators.values.foreach { t =>
       if (elaborateTests && shouldElaborateTest(t.testName)) {
-        Definition(t.generate(moduleDefinition))
+        Definition(t.generate())
       }
     }
   }
