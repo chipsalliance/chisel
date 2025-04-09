@@ -322,11 +322,11 @@ can add a custom option to your test using one of several methods provided in
 the simulation including the Chisel elaboration, FIRRTL compilation, or generic
 or backend-specific settings.
 
-More commonly, you just want to add an integer, double, or string option to a
-test.  For this, simpler options
-(`chisel3.simulator.scalatest.CliOption.{simple, double, int, string}`) are
-provided.  After an option has been declared, it can be accessed _within a test_
-using the `getOption` method.
+More commonly, you just want to add an integer, double, string, or flag-like
+options to a test.  For this, simpler option _factories_
+(`chisel3.simulator.scalatest.CliOption.{simple, double, int, string, flag}`)
+are provided.  After an option has been declared, it can be accessed _within a
+test_ using the `getOption` method.
 
 :::warning
 

@@ -113,6 +113,36 @@ object HasCliOptions {
       help = help,
       convert = identity
     )
+
+    /** Add a flag option to a test.
+      *
+      * This is an option which can only take one of two "truthy" values: `1` or
+      * `true`.  Any "falsey" values are not allowed.  This option is a stand-in
+      * for any option which is supposed to be a flag to a test which has some
+      * effect if set.
+      *
+      * This option exists because Scalatest forces options to have a value.  It
+      * is illegal to pass an option like `-Dfoo`.  This [[flag]] option exists
+      * to problem a single flag-style option as opposed to having users roll
+      * their own.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      */
+    def flag(name: String, help: String): CliOption[Unit] = simple[Unit](
+      name = name,
+      help = help,
+      convert = value => {
+        val trueValue = Set("true", "1")
+        trueValue.contains(value) match {
+          case true => ()
+          case false =>
+            throw new IllegalArgumentException(
+              s"""invalid argument '$value' for option '$name', must be one of ${trueValue.mkString("[", ", ", "]")}"""
+            ) with NoStackTrace
+        }
+      }
+    )
   }
 
 }
