@@ -62,11 +62,15 @@ printf(cf"myUInt = $myUInt%c") // myUInt = !
 There are special values you can include in your `cf` interpolated string:
 
 * `HierarchicalModuleName` (`%m`): The hierarchical name of the current module
+* `SimulationTime` (`%T`): The current simulation time (unlike Verilog's `%t`, this does not take an argument)
 * `Percent` (`%%`): A literal `%`
 
 ```scala mdoc:compile-only
 printf(cf"hierarchical path = $HierarchicalModuleName\n") // hierarchical path = <verilog.module.path>
 printf(cf"hierarchical path = %m\n") // equivalent to the above
+
+printf(cf"simulation time = $SimulationTime\n") // simulation time = <simulation.time>
+printf(cf"simulation time = %T\n") // equivalent to the above
 
 printf(cf"100$Percent\n") // 100%
 printf(cf"100%%\n") // equivalent to the above
@@ -167,6 +171,7 @@ Chisel provides `printf` in a similar style to its C namesake. It accepts a doub
 | `%c` | 8-bit ASCII character |
 | `%%` | literal percent |
 | `%m` | hierarchical name |
+| `%T` | simulation time |
 
 `%d`, `%x`, and `%b` support the modifiers described in the [Format modifiers](#format-modifiers) section above.
 
