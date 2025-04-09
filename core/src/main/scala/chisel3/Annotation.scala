@@ -9,6 +9,7 @@ import chisel3.{Data, HasTarget, InstanceId, RawModule}
 import chisel3.experimental.AnyTargetable
 import firrtl.annotations._
 import firrtl.options.Unserializable
+import firrtl.passes.InlineAnnotation
 import firrtl.transforms.{DedupGroupAnnotation, NoDedupAnnotation}
 
 object annotate {
@@ -98,5 +99,29 @@ object dedupGroup {
     */
   def apply[T <: BaseModule](module: T, group: String): Unit = {
     annotate(module)(Seq(DedupGroupAnnotation(module.toTarget, group)))
+  }
+}
+
+object inlineInstance {
+
+  /** Marks a module instance to be inlined. This module is excluded from deduplication, so any other instances of this
+    * same module won't be inlined.
+    *
+    * @param module The module instance to be marked
+    */
+  def apply[T <: RawModule](module: T): Unit = {
+    annotate(module)(Seq(InlineAnnotation(module.toNamed), NoDedupAnnotation(module.toNamed)))
+  }
+}
+
+object inlineInstanceAllowDedup {
+
+  /** Marks a module instance to be inlined. If this module dedups with any other module, instances of that other
+   *  module will also be inlined.
+    *
+    * @param module The module to be marked
+    */
+  def apply[T <: RawModule](module: T): Unit = {
+    annotate(module)(Seq(InlineAnnotation(module.toNamed)))
   }
 }
