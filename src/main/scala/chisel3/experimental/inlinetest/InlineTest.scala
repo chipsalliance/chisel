@@ -14,8 +14,8 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
   *  @tparam R the type of the result returned by the test body
   */
 final class TestParameters[M <: RawModule, R] private[inlinetest] (
-  /** The [[desiredName]] of the DUT module. */
-  val dutName: String,
+  /** The [[name]] of the DUT module. */
+  private[inlinetest] val dutName: () => String,
   /** The user-provided name of the test. */
   val testName: String,
   /** A Definition of the DUT module. */
@@ -34,7 +34,7 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   }
 
   /** The [[desiredName]] for the testharness module. */
-  private[inlinetest] final def testHarnessDesiredName = s"test_${dutName}_${testName}"
+  private[inlinetest] final def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
 sealed class TestResultBundle extends Bundle {
@@ -137,7 +137,7 @@ private final class TestGenerator[M <: RawModule, R](
   /** The testharness generator. */
   testHarnessGenerator: TestHarnessGenerator[M, R]
 ) {
-  val params = new TestParameters(dutName(), testName, dutDefinition, testBody, dutResetType)
+  val params = new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType)
   def generate() = testHarnessGenerator.generate(params)
 }
 
@@ -155,24 +155,26 @@ trait HasTests { module: RawModule =>
   private val inlineTestIncluder = internal.Builder.captureContext().inlineTestIncluder
 
   private def shouldElaborateTest(testName: String) =
-    inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
-
-  /** Generators for inline tests by name. LinkedHashMap preserves test insertion order. */
-  private val testGenerators = new mutable.LinkedHashMap[String, TestGenerator[M, _]]
+    elaborateTests && inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
 
   /** This module as a definition. Lazy in order to prevent evaluation unless used by a test. */
   private lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]
 
-  /** Get the tests that will be elaborated if tests are enabled for this module. */
-  private def getTests: Seq[TestParameters[M, _]] =
-    testGenerators.values.toSeq.map(_.params)
+  /** Generators for inline tests by name. LinkedHashMap preserves test insertion order. */
+  private val testGenerators = new mutable.LinkedHashMap[String, TestGenerator[M, _]]
 
-  /** Call a function for each test after module elaboration.
-   *
-   *  @param fn function that takes the test parameters
-   */
-  def foreachTest(fn: TestParameters[M, _] => Unit): Unit =
-    atModuleBodyEnd { getTests.foreach(fn) }
+  /** Get the generators for the currently registered tests for this module and whether they are queued
+   *  for elaboration. */
+  private def getRegisteredTestGenerators: Seq[(TestGenerator[M, _], Boolean)] =
+    testGenerators.values.toSeq.map { testGenerator =>
+      (testGenerator, shouldElaborateTest(testGenerator.params.testName))
+    }
+
+  /** Get the currently registered tests for this module and whether they are queued for elaboration. */
+  def getRegisteredTests: Seq[(TestParameters[M, _], Boolean)] =
+    getRegisteredTestGenerators.map { case (testGenerator, shouldElaborate) =>
+      (testGenerator.params, shouldElaborate)
+    }
 
   /** Generate a public module that instantiates this module. The default
     *  testharness has clock and synchronous reset IOs and contains the test
@@ -201,9 +203,9 @@ trait HasTests { module: RawModule =>
   }
 
   afterModuleBuilt {
-    testGenerators.values.foreach { t =>
-      if (elaborateTests && shouldElaborateTest(t.testName)) {
-        Definition(t.generate())
+    getRegisteredTestGenerators.foreach { case (testGenerator, shouldElaborate) =>
+      if (shouldElaborate) {
+        Definition(testGenerator.generate())
       }
     }
   }
