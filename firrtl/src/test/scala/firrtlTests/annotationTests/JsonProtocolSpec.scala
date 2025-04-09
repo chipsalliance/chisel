@@ -35,7 +35,7 @@ class JsonProtocolSpec extends AnyFlatSpec with Matchers {
   }
   "JsonProtocol.serializeRecover" should "emit even annotations that cannot be serialized" in {
     case class MyAnno(x: Int) extends NoTargetAnnotation
-    val target = CircuitTarget("Top").module("Foo").ref("x")
+    val target = ModuleTarget("Foo").ref("x")
     val annos = MyAnno(3) :: DontTouchAnnotation(target) :: Nil
     val res = JsonProtocol.serializeRecover(annos)
     res should include(""""class":"firrtl.annotations.UnserializeableAnnotation",""")

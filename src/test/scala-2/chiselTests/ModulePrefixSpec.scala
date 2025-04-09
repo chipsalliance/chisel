@@ -179,17 +179,17 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
       .fileCheck()(
         """|CHECK:      {
            |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
-           |CHECK-NEXT:   "target":"~Top|Top>smem",
+           |CHECK-NEXT:   "target":"~|Top>smem",
            |CHECK-NEXT:   "prefix":"Foo_"
            |CHECK-NEXT: },
            |CHECK-NEXT: {
            |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
-           |CHECK-NEXT:   "target":"~Top|Top>cmem",
+           |CHECK-NEXT:   "target":"~|Top>cmem",
            |CHECK-NEXT:   "prefix":"Bar_"
            |CHECK-NEXT: },
            |CHECK-NEXT: {
            |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
-           |CHECK-NEXT:   "target":"~Top|Top>sram_sram",
+           |CHECK-NEXT:   "target":"~|Top>sram_sram",
            |CHECK-NEXT:   "prefix":"Baz_"
            |CHECK-NEXT: }
            |""".stripMargin
@@ -444,11 +444,11 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
       .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
       .mkString
     firrtl.fileCheck()(
-      """|CHECK:      "target":"~Top|Outer_Inner_Foo"
+      """|CHECK:      "target":"~|Outer_Inner_Foo"
          |CHECK-NEXT: "group":"Outer_Inner_Foo"
-         |CHECK:      "target":"~Top|Outer_Bar"
+         |CHECK:      "target":"~|Outer_Bar"
          |CHECK-NEXT: "group":"Outer_Bar"
-         |CHECK:      "target":"~Top|Top"
+         |CHECK:      "target":"~|Top"
          |CHECK-NEXT: "group":"Top"
          |""".stripMargin
     )

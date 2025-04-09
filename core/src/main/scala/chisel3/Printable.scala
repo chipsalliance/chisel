@@ -193,9 +193,10 @@ object Printable {
   /** Resolve Printables that are resolved at Chisel-time */
   private[chisel3] def resolve(pable: Printable, ctx: Component)(implicit info: SourceInfo): Printable =
     pable.map {
-      case Name(data)     => PString(data.ref.name)
-      case FullName(data) => PString(data.ref.fullName(ctx))
-      case other          => other
+      case Name(data)             => PString(data.ref.name)
+      case FullName(data)         => PString(data.ref.fullName(ctx))
+      case HierarchicalModuleName => PString("{{HierarchicalModuleName}}")
+      case other                  => other
     }
 }
 
@@ -377,7 +378,7 @@ case object Percent extends Printable {
 }
 
 /** Represents the hierarchical name in the Verilog (`%m`) */
-case object HierarchicalName extends Printable {
+case object HierarchicalModuleName extends Printable {
   @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%m", List.empty)
   @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")

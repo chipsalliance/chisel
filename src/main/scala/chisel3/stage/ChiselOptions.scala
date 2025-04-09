@@ -3,7 +3,7 @@
 package chisel3.stage
 
 import chisel3.internal.firrtl.ir.Circuit
-import chisel3.internal.WarningFilter
+import chisel3.internal.{InlineTestIncluder, WarningFilter}
 import chisel3.layer.Layer
 import chisel3.ElaboratedCircuit
 import java.io.File
@@ -18,7 +18,8 @@ class ChiselOptions private[stage] (
   val layerMap:            Map[Layer, Layer] = Map.empty,
   val includeUtilMetadata: Boolean = false,
   val useSRAMBlackbox:     Boolean = false,
-  val elaboratedCircuit:   Option[ElaboratedCircuit] = None
+  val elaboratedCircuit:   Option[ElaboratedCircuit] = None,
+  val inlineTestIncluder:  InlineTestIncluder = InlineTestIncluder.none
 ) {
 
   private[stage] def copy(
@@ -31,7 +32,8 @@ class ChiselOptions private[stage] (
     layerMap:            Map[Layer, Layer] = layerMap,
     includeUtilMetadata: Boolean = includeUtilMetadata,
     useSRAMBlackbox:     Boolean = useSRAMBlackbox,
-    elaboratedCircuit:   Option[ElaboratedCircuit] = elaboratedCircuit
+    elaboratedCircuit:   Option[ElaboratedCircuit] = elaboratedCircuit,
+    inlineTestIncluder:  InlineTestIncluder = inlineTestIncluder
   ): ChiselOptions = {
 
     new ChiselOptions(
@@ -44,7 +46,8 @@ class ChiselOptions private[stage] (
       layerMap = layerMap,
       includeUtilMetadata = includeUtilMetadata,
       useSRAMBlackbox = useSRAMBlackbox,
-      elaboratedCircuit = elaboratedCircuit
+      elaboratedCircuit = elaboratedCircuit,
+      inlineTestIncluder = inlineTestIncluder
     )
 
   }

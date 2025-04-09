@@ -69,10 +69,10 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers with Utils with FileC
       val dontTouchAnnosCombined = dontTouchAnnos.mkString(",")
       val noDedupAnnosCombined = noDedupAnnos.mkString(",")
 
-      noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_2")
-      noDedupAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_3")
-      dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io.out")
-      dontTouchAnnosCombined should include("~UsesMuchUsedModule|MuchUsedModule_1>io.in")
+      noDedupAnnosCombined should include("~|MuchUsedModule_2")
+      noDedupAnnosCombined should include("~|MuchUsedModule_3")
+      dontTouchAnnosCombined should include("~|MuchUsedModule_1>io.out")
+      dontTouchAnnosCombined should include("~|MuchUsedModule_1>io.in")
     }
 
     "It should be possible to annotate heterogeneous Targetable things" in {
@@ -97,11 +97,11 @@ class NewAnnotationsSpec extends AnyFreeSpec with Matchers with Utils with FileC
         })
         .fileCheck()(
           """|CHECK:      "class":"firrtl.transforms.DontTouchAnnotation"
-             |CHECK-NEXT: "target":"~Top|Top>in"
+             |CHECK-NEXT: "target":"~|Top>in"
              |CHECK:      "class":"firrtl.transforms.DontTouchAnnotation"
-             |CHECK-NEXT: "target":"~Top|Top>out"
+             |CHECK-NEXT: "target":"~|Top>out"
              |CHECK:      "class":"firrtl.transforms.NoDedupAnnotation"
-             |CHECK-NEXT: "target":"~Top|Top"
+             |CHECK-NEXT: "target":"~|Top"
              |""".stripMargin
         )
     }

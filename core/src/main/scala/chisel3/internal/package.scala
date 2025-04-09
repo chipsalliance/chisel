@@ -109,7 +109,7 @@ package object internal {
     // the Converter
     // Note that this is not overriding .toAbsoluteTarget, that is a final def in BaseModule that delegates
     // to this method
-    private[chisel3] val absoluteTarget: IsModule = ModuleTarget(this.circuitName, "_$$AbsoluteView$$_")
+    private[chisel3] val absoluteTarget: IsModule = ModuleTarget("_$$AbsoluteView$$_")
 
     // This module is not instantiable
     override private[chisel3] def generateComponent():  Option[Component] = None
