@@ -578,9 +578,9 @@ private[chisel3] object Serializer {
         }
         Iterator(start) ++ serialize(block, ctx, typeAliases)(indent + 1)
 
-      case ctx @ DefFormalTest(name, module, params, sourceInfo) =>
+      case ctx @ DefTestMarker(kind, name, module, params, sourceInfo) =>
         implicit val b = new StringBuilder
-        doIndent(0); b ++= "formal "; b ++= legalize(name); b ++= " of "; b ++= legalize(module.name); b ++= " :";
+        doIndent(0); b ++= kind; b ++= " "; b ++= legalize(name); b ++= " of "; b ++= legalize(module.name); b ++= " :";
         serialize(sourceInfo)
         params.value.keys.toSeq.sorted.foreach { case name =>
           newLineAndIndent(1); b ++= name; b ++= " = "; serialize(params.value(name))

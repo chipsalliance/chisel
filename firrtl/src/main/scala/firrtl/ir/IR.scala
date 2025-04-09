@@ -656,11 +656,12 @@ case class StringTestParam(value: String) extends TestParam with UseSerializer
 case class ArrayTestParam(value: Seq[TestParam]) extends TestParam with UseSerializer
 case class MapTestParam(value: Map[String, TestParam]) extends TestParam with UseSerializer
 
-/** Formal Test
+/** Formal or Simulation Test
   */
-case class FormalTest(info: Info, name: String, moduleName: String, params: MapTestParam)
+case class TestMarker(kind: String, info: Info, name: String, moduleName: String, params: MapTestParam)
     extends DefModule
     with UseSerializer {
+  require(kind == "formal" || kind == "simulation")
   val ports: Seq[Port] = Seq.empty
 }
 
