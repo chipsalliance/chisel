@@ -15,6 +15,7 @@ import java.util.ServiceLoader
   *
   * @param applicationName
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class BareShell(val applicationName: String) {
 
   /** Command line argument parser (OptionParser) with modifications */
@@ -43,6 +44,7 @@ class BareShell(val applicationName: String) {
   *
   * @param applicationName the application associated with these command line options
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class Shell(applicationName: String) extends BareShell(applicationName) {
 
   /** Contains all discovered [[RegisteredLibrary]] */

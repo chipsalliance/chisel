@@ -10,6 +10,7 @@ import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscape
 import scala.collection.JavaConverters._
 
 /** Intermediate Representation */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class FirrtlNode {
   def serialize: String
 }
@@ -19,18 +20,22 @@ private[firrtl] trait UseSerializer extends FirrtlNode {
   def serialize: String = Serializer.serialize(this)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Info extends FirrtlNode with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object NoInfo extends Info {
   override def toString: String = ""
 }
 
 /** Stores the string of a file info annotation in its escaped form. */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class FileInfo(escaped: String) extends Info {
   override def toString: String = " @[" + escaped + "]"
   def unescaped:         String = FileInfo.unescape(escaped)
   def split:             (String, String, String) = FileInfo.split(escaped)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object FileInfo {
   def fromEscaped(s:   String): FileInfo = new FileInfo(s)
   def fromUnescaped(s: String): FileInfo = new FileInfo(escape(s))
@@ -103,14 +108,18 @@ object FileInfo {
   private val FileInfoRegex = """(?:([^\s]+)(?: (\d+)\:(\d+)))""".r
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait HasName {
   val name: String
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait HasInfo {
   val info: Info
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait IsDeclaration extends HasName with HasInfo
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class StringLit(string: String) extends FirrtlNode {
   import org.apache.commons.text.StringEscapeUtils
 
@@ -134,6 +143,7 @@ case class StringLit(string: String) extends FirrtlNode {
     ascii.mkString("\"", "", "\"")
   }
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object StringLit {
   import org.apache.commons.text.StringEscapeUtils
 
@@ -158,6 +168,7 @@ object StringLit {
   *
   * See [[PrimOps]]
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class PrimOp extends FirrtlNode {
   def serialize: String = this.toString
   def apply(args: Any*): DoPrim = {
@@ -184,32 +195,42 @@ abstract class PrimOp extends FirrtlNode {
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Expression extends FirrtlNode {
   def tpe: Type
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Reference(name: String, tpe: Type = UnknownType) extends Expression with HasName with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SubField(expr: Expression, name: String, tpe: Type = UnknownType)
     extends Expression
     with HasName
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SubIndex(expr: Expression, value: Int, tpe: Type) extends Expression with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SubAccess(expr: Expression, index: Expression, tpe: Type) extends Expression with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type = UnknownType)
     extends Expression
     with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ValidIf(cond: Expression, value: Expression, tpe: Type) extends Expression with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Literal extends Expression {
   val value: BigInt
   val width: Width
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class UIntLiteral(value: BigInt, width: Width) extends Literal with UseSerializer {
   def tpe = UIntType(width)
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object UIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(math.max(value.bitLength, 1))
   def apply(value:    BigInt): UIntLiteral = new UIntLiteral(value, minWidth(value))
@@ -223,54 +244,69 @@ object UIntLiteral {
     UIntLiteral(value & mask, width)
   }
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SIntLiteral(value: BigInt, width: Width) extends Literal with UseSerializer {
   def tpe = SIntType(width)
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object SIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(value.bitLength + 1)
   def apply(value:    BigInt): SIntLiteral = new SIntLiteral(value, minWidth(value))
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IntegerPropertyLiteral(value: BigInt) extends Literal with UseSerializer {
   def tpe = IntegerPropertyType
   val width = UnknownWidth
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DoublePropertyLiteral(value: Double) extends Expression with UseSerializer {
   def tpe = DoublePropertyType
   val width = UnknownWidth
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class StringPropertyLiteral(value: StringLit) extends Expression with UseSerializer {
   def tpe = StringPropertyType
   val width = UnknownWidth
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class BooleanPropertyLiteral(value: Boolean) extends Expression with UseSerializer {
   val tpe = BooleanPropertyType
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class PathPropertyLiteral(value: String) extends Expression with UseSerializer {
   val tpe = PathPropertyType
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
 /** Property primitive operations.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed abstract class PropPrimOp(name: String) {
   override def toString: String = name
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object IntegerAddOp extends PropPrimOp("integer_add")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object IntegerMulOp extends PropPrimOp("integer_mul")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object IntegerShrOp extends PropPrimOp("integer_shr")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object IntegerShlOp extends PropPrimOp("integer_shl")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object ListConcatOp extends PropPrimOp("list_concat")
 
 /** Property expressions.
   *
   * Unlike other primitives, Property expressions serialize as a tree directly in their rvalue context.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class PropExpr(info: Info, tpe: Type, op: PropPrimOp, args: Seq[Expression])
     extends Expression
     with UseSerializer {
@@ -281,16 +317,21 @@ case class PropExpr(info: Info, tpe: Type, op: PropPrimOp, args: Seq[Expression]
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type)
     extends Expression
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Statement extends FirrtlNode
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefWire(info: Info, name: String, tpe: Type) extends Statement with IsDeclaration with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefRegister(info: Info, name: String, tpe: Type, clock: Expression)
     extends Statement
     with IsDeclaration
     with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefRegisterWithReset(
   info:  Info,
   name:  String,
@@ -302,28 +343,34 @@ case class DefRegisterWithReset(
     with IsDeclaration
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object DefInstance {
   def apply(name: String, module: String): DefInstance = DefInstance(NoInfo, name, module)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefInstance(info: Info, name: String, module: String, tpe: Type = UnknownType)
     extends Statement
     with IsDeclaration
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefInstanceChoice(info: Info, name: String, default: String, option: String, choices: Seq[(String, String)])
     extends Statement
     with IsDeclaration
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefObject(info: Info, name: String, cls: String) extends Statement with IsDeclaration with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object ReadUnderWrite extends Enumeration {
   val Undefined = Value("undefined")
   val Old = Value("old")
   val New = Value("new")
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefMemory(
   info:         Info,
   name:         String,
@@ -339,32 +386,43 @@ case class DefMemory(
 ) extends Statement
     with IsDeclaration
     with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration with UseSerializer
 
 /** Record/bundle type definition that names a FIRRTL type with an alias name */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefTypeAlias(info: Info, name: String, tpe: Type) extends Statement with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Conditionally(info: Info, pred: Expression, conseq: Statement, alt: Statement)
     extends Statement
     with HasInfo
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Block {
   def apply(head: Statement, tail: Statement*): Block = Block(head +: tail)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Block(stmts: Seq[Statement]) extends Statement with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class PropAssign(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Stop(val info: Info, val ret: Int, val clk: Expression, val en: Expression, val name: String = "")
     extends Statement
     with HasInfo
     with IsDeclaration
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Print(
   val info:   Info,
   val string: StringLit,
@@ -377,27 +435,38 @@ case class Print(
     with IsDeclaration
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) extends Statement with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class RWProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeRead(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeForceInitial(info: Info, probe: Expression, value: Expression) extends Statement with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeReleaseInitial(info: Info, probe: Expression) extends Statement with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeForce(info: Info, clock: Expression, cond: Expression, probe: Expression, value: Expression)
     extends Statement
     with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeRelease(info: Info, clock: Expression, cond: Expression, probe: Expression)
     extends Statement
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed abstract class LayerConfig
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object LayerConfig {
   final case class Extract(outputDir: Option[String]) extends LayerConfig
   final case object Inline extends LayerConfig
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 final case class Layer(info: Info, name: String, config: LayerConfig, body: Seq[Layer])
     extends FirrtlNode
     with IsDeclaration
@@ -408,16 +477,21 @@ final case class Layer(info: Info, name: String, config: LayerConfig, body: Seq[
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class LayerBlock(info: Info, layer: String, body: Statement) extends Statement with UseSerializer
 
 // option and case
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefOption(info: Info, name: String, cases: Seq[DefOptionCase])
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefOptionCase(info: Info, name: String)
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IntrinsicExpr(intrinsic: String, args: Seq[Expression], params: Seq[Param], tpe: Type)
     extends Expression
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IntrinsicStmt(
   info:      Info,
   intrinsic: String,
@@ -428,12 +502,14 @@ case class IntrinsicStmt(
     with UseSerializer
 
 // formal
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Formal extends Enumeration {
   val Assert = Value("assert")
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Verification(
   op:   Formal.Value,
   info: Info,
@@ -451,8 +527,10 @@ case class Verification(
 }
 // end formal
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object EmptyStmt extends Statement with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Width extends FirrtlNode {
   def +(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width + b.width)
@@ -473,6 +551,7 @@ abstract class Width extends FirrtlNode {
 }
 
 /** Positive Integer Bit Width of a [[GroundType]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object IntWidth {
   private val maxCached = 1024
   private val cache = new Array[IntWidth](maxCached + 1)
@@ -490,6 +569,7 @@ object IntWidth {
   // For pattern matching
   def unapply(w: IntWidth): Option[BigInt] = Some(w.width)
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class IntWidth(val width: BigInt) extends Width with Product with UseSerializer {
   override def equals(that: Any) = that match {
     case w: IntWidth => width == w.width
@@ -506,111 +586,152 @@ class IntWidth(val width: BigInt) extends Width with Product with UseSerializer 
     case _ => throw new IndexOutOfBoundsException
   }
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object UnknownWidth extends Width with UseSerializer
 
 /** Orientation of [[Field]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Orientation extends FirrtlNode
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object Default extends Orientation {
   def serialize: String = ""
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object Flip extends Orientation {
   def serialize: String = "flip "
 }
 
 /** Field of [[BundleType]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Field(name: String, flip: Orientation, tpe: Type) extends FirrtlNode with HasName with UseSerializer
 
 /** Types of [[FirrtlNode]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Type extends FirrtlNode
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class GroundType extends Type {
   val width: Width
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object GroundType {
   def unapply(ground: GroundType): Option[Width] = Some(ground.width)
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class AggregateType extends Type
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 final case class ProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 final case class RWProbeType(underlying: Type, color: Option[String] = None) extends Type with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ConstType(underlying: Type) extends Type with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class UIntType(width: Width) extends GroundType with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SIntType(width: Width) extends GroundType with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class BundleType(fields: Seq[Field]) extends AggregateType with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class VectorType(tpe: Type, size: Int) extends AggregateType with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object ClockType extends GroundType with UseSerializer {
   val width = IntWidth(1)
 }
 /* Abstract reset, will be inferred to UInt<1> or AsyncReset */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object ResetType extends GroundType with UseSerializer {
   val width = IntWidth(1)
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object AsyncResetType extends GroundType with UseSerializer {
   val width = IntWidth(1)
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class AnalogType(width: Width) extends GroundType with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class AliasType(name: String) extends Type with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed abstract class PropertyType extends Type with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object IntegerPropertyType extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object DoublePropertyType extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object StringPropertyType extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object BooleanPropertyType extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object PathPropertyType extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SequencePropertyType(tpe: PropertyType) extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ClassPropertyType(name: String) extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object AnyRefPropertyType extends PropertyType
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object UnknownType extends Type with UseSerializer
 
 /** [[Port]] Direction */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed abstract class Direction extends FirrtlNode
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object Input extends Direction {
   def serialize: String = "input"
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object Output extends Direction {
   def serialize: String = "output"
 }
 
 /** [[DefModule]] Port */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Port(info: Info, name: String, direction: Direction, tpe: Type)
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer
 
 /** Parameters for external modules */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed abstract class Param extends FirrtlNode {
   def name: String
 }
 
 /** Integer (of any width) Parameter */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IntParam(name: String, value: BigInt) extends Param with UseSerializer
 
 /** IEEE Double Precision Parameter (for Verilog real) */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DoubleParam(name: String, value: Double) extends Param with UseSerializer
 
 /** String Parameter */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class StringParam(name: String, value: StringLit) extends Param with UseSerializer
 
 /** Raw String Parameter
   * Useful for Verilog type parameters
   * @note Firrtl doesn't guarantee anything about this String being legal in any backend
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class RawStringParam(name: String, value: String) extends Param with UseSerializer
 
 /** Base class for modules */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class DefModule extends FirrtlNode with IsDeclaration {
   val info:  Info
   val name:  String
@@ -621,6 +742,7 @@ abstract class DefModule extends FirrtlNode with IsDeclaration {
   *
   * An instantiable hardware block
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Module(info: Info, name: String, public: Boolean, layers: Seq[String], ports: Seq[Port], body: Statement)
     extends DefModule
     with UseSerializer
@@ -630,6 +752,7 @@ case class Module(info: Info, name: String, public: Boolean, layers: Seq[String]
   * Generally used for Verilog black boxes
   * @param defname Defined name of the external module (ie. the name Firrtl will emit)
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ExtModule(info: Info, name: String, ports: Seq[Port], defname: String, params: Seq[Param])
     extends DefModule
     with UseSerializer
@@ -639,31 +762,41 @@ case class ExtModule(info: Info, name: String, ports: Seq[Port], defname: String
   * Used for compiler intrinsics.
   * @param intrinsic Defined intrinsic of the module
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IntModule(info: Info, name: String, ports: Seq[Port], intrinsic: String, params: Seq[Param])
     extends DefModule
     with UseSerializer
 
 /** Class definition
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DefClass(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule with UseSerializer
 
 /** Parameters for test declarations.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed abstract class TestParam extends FirrtlNode
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IntTestParam(value: BigInt) extends TestParam with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DoubleTestParam(value: Double) extends TestParam with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class StringTestParam(value: String) extends TestParam with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ArrayTestParam(value: Seq[TestParam]) extends TestParam with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class MapTestParam(value: Map[String, TestParam]) extends TestParam with UseSerializer
 
 /** Formal Test
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class FormalTest(info: Info, name: String, moduleName: String, params: MapTestParam)
     extends DefModule
     with UseSerializer {
   val ports: Seq[Port] = Seq.empty
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Circuit(
   info:        Info,
   modules:     Seq[DefModule],
@@ -675,4 +808,5 @@ case class Circuit(
     with HasInfo
     with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class CircuitWithAnnos(circuit: Circuit, annotations: Seq[Annotation]) extends FirrtlNode with UseSerializer

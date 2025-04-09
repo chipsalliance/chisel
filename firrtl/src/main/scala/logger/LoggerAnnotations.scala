@@ -7,6 +7,7 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 
 /** An annotation associated with a Logger command line option */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait LoggerOption { this: Annotation => }
 
 /** Describes the verbosity of information to log
@@ -14,11 +15,13 @@ sealed trait LoggerOption { this: Annotation => }
   *  - if unset, a [[LogLevelAnnotation]] with the default log level will be emitted
   * @param level the level of logging
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class LogLevelAnnotation(globalLogLevel: LogLevel.Value = LogLevel.None)
     extends NoTargetAnnotation
     with LoggerOption
     with Unserializable
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object LogLevelAnnotation extends HasShellOptions {
 
   val options = Seq(
@@ -38,11 +41,13 @@ object LogLevelAnnotation extends HasShellOptions {
   * @param name the class name to log
   * @param level the verbosity level
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ClassLogLevelAnnotation(className: String, level: LogLevel.Value)
     extends NoTargetAnnotation
     with LoggerOption
     with Unserializable
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object ClassLogLevelAnnotation extends HasShellOptions {
 
   val options = Seq(
@@ -66,8 +71,10 @@ object ClassLogLevelAnnotation extends HasShellOptions {
   *  - maps to [[LoggerOptions.logFileName]]
   *  - enabled with `--log-file`
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class LogFileAnnotation(file: Option[String]) extends NoTargetAnnotation with LoggerOption with Unserializable
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object LogFileAnnotation extends HasShellOptions {
 
   val options = Seq(
@@ -84,6 +91,7 @@ object LogFileAnnotation extends HasShellOptions {
 /** Enables class names in log output
   *  - enabled with `-lcn/--log-class-names`
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object LogClassNamesAnnotation
     extends NoTargetAnnotation
     with LoggerOption

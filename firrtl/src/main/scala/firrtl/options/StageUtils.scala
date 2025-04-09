@@ -3,6 +3,7 @@
 package firrtl.options
 
 /** Utilities related to working with a [[Stage]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object StageUtils {
 
   /** Construct a message with an optional header and body.  Demarcate the body

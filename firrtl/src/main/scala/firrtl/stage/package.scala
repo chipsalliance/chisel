@@ -12,6 +12,7 @@ import logger.LazyLogging
   *     from an [[AnnotationSeq]]
   */
 package object stage {
+  @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
   implicit object FirrtlOptionsView extends OptionsView[FirrtlOptions] with LazyLogging {
 
     /**

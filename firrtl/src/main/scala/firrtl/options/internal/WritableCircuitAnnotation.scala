@@ -9,6 +9,7 @@ import java.io.File
 
 // Hack for enabling special emission of the ChiselCircuitAnnotation in WriteOutputAnnotations
 @deprecated("This trait is for internal use only. Do not use it.", "Chisel 5.0")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait WriteableCircuitAnnotation extends Annotation with CustomFileEmission {
 
   protected def writeToFileImpl(file: File, annos: Seq[Annotation]): Unit

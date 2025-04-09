@@ -9,6 +9,7 @@ package logger
   * @param logToFile      if true, log to a file
   * @param logClassNames  indicates logging verbosity on a class-by-class basis
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class LoggerOptions private[logger] (
   val globalLogLevel: LogLevel.Value = LogLevelAnnotation().globalLogLevel,
   val classLogLevels: Map[String, LogLevel.Value] = Map.empty,

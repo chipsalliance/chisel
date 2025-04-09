@@ -10,6 +10,7 @@ import java.io.File
   * @param programArgs explicit program arguments
   * @param outputAnnotationFileName an output annotation filename
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class StageOptions private[firrtl] (
   val targetDir:         String = TargetDirAnnotation().directory,
   val annotationFilesIn: Seq[String] = Seq.empty,

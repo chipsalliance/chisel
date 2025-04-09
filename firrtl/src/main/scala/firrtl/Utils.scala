@@ -6,6 +6,7 @@ import firrtl.ir._
 
 import _root_.logger.LazyLogging
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Utils extends LazyLogging {
 
   /** Unwind the causal chain until we hit the initial exception (which may be the first).

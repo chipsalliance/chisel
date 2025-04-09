@@ -8,6 +8,7 @@ import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl.stage.{FirrtlOptions, InfoModeAnnotation}
 
 /** [[firrtl.options.Phase Phase]] that adds default [[FirrtlOption]] [[firrtl.annotations.Annotation Annotation]]s. */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class AddDefaults extends Phase {
 
   override def prerequisites = Seq.empty

@@ -9,6 +9,7 @@ import scala.util.control.NoStackTrace
   * These exceptions indicate a problem due to bad input and thus do not include a stack trace.
   * This can be extended by custom transform writers.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class FirrtlUserException(message: String, cause: Throwable = null)
     extends RuntimeException(message, cause)
     with NoStackTrace

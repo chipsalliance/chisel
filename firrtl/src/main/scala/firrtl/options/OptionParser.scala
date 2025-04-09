@@ -6,11 +6,13 @@ import firrtl.AnnotationSeq
 
 import scopt.OptionParser
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object OptionsHelpException extends Exception("Usage help invoked")
 
 /** OptionParser mixin that causes the OptionParser to not call exit (call `sys.exit`) if the `--help` option is
   * passed
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait DoNotTerminateOnExit { this: OptionParser[_] =>
   override def terminate(exitState: Either[String, Unit]): Unit = ()
 }
@@ -21,12 +23,14 @@ trait DoNotTerminateOnExit { this: OptionParser[_] =>
   * [[StageUtils.dramaticError]]. By converting this to an [[OptionsException]], a [[Stage]] can then catch the error an
   * convert it to an [[OptionsException]] that a [[Stage]] can get at.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait ExceptOnError { this: OptionParser[_] =>
   override def reportError(msg: String): Unit = throw new OptionsException(msg)
 }
 
 /** A modified OptionParser with mutable termination and additional checks
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait DuplicateHandling extends OptionParser[AnnotationSeq] {
 
   override def parse(args: scala.collection.Seq[String], init: AnnotationSeq): Option[AnnotationSeq] = {

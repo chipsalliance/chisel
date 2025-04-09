@@ -6,6 +6,7 @@ import logger.LazyLogging
 import firrtl.ir._
 
 /** Definitions and Utility functions for [[ir.PrimOp]]s */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object PrimOps extends LazyLogging {
 
   /** Addition */

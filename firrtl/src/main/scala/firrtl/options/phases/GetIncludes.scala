@@ -14,6 +14,7 @@ import scala.util.{Failure, Try}
 import org.json4s.convertToJsonInput
 
 /** Recursively expand all [[InputAnnotationFileAnnotation]]s in an [[AnnotationSeq]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class GetIncludes extends Phase {
 
   override def prerequisites = Seq.empty

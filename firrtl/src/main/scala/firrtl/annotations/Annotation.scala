@@ -5,9 +5,11 @@ package annotations
 
 import org.json4s.JValue
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class AnnotationException(message: String) extends Exception(message)
 
 /** Base type of auxiliary information */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait Annotation extends Product {
 
   /** Update the target based on how signals are renamed */
@@ -24,11 +26,13 @@ trait Annotation extends Product {
 /** If an Annotation does not target any [[Named]] thing in the circuit, then all updates just
   * return the Annotation itself
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait NoTargetAnnotation extends Annotation {
   def update(renames: RenameMap): Seq[NoTargetAnnotation] = Seq(this)
 }
 
 /** An Annotation that targets a single [[Named]] thing */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait SingleTargetAnnotation[T <: Named] extends Annotation {
   val target: T
 
@@ -71,6 +75,8 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Annotation
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class UnrecognizedAnnotation(underlying: JValue) extends NoTargetAnnotation

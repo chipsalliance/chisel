@@ -10,6 +10,7 @@ import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
   * This currently only adds a [[TargetDirAnnotation]]. This isn't necessary for a [[StageOptionsView]], but downstream
   * tools may expect a [[TargetDirAnnotation]] to exist.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class AddDefaults extends Phase {
 
   override def prerequisites = Seq(Dependency[GetIncludes])

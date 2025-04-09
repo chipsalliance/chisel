@@ -10,6 +10,7 @@ import firrtl.options.Dependency
 /** [[firrtl.options.Phase Phase]] that validates an [[AnnotationSeq]]. If successful, views of this [[AnnotationSeq]]
   * as [[StageOptions]] are guaranteed to succeed.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class Checks extends Phase {
 
   override def prerequisites = Seq(Dependency[GetIncludes], Dependency[AddDefaults])
