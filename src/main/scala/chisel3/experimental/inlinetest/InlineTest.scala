@@ -11,7 +11,7 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
   *  @tparam M the type of the DUT module
   *  @tparam R the type of the result returned by the test body
   */
-class TestParameters[M <: RawModule, R] private[inlinetest] (
+final class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** The [[desiredName]] of the DUT module. */
   val dutName: String,
   /** The user-provided name of the test. */
@@ -19,45 +19,75 @@ class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** A Definition of the DUT module. */
   val dutDefinition: Definition[M],
   /** The body for this test, returns a result. */
-  val testBody: Instance[M] => R,
+  private[inlinetest] val testBody: Instance[M] => R,
   /** The reset type of the DUT module. */
-  val resetType: Option[Module.ResetType.Type]
+  private[inlinetest] val dutResetType: Option[Module.ResetType.Type]
 ) {
-  final def desiredTestModuleName = s"test_${dutName}_${testName}"
-}
 
-/** Contains traits that implement behavior common to generators for unit test testharness modules. */
-object TestHarness {
-  import chisel3.{Module => ChiselModule, RawModule => ChiselRawModule}
-
-  /** TestHarnesses for inline tests without clock and reset IOs should extend this. This
-    * trait sets the correct desiredName for the module, instantiates the DUT, and provides
-    * methods to elaborate the test.
-    *
-    *  @tparam M the type of the DUT module
-    *  @tparam R the type of the result returned by the test body
-    */
-  trait RawModule[M <: ChiselRawModule, R] extends Public { this: ChiselRawModule =>
-    def test: TestParameters[M, R]
-    override def desiredName = test.desiredTestModuleName
-    val dut = Instance(test.dutDefinition)
-    final def elaborateTest(): R = test.testBody(dut)
+  /** The concrete reset type of the testharness module. */
+  private[inlinetest] final def testHarnessResetType = dutResetType match {
+    case Some(rt @ Module.ResetType.Synchronous)  => rt
+    case Some(rt @ Module.ResetType.Asynchronous) => rt
+    case _                                        => Module.ResetType.Synchronous
   }
 
-  /** TestHarnesses for inline tests should extend this. This trait sets the correct desiredName for
-   *  the module, instantiates the DUT, and provides methods to elaborate the test. By default, the
-   *  reset is synchronous, but this can be changed by overriding [[resetType]].
+  /** The [[desiredName]] for the testharness module. */
+  private[inlinetest] final def testHarnessDesiredName = s"test_${dutName}_${testName}"
+}
+
+sealed class TestResultBundle extends Bundle {
+
+  /** The test shall be considered complete on the first positive edge of
+   *  [[finish]] by the simulation. The [[TestHarness]] must drive this.
+   */
+  val finish = Bool()
+
+  /** The test shall pass if this is asserted when the test is complete.
+   *  The [[TestHarness]] must drive this.
+   */
+  val success = Bool()
+}
+
+/** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
+   *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
+   *  that of the DUT, or is [[Synchronous]] if it must be inferred (this can be overriden).
+   *
+   *  A [[TestHarness]] has the following ports:
+   *
+   * - [[clock]]: shall be driven at a constant frequency by the simulation.
+   * - [[reset]]: shall be asserted for one cycle from the first positive edge of [[clock]] by the simulation.
+   * - [[reset]]: shall be asserted for one cycle from the first positive edge of [[clock]] by the simulation.
+   * - [[finish]]: the test shall be considered complete on the first positive edge of [[finish]].
    *
    *  @tparam M the type of the DUT module
    *  @tparam R the type of the result returned by the test body
    */
-  trait Module[M <: ChiselRawModule, R] extends RawModule[M, R] { this: ChiselModule =>
-    override def resetType = test.resetType match {
-      case Some(rt @ Module.ResetType.Synchronous)  => rt
-      case Some(rt @ Module.ResetType.Asynchronous) => rt
-      case _                                        => Module.ResetType.Synchronous
-    }
-  }
+abstract class TestHarness[M <: RawModule, R](test: TestParameters[M, R])
+    extends FixedIOModule(new TestResultBundle)
+    with Public {
+  override final def desiredName = test.testHarnessDesiredName
+  override final def resetType = test.testHarnessResetType
+
+  // Handle the base case where a test has no result. In this case, we expect
+  // the test to end the simulation and signal pass/fail.
+  io.finish := false.B
+  io.success := true.B
+
+  protected final val dut = Instance(test.dutDefinition)
+  protected final val testResult = test.testBody(dut)
+}
+
+/** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
+   *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
+   *  that of the DUT, or is [[Synchronous]] if it must be inferred (this can be overriden).
+   *
+   *  @tparam M the type of the DUT module
+   *  @tparam R the type of the result returned by the test body
+   */
+abstract class TestHarnessWithResult[M <: RawModule](test: TestParameters[M, TestResultBundle])
+    extends TestHarness[M, TestResultBundle](test) {
+  io.finish := testResult.finish
+  io.success := testResult.success
 }
 
 /** An implementation of a testharness generator. This is a type class that defines how to
@@ -69,22 +99,25 @@ object TestHarness {
 trait TestHarnessGenerator[M <: RawModule, R] {
 
   /** Generate a testharness module given the test parameters. */
-  def generate(test: TestParameters[M, R]): RawModule with Public
+  def generate(test: TestParameters[M, R]): TestHarness[M, R]
 }
 
 object TestHarnessGenerator {
 
-  /** The minimal implementation of a unit testharness. Has a clock input and a synchronous reset
-    *  input. Connects these to the DUT and does nothing else.
-    */
-  class UnitTestHarness[M <: RawModule](val test: TestParameters[M, Unit])
-      extends Module
-      with TestHarness.Module[M, Unit] {
-    elaborateTest()
+  /** Factory for a TestHarnessGenerator typeclass. */
+  def apply[M <: RawModule, R](gen: TestParameters[M, R] => TestHarness[M, R]) =
+    new TestHarnessGenerator[M, R] {
+      override def generate(test: TestParameters[M, R]) = gen(test)
+    }
+
+  /** Provides a default testharness for tests that return [[Unit]]. */
+  implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, Unit] = {
+    TestHarnessGenerator(new TestHarness[M, Unit](_) {})
   }
 
-  implicit def unitTestHarness[M <: RawModule]: TestHarnessGenerator[M, Unit] = new TestHarnessGenerator[M, Unit] {
-    override def generate(test: TestParameters[M, Unit]) = new UnitTestHarness(test)
+  /** Provides a default testharness for tests that return a [[TestResultBundle]] */
+  implicit def resultTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, TestResultBundle] = {
+    TestHarnessGenerator(new TestHarnessWithResult[M](_) {})
   }
 }
 
@@ -94,7 +127,7 @@ object TestHarnessGenerator {
   *  hardware indicating completion and/or exit code to the testharness.
   */
 trait HasTests { module: RawModule =>
-  type M = module.type
+  private type M = module.type
 
   /** Whether inline tests will be elaborated as a top-level definition to the circuit. */
   protected def elaborateTests: Boolean = true
