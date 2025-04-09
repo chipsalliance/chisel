@@ -15,7 +15,7 @@ import scala.collection.immutable.ListMap
 
 class FixedIOModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
 
-  "FixedIOModule" should "create a module with flattened IO" in {
+  "FixedIORawModule" should "create a module with flattened IO" in {
 
     class Foo(width: Int) extends FixedIORawModule[UInt](UInt(width.W)) {
       io :<>= DontCare
@@ -303,7 +303,7 @@ class FixedIOModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
       )
   }
 
-  "FixedIOModule" should "work with D/I API" in {
+  "FixedIORawModule" should "work with D/I API" in {
 
     class Foo(width: Int) extends FixedIORawModule[UInt](UInt(width.W)) {
       io :<>= DontCare
@@ -320,4 +320,21 @@ class FixedIOModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage.emitCHIRRTL(new Bar) should include("module Foo :")
   }
 
+  "FixedIOModule" should "create a module with flattened IO with clock and reset" in {
+    class Foo(width: Int) extends FixedIOModule[UInt](UInt(width.W)) {
+      override def resetType = Module.ResetType.Synchronous
+      io :<>= DontCare
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo(8))
+      .fileCheck()(
+        """
+      CHECK: module Foo :
+      CHECK:   input clock : Clock
+      CHECK:   input reset : UInt<1>
+      CHECK:   output io : UInt<8>
+      """
+      )
+  }
 }
