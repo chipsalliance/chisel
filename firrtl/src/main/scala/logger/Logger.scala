@@ -27,6 +27,7 @@ import scala.util.DynamicVariable
 /**
   * The supported log levels, what do they mean? Whatever you want them to.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object LogLevel extends Enumeration {
   // None indicates "not set"
   val Error, Warn, Info, Debug, Trace, None = Value
@@ -46,6 +47,7 @@ object LogLevel extends Enumeration {
 /**
   * extend this trait to enable logging in a class you are implementing
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait LazyLogging {
   protected val logger = new Logger(this.getClass.getName)
   def getLogger: Logger = logger
@@ -86,6 +88,7 @@ private class LoggerState {
   * Singleton in control of what is supposed to get logged, how it's to be logged and where it is to be logged
   * We uses a dynamic variable in case multiple threads are used as can be in scalatests
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Logger {
   private val updatableLoggerState = new DynamicVariable[Option[LoggerState]](Some(new LoggerState))
   private def state: LoggerState = {
@@ -364,6 +367,7 @@ object Logger {
   * Classes implementing [[LazyLogging]] will have logger of this type
   * @param containerClass  passed in from the LazyLogging trait in order to provide class level logging granularity
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class Logger(containerClass: String) {
 
   /**
@@ -411,4 +415,5 @@ class Logger(containerClass: String) {
   * @param str an exception message
   * @param cause a reason for the exception
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class LoggerException(val str: String, cause: Throwable = null) extends RuntimeException(str, cause)

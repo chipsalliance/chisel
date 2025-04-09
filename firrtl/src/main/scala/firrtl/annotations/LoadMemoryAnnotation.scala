@@ -8,10 +8,12 @@ import firrtl.FirrtlUserException
 
 /** Representation of the two types of `readmem` statements available in Verilog.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed abstract class MemoryLoadFileType(val value: String) {
   def serialize: String = value
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object MemoryLoadFileType {
   // purely for backwards compatibility with chisel3's ChiselLoadMemoryAnnotation
   type FileType = MemoryLoadFileType
@@ -30,6 +32,7 @@ object MemoryLoadFileType {
   * @param fileName      name of input file
   * @param hexOrBinary   use `\$readmemh` or `\$readmemb`
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class LoadMemoryAnnotation(
   target:                ComponentName,
   fileName:              String,

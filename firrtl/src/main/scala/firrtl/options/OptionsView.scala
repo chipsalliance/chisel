@@ -7,6 +7,7 @@ import firrtl.AnnotationSeq
 /** Type class defining a "view" of an [[firrtl.AnnotationSeq AnnotationSeq]]
   * @tparam T the type to which this viewer converts an [[firrtl.AnnotationSeq AnnotationSeq]] to
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait OptionsView[T] {
 
   /** Convert an [[firrtl.AnnotationSeq AnnotationSeq]] to some other type
@@ -17,6 +18,7 @@ trait OptionsView[T] {
 }
 
 /** A shim to manage multiple "views" of an [[firrtl.AnnotationSeq AnnotationSeq]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Viewer {
 
   /** Helper method to get at a given [[OptionsView]]. This enables access to [[OptionsView]] methods in a more canonical

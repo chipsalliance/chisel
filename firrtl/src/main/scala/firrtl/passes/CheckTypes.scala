@@ -4,6 +4,7 @@ package firrtl.passes
 
 import firrtl.ir._
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object CheckTypes {
   def legalResetType(tpe: Type): Boolean = tpe match {
     case UIntType(IntWidth(w)) if w == 1 => true

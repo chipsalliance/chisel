@@ -6,6 +6,7 @@ import firrtl._
 import ir.{DefInstance, DefModule}
 
 /** Building block to represent a [[Target]] of a FIRRTL component */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait TargetToken {
   def keyword: String
   def value:   Any
@@ -27,6 +28,7 @@ sealed trait TargetToken {
 }
 
 /** Object containing all [[TargetToken]] subclasses */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object TargetToken {
   case class Instance(value: String) extends TargetToken { override def keyword: String = "inst" }
   case class OfModule(value: String) extends TargetToken { override def keyword: String = "of" }

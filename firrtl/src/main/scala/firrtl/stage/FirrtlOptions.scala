@@ -9,6 +9,7 @@ import firrtl.ir.Circuit
   * @param infoModeName the policy for generating [[firrtl.ir Info]] when processing FIRRTL (default: "append")
   * @param firrtlCircuit a [[firrtl.ir Circuit]]
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class FirrtlOptions private[stage] (
   val outputFileName: Option[String] = None,
   val infoModeName:   String = InfoModeAnnotation().modeName,

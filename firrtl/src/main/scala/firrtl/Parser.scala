@@ -2,6 +2,7 @@
 
 package firrtl
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Parser {
 
   sealed abstract class InfoMode

@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object createMask {
   def apply(dt: Type): Type = dt match {
     case t: VectorType => VectorType(apply(t.tpe), t.size)
@@ -15,6 +16,7 @@ object createMask {
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object MemPortUtils {
   type MemPortMap = collection.mutable.HashMap[String, Expression]
   type Memories = collection.mutable.ArrayBuffer[DefMemory]

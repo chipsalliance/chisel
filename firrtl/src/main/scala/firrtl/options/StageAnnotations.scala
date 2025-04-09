@@ -10,11 +10,13 @@ import java.io.File
 
 import scopt.OptionParser
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait StageOption extends Unserializable { this: Annotation => }
 
 /** An annotation that should not be serialized automatically [[phases.WriteOutputAnnotations WriteOutputAnnotations]].
   * This usually means that this is an annotation that is used only internally to a [[Stage]].
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait Unserializable { this: Annotation => }
 
 /** Mix-in that lets an [[firrtl.annotations.Annotation Annotation]] serialize itself to a file separate from the output
@@ -30,6 +32,7 @@ trait Unserializable { this: Annotation => }
   * expected to be available to downstream transforms. Communication of information between transforms must occur
   * through the annotations that will eventually be serialized to files.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait CustomFileEmission { this: Annotation =>
 
   /** Output filename where serialized content will be written
@@ -84,6 +87,7 @@ trait CustomFileEmission { this: Annotation =>
   * performance it is best to use the JVM primitive that file I/O uses. These Arrays should only
   * used immutably even though the Java API technically does allow mutating them.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait BufferedCustomFileEmission extends CustomFileEmission { this: Annotation =>
 
   /** A buffered version of [[getBytes]] for more efficient serialization
@@ -105,8 +109,10 @@ trait BufferedCustomFileEmission extends CustomFileEmission { this: Annotation =
   *  - if unset, a [[TargetDirAnnotation]] will be generated with the
   * @param value target directory name
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class TargetDirAnnotation(directory: String = ".") extends NoTargetAnnotation with StageOption
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object TargetDirAnnotation extends HasShellOptions {
 
   val options = Seq(
@@ -125,8 +131,10 @@ object TargetDirAnnotation extends HasShellOptions {
   *  - set with any trailing option on the command line
   * @param value one [[scala.Predef.String String]] argument
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProgramArgsAnnotation(arg: String) extends NoTargetAnnotation with StageOption
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object ProgramArgsAnnotation {
 
   def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
@@ -141,8 +149,10 @@ object ProgramArgsAnnotation {
   *  - set with `-faf/--annotation-file`
   * @param value input annotation filename
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class InputAnnotationFileAnnotation(file: String) extends NoTargetAnnotation with StageOption
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object InputAnnotationFileAnnotation extends HasShellOptions {
 
   val options = Seq(
@@ -161,8 +171,10 @@ object InputAnnotationFileAnnotation extends HasShellOptions {
   *  - set with `-foaf/--output-annotation-file`
   * @param value output annotation filename
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class OutputAnnotationFileAnnotation(file: String) extends NoTargetAnnotation with StageOption
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object OutputAnnotationFileAnnotation extends HasShellOptions {
 
   val options = Seq(

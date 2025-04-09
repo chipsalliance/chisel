@@ -10,6 +10,7 @@ import scala.collection.immutable.{Set => ISet}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashMap, LinkedHashSet, Queue}
 
 /** An exception arising from an in a [[DependencyManager]] */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DependencyManagerException(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
 
 /** A [[firrtl.options.TransformLike TransformLike]] that resolves a linear ordering of dependencies based on
@@ -17,6 +18,7 @@ case class DependencyManagerException(message: String, cause: Throwable = null) 
   * @tparam A the type over which this transforms
   * @tparam B the type of the [[firrtl.options.TransformLike TransformLike]]
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends TransformLike[A] with DependencyAPI[B] {
   import DependencyManagerUtils.CharSet
 
@@ -436,6 +438,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   * the requested [[Phase]] target transforms run without having them be invalidated.
   * @param targets the [[Phase]]s you want to run
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class PhaseManager(
   val targets:      Seq[PhaseManager.PhaseDependency],
   val currentState: Seq[PhaseManager.PhaseDependency] = Seq.empty,
@@ -447,6 +450,7 @@ class PhaseManager(
   protected def copy(a: Seq[PhaseDependency], b: Seq[PhaseDependency], c: ISet[Phase]) = new PhaseManager(a, b, c)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object PhaseManager {
 
   /** The type used to represent dependencies between [[Phase]]s */
@@ -454,6 +458,7 @@ object PhaseManager {
 
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object DependencyManagerUtils {
 
   /** A character set used for pretty printing

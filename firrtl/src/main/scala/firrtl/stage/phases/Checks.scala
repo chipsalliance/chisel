@@ -15,6 +15,7 @@ import firrtl.options.{Dependency, OptionsException, Phase}
   * The intent of this approach is that after running this [[firrtl.options.Phase Phase]], a user can be absolutely
   * certain that other [[firrtl.options.Phase Phase]]s or views will succeed.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class Checks extends Phase {
 
   override val prerequisites = Seq(Dependency[AddDefaults])

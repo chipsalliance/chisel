@@ -14,6 +14,7 @@ import scopt.{OptionDef, OptionParser, Read}
   * @param shortOption an optional single-dash option
   * @param helpValueName a string to show as a placeholder argument in help text
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 final class ShellOption[A: Read](
   val longOption:      String,
   val toAnnotationSeq: A => AnnotationSeq,
@@ -40,6 +41,7 @@ final class ShellOption[A: Read](
 
 /** Indicates that this class/object includes options (but does not add these as a registered class)
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait HasShellOptions {
 
   /** A sequence of options provided
@@ -58,6 +60,7 @@ trait HasShellOptions {
   * @note To complete registration, include an entry in
   * src/main/resources/META-INF/services/firrtl.options.RegisteredLibrary
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait RegisteredLibrary extends HasShellOptions {
 
   /** The name of this library.

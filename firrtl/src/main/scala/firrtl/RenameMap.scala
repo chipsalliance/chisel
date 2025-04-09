@@ -9,6 +9,7 @@ import firrtl.renamemap._
 
 import scala.collection.mutable
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object RenameMap {
   def apply(map: collection.Map[Named, Seq[Named]], circuitName: String): RenameMap =
     MutableRenameMap.fromNamed(map, circuitName)
@@ -31,6 +32,7 @@ object RenameMap {
   * @define noteDistinct @note Rename to/tos will be made distinct
   */
 // TODO This should probably be refactored into immutable and mutable versions
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait RenameMap {
 
   // Records the name of the circuit to which this rename map applies.  This is
@@ -521,6 +523,7 @@ sealed trait RenameMap {
 
 // This must be in same file as RenameMap because RenameMap is sealed
 package object renamemap {
+  @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
   object MutableRenameMap {
     def fromNamed(map: collection.Map[Named, Seq[Named]], circuitName: String): MutableRenameMap = {
       val rm = new MutableRenameMap(circuitName)
@@ -538,6 +541,7 @@ package object renamemap {
     def apply(circuitName: String): MutableRenameMap = new MutableRenameMap(circuitName)
   }
 
+  @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
   final class MutableRenameMap private[firrtl] (
     override protected val circuitName: String,
     protected val _underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]] =

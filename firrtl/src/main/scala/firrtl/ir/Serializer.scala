@@ -4,12 +4,14 @@ package firrtl.ir
 
 import firrtl.annotations.{Annotation, JsonProtocol}
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Version(major: Int, minor: Int, patch: Int) {
   def serialize: String = s"$major.$minor.$patch"
   def incompatible(that: Version): Boolean =
     this.major > that.major || (this.major == that.major && this.minor > that.minor)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Serializer {
   val NewLine = '\n'
   val Indent = "  "
