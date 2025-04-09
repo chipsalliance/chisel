@@ -12,24 +12,6 @@ import org.scalatest.matchers.should.Matchers
 
 import circt.stage.ChiselStage.emitCHIRRTL
 
-class TestResultBundle extends Bundle {
-  val finish = Output(Bool())
-  val success = Output(UInt(8.W))
-}
-
-// Here is a testharness that consumes some kind of hardware from the test body, e.g.
-// a finish and pass/fail interface.
-class TestHarnessWithResultIO[M <: RawModule](test: TestParameters[M, TestResultBundle])
-    extends TestHarness[M, TestResultBundle](test) {
-  finish := testResult.finish
-  success := testResult.success
-}
-
-object TestHarnessWithResultIO {
-  implicit def testharnessGenerator[M <: RawModule] =
-    TestHarnessGenerator[M, TestResultBundle](new TestHarnessWithResultIO(_))
-}
-
 // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
 // socket to which to attach a monitor.
 class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M, Unit])
@@ -97,26 +79,23 @@ class ModuleWithTests(ioWidth: Int = 32, override val resetType: Module.ResetTyp
   test("bar") { instance =>
     instance.io.in := 5.U(ioWidth.W)
     assert(instance.io.out =/= 0.U): Unit
-  }
+  }(implicitly[TestHarnessGenerator[M, Unit]])
 
-  {
-    import TestHarnessWithResultIO._
-    test("with_result") { instance =>
-      val result = Wire(new TestResultBundle)
-      val timer = RegInit(0.U)
-      timer := timer + 1.U
-      instance.io.in := 5.U(ioWidth.W)
-      val outValid = instance.io.out =/= 0.U
-      when(outValid) {
-        result.success := 0.U
-        result.finish := timer > 1000.U
-      }.otherwise {
-        result.success := 1.U
-        result.finish := true.B
-      }
-      result
+  test("with_result") { instance =>
+    val result = Wire(new TestResultBundle)
+    val timer = RegInit(0.U)
+    timer := timer + 1.U
+    instance.io.in := 5.U(ioWidth.W)
+    val outValid = instance.io.out =/= 0.U
+    when(outValid) {
+      result.success := 0.U
+      result.finish := timer > 1000.U
+    }.otherwise {
+      result.success := 1.U
+      result.finish := true.B
     }
-  }
+    result
+  }(implicitly[TestHarnessGenerator[M, TestResultBundle]])
 
   {
     import TestHarnessWithMonitorSocket._

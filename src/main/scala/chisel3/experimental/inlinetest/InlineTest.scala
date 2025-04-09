@@ -33,22 +33,25 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   private[inlinetest] final def desiredTestModuleName = s"test_${dutName}_${testName}"
 }
 
-/** The interface between a testharness and the simulation driver. */
-class TestHarnessBundle(resetType: Reset) extends Bundle {
-  /** The clock port shall be driven at a constant frequency by the simulation. */
-  val clock = Input(Clock())
-  /** The reset port shall be asserted for one cycle from the first positive edge
-   *  of [[clock]] by the simulation.
-   *  */
-  val reset = Input(resetType)
+class TestResultBundle extends Bundle {
   /** The test shall be considered complete on the first positive edge of
    *  [[finish]] by the simulation. The [[TestHarness]] must drive this.
    */
-  val finish = Output(Bool())
+  val finish = Bool()
   /** The test shall pass if this is asserted when the test is complete.
    *  The [[TestHarness]] must drive this.
    */
-  val success = Output(Bool())
+  val success = Bool()
+}
+
+/** The interface between a testharness and the simulation driver. */
+class TestHarnessBundle(resetType: Reset) extends TestResultBundle {
+  /** The clock port shall be driven at a constant frequency by the simulation. */
+  val clock = Flipped(Clock())
+  /** The reset port shall be asserted for one cycle from the first positive edge
+   *  of [[clock]] by the simulation.
+   *  */
+  val reset = Flipped(resetType)
 }
 
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
@@ -68,6 +71,18 @@ abstract class TestHarness[M <: RawModule, R](test: TestParameters[M, R]) extend
 
   protected final val dut = Instance(test.dutDefinition)
   protected final val testResult = test.testBody(dut)
+}
+
+/** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
+   *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
+   *  that of the DUT, or is [[Synchronous]] if it must be inferred (this can be overriden).
+   *
+   *  @tparam M the type of the DUT module
+   *  @tparam R the type of the result returned by the test body
+   */
+abstract class TestHarnessWithResult[M <: RawModule](test: TestParameters[M, TestResultBundle]) extends TestHarness[M, TestResultBundle](test) {
+  io.finish := testResult.finish
+  io.success := testResult.success
 }
 
 /** An implementation of a testharness generator. This is a type class that defines how to
@@ -90,9 +105,14 @@ object TestHarnessGenerator {
       override def generate(test: TestParameters[M, R]) = gen(test)
     }
 
-  /** Typeclass for base [[TestHarness]] generator. */
+  /** Provides a default testharness for tests that return [[Unit]]. */
   implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, Unit] = {
     TestHarnessGenerator(new TestHarness[M, Unit](_) {})
+  }
+
+  /** Provides a default testharness for tests that return a [[TestResultBundle]] */
+  implicit def resultTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, TestResultBundle] = {
+    TestHarnessGenerator(new TestHarnessWithResult[M](_) {})
   }
 }
 
