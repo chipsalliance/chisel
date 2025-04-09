@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
 import chisel3.testers._
+import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
 import chisel3.util.Enum
 import circt.stage.ChiselStage
@@ -59,15 +60,35 @@ object ProtocolChecks {
   }
 }
 
+trait HasTestsProperty { this: RawModule with HasTests =>
+  def enableTestsProperty: Boolean
+
+  val testNames = Option.when(enableTestsProperty) {
+    IO(Output(Property[Seq[String]]()))
+  }
+
+  atModuleBodyEnd {
+    testNames.foreach { testNames =>
+      testNames := Property {
+        getRegisteredTests.flatMap { case (test, willElaborate) =>
+          Option.when(willElaborate)(test.testName)
+        }
+      }
+    }
+  }
+}
+
 @instantiable
 class ModuleWithTests(
-  ioWidth:                     Int = 32,
-  override val resetType:      Module.ResetType.Type = Module.ResetType.Synchronous,
-  override val elaborateTests: Boolean = true
+  ioWidth:                          Int = 32,
+  override val resetType:           Module.ResetType.Type = Module.ResetType.Synchronous,
+  override val elaborateTests:      Boolean = true,
+  override val enableTestsProperty: Boolean = false
 ) extends Module
     with HasMonitorSocket
     with HasTests
-    with HasProtocolInterface {
+    with HasProtocolInterface
+    with HasTestsProperty {
   @public val io = IO(new ProtocolBundle(ioWidth))
 
   override val monProbe = makeProbe(io)
@@ -311,6 +332,20 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK: module test_ModuleWithTests_with_monitor
       | CHECK: module test_ModuleWithTests_check2
       """
+      )
+  }
+
+  it should "support iterating over registered tests to capture metadata" in {
+    ChiselStage
+      .emitCHIRRTL(new ModuleWithTests(enableTestsProperty = true), args = makeArgs(Seq("*"), Seq("foo", "bar")))
+      .fileCheck()(
+        """
+        | CHECK: module ModuleWithTests
+        | CHECK:   output testNames : List<String>
+        | CHECK:   propassign testNames, List<String>(String("foo"), String("bar"))
+        | CHECK: module test_ModuleWithTests_foo
+        | CHECK: module test_ModuleWithTests_bar
+        """
       )
   }
 
