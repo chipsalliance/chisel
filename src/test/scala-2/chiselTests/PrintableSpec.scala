@@ -318,18 +318,18 @@ class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
   it should "support all legal format specifiers" in {
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
-      printf(cf"$HierarchicalModuleName $in%d $in%x $in%b $in%c %%\n")
+      printf(cf"$SimulationTime $HierarchicalModuleName $in%d $in%x $in%b $in%c %%\n")
     }
     ChiselStage
       .emitCHIRRTL(new MyModule)
       .fileCheck()(
-        """CHECK{LITERAL}: printf(clock, UInt<1>(0h1), "{{HierarchicalModuleName}} %d %x %b %c %%\n", in, in, in, in)"""
+        """CHECK{LITERAL}: printf(clock, UInt<1>(0h1), "{{SimulationTime}} {{HierarchicalModuleName}} %d %x %b %c %%\n", in, in, in, in)"""
       )
     // Also check Verilog
     ChiselStage
       .emitSystemVerilog(new MyModule)
       .fileCheck()(
-        """CHECK: $fwrite(`PRINTF_FD_, "%m %d %x %b %c %%\n", in, in, in, in);"""
+        """CHECK: $fwrite(`PRINTF_FD_, "%0t %m %d %x %b %c %%\n", $time, in, in, in, in);"""
       )
 
   }
@@ -391,6 +391,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
       (PString("foo"), ("foo", Seq())),
       (Percent, ("%%", Seq())),
       (HierarchicalModuleName, ("%m", Seq())),
+      (SimulationTime, ("%T", Seq())),
       (Name(x), ("%n", Seq(x))),
       (FullName(x), ("%N", Seq(x)))
     )
