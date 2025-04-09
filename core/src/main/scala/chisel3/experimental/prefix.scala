@@ -56,7 +56,7 @@ object prefix {
     ret
   }
 
-  def apply[T, K](name: K)(f: => T): T = {
+  def apply[T](name: Any)(f: => T): T = {
     name match {
       case x: HasId => applyHasId[T](x)(f)
       case x: String => applyString[T](x)(f)
