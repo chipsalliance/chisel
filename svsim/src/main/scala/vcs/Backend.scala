@@ -378,8 +378,6 @@ final class Backend(
               Seq(
                 // Enable VCS support
                 s"-D${svsim.Backend.HarnessCompilationFlags.enableVCSSupport}",
-                // VCS engages in ASLR shenanigans
-                s"-D${svsim.Backend.HarnessCompilationFlags.backendEngagesInASLRShenanigans}",
               )
             )),
           ).collect {
@@ -422,6 +420,14 @@ final class Backend(
           backendSpecificSettings.simulationSettings.coverageDirectory.map(_.toFlags).getOrElse(Seq.empty),
           backendSpecificSettings.simulationSettings.coverageName.map(_.toFlags).getOrElse(Seq.empty),
           commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags),
+          // In order to support save/restore functionality, VCS will detect if
+          // Address Space Layout Randomization (ASLR) is ocurring when the
+          // simulation starts.  If it is, then VCS will relaunch the simulation
+          // with ASLR turned off.  This double-launch confuses svsim.  To avoid
+          // this, and because svsim doesn't support save/restore functionality,
+          // we turn off VCS save/restore features.  The simulation binary will
+          // then only run once.
+          Seq("-no_save")
         ).flatten,
         environment = environment
       )

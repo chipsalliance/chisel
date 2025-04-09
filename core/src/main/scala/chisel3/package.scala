@@ -232,6 +232,11 @@ package object chisel3 {
       // Handle special escapes like %% and %m
       def escapeHandler(s: String): Seq[Printable] = {
         val pieces = mutable.ListBuffer.empty[Printable]
+        def maybeAdd(start: Int, end: Int): Unit = {
+          if (end > start) {
+            pieces += PString(s.substring(start, end))
+          }
+        }
         var start = 0
         var end = 0
         while (end < s.length) {
@@ -242,11 +247,13 @@ package object chisel3 {
               } else if (s(end + 1) == '%') {
                 Percent
               } else if (s(end + 1) == 'm') {
-                HierarchicalName
+                HierarchicalModuleName
+              } else if (s(end + 1) == 'T') {
+                SimulationTime
               } else {
                 throw new UnknownFormatConversionException("Un-escaped %")
               }
-            pieces += PString(s.substring(start, end))
+            maybeAdd(start, end)
             pieces += piece
             start = end + 2
             end = start
@@ -254,7 +261,7 @@ package object chisel3 {
             end += 1
           }
         }
-        pieces += PString(s.substring(start, end))
+        maybeAdd(start, end)
         pieces.toList
       }
 
@@ -287,9 +294,13 @@ package object chisel3 {
           val fmtArg: Printable = arg match {
             case d: Data => {
               fmt match {
-                case Some("%n")                          => Name(d)
-                case Some("%N")                          => FullName(d)
-                case Some(fForm) if d.isInstanceOf[Bits] => FirrtlFormat(fForm.substring(1, 2), d)
+                case Some("%n") => Name(d)
+                case Some("%N") => FullName(d)
+                case Some(fForm) if d.isInstanceOf[Bits] =>
+                  FirrtlFormat.parse(fForm, d.asInstanceOf[Bits]) match {
+                    case Left(err) => throw new UnknownFormatConversionException(err)
+                    case Right(p)  => p
+                  }
                 case Some(x) => {
                   val msg = s"Illegal format specifier '$x' for Chisel Data type!\n"
                   throw new UnknownFormatConversionException(msg)
@@ -314,7 +325,8 @@ package object chisel3 {
           Seq(fmtArg) ++ escapeHandler(modP)
         }
       }
-      Printables(escapeHandler(parts.head) ++ pables)
+      val result = escapeHandler(parts.head) ++ pables
+      if (result.sizeIs == 1) result.head else Printables(result)
     }
   }
 

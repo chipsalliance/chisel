@@ -150,7 +150,7 @@ object UnrecognizedAnnotationTextGenerator {
     s"""|[$serializedAllowUnrecognized
         |  {
         |    "class": "firrtl.transforms.BlackBoxInlineAnno",
-        |    "target": "TestHarness.plusarg_reader_27",
+        |    "target": "~TestHarness|plusarg_reader_27",
         |    "name": "plusarg_reader.v",
         |    "text": "License text"
         |  },

@@ -34,29 +34,22 @@ object JsonProtocol extends LazyLogging {
   class NamedSerializer
       extends CustomSerializer[Named](format =>
         (
-          { case JString(s) => AnnotationUtils.toNamed(s) },
-          { case named: Named => JString(named.serialize) }
-        )
-      )
-  class CircuitNameSerializer
-      extends CustomSerializer[CircuitName](format =>
-        (
-          { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[CircuitName] },
-          { case named: CircuitName => JString(named.serialize) }
+          { case JString(s) => Target.deserialize(s).toNamed },
+          { case named: Named => JString(named.toTarget.serialize) }
         )
       )
   class ModuleNameSerializer
       extends CustomSerializer[ModuleName](format =>
         (
-          { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[ModuleName] },
-          { case named: ModuleName => JString(named.serialize) }
+          { case JString(s) => Target.deserialize(s).toNamed.asInstanceOf[ModuleName] },
+          { case named: ModuleName => JString(named.toTarget.serialize) }
         )
       )
   class ComponentNameSerializer
       extends CustomSerializer[ComponentName](format =>
         (
-          { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[ComponentName] },
-          { case named: ComponentName => JString(named.serialize) }
+          { case JString(s) => Target.deserialize(s).toNamed.asInstanceOf[ComponentName] },
+          { case named: ComponentName => JString(named.toTarget.serialize) }
         )
       )
   class LoadMemoryFileTypeSerializer
@@ -79,13 +72,6 @@ object JsonProtocol extends LazyLogging {
         (
           { case JString(s) => Target.deserialize(s).asInstanceOf[GenericTarget] },
           { case named: GenericTarget => JString(named.serialize) }
-        )
-      )
-  class CircuitTargetSerializer
-      extends CustomSerializer[CircuitTarget](format =>
-        (
-          { case JString(s) => Target.deserialize(s).asInstanceOf[CircuitTarget] },
-          { case named: CircuitTarget => JString(named.serialize) }
         )
       )
   class ModuleTargetSerializer
@@ -142,9 +128,9 @@ object JsonProtocol extends LazyLogging {
   /** Construct Json formatter for annotations */
   def jsonFormat(tags: Seq[Class[_]]) = {
     Serialization.formats(FullTypeHints(tags.toList, "class")) +
-      new NamedSerializer + new CircuitNameSerializer +
+      new NamedSerializer +
       new ModuleNameSerializer + new ComponentNameSerializer + new TargetSerializer +
-      new GenericTargetSerializer + new CircuitTargetSerializer + new ModuleTargetSerializer +
+      new GenericTargetSerializer + new ModuleTargetSerializer +
       new InstanceTargetSerializer + new ReferenceTargetSerializer +
       new LoadMemoryFileTypeSerializer + new IsModuleSerializer + new IsMemberSerializer +
       new CompleteTargetSerializer + new UnrecognizedAnnotationSerializer

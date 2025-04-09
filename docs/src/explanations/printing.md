@@ -61,17 +61,45 @@ printf(cf"myUInt = $myUInt%c") // myUInt = !
 
 There are special values you can include in your `cf` interpolated string:
 
-* `HierarchicalName` (`%m`): The hierarchical name of the signal
+* `HierarchicalModuleName` (`%m`): The hierarchical name of the current module
+* `SimulationTime` (`%T`): The current simulation time (unlike Verilog's `%t`, this does not take an argument)
 * `Percent` (`%%`): A literal `%`
 
 ```scala mdoc:compile-only
-printf(cf"hierarchical path = $HierarchicalName\n") // hierarchical path = <verilog.module.path>
+printf(cf"hierarchical path = $HierarchicalModuleName\n") // hierarchical path = <verilog.module.path>
 printf(cf"hierarchical path = %m\n") // equivalent to the above
+
+printf(cf"simulation time = $SimulationTime\n") // simulation time = <simulation.time>
+printf(cf"simulation time = %T\n") // equivalent to the above
 
 printf(cf"100$Percent\n") // 100%
 printf(cf"100%%\n") // equivalent to the above
 ```
 
+#### Format modifiers
+
+Chisel supports standard Verilog-style modifiers for `%d`, `%x`, and `%b` between the `%` and the format specifier.
+
+Verilog simulators will pad values out to the width of the signal.
+With decimal formatting, space is used for padding.
+For all other formats, `0` is used for padding.
+
+* A non-negative field width will override the default Verilog sizing of the value.
+* Specifying a field width of `0` will always display the value with the minimum width (no zero nor space padding).
+
+```scala mdoc:compile-only
+val foo = WireInit(UInt(32.W), 33.U)
+printf(cf"foo = $foo%d!\n")  // foo =         33!
+printf(cf"foo = $foo%0d!\n") // foo = 33!
+printf(cf"foo = $foo%4d!\n") // foo =   33!
+printf(cf"foo = $foo%x!\n")  // foo = 00000021!
+printf(cf"foo = $foo%0x!\n") // foo = 21!
+printf(cf"foo = $foo%4x!\n") // foo = 0021!
+val bar = WireInit(UInt(8.W), 5.U)
+printf(cf"bar = $bar%b!\n")  // foo = 00000101!
+printf(cf"bar = $bar%0b!\n") // foo = 101!
+printf(cf"bar = $bar%4b!\n") // foo = 0101!
+```
 
 #### Aggregate data-types
 
@@ -143,6 +171,9 @@ Chisel provides `printf` in a similar style to its C namesake. It accepts a doub
 | `%c` | 8-bit ASCII character |
 | `%%` | literal percent |
 | `%m` | hierarchical name |
+| `%T` | simulation time |
+
+`%d`, `%x`, and `%b` support the modifiers described in the [Format modifiers](#format-modifiers) section above.
 
 It also supports a small set of escape characters:
 

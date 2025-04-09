@@ -166,7 +166,7 @@ class ToTargetSpec extends AnyFlatSpec with Matchers {
   ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
   val mn = "InstanceNameModule"
-  val top = s"~$mn|$mn"
+  val top = s"~|$mn"
 
   behavior.of(".toTarget")
 
@@ -194,7 +194,7 @@ class ToTargetSpec extends AnyFlatSpec with Matchers {
 
   it should "work with modules" in {
     val q = m.q.toTarget.toString
-    assert(q == s"~$mn|Queue4_UInt32")
+    assert(q == s"~|Queue4_UInt32")
   }
 
   it should "error on non-hardware types and provide information" in {
@@ -222,35 +222,35 @@ class ToTargetSpec extends AnyFlatSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterRootModule)
 
     chirrtl should include(
-      "~RelativeOuterRootModule|RelativeOuterRootModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
+      "~|RelativeOuterRootModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
     )
   }
 
   it should "work relative to modules being elaborated for HasIds within the module" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeCurrentModule)
 
-    chirrtl should include("~RelativeCurrentModule|RelativeCurrentModule>wire")
-    chirrtl should include("~RelativeCurrentModule|RelativeCurrentModule/child:Child>io")
-    chirrtl should include("~RelativeCurrentModule|RelativeCurrentModule>io")
+    chirrtl should include("~|RelativeCurrentModule>wire")
+    chirrtl should include("~|RelativeCurrentModule/child:Child>io")
+    chirrtl should include("~|RelativeCurrentModule>io")
   }
 
   it should "work relative to non top-level modules that have been elaborated" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterMiddleModule)
 
-    chirrtl should include("~RelativeOuterMiddleModule|RelativeMiddleModule/inner:RelativeInnerModule>wire")
+    chirrtl should include("~|RelativeMiddleModule/inner:RelativeInnerModule>wire")
   }
 
   it should "work relative to non top-level modules for components local to the root" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeOuterLocalModule)
 
-    chirrtl should include("~RelativeOuterLocalModule|RelativeInnerModule>wire")
+    chirrtl should include("~|RelativeInnerModule>wire")
   }
 
   it should "default to the root module in the requested hierarchy" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeDefaultModule)
 
     chirrtl should include(
-      "~RelativeDefaultModule|RelativeDefaultModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
+      "~|RelativeDefaultModule/middle:RelativeMiddleModule/inner:RelativeInnerModule>wire"
     )
   }
 
@@ -268,14 +268,14 @@ class ToTargetSpec extends AnyFlatSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
     chirrtl should include(
-      "propassign referenceInstanceOut, path(\"OMInstanceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule"
+      "propassign referenceInstanceOut, path(\"OMInstanceTarget:~|RelativeMiddleModule/inner:RelativeInnerModule"
     )
   }
   it should "work to get relative targets to a wire in an Instance" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
     chirrtl should include(
-      "propassign referenceInstanceWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire"
+      "propassign referenceInstanceWireOut, path(\"OMReferenceTarget:~|RelativeMiddleModule/inner:RelativeInnerModule>wire"
     )
   }
 
@@ -283,7 +283,7 @@ class ToTargetSpec extends AnyFlatSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new RelativeSiblingsInstancesParent)
 
     chirrtl should include(
-      "propassign referenceDefinitionWireOut, path(\"OMReferenceTarget:~RelativeSiblingsInstancesParent|RelativeMiddleModule/inner:RelativeInnerModule>wire"
+      "propassign referenceDefinitionWireOut, path(\"OMReferenceTarget:~|RelativeMiddleModule/inner:RelativeInnerModule>wire"
     )
   }
 
@@ -308,7 +308,7 @@ class ToTargetSpec extends AnyFlatSpec with Matchers {
 
   it should ("get correct Path from an Instance") in {
     val chirrtl = ChiselStage.emitCHIRRTL(new PathFromInstanceToTarget)
-    chirrtl should include("OMInstanceTarget:~PathFromInstanceToTarget|Hierarchy2/target:RelativeInnerModule")
+    chirrtl should include("OMInstanceTarget:~|Hierarchy2/target:RelativeInnerModule")
   }
 
 }

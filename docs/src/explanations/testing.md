@@ -75,17 +75,19 @@ the test harness.
 
 :::
 
-Simulation APIs take user provided stimulus and apply it to the module.  Some
-useful stimulus is provided in the `chisel3.simulator.stimulus` package.  For
-example, the `RunUntilFinished` stimulus will toggle a `Module`'s clock for a
-number of cycles and throw an exception if the module does net execute a
-`chisel3.stop` before that number of clock cycles has elapsed.
-
 For more information see the [Chisel API
 documentation](https://www.chisel-lang.org/api) for
-`chisel3.simulator.SimulatorAPI`.
+`chisel3.simulator.SimulatorAPI`
 
-### Peek/Poke APIs
+### Stimulus
+
+Simulation APIs take user provided stimulus and apply it to the
+design-under-test (DUT).  There are two mechanisms provided for applying
+stimulus: (1) Peek/Poke APIs and (2) reusable stimulus patterns.  The former
+provide simple, freeform ways to apply simple directed stimulus.  The latter
+provide common stimulus applicable to a wide range of modules.
+
+#### Peek/Poke APIs
 
 ChiselSim provides basic "peek", "poke", and "expect" APIs for providing simple
 stimulus to Chisel modules.  This API is implemented as [extension
@@ -105,28 +107,63 @@ For more information see the [Chisel API
 documentation](https://www.chisel-lang.org/api) for
 `chisel3.simulator.PeekPokeAPI`.
 
+#### Reusable Stimulus Patterns
+
+While the Peek/Poke APIs are useful for freeform tests, there are a number of
+common stimulus patterns that are frequently applied during testing.  E.g.,
+bringing a module out of reset or running a simulation until it finishes.  These
+patterns are provided in the `chisel3.simulator.stimulus` package.  Currently,
+the following stimuli are available:
+
+- `ResetProcedure` will reset a module in a predictable fashion.  This provides
+  sufficient spacing for initial blocks to execute at time zero, register/memory
+  randomization to happen after that, and reset to assert for a parametric
+  number of cycles. (This is the same stimulus used by the `simulate` API.)
+- `RunUntilFinished` runs the module for a user-provided number of cycles
+  expecting that the simulation will finish cleanly (via `chisel3.stop`) or
+  error (via a Chisel assertion).  If the unit runs for the number of cycles
+  without asserting or finishing, a simulation assertion is thrown.
+- `RunUntilSuccess` runs the module for a user-provided number of cycles
+  expecting that the module will assert a success port (indicating success) or
+  error (via a Chisel assertion).  The success port must be provided to the
+  stimulus as a parameter.
+
+These stimuli are intended to be used via their factory methods.  Most stimuli
+provide different factories for different module types.  E.g., the
+`ResetProcedure` factory has two methods: `any` which will generate stimulus for
+_any_ Chisel module and `module` which can only generate stimulus for subtypes
+of `Module`.  The reason for this split is that this specific stimulus needs to
+know what the clock and reset ports are in order to apply reset stimulus to
+them.  Chisel `Module`s have known clock and reset ports allowing the `module`
+stimulus to have just one parameter---the number of cycles to apply the reset
+for.  However, a Chisel `RawModule` does not have known clock and reset ports
+and user needs to provide more parameters to the factory---the number of reset
+cycles _and_ functions to get the clock and reset ports.
+
+For more information see the [Chisel API
+documentation](https://www.chisel-lang.org/api) for
+`chisel3.simulator.stimulus`.
+
 ### Example
 
 The example below shows a basic usage of ChiselSim inside ScalaTest.  This shows
 a single test suite, `ChiselSimExample`.  To gain access to ChiselSim methods,
 the `ChiselSim` trait is mixed in.  A [testing
-style](https://www.scalatest.org/user_guide/selecting_a_style) is chosen and
-"should" matches are added to provide a more natural language way of writing
-tests.
+style](https://www.scalatest.org/user_guide/selecting_a_style), `AnyFunSpec`, is
+also chosen.
 
 In the test, module `Foo` is tested using custom stimulus.  Module `Bar` is
-tested using pre-defined stimulus.  Both tests, as written, will pass.
-
+tested using reusable `RunUntilFinished` stimulus.  Module `Baz` is tested using
+reusable `RunUntilSuccess` stimulus.  All tests, as written, will pass.
 
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
-import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.simulator.stimulus.{RunUntilFinished, RunUntilSuccess}
 import chisel3.util.Counter
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.funspec.AnyFunSpec
 
-class ChiselSimExample extends AnyFlatSpec with Matchers with ChiselSim {
+class ChiselSimExample extends AnyFunSpec with ChiselSim {
 
   class Foo extends Module {
     val a, b = IO(Input(UInt(8.W)))
@@ -138,20 +175,22 @@ class ChiselSimExample extends AnyFlatSpec with Matchers with ChiselSim {
     c :<= r
   }
 
-  behavior of "Baz"
+  describe("Baz") {
 
-  it should "add two numbers" in {
+    it("adds two numbers") {
 
-    simulate(new Foo) { foo =>
-      // Poke different values on the two input ports.
-      foo.a.poke(1)
-      foo.b.poke(2)
+      simulate(new Foo) { foo =>
+        // Poke different values on the two input ports.
+        foo.a.poke(1)
+        foo.b.poke(2)
 
-      // Step the clock by one cycle.
-      foo.clock.step(1)
+        // Step the clock by one cycle.
+        foo.clock.step(1)
 
-      // Expect that the sum of the two inputs is on the output port.
-      foo.c.expect(3)
+        // Expect that the sum of the two inputs is on the output port.
+        foo.c.expect(3)
+      }
+
     }
 
   }
@@ -166,11 +205,33 @@ class ChiselSimExample extends AnyFlatSpec with Matchers with ChiselSim {
 
   }
 
-  behavior of "Bar"
+  describe("Bar") {
 
-  it should "terminate before 11 cycles have elapsed" in {
+    it("terminates cleanly before 11 cycles have elapsed") {
 
-    simulate(new Bar)(RunUntilFinished(11))
+      simulate(new Bar)(RunUntilFinished(11))
+
+    }
+
+  }
+
+  class Baz extends Module {
+
+    val success = IO(Output(Bool()))
+
+    val (_, done) = Counter(true.B, 20)
+
+    success :<= done
+
+  }
+
+  describe("Baz") {
+
+    it("asserts success before 21 cycles have elapsed") {
+
+      simulate(new Baz)(RunUntilSuccess(21, _.success))
+
+    }
 
   }
 
@@ -178,11 +239,148 @@ class ChiselSimExample extends AnyFlatSpec with Matchers with ChiselSim {
 
 ```
 
+### Scalatest Support
+
+ChiselSim provides a number of features that synergize with Scalatest to improve
+the testing experience.
+
+#### Directory Naming
+
+When using ChiselSim in a Scalatest environment, by default a testing directory
+structure will be created that matches the Scalatest test "scopes" that are
+provided.  Practically, this results in your tests being organized based on how
+you organized them in Scalatest.
+
+The root of the testing directory is, by default, `build/chiselsim/`.  You may
+change this by overriding the `buildDir` method.
+
+Under the testing directory, you will get one directory for each test suite.  Underneath that, you will get a directory for each test "scope".  E.g., for the test shown in the example above, this will produce the following directory structure:
+
+```
+build/chiselsim
+└── ChiselSimExample
+    ├── Foo
+    │   └── adds-two-numbers
+    ├── Bar
+    │   └── terminates-cleanly-before-11-cycles-have-elapsed
+    └── Baz
+        └── asserts-success-before-21-cycles-have-elapsed
+```
+
+#### Command Line Arguments
+
+Scalatest has support for passing command line arguments to Scalatest using its
+`ConfigMap` feature.  ChiselSim wraps this with an improved API for adding
+command line arguments to tests, displaying help text, and checking that only
+legal arguments are passed.
+
+By default, several command line options are already available for ChiselSim
+tests using Scalatest.  You can see these by passing the `-Dhelp=1` argument to
+Scalatest.  E.g., this is the help text for the tests shown in the example above:
+
+```
+Usage: <ScalaTest> [-D<name>=<value>...]
+
+This ChiselSim ScalaTest test supports passing command line arguments via
+ScalaTest's "config map" feature.  To access this, append `-D<name>=<value>` for
+a legal option listed below.
+
+Options:
+
+  chiselOpts
+      additional options to pass to the Chisel elaboration
+  emitVcd
+      compile with VCD waveform support and start dumping waves at time zero
+  firtoolOpts
+      additional options to pass to the firtool compiler
+  help
+      display this help text
+```
+
+The most frequently used of these options is `-DemitVcd=1`.  This will cause
+your test to dump a Value Change Dump (VCD) waveform when the test executes.
+This is useful if your test fails and you need a waveform to debug why.
+
+There are a number of other command line options that you can optionally mix-in
+to your ChiselSim Scalatest test suite that are _not_ automatically available to
+ChiselSim.  These are available in the `chisel3.simulator.scalatest.Cli` object:
+
+- `EmitFsdb` adds an `-DemitFsdb=1` option which will cause the simulator, if it
+  supports it, to generate an FSDB waveform.
+- `EmitVpd` adds an `-DemitFsdb=1` option which will cause the simulator, if it
+  supports it, to generate an FSDB waveform.
+- `Scale` adds a `-Dscale=<float>` option.  This provides a way for a user to
+  "scale" a test up or down at test-tiem, e.g., to make the test run longer.
+  This feature is accessed via the `scaled` method that this trait provides.
+- `Simulator` adds a `-Dsimulator=<simulator-name>` argument.  This allows for
+  test-time selection of either VCS or verilator as the simulation backend.
+
+If the command line option that you want to add is not already available, you
+can add a custom option to your test using one of several methods provided in
+`chisel3.simulator.scalatest.HasCliOptions`.  The most flexible method is
+`addOption`.  This allows you to add an option that may change anything about
+the simulation including the Chisel elaboration, FIRRTL compilation, or generic
+or backend-specific settings.
+
+More commonly, you just want to add an integer, double, or string option to a
+test.  For this, simpler options
+(`chisel3.simulator.scalatest.CliOption.{simple, double, int, string}`) are
+provided.  After an option has been declared, it can be accessed _within a test_
+using the `getOption` method.
+
+:::warning
+
+The `getOption` method may only be used _inside_ a test.  If used outside a
+test, this will cause a runtime exception.
+
+:::
+
+The example below shows how to use the `int` option to set a test-time
+configurable seed:
+
+```scala mdoc:reset:silent
+import chisel3._
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.scalatest.HasCliOptions.CliOption
+import chisel3.util.random.LFSR
+import circt.stage.ChiselStage
+import org.scalatest.funspec.AnyFunSpec
+
+class ChiselSimExample extends AnyFunSpec with ChiselSim {
+
+  CliOption.int("seed", "the seed to use for the test")
+
+  class Foo(seed: Int) extends Module {
+    private val lfsr = LFSR(64, seed = Some(seed))
+  }
+
+  describe("Foo") {
+    it("generates FIRRTL for a module with a test-time configurable seed") {
+      ChiselStage.emitCHIRRTL(new Foo(getOption[Int]("seed").getOrElse(42)))
+    }
+  }
+
+}
+```
+
+:::warning
+
+Be parsimonious with test options.  While they can be useful, they may indicate
+an anti-pattern in testing.  If your test is test-time parametric, you are no
+longer always testing the same thing.  This can create holes when testing your
+Chisel generator if the correct parameters are not tested.
+
+Consider, instead, sweeping over test parameters _within your test_ or by
+writing multiple Scalatest tests.
+
+:::
+
 ## FileCheck
 
 Sometimes, it is sufficient to directly inspect the result of a generator.  This
 testing strategy is particularly relevent if you are trying to create very
-specific Verilog structures or to guarantee exact naming of specific constructs.
+specific FIRRTL or SystemVerilog structures or to guarantee exact naming of
+specific constructs.
 
 While simple testing can be done with string comparisons, this is often
 insufficient as it is necessary to both have a mixture of regular expression
@@ -230,6 +428,36 @@ for its own testing.
 
 :::
 
+When writing FileCheck tests, you will often be using a Chisel API to convert
+your Chisel circuit into FIRRTL or SystemVerilog.  Two methods exist to do this
+in the `circt.stage.ChiselStage` object:
+
+- `emitCHIRRTL` to generate FIRRTL with a few Chisel extensions
+- `emitSystemVerilog` to generate SystemVerilog
+
+Both of these methods take an optional `args` parameter which sets the Chisel
+elaboration options.  The latter method has an additional, optional
+`firtoolOpts` parameter which controls the `firtool` (FIRRTL compiler) options.
+
+Without any `firtoolOpts` provided to `emitSystemVerilog`, the generated
+SystemVerilog may be difficult for you to use FileCheck with due to the default
+SystemVerilog lowering, emission, and pretty printing used by `firtool`.  To
+make it easier to write your tests, we suggest using the following options:
+
+- `-loweringOptions=emittedLineLength=160` to increase the allowable line
+  length.  By default, `firtool` will wrap lines that exceed 80 characters.  You
+  may consider using a _very long_ line length (e.g., 8192) to avoid this
+  problem altogether.
+
+- `-loweringOptions=disallowLocalVariables` to disable generation of `automatic
+  logic` temporaries in always blocks.  This can cause temporaries to spill
+  within an always block which may be slightly unexpected.
+
+For more information about `firtool` and its lowering options see the [CIRCT's
+Verilog Generation
+documentation](https://circt.llvm.org/docs/VerilogGeneration/#controlling-output-style-with-loweringoptions)
+or invoke `firtool -help` for a complete list of all supported options.
+
 ### Example
 
 The example below shows a FileCheck test that checks that a module has a
@@ -241,10 +469,9 @@ written, this test will pass.
 import chisel3._
 import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.funspec.AnyFunSpec
 
-class FileCheckExample extends AnyFlatSpec with Matchers with FileCheck {
+class FileCheckExample extends AnyFunSpec with FileCheck {
 
   class Baz extends RawModule {
 
@@ -254,17 +481,19 @@ class FileCheckExample extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
-  behavior of "Foo"
+  describe("Foo") {
 
-  it should "simplify the constant computation in its body" in {
+    it("should simplify the constant computation in its body") {
 
-    ChiselStage.emitSystemVerilog(new Baz).fileCheck()(
-      """|CHECK:      module Baz(
-         |CHECK-NEXT:   output [31:0] out
-         |CHECK:        assign out = 32'h4;
-         |CHECK:      endmodule
-         |""".stripMargin
-    )
+      ChiselStage.emitSystemVerilog(new Baz).fileCheck()(
+        """|CHECK:      module Baz(
+           |CHECK-NEXT:   output [31:0] out
+           |CHECK:        assign out = 32'h4;
+           |CHECK:      endmodule
+           |""".stripMargin
+        )
+
+    }
 
   }
 

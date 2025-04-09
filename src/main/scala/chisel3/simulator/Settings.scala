@@ -80,6 +80,7 @@ object MacroText {
   * simulation runtime.
   * @param enableWavesAtTimeZero enable waveform dumping at time zero. This
   * requires a simulator capable of dumping waves.
+  * @param randomization random initialization settings to use
   */
 final class Settings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
@@ -88,7 +89,8 @@ final class Settings[A <: RawModule] private[simulator] (
   val printfCond:            Option[MacroText.Type[A]],
   val stopCond:              Option[MacroText.Type[A]],
   val plusArgs:              Seq[svsim.PlusArg],
-  val enableWavesAtTimeZero: Boolean = false
+  val enableWavesAtTimeZero: Boolean,
+  val randomization:         Randomization
 ) {
 
   def copy(
@@ -97,9 +99,10 @@ final class Settings[A <: RawModule] private[simulator] (
     printfCond:            Option[MacroText.Type[A]] = printfCond,
     stopCond:              Option[MacroText.Type[A]] = stopCond,
     plusArgs:              Seq[svsim.PlusArg] = plusArgs,
-    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero
+    enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
+    randomization:         Randomization = randomization
   ) =
-    new Settings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero)
+    new Settings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero, randomization)
 
   private[simulator] def preprocessorDefines(
     elaboratedModule: ElaboratedModule[A]
@@ -112,7 +115,7 @@ final class Settings[A <: RawModule] private[simulator] (
     ).flatMap {
       case (Some(a), macroName) => Some(a.toPreprocessorDefine(macroName, elaboratedModule))
       case (None, _)            => None
-    } ++ verilogLayers.preprocessorDefines(elaboratedModule)
+    } ++ verilogLayers.preprocessorDefines(elaboratedModule) ++ randomization.toPreprocessorDefines
 
   }
 
@@ -146,7 +149,8 @@ object Settings {
     printfCond = Some(MacroText.NotSignal(get = _.reset)),
     stopCond = Some(MacroText.NotSignal(get = _.reset)),
     plusArgs = Seq.empty,
-    enableWavesAtTimeZero = false
+    enableWavesAtTimeZero = false,
+    randomization = Randomization.random
   )
 
   /** Retun a default [[Settings]] for a [[RawModule]].
@@ -174,7 +178,8 @@ object Settings {
     printfCond = None,
     stopCond = None,
     plusArgs = Seq.empty,
-    enableWavesAtTimeZero = false
+    enableWavesAtTimeZero = false,
+    randomization = Randomization.random
   )
 
   /** Simple factory for construcing a [[Settings]] from arguments.
@@ -196,14 +201,16 @@ object Settings {
     printfCond:            Option[MacroText.Type[A]],
     stopCond:              Option[MacroText.Type[A]],
     plusArgs:              Seq[svsim.PlusArg],
-    enableWavesAtTimeZero: Boolean
+    enableWavesAtTimeZero: Boolean,
+    randomization:         Randomization
   ): Settings[A] = new Settings(
     verilogLayers = verilogLayers,
     assertVerboseCond = assertVerboseCond,
     printfCond = printfCond,
     stopCond = stopCond,
     plusArgs = plusArgs,
-    enableWavesAtTimeZero = enableWavesAtTimeZero
+    enableWavesAtTimeZero = enableWavesAtTimeZero,
+    randomization = randomization
   )
 
 }

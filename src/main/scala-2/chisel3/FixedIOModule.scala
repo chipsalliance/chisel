@@ -28,6 +28,14 @@ sealed trait FixedIOBaseModule[A <: Data] extends BaseModule {
   */
 class FixedIORawModule[A <: Data](final val ioGenerator: A) extends RawModule with FixedIOBaseModule[A]
 
+/** A Chisel module whose IO (in addition to [[clock]] and [[reset]]) is determined
+ *  by an IO generator. This module cannot have additional IO created by modules that
+ *  extend it.
+  *
+  * @param ioGenerator
+  */
+class FixedIOModule[A <: Data](final val ioGenerator: A) extends Module with FixedIOBaseModule[A]
+
 /** A Chisel blackbox whose IO is determined by an IO generator.  This module
   * cannot have additional IO created by modules that extend it.
   *

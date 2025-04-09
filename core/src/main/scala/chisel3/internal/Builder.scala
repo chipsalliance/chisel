@@ -12,7 +12,7 @@ import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.firrtl.Converter
 import chisel3.internal.naming._
-import _root_.firrtl.annotations.{Annotation, CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import _root_.firrtl.annotations.{Annotation, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.{annoSeqToSeq, AnnotationSeq}
 import _root_.firrtl.renamemap.MutableRenameMap
@@ -344,20 +344,6 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
     case Some(p)          => p.name
     case None             => throwException(s"$instanceName doesn't have a parent")
   }
-  def circuitName: String = _parent match {
-    case None =>
-      // Only modules have circuits
-      this match {
-        case b: BaseModule =>
-          b._circuit match {
-            case Some(c) => c.circuitName
-            case None    => instanceName
-          }
-        case _ => instanceName
-      }
-    case Some(ViewParent) => reifyParent.circuitName
-    case Some(p)          => p.circuitName
-  }
 }
 
 /** Holds the implementation of toNamed for Data and MemBase */
@@ -368,7 +354,7 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toNamed: ComponentName = {
     assertValidTarget()
-    ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+    ComponentName(this.instanceName, ModuleName(this.parentModName))
   }
 
   /** Returns a FIRRTL ReferenceTarget that references this object
@@ -486,10 +472,11 @@ private[chisel3] class DynamicContext(
   val sourceRoots:         Seq[File],
   val defaultNamespace:    Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
-  val loggerOptions: LoggerOptions,
-  val definitions:   ArrayBuffer[Definition[_]],
-  val contextCache:  BuilderContextCache,
-  val layerMap:      Map[layer.Layer, layer.Layer]
+  val loggerOptions:      LoggerOptions,
+  val definitions:        ArrayBuffer[Definition[_]],
+  val contextCache:       BuilderContextCache,
+  val layerMap:           Map[layer.Layer, layer.Layer],
+  val inlineTestIncluder: InlineTestIncluder
 ) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
@@ -953,8 +940,8 @@ private[chisel3] object Builder extends LazyLogging {
   // Builds a RenameMap for all Views that do not correspond to a single Data
   // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned
   // RenameMap can split into the constituent parts
-  private[chisel3] def makeViewRenameMap: MutableRenameMap = {
-    val renames = MutableRenameMap()
+  private[chisel3] def makeViewRenameMap(circuitName: String): MutableRenameMap = {
+    val renames = MutableRenameMap(circuitName)
     for (view <- unnamedViews if !view.isLit) { // Aggregates can be literals too!
       reifySingleTarget(view) match {
         // If the target reifies to a single target, we don't need to rename.
@@ -1131,7 +1118,7 @@ private[chisel3] object Builder extends LazyLogging {
           components.last.name,
           components.toSeq,
           annotations.toSeq,
-          makeViewRenameMap,
+          makeViewRenameMap(circuitName = components.last.name),
           typeAliases,
           layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
           optionDefs
@@ -1227,7 +1214,8 @@ private[chisel3] object Builder extends LazyLogging {
       Builder.setPrefix(state.prefix)
       Builder.currentClock = state.clock
       Builder.currentReset = state.reset
-      Builder.enabledLayers = enabledLayers
+      Builder.enabledLayers.clear()
+      Builder.enabledLayers ++= state.enabledLayers
     }
 
     /** Run the `thunk` with the context provided by `state`.  Save the [[Builder]]

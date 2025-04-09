@@ -48,11 +48,10 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
         ret
           .map(_.map { newT =>
             val result = newT match {
-              case c: InstanceTarget => ModuleName(c.ofModule, CircuitName(c.circuit))
+              case c: InstanceTarget => ModuleName(c.ofModule)
               case c: IsMember =>
                 val local = Target.referringModule(c)
                 c.setPathTarget(local)
-              case c: CircuitTarget => c.toNamed
               case other => throw Target.NamedException(s"Cannot convert $other to [[Named]]")
             }
             (Target.convertTarget2Named(result): @unchecked) match {
