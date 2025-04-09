@@ -1,17 +1,18 @@
 package chiselTests
 
-import chisel3._
+import chisel3.{assert => _, _}
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
+import chisel3.simulator.scalatest.ChiselSim
 import chisel3.testers._
 import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
-import chisel3.util.Enum
+import chisel3.util.{Counter, Enum}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import circt.stage.ChiselStage.emitCHIRRTL
+import circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
 
 // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
 // socket to which to attach a monitor.
@@ -22,7 +23,7 @@ class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: T
 }
 
 object TestHarnessWithMonitorSocket {
-  implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket] =
+  implicit def generator[M <: RawModule with HasMonitorSocket] =
     TestHarnessGenerator[M, Unit](new TestHarnessWithMonitorSocket(_))
 }
 
@@ -43,7 +44,7 @@ class ProtocolBundle(width: Int) extends Bundle {
 
 class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
   val io = IO(Input(bundleType))
-  assert(io.in === io.out, "in === out")
+  chisel3.assert(io.in === io.out, "in === out")
 }
 
 @instantiable
@@ -56,7 +57,7 @@ trait HasProtocolInterface extends HasTests { this: RawModule =>
 object ProtocolChecks {
   def check(v: Int)(instance: Instance[RawModule with HasProtocolInterface]) = {
     instance.io.in := v.U
-    assert(instance.io.out === v.U): Unit
+    chisel3.assert(instance.io.out === v.U): Unit
   }
 }
 
@@ -97,12 +98,12 @@ class ModuleWithTests(
 
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    assert(instance.io.out === 3.U): Unit
+    chisel3.assert(instance.io.out === 3.U): Unit
   }
 
   test("bar") { instance =>
     instance.io.in := 5.U(ioWidth.W)
-    assert(instance.io.out =/= 0.U): Unit
+    chisel3.assert(instance.io.out =/= 0.U): Unit
   }
 
   test("with_result") { instance =>
@@ -125,11 +126,54 @@ class ModuleWithTests(
     import TestHarnessWithMonitorSocket._
     test("with_monitor") { instance =>
       instance.io.in := 5.U(ioWidth.W)
-      assert(instance.io.out =/= 0.U): Unit
+      chisel3.assert(instance.io.out =/= 0.U): Unit
     }
   }
 
   test("check2")(ProtocolChecks.check(2))
+
+  test("signal_pass") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    val result = Wire(new TestResultBundle())
+    result.success := true.B
+    result.finish := counter.value === 15.U
+    result
+  }
+
+  test("signal_pass_2") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    val result = Wire(new TestResultBundle())
+    result.success := true.B
+    result.finish := counter.value === 15.U
+    result
+  }
+
+  test("signal_fail") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    val result = Wire(new TestResultBundle())
+    result.success := false.B
+    result.finish := counter.value === 15.U
+    result
+  }
+
+  test("timeout") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+  }
+
+  test("assertion") { instance =>
+    val counter = Counter(16)
+    counter.inc()
+    instance.io.in := counter.value
+    chisel3.assert(instance.io.out < 15.U, "counter hit max"): Unit
+  }
 }
 
 @instantiable
@@ -138,11 +182,11 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   io.out := io.in
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    assert(instance.io.out === 3.U): Unit
+    chisel3.assert(instance.io.out === 3.U): Unit
   }
 }
 
-class InlineTestSpec extends AnyFlatSpec with FileCheck {
+class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   private def makeArgs(moduleGlobs: Seq[String], testGlobs: Seq[String]): Array[String] =
     (
       moduleGlobs.map { glob => s"--include-tests-module=$glob" } ++
@@ -320,8 +364,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
   }
 
   it should "compile to verilog" in {
-    ChiselStage
-      .emitSystemVerilog(new ModuleWithTests, args = argsElaborateAllTests)
+    emitSystemVerilog(new ModuleWithTests, args = argsElaborateAllTests)
       .fileCheck()(
         """
       | CHECK: module ModuleWithTests
@@ -413,5 +456,122 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   output success : UInt<1>
       """
     )
+  }
+
+  def assertPass(result: TestResult.Type): Unit = result match {
+    case TestResult.Success    => ()
+    case TestResult.Failure(e) => throw e
+  }
+
+  def assertFail(result: TestResult.Type): Unit = result match {
+    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Failure(e) =>
+      e.getMessage()
+        .fileCheck() {
+          """
+          | CHECK: The test finished and signaled failure
+          """
+        }
+  }
+
+  def assertTimeout(timeout: Int)(result: TestResult.Type): Unit = result match {
+    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Failure(e) =>
+      e.getMessage()
+        .fileCheck() {
+          s"""
+          | CHECK: A timeout occurred after ${timeout} timesteps
+          """
+        }
+  }
+
+  def assertAssertion(message: String)(result: TestResult.Type): Unit = result match {
+    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Failure(e) =>
+      e.getMessage()
+        .fileCheck() {
+          """
+          | CHECK: One or more assertions failed during Chiselsim simulation
+          | CHECK: counter hit max
+          """
+        }
+  }
+
+  it should "simulate and pass if finish asserted with success=1" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Name("signal_pass"),
+      timeout = 100
+    )
+    assertPass(results("signal_pass"))
+  }
+
+  it should "simulate and fail if finish asserted with success=0" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Name("signal_fail"),
+      timeout = 100
+    )
+    assertFail(results("signal_fail"))
+  }
+
+  it should "simulate and timeout if finish not asserted" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Name("timeout"),
+      timeout = 100
+    )
+    assertTimeout(100)(results("timeout"))
+  }
+
+  it should "simulate and fail early if assertion raised" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Name("assertion"),
+      timeout = 100
+    )
+    assertAssertion("counter hit max")(results("assertion"))
+  }
+
+  it should "run multiple passing simulations" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Names(Seq("signal_pass", "signal_pass_2")),
+      timeout = 100
+    )
+    results.all.foreach { case (name, result) =>
+      assertPass(result)
+    }
+  }
+
+  it should "run one passing and one failing simulation" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Names(Seq("signal_pass", "signal_fail")),
+      timeout = 100
+    )
+    assertPass(results("signal_pass"))
+    assertFail(results("signal_fail"))
+  }
+
+  it should "simulate all tests" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.All,
+      timeout = 100
+    )
+    assert(results.all.size == 11)
+
+    assertFail(results("signal_fail"))
+    assertTimeout(100)(results("timeout"))
+    assertAssertion("counter hit max")(results("assertion"))
+    assertTimeout(100)(results("check1"))
+    assertTimeout(100)(results("check2"))
+    assertTimeout(100)(results("bar"))
+    assertPass(results("signal_pass"))
+    assertPass(results("signal_pass_2"))
+    assertTimeout(100)(results("with_monitor"))
+    assertTimeout(100)(results("with_result"))
+    assertTimeout(100)(results("foo"))
   }
 }
