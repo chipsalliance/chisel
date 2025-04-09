@@ -176,6 +176,14 @@ trait HasTests { module: RawModule =>
       (testGenerator.params, shouldElaborate)
     }
 
+  private val elaboratedTests = new mutable.HashMap[String, TestHarness[M, _]]
+
+  private[chisel3] def getElaboratedTestModule(testName: String): TestHarness[M, _] =
+    elaboratedTests(testName)
+
+  private[chisel3] def getElaboratedTestModules: Seq[(String, TestHarness[M, _])] =
+    elaboratedTests.toSeq
+
   /** Generate a public module that instantiates this module. The default
     *  testharness has clock and synchronous reset IOs and contains the test
     *  body.
@@ -205,7 +213,11 @@ trait HasTests { module: RawModule =>
   afterModuleBuilt {
     getRegisteredTestGenerators.foreach { case (testGenerator, shouldElaborate) =>
       if (shouldElaborate) {
-        Definition(testGenerator.generate())
+        Definition {
+          val testHarness = testGenerator.generate()
+          elaboratedTests += testGenerator.params.testName -> testHarness
+          testHarness
+        }
       }
     }
   }
