@@ -72,7 +72,7 @@ sealed abstract class Printable {
 
 object Printable {
 
-  private[chisel3] def isNoArgSpecifier(c: Char): Boolean = c == '%' || c == 'm'
+  private[chisel3] def isNoArgSpecifier(c: Char): Boolean = c == '%' || c == 'm' || c == 'T'
 
   /** Pack standard printf fmt, args* style into Printable
     */
@@ -102,7 +102,7 @@ object Printable {
     while (iter < fmt.size) {
       // Encountered % which is either
       // 1. Describing a format specifier.
-      // 2. %% or %m
+      // 2. %%, %m, or %T
       // 3. Dangling percent - most likely due to a typo - intended literal percent or forgot the specifier.
       // Try to give meaningful error reports
       if (fmt(iter) == '%') {
@@ -193,10 +193,10 @@ object Printable {
   /** Resolve Printables that are resolved at Chisel-time */
   private[chisel3] def resolve(pable: Printable, ctx: Component)(implicit info: SourceInfo): Printable =
     pable.map {
-      case Name(data)             => PString(data.ref.name)
-      case FullName(data)         => PString(data.ref.fullName(ctx))
-      case HierarchicalModuleName => PString("{{HierarchicalModuleName}}")
-      case other                  => other
+      case Name(data)     => PString(data.ref.name)
+      case FullName(data) => PString(data.ref.fullName(ctx))
+      case s: SpecialFirrtlSubstitution => PString(s.substitutionString)
+      case other => other
     }
 }
 
@@ -377,11 +377,28 @@ case object Percent extends Printable {
   final def unpack:     (String, Seq[Data]) = ("%%", List.empty)
 }
 
+/** Printable with special representation in FIRRTL
+  *
+  * @note The name of the singleton object exactly matches the FIRRTL value.
+  */
+sealed trait SpecialFirrtlSubstitution { self: Singleton with Printable =>
+  private[chisel3] final def substitutionString: String = "{{" + this.getClass.getSimpleName.dropRight(1) + "}}"
+}
+
 /** Represents the hierarchical name in the Verilog (`%m`) */
-case object HierarchicalModuleName extends Printable {
+case object HierarchicalModuleName extends Printable with SpecialFirrtlSubstitution {
   @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%m", List.empty)
   @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
   final def unpackArgs: Seq[Bits] = List.empty
   final def unpack:     (String, Seq[Data]) = ("%m", List.empty)
+}
+
+/** Represents the simulation time in the Verilog, similar to `%t` + `$time` */
+case object SimulationTime extends Printable with SpecialFirrtlSubstitution {
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
+  final def unpack(ctx: Component)(implicit info: SourceInfo): (String, Iterable[String]) = ("%T", List.empty)
+  @deprecated("Use unpack with no arguments instead.", "Chisel 7.0.0")
+  final def unpackArgs: Seq[Bits] = List.empty
+  final def unpack:     (String, Seq[Data]) = ("%T", List.empty)
 }

@@ -248,6 +248,8 @@ package object chisel3 {
                 Percent
               } else if (s(end + 1) == 'm') {
                 HierarchicalModuleName
+              } else if (s(end + 1) == 'T') {
+                SimulationTime
               } else {
                 throw new UnknownFormatConversionException("Un-escaped %")
               }
