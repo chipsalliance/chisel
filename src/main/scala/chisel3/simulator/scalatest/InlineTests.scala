@@ -13,10 +13,16 @@ private case class FailedTest(
   actual:   TestResult.Type
 )
 
+/** Provides APIs for running inline tests inside of a scalatest spec. */
 trait InlineTests extends AnyFunSpec with ChiselSim {
   def runInlineTests(
     parametrizationName: String
-  )(gen: => RawModule with HasTests)(tests: TestChoice.Type = TestChoice.All, timeout: Int = 1000): Unit = {
+  )(
+    gen: => RawModule with HasTests
+  )(
+    tests:   TestChoice.Type = TestChoice.All,
+    timeout: Int = 1000
+  ): Unit = {
     val testChoicePhrase = tests match {
       case TestChoice.All              => "all tests"
       case TestChoice.Names(testNames) => "tests named " + testNames.map(n => s"'${n}'").mkString(", ")
@@ -38,7 +44,7 @@ trait InlineTests extends AnyFunSpec with ChiselSim {
         val failuresList = failures.map { case FailedTest(testName, expected, actual) =>
           val expectedVerbPhrase = expected match {
             case TestResult.Success => "succeed"
-            case failure: TestResult.Failure => s"fail with: ${failure.message}"
+            case failure: TestResult.Failure => s"fail: ${failure.message}"
           }
           val actualVerbPhrase = actual match {
             case TestResult.Success => "succeeded"
