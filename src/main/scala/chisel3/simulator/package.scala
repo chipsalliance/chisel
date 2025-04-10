@@ -3,7 +3,7 @@ package chisel3
 import svsim._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
-import chisel3.experimental.inlinetest.{HasTests, TestHarness}
+import chisel3.experimental.inlinetest.{HasTests, ElaboratedTest, TestParameters, TestHarness}
 import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
@@ -145,21 +145,21 @@ package object simulator {
       includeTestGlobs: Seq[String],
       args:             Seq[String] = Seq.empty,
       firtoolArgs:      Seq[String] = Seq.empty
-    ): Seq[(Workspace, String, ElaboratedModule[TestHarness[T, _]])] = {
+    ): Seq[(Workspace, TestParameters[_, _], ElaboratedModule[TestHarness[T, _]])] = {
       val updatedArgs = args ++ includeTestGlobs.map("--include-tests-name=" + _)
       val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
-      generated.testHarnesses.map { case (testName, testHarness) =>
-        val testWorkspace = workspace.shallowCopy(workspace.absolutePath + "/tests/" + testName)
-        val ports = getModuleInfoPorts(testHarness)
-        val moduleInfo = testWorkspace.initializeModuleInfo(testHarness, ports.map(_._2))
+      generated.testHarnesses.map { case elaboratedTest =>
+        val testWorkspace = workspace.shallowCopy(workspace.absolutePath + "/tests/" + elaboratedTest.params.testName)
+        val ports = getModuleInfoPorts(elaboratedTest.testHarness)
+        val moduleInfo = testWorkspace.initializeModuleInfo(elaboratedTest.testHarness, ports.map(_._2))
         val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
-        (testWorkspace, testName, new ElaboratedModule(testHarness.asInstanceOf[TestHarness[T, _]], ports, layers))
+        (testWorkspace, elaboratedTest.params, new ElaboratedModule(elaboratedTest.testHarness.asInstanceOf[TestHarness[T, _]], ports, layers))
       }
     }
 
     case class GeneratedWorkspaceInfo[T <: RawModule](
       dut:               T,
-      testHarnesses:     Seq[(String, TestHarness[_, _])],
+      testHarnesses:     Seq[ElaboratedTest[T, _]],
       outputAnnotations: AnnotationSeq
     )
 
@@ -170,7 +170,7 @@ package object simulator {
       firtoolArgs:    Seq[String]
     ): GeneratedWorkspaceInfo[T] = {
       var someDut:           Option[() => T] = None
-      var someTestHarnesses: Option[() => Seq[(String, TestHarness[_, _])]] = None
+      var someTestHarnesses: Option[() => Seq[ElaboratedTest[T, _]]] = None
       val chiselArgs = Array("--target", "systemverilog", "--split-verilog") ++ args
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
         chiselArgs,
@@ -180,7 +180,7 @@ package object simulator {
             someDut = Some(() => dut)
             someTestHarnesses = Some(() =>
               dut match {
-                case dut: HasTests => dut.getElaboratedTestModules
+                case dut: HasTests => dut.getElaboratedTests.map(_.asInstanceOf[ElaboratedTest[T, _]])
                 case _ => Nil
               }
             )

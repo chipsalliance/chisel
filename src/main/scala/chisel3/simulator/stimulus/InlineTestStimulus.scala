@@ -2,10 +2,23 @@
 
 package chisel3.simulator.stimulus
 
+import scala.util.control.NoStackTrace
+
 import chisel3.{Clock, Module, RawModule, Reset}
 import chisel3.simulator.{AnySimulatedModule, Exceptions}
 import chisel3.simulator.stimulus.Stimulus
 import chisel3.experimental.inlinetest.TestHarness
+
+import firrtl.options.StageUtils.dramaticMessage
+
+class InlineTestSignaledFailureException private[simulator]
+    extends RuntimeException(
+      dramaticMessage(
+        header = Some(s"The test finished and signaled failure"),
+        body = ""
+      )
+    )
+    with NoStackTrace
 
 trait InlineTestStimulus extends Stimulus.Type[TestHarness[_, _]] {
   protected def _timeout: Int
@@ -52,7 +65,7 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_, _]] {
     }
 
     if (success.get().asBigInt == 0) {
-      throw new Exceptions.TestFailed
+      throw new InlineTestSignaledFailureException
     }
   }
 }

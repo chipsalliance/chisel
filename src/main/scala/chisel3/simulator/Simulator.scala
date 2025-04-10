@@ -1,7 +1,7 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, TestHarness}
+import chisel3.experimental.inlinetest.{HasTests, TestHarness, TestParameters}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.{FileSystems, PathMatcher, Paths}
 import scala.util.{Failure, Success, Try}
@@ -17,22 +17,14 @@ object Exceptions {
           body = message
         )
       )
-      with NoStackTrace
+      with NoStackTrace {
+      }
 
   class Timeout private[simulator] (timesteps: BigInt, message: String)
       extends RuntimeException(
         dramaticMessage(
           header = Some(s"A timeout occurred after $timesteps timesteps"),
           body = message
-        )
-      )
-      with NoStackTrace
-
-  class TestFailed private[simulator]
-      extends RuntimeException(
-        dramaticMessage(
-          header = Some(s"The test finished and signaled failure"),
-          body = ""
         )
       )
       with NoStackTrace
@@ -147,7 +139,7 @@ trait Simulator[T <: Backend] {
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
-  ): Seq[(String, Simulator.BackendInvocationDigest[U])] = {
+  ): Seq[(TestParameters[_, _], Simulator.BackendInvocationDigest[U])] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val filesystem = FileSystems.getDefault()
@@ -158,13 +150,13 @@ trait Simulator[T <: Backend] {
         args = chiselOptsModifications(chiselOpts).toSeq,
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
-      .flatMap { case (testWorkspace, testName, elaboratedModule) =>
+      .flatMap { case (testWorkspace, test, elaboratedModule) =>
         val includeTest = includeTestGlobs.map { glob =>
           filesystem.getPathMatcher(s"glob:$glob")
-        }.exists(_.matches(Paths.get(testName)))
+        }.exists(_.matches(Paths.get(test.testName)))
         Option.when(includeTest) {
           testWorkspace.generateAdditionalSources()
-          testName -> _simulate(testWorkspace, elaboratedModule, settings)(body)
+          (test, _simulate(testWorkspace, elaboratedModule, settings)(body))
         }
       }
   }

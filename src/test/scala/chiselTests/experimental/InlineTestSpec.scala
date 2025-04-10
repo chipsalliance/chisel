@@ -70,11 +70,7 @@ trait HasTestsProperty { this: RawModule with HasTests =>
 
   atModuleBodyEnd {
     testNames.foreach { testNames =>
-      testNames := Property {
-        getRegisteredTests.flatMap { case (test, willElaborate) =>
-          Option.when(willElaborate)(test.testName)
-        }
-      }
+      testNames := Property(this.getTests.map(_.testName))
     }
   }
 }
@@ -459,42 +455,26 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   }
 
   def assertPass(result: TestResult.Type): Unit = result match {
-    case TestResult.Success    => ()
-    case TestResult.Failure(e) => throw e
+    case TestResult.Success => ()
+    case result: TestResult.Failure => fail(s"unexpected failure: ${result}")
   }
 
   def assertFail(result: TestResult.Type): Unit = result match {
     case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.Failure(e) =>
-      e.getMessage()
-        .fileCheck() {
-          """
-          | CHECK: The test finished and signaled failure
-          """
-        }
+    case TestResult.SignaledFailure => () // expected failure
+    case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
   def assertTimeout(timeout: Int)(result: TestResult.Type): Unit = result match {
     case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.Failure(e) =>
-      e.getMessage()
-        .fileCheck() {
-          s"""
-          | CHECK: A timeout occurred after ${timeout} timesteps
-          """
-        }
+    case TestResult.Timeout(msg) if msg.contains(s"after ${timeout} timesteps") => ()
+    case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
   def assertAssertion(message: String)(result: TestResult.Type): Unit = result match {
     case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.Failure(e) =>
-      e.getMessage()
-        .fileCheck() {
-          """
-          | CHECK: One or more assertions failed during Chiselsim simulation
-          | CHECK: counter hit max
-          """
-        }
+    case TestResult.Assertion(msg) if msg.contains("counter hit max") => ()
+    case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
   it should "simulate and pass if finish asserted with success=1" in {
