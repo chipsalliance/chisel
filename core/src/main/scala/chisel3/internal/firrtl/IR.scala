@@ -492,7 +492,7 @@ private[chisel3] object ir {
 
   case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
 
-  case class Printf(id: printf.Printf, sourceInfo: SourceInfo, fd: Option[String], clock: Arg, pable: Printable)
+  case class Printf(id: printf.Printf, sourceInfo: SourceInfo, filename: Option[String], clock: Arg, pable: Printable)
       extends Definition
 
   case class ProbeDefine(sourceInfo: SourceInfo, sink: Arg, probe: Arg) extends Command

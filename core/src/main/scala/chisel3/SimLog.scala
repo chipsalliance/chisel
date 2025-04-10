@@ -34,8 +34,8 @@ sealed trait SimLog extends SimLogIntf {
     this.printfWithReset(pable)(sourceInfo)
   }
 
-  // The actually underlying file descriptor, None means just use printf
-  protected def fileDescriptor: Option[String]
+  // Eventually this might be a richer type but for now Some[String] is filename, None is Stderr
+  protected def _filename: Option[String]
 
   private[chisel3] def printfWithReset(
     pable: Printable
@@ -60,7 +60,7 @@ sealed trait SimLog extends SimLogIntf {
     Printable.checkScope(pable)
 
     layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-      Builder.pushCommand(Printf(printfId, sourceInfo, this.fileDescriptor, clock.ref, pable))
+      Builder.pushCommand(Printf(printfId, sourceInfo, this._filename, clock.ref, pable))
     }
     printfId
   }
@@ -76,12 +76,12 @@ sealed trait SimLog extends SimLogIntf {
 
 // Uses firrtl fprintf with a String filename
 private case class SimLogFile(filename: String) extends SimLog {
-  override protected def fileDescriptor: Option[String] = Some(filename)
+  override protected def _filename: Option[String] = Some(filename)
 }
 
 // Defaults to firrtl printf
 private object StdErrSimLog extends SimLog {
-  override protected def fileDescriptor: Option[String] = None
+  override protected def _filename: Option[String] = None
 }
 
 object SimLog {
