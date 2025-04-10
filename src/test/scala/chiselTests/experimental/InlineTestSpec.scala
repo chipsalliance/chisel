@@ -69,11 +69,7 @@ trait HasTestsProperty { this: RawModule with HasTests =>
 
   atModuleBodyEnd {
     testNames.foreach { testNames =>
-      testNames := Property {
-        getRegisteredTests.flatMap { case (test, willElaborate) =>
-          Option.when(willElaborate)(test.testName)
-        }
-      }
+      testNames := Property(this.getTests.map(_.testName))
     }
   }
 }
