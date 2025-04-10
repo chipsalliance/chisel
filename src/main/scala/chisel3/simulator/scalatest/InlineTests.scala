@@ -33,10 +33,11 @@ trait InlineTests extends AnyFunSpec with ChiselSim {
       val results = simulateTests(gen, tests, timeout)
 
       val failures: Seq[FailedTest] =
-        results.all.flatMap { case (test, actual) =>
-          val expected = test.expectedResult
+        results.flatMap { result =>
+          val expected = result.elaboratedTest.expectedResult
+          val actual = result.actualResult
           Option.when(actual != expected) {
-            FailedTest(test.testName, expected, actual)
+            FailedTest(result.elaboratedTest.params.testName, expected, actual)
           }
         }
 

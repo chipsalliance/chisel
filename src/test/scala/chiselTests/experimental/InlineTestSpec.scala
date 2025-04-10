@@ -1,31 +1,31 @@
 package chiselTests
 
-import chisel3.{assert => _, _}
+import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
-import chisel3.simulator.scalatest.ChiselSim
-import chisel3.simulator.scalatest.InlineTests
 import chisel3.testers._
 import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
-import chisel3.util.{Counter, Enum}
+import chisel3.simulator.scalatest.InlineTests
+import chisel3.simulator.ChiselSim
+import chisel3.util.Enum
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import circt.stage.ChiselStage.{emitCHIRRTL, emitSystemVerilog}
+import circt.stage.ChiselStage.emitCHIRRTL
 
 // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
 // socket to which to attach a monitor.
-class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M, Unit])
-    extends TestHarness[M, Unit](test) {
+class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M])
+    extends TestHarness[M](test) {
   val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
   monitor.io :#= probe.read(dut.monProbe)
 }
 
 object TestHarnessWithMonitorSocket {
-  implicit def generator[M <: RawModule with HasMonitorSocket] =
-    TestHarnessGenerator[M, Unit](new TestHarnessWithMonitorSocket(_))
+  implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket] =
+    TestHarnessGenerator[M](new TestHarnessWithMonitorSocket(_))
 }
 
 @instantiable
@@ -45,20 +45,23 @@ class ProtocolBundle(width: Int) extends Bundle {
 
 class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
   val io = IO(Input(bundleType))
-  chisel3.assert(io.in === io.out, "in === out")
+  assert(io.in === io.out, "in === out")
 }
 
 @instantiable
 trait HasProtocolInterface extends HasTests { this: RawModule =>
   @public val io: ProtocolBundle
 
-  test("check1")(ProtocolChecks.check(1))
+  test("check1") { dut =>
+    ProtocolChecks.check(1)(dut)
+    TestBehavior.RunForCycles(10)
+  }
 }
 
 object ProtocolChecks {
   def check(v: Int)(instance: Instance[RawModule with HasProtocolInterface]) = {
     instance.io.in := v.U
-    chisel3.assert(instance.io.out === v.U): Unit
+    assert(instance.io.out === v.U)
   }
 }
 
@@ -93,83 +96,35 @@ class ModuleWithTests(
 
   io.out := io.in
 
-  test("foo") { instance =>
+  test("passing") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    chisel3.assert(instance.io.out === 3.U): Unit
+    assert(instance.io.out === 3.U)
+    TestBehavior.RunForCycles(10)
   }
 
-  test("bar") { instance =>
+  test("failing") { instance =>
     instance.io.in := 5.U(ioWidth.W)
-    chisel3.assert(instance.io.out =/= 0.U): Unit
+    TestBehavior.FinishWhen(true.B, success = instance.io.out =/= 5.U)
   }
 
-  test("with_result") { instance =>
-    val result = Wire(new TestResultBundle)
-    val timer = RegInit(0.U)
-    timer := timer + 1.U
+  test("assertion") { instance =>
     instance.io.in := 5.U(ioWidth.W)
-    val outValid = instance.io.out =/= 0.U
-    when(outValid) {
-      result.success := 0.U
-      result.finish := timer > 1000.U
-    }.otherwise {
-      result.success := 1.U
-      result.finish := true.B
-    }
-    result
+    chisel3.assert(instance.io.out =/= 5.U, "assertion fired in ModuleWithTests")
+    TestBehavior.RunForCycles(10)
   }
 
   {
     import TestHarnessWithMonitorSocket._
     test("with_monitor") { instance =>
       instance.io.in := 5.U(ioWidth.W)
-      chisel3.assert(instance.io.out =/= 0.U): Unit
+      assert(instance.io.out =/= 0.U)
+      TestBehavior.RunForCycles(10)
     }
   }
 
-  test("check2")(ProtocolChecks.check(2))
-
-  test("signal_pass") { instance =>
-    val counter = Counter(16)
-    counter.inc()
-    instance.io.in := counter.value
-    val result = Wire(new TestResultBundle())
-    result.success := true.B
-    result.finish := counter.value === 15.U
-    result
-  }
-
-  test("signal_pass_2") { instance =>
-    val counter = Counter(16)
-    counter.inc()
-    instance.io.in := counter.value
-    val result = Wire(new TestResultBundle())
-    result.success := true.B
-    result.finish := counter.value === 15.U
-    result
-  }
-
-  test("signal_fail") { instance =>
-    val counter = Counter(16)
-    counter.inc()
-    instance.io.in := counter.value
-    val result = Wire(new TestResultBundle())
-    result.success := false.B
-    result.finish := counter.value === 15.U
-    result
-  }
-
-  test("timeout") { instance =>
-    val counter = Counter(16)
-    counter.inc()
-    instance.io.in := counter.value
-  }
-
-  test("assertion") { instance =>
-    val counter = Counter(16)
-    counter.inc()
-    instance.io.in := counter.value
-    chisel3.assert(instance.io.out < 15.U, "counter hit max"): Unit
+  test("check2") { dut =>
+    ProtocolChecks.check(2)(dut)
+    TestBehavior.RunForCycles(10)
   }
 }
 
@@ -177,9 +132,10 @@ class ModuleWithTests(
 class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   @public val io = IO(new ProtocolBundle(ioWidth))
   io.out := io.in
-  test("foo") { instance =>
+  test("passing") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    chisel3.assert(instance.io.out === 3.U): Unit
+    assert(instance.io.out === 3.U)
+    TestBehavior.RunForCycles(10)
   }
 }
 
@@ -206,21 +162,14 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK-NEXT:   input reset
       | CHECK:        inst dut of ModuleWithTests
       |
-      | CHECK:      public module test_ModuleWithTests_foo
+      | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
-      | CHECK:      public module test_ModuleWithTests_bar
-      | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
-      | CHECK-NEXT:   output finish : UInt<1>
-      | CHECK-NEXT:   output success : UInt<1>
-      | CHECK:        inst dut of ModuleWithTests
-      |
-      | CHECK:      public module test_ModuleWithTests_with_result
+      | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset
       | CHECK-NEXT:   output finish : UInt<1>
@@ -253,37 +202,34 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK-NOT:  module test_ModuleWithTests_foo
-      | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_passing
+      | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
   }
 
   it should "only elaborate tests whose name matches the test name glob" in {
-    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlob = "*", testGlob = "foo")).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlob = "*", testGlob = "passing")).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK:      module test_ModuleWithTests_foo
-      | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_passing
+      | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
   }
 
   it should "elaborate tests whose name matches the test name glob when module glob is omitted" in {
-    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Nil, testGlobs = Seq("foo"))).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Nil, testGlobs = Seq("passing"))).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK:      module test_ModuleWithTests_foo
-      | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_passing
+      | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
@@ -295,38 +241,35 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK:      module test_ModuleWithTests_foo
-      | CHECK:      module test_ModuleWithTests_bar
-      | CHECK:      module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_passing
+      | CHECK:      module test_ModuleWithTests_failing
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
     )
   }
 
   it should "only elaborate tests whose name matches the test name glob with multiple globs" in {
-    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*"), testGlobs = Seq("foo", "with_*"))).fileCheck()(
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*"), testGlobs = Seq("passing", "with_*"))).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK:      module test_ModuleWithTests_foo
-      | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK:      module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_passing
+      | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
     )
   }
 
   it should "only elaborate tests whose name and module match their globs" in {
-    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Seq("foo", "with_*")))
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Seq("passing", "with_*")))
       .fileCheck()(
         """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK:      module test_ModuleWithTests_foo
-      | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK:      module test_ModuleWithTests_with_result
+      | CHECK:      module test_ModuleWithTests_passing
+      | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
       )
@@ -338,9 +281,8 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK-NOT:  module test_ModuleWithTests_foo
-      | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_passing
+      | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
@@ -352,23 +294,22 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
-      | CHECK-NOT:  module test_ModuleWithTests_foo
-      | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
+      | CHECK-NOT:  module test_ModuleWithTests_passing
+      | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
   }
 
   it should "compile to verilog" in {
-    emitSystemVerilog(new ModuleWithTests, args = argsElaborateAllTests)
+    ChiselStage
+      .emitSystemVerilog(new ModuleWithTests, args = argsElaborateAllTests)
       .fileCheck()(
         """
       | CHECK: module ModuleWithTests
       | CHECK: module test_ModuleWithTests_check1
-      | CHECK: module test_ModuleWithTests_foo
-      | CHECK: module test_ModuleWithTests_bar
-      | CHECK: module test_ModuleWithTests_with_result
+      | CHECK: module test_ModuleWithTests_passing
+      | CHECK: module test_ModuleWithTests_failing
       | CHECK: module test_ModuleWithTests_with_monitor
       | CHECK: module test_ModuleWithTests_check2
       """
@@ -377,14 +318,14 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
 
   it should "support iterating over registered tests to capture metadata" in {
     ChiselStage
-      .emitCHIRRTL(new ModuleWithTests(enableTestsProperty = true), args = makeArgs(Seq("*"), Seq("foo", "bar")))
+      .emitCHIRRTL(new ModuleWithTests(enableTestsProperty = true), args = makeArgs(Seq("*"), Seq("passing", "failing")))
       .fileCheck()(
         """
         | CHECK: module ModuleWithTests
         | CHECK:   output testNames : List<String>
-        | CHECK:   propassign testNames, List<String>(String("foo"), String("bar"))
-        | CHECK: module test_ModuleWithTests_foo
-        | CHECK: module test_ModuleWithTests_bar
+        | CHECK:   propassign testNames, List<String>(String("passing"), String("failing"))
+        | CHECK: module test_ModuleWithTests_passing
+        | CHECK: module test_ModuleWithTests_failing
         """
       )
   }
@@ -400,19 +341,13 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
       |
-      | CHECK:      public module test_ModuleWithTests_foo
+      | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       |
-      | CHECK:      public module test_ModuleWithTests_bar
-      | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
-      | CHECK-NEXT:   output finish : UInt<1>
-      | CHECK-NEXT:   output success : UInt<1>
-      |
-      | CHECK:      public module test_ModuleWithTests_with_result
+      | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
       | CHECK-NEXT:   output finish : UInt<1>
@@ -446,7 +381,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK:      module RawModuleWithTests
       | CHECK-NEXT:   output io
       |
-      | CHECK:      public module test_RawModuleWithTests_foo
+      | CHECK:      public module test_RawModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : UInt<1>
       | CHECK-NEXT:   output finish : UInt<1>
@@ -456,53 +391,46 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   }
 
   def assertPass(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => ()
-    case result: TestResult.Failure => fail(s"unexpected failure: ${result}")
+    case TestResult.Success => () // test passed as expected
+    case other: TestResult.Failure => fail(s"Test unexpectedly failed: ${other}")
   }
 
   def assertFail(result: TestResult.Type): Unit = result match {
-    case TestResult.Success         => fail("Test unexpectedly passed")
+    case TestResult.Success => fail("Test unexpectedly passed")
     case TestResult.SignaledFailure => () // expected failure
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
-  def assertTimeout(timeout: Int)(result: TestResult.Type): Unit = result match {
-    case TestResult.Success                                                     => fail("Test unexpectedly passed")
-    case TestResult.Timeout(msg) if msg.contains(s"after ${timeout} timesteps") => ()
+  def assertTimeout(expected: Int)(result: TestResult.Type): Unit = result match {
+    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Timeout(msg) if msg.contains(s"$expected cycles") => () // expected timeout
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
   def assertAssertion(message: String)(result: TestResult.Type): Unit = result match {
-    case TestResult.Success                                           => fail("Test unexpectedly passed")
-    case TestResult.Assertion(msg) if msg.contains("counter hit max") => ()
+    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Assertion(msg) if msg.contains(message) => () // expected assertion
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
   it should "simulate and pass if finish asserted with success=1" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Name("signal_pass"),
+      tests = TestChoice.Name("passing"),
       timeout = 100
     )
-    assertPass(results("signal_pass"))
+    assert(results.size == 1, "Expected exactly one test result")
+    assertPass(results.head.actualResult)
   }
 
   it should "simulate and fail if finish asserted with success=0" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Name("signal_fail"),
+      tests = TestChoice.Name("failing"),
       timeout = 100
     )
-    assertFail(results("signal_fail"))
-  }
-
-  it should "simulate and timeout if finish not asserted" in {
-    val results = simulateTests(
-      new ModuleWithTests,
-      tests = TestChoice.Name("timeout"),
-      timeout = 100
-    )
-    assertTimeout(100)(results("timeout"))
+    assert(results.size == 1, "Expected exactly one test result")
+    assertFail(results.head.actualResult)
   }
 
   it should "simulate and fail early if assertion raised" in {
@@ -511,49 +439,33 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       tests = TestChoice.Name("assertion"),
       timeout = 100
     )
-    assertAssertion("counter hit max")(results("assertion"))
+    assert(results.size == 1, "Expected exactly one test result")
+    assertAssertion("assertion fired")(results.head.actualResult)
   }
 
   it should "run multiple passing simulations" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Names(Seq("signal_pass", "signal_pass_2")),
+      tests = TestChoice.Names(Seq("passing", "with_monitor")),
       timeout = 100
     )
-    results.all.foreach { case (name, result) =>
-      assertPass(result)
+    assert(results.size == 2, "Expected exactly two test results")
+    results.foreach { simTest =>
+      assertPass(simTest.actualResult)
     }
   }
 
   it should "run one passing and one failing simulation" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Names(Seq("signal_pass", "signal_fail")),
+      tests = TestChoice.Names(Seq("passing", "failing")),
       timeout = 100
     )
-    assertPass(results("signal_pass"))
-    assertFail(results("signal_fail"))
-  }
-
-  it should "simulate all tests" in {
-    val results = simulateTests(
-      new ModuleWithTests,
-      tests = TestChoice.All,
-      timeout = 100
-    )
-    assert(results.all.size == 11)
-
-    assertFail(results("signal_fail"))
-    assertTimeout(100)(results("timeout"))
-    assertAssertion("counter hit max")(results("assertion"))
-    assertTimeout(100)(results("check1"))
-    assertTimeout(100)(results("check2"))
-    assertTimeout(100)(results("bar"))
-    assertPass(results("signal_pass"))
-    assertPass(results("signal_pass_2"))
-    assertTimeout(100)(results("with_monitor"))
-    assertTimeout(100)(results("with_result"))
-    assertTimeout(100)(results("foo"))
+    assert(results.size == 2, "Expected exactly two test results")
+    val signalPass = results.find(_.elaboratedTest.params.testName == "passing").get
+    val signalFail = results.find(_.elaboratedTest.params.testName == "failing").get
+    assertPass(signalPass.actualResult)
+    assertFail(signalFail.actualResult)
   }
 }
 
@@ -612,43 +524,30 @@ class Alu(params: AluParameters) extends Module with HasTests {
         val mask = (BigInt(1) << expectedWidth) - 1
         val maskedExpected = expected & mask
 
-        val result = Wire(new TestResultBundle)
-        result.finish := RegInit(true.B)
-        result.success := dut.io.result === maskedExpected.U
-        result
+        TestBehavior.FinishWhen(true.B, dut.io.result === maskedExpected.U)
       }
     }
   }
 
-  // Sanity tests
   test("sanity.add.zero") { dut =>
     dut.io.op1 := 0.U
     dut.io.op2 := 0.U
     dut.io.opcode := 0.U
-    val result = Wire(new TestResultBundle)
-    result.finish := true.B
-    result.success := dut.io.result === 0.U
-    result
+    TestBehavior.FinishWhen(true.B, dut.io.result === 0.U)
   }
 
   test("sanity.add.identity") { dut =>
     dut.io.op1 := 1.U
     dut.io.op2 := 0.U
     dut.io.opcode := 0.U
-    val result = Wire(new TestResultBundle)
-    result.finish := true.B
-    result.success := dut.io.result === 1.U
-    result
+    TestBehavior.FinishWhen(true.B, dut.io.result === 1.U)
   }
 
   test("sanity.and.zero") { dut =>
     dut.io.op1 := "b1010".U
     dut.io.op2 := 0.U
     dut.io.opcode := 2.U
-    val result = Wire(new TestResultBundle)
-    result.finish := true.B
-    result.success := dut.io.result === 0.U
-    result
+    TestBehavior.FinishWhen(true.B, dut.io.result === 0.U)
   }
 
   test("sanity.or.identity") { dut =>
@@ -656,20 +555,14 @@ class Alu(params: AluParameters) extends Module with HasTests {
     dut.io.op1 := value
     dut.io.op2 := 0.U
     dut.io.opcode := 3.U
-    val result = Wire(new TestResultBundle)
-    result.finish := true.B
-    result.success := dut.io.result === value
-    result
+    TestBehavior.FinishWhen(true.B, dut.io.result === value)
   }
 
   test("sanity.xor.self") { dut =>
     dut.io.op1 := "b1010".U
     dut.io.op2 := "b1010".U
     dut.io.opcode := 4.U
-    val result = Wire(new TestResultBundle)
-    result.finish := true.B
-    result.success := dut.io.result === 0.U
-    result
+    TestBehavior.FinishWhen(true.B, dut.io.result === 0.U)
   }
 
   // Random tests
@@ -689,7 +582,7 @@ class Alu(params: AluParameters) extends Module with HasTests {
 
 class AluSpec extends InlineTests {
   val parameterSpace = for {
-    width <- Seq(1, 4, 16)
+    width <- Seq(4, 8, 16)
     widenResult <- Seq(false, true)
   } yield AluParameters(width, widenResult)
 

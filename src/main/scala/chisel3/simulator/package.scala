@@ -145,7 +145,7 @@ package object simulator {
       includeTestGlobs: Seq[String],
       args:             Seq[String] = Seq.empty,
       firtoolArgs:      Seq[String] = Seq.empty
-    ): Seq[(Workspace, TestParameters[_, _], ElaboratedModule[TestHarness[T, _]])] = {
+    ): Seq[(Workspace, ElaboratedTest[T], ElaboratedModule[TestHarness[T]])] = {
       val updatedArgs = args ++ includeTestGlobs.map("--include-tests-name=" + _)
       val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
       generated.testHarnesses.map { case elaboratedTest =>
@@ -155,15 +155,15 @@ package object simulator {
         val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
         (
           testWorkspace,
-          elaboratedTest.params,
-          new ElaboratedModule(elaboratedTest.testHarness.asInstanceOf[TestHarness[T, _]], ports, layers)
+          elaboratedTest,
+          new ElaboratedModule(elaboratedTest.testHarness.asInstanceOf[TestHarness[T]], ports, layers)
         )
       }
     }
 
     case class GeneratedWorkspaceInfo[T <: RawModule](
       dut:               T,
-      testHarnesses:     Seq[ElaboratedTest[T, _]],
+      testHarnesses:     Seq[ElaboratedTest[T]],
       outputAnnotations: AnnotationSeq
     )
 
@@ -174,7 +174,7 @@ package object simulator {
       firtoolArgs:    Seq[String]
     ): GeneratedWorkspaceInfo[T] = {
       var someDut:           Option[() => T] = None
-      var someTestHarnesses: Option[() => Seq[ElaboratedTest[T, _]]] = None
+      var someTestHarnesses: Option[() => Seq[ElaboratedTest[T]]] = None
       val chiselArgs = Array("--target", "systemverilog", "--split-verilog") ++ args
       val outputAnnotations = (new circt.stage.ChiselStage).execute(
         chiselArgs,
@@ -184,7 +184,7 @@ package object simulator {
             someDut = Some(() => dut)
             someTestHarnesses = Some(() =>
               dut match {
-                case dut: HasTests => dut.getElaboratedTests.map(_.asInstanceOf[ElaboratedTest[T, _]])
+                case dut: HasTests => dut.getElaboratedTests.map(_.asInstanceOf[ElaboratedTest[T]])
                 case _ => Nil
               }
             )

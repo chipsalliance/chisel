@@ -3,7 +3,7 @@
 package chisel3.simulator
 
 import chisel3.{Module, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, TestChoice, TestHarness, TestResults}
+import chisel3.experimental.inlinetest.{HasTests, TestChoice, TestHarness, SimulatedTest}
 import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
@@ -127,7 +127,7 @@ trait SimulatorAPI {
     timeout:      Int,
     chiselOpts:   Array[String] = Array.empty,
     firtoolOpts:  Array[String] = Array.empty,
-    settings:     Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]],
+    settings:     Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]],
     subdirectory: Option[String] = None
   )(
     implicit hasSimulator:        HasSimulator,
@@ -136,22 +136,20 @@ trait SimulatorAPI {
     firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
-  ): TestResults = {
+  ): Seq[SimulatedTest[T]] = {
     val modifiedTestingDirectory = subdirectory match {
       case Some(subdir) => testingDirectory.withSubdirectory(subdir)
       case None         => testingDirectory
     }
 
-    new TestResults(
-      hasSimulator
-        .getSimulator(modifiedTestingDirectory)
-        .simulateTests(
-          module = module,
-          includeTestGlobs = tests.globs,
-          chiselOpts = chiselOpts,
-          firtoolOpts = firtoolOpts,
-          settings = settings
-        ) { dut => InlineTestStimulus(timeout)(dut.wrapped) }
-    )
+    hasSimulator
+      .getSimulator(modifiedTestingDirectory)
+      .simulateTests(
+        module = module,
+        includeTestGlobs = tests.globs,
+        chiselOpts = chiselOpts,
+        firtoolOpts = firtoolOpts,
+        settings = settings
+      ) { dut => InlineTestStimulus(timeout)(dut.wrapped) }
   }
 }

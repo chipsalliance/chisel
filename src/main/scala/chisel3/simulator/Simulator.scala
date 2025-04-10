@@ -1,7 +1,7 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, TestHarness, TestParameters}
+import chisel3.experimental.inlinetest.{HasTests, TestHarness, TestParameters, SimulatedTest, TestResult}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.{FileSystems, PathMatcher, Paths}
 import scala.util.{Failure, Success, Try}
@@ -132,13 +132,13 @@ trait Simulator[T <: Backend] {
     includeTestGlobs: Seq[String],
     chiselOpts:       Array[String] = Array.empty,
     firtoolOpts:      Array[String] = Array.empty,
-    settings:         Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]]
-  )(body: (SimulatedModule[TestHarness[T, _]]) => U)(
+    settings:         Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]]
+  )(body: (SimulatedModule[TestHarness[T]]) => U)(
     implicit chiselOptsModifications: ChiselOptionsModifications,
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
-  ): Seq[(TestParameters[_, _], Simulator.BackendInvocationDigest[U])] = {
+  ): Seq[SimulatedTest[T]] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val filesystem = FileSystems.getDefault()
@@ -149,14 +149,25 @@ trait Simulator[T <: Backend] {
         args = chiselOptsModifications(chiselOpts).toSeq,
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
-      .flatMap { case (testWorkspace, test, elaboratedModule) =>
-        val includeTest = includeTestGlobs.map { glob =>
-          filesystem.getPathMatcher(s"glob:$glob")
-        }.exists(_.matches(Paths.get(test.testName)))
-        Option.when(includeTest) {
-          testWorkspace.generateAdditionalSources()
-          (test, _simulate(testWorkspace, elaboratedModule, settings)(body))
-        }
+      .map { case (testWorkspace, elaboratedTest, elaboratedModule) =>
+        testWorkspace.generateAdditionalSources()
+        val digest = _simulate(testWorkspace, elaboratedModule, settings)(body)
+        // Try to unpack the result, otherwise figure out what went wrong.
+        val testResult: TestResult.Type =
+          try {
+            digest.result
+            TestResult.Success
+          } catch {
+            // Simulation ended due to an aserrtion
+            case assertion: Exceptions.AssertionFailed => TestResult.Assertion(assertion.getMessage)
+            // Simulation ended because the testharness signaled success=0
+            case _: stimulus.InlineTestSignaledFailureException => TestResult.SignaledFailure
+            // Simulation timed out
+            case to: Exceptions.Timeout => TestResult.Timeout(to.getMessage)
+            // Simulation did not run correctly
+            case e: Throwable => throw e
+          }
+        SimulatedTest(elaboratedTest, testResult)
       }
   }
 

@@ -20,10 +20,10 @@ class InlineTestSignaledFailureException private[simulator]
     )
     with NoStackTrace
 
-trait InlineTestStimulus extends Stimulus.Type[TestHarness[_, _]] {
+trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
   protected def _timeout: Int
 
-  override final def apply(dut: TestHarness[_, _]): Unit = {
+  override final def apply(dut: TestHarness[_]): Unit = {
     val module = AnySimulatedModule.current
     val controller = module.controller
 
