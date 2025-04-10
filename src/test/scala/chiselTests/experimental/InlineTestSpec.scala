@@ -4,6 +4,7 @@ import chisel3.{assert => _, _}
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
 import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.scalatest.InlineTests
 import chisel3.testers._
 import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
@@ -554,4 +555,144 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     assertTimeout(100)(results("with_result"))
     assertTimeout(100)(results("foo"))
   }
+}
+
+case class AluParameters(operandWidth: Int, widenResult: Boolean) {
+  def resultWidth: Int = if (widenResult) operandWidth + 1 else operandWidth
+
+  override def toString(): String = s"ALU_${operandWidth}" + (if (widenResult) "w" else "")
+}
+
+class AluIO(params: AluParameters) extends Bundle {
+  val op1, op2 = Input(UInt(params.operandWidth.W))
+  val opcode = Input(UInt(3.W))
+  val result = Output(UInt(params.resultWidth.W))
+}
+
+@instantiable
+class Alu(params: AluParameters) extends Module with HasTests {
+  @public val io = IO(new AluIO(params))
+
+  io.result := 0.U
+
+  when(io.opcode === 0.U) {
+    io.result := io.op1 +& io.op2
+  }.elsewhen(io.opcode === 1.U) {
+    io.result := io.op1 -& io.op2
+  }.elsewhen(io.opcode === 2.U) {
+    io.result := io.op1 & io.op2
+  }.elsewhen(io.opcode === 3.U) {
+    io.result := io.op1 | io.op2
+  }.elsewhen(io.opcode === 4.U) {
+    io.result := io.op1 ^ io.op2
+  }.otherwise {
+    io.result := 0.U
+  }
+
+  private def generateRandomTests(op: Int, opName: String, f: (BigInt, BigInt) => BigInt, nTests: Int): Unit = {
+    val max = (BigInt(1) << params.operandWidth) - 1
+    val rand = new scala.util.Random(0) // Fixed seed for reproducibility
+
+    for (i <- 0 until nTests) {
+      val v1 = BigInt(rand.nextInt(max.toInt + 1))
+      val v2 = BigInt(rand.nextInt(max.toInt + 1))
+      val expected = f(v1, v2)
+      val testName = s"random.${opName}.${i}"
+      test(testName) { dut =>
+        dut.io.op1 := v1.U
+        dut.io.op2 := v2.U
+        dut.io.opcode := op.U
+
+        val expectedWidth = if (params.widenResult && (op == 0 || op == 1))
+          params.operandWidth + 1
+        else
+          params.operandWidth
+
+        val mask = (BigInt(1) << expectedWidth) - 1
+        val maskedExpected = expected & mask
+
+        val result = Wire(new TestResultBundle)
+        result.finish  := RegInit(true.B)
+        result.success := dut.io.result === maskedExpected.U
+        result
+      }
+    }
+  }
+
+  // Sanity tests
+  test("sanity.add.zero") { dut =>
+    dut.io.op1 := 0.U
+    dut.io.op2 := 0.U
+    dut.io.opcode := 0.U
+    val result = Wire(new TestResultBundle)
+    result.finish := true.B
+    result.success := dut.io.result === 0.U
+    result
+  }
+
+  test("sanity.add.identity") { dut =>
+    dut.io.op1 := 1.U
+    dut.io.op2 := 0.U
+    dut.io.opcode := 0.U
+    val result = Wire(new TestResultBundle)
+    result.finish := true.B
+    result.success := dut.io.result === 1.U
+    result
+  }
+
+  test("sanity.and.zero") { dut =>
+    dut.io.op1 := "b1010".U
+    dut.io.op2 := 0.U
+    dut.io.opcode := 2.U
+    val result = Wire(new TestResultBundle)
+    result.finish := true.B
+    result.success := dut.io.result === 0.U
+    result
+  }
+
+  test("sanity.or.identity") { dut =>
+    val value = "b1010".U
+    dut.io.op1 := value
+    dut.io.op2 := 0.U
+    dut.io.opcode := 3.U
+    val result = Wire(new TestResultBundle)
+    result.finish := true.B
+    result.success := dut.io.result === value
+    result
+  }
+
+  test("sanity.xor.self") { dut =>
+    dut.io.op1 := "b1010".U
+    dut.io.op2 := "b1010".U
+    dut.io.opcode := 4.U
+    val result = Wire(new TestResultBundle)
+    result.finish := true.B
+    result.success := dut.io.result === 0.U
+    result
+  }
+
+  // Random tests
+  generateRandomTests(0, "add", (a, b) => a + b, nTests = 4)
+  generateRandomTests(1, "sub", (a, b) => if (a >= b) a - b else ((BigInt(1) << params.resultWidth) + a - b), nTests = 4)
+  generateRandomTests(2, "and", (a, b) => a & b, nTests = 4)
+  generateRandomTests(3, "or", (a, b) => a | b, nTests = 4)
+  generateRandomTests(4, "xor", (a, b) => a ^ b, nTests = 4)
+
+  val testNames = getTests.map(_.testName).mkString(", ")
+}
+
+class AluSpec extends InlineTests {
+  val parameterSpace = for {
+    width <- Seq(1, 4, 16)
+    widenResult <- Seq(false, true)
+  } yield AluParameters(width, widenResult)
+
+  describe("sanity tests for all configurations") {
+    parameterSpace.foreach { params =>
+      runInlineTests(params.toString)(new Alu(params))(TestChoice.Glob("sanity.*"))
+    }
+  }
+
+  val alu4W = AluParameters(4, false)
+  runInlineTests(alu4W.toString)(new Alu(alu4W))(TestChoice.All)
 }
