@@ -13,7 +13,7 @@ private case class FailedTest(
   actual:   TestResult.Type
 )
 
-abstract class InlineTests extends AnyFunSpec with ChiselSim {
+trait InlineTests extends AnyFunSpec with ChiselSim {
   def runInlineTests(
     parametrizationName: String
   )(gen: => RawModule with HasTests)(tests: TestChoice.Type = TestChoice.All, timeout: Int = 1000): Unit = {
