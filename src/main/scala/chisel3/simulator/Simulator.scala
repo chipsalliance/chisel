@@ -19,7 +19,7 @@ object Exceptions {
       )
       with NoStackTrace {}
 
-  class Timeout private[simulator] (timesteps: BigInt, message: String)
+  class Timeout private[simulator] (private[simulator] val timesteps: BigInt, message: String)
       extends RuntimeException(
         dramaticMessage(
           header = Some(s"A timeout occurred after $timesteps timesteps"),
@@ -163,7 +163,7 @@ trait Simulator[T <: Backend] {
             // Simulation ended because the testharness signaled success=0
             case _: stimulus.InlineTestSignaledFailureException => TestResult.SignaledFailure
             // Simulation timed out
-            case to: Exceptions.Timeout => TestResult.Timeout(to.getMessage)
+            case to: Exceptions.Timeout => TestResult.Timeout(to.timesteps)
             // Simulation did not run correctly
             case e: Throwable => throw e
           }

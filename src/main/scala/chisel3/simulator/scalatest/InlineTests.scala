@@ -45,16 +45,15 @@ trait InlineTests extends AnyFunSpec with ChiselSim {
         val failuresList = failures.map { case FailedTest(testName, expected, actual) =>
           val expectedVerbPhrase = expected match {
             case TestResult.Success => "succeed"
-            case failure: TestResult.Failure => s"fail: ${failure.message}"
+            case failure: TestResult.Failure => s"${failure.description}"
           }
           val actualVerbPhrase = actual match {
             case TestResult.Success => "succeeded"
-            case failure: TestResult.Failure => s"failed: ${failure.message}"
+            case failure: TestResult.Failure => s"${failure.description}"
           }
-          s"${testName} was expected to ${expectedVerbPhrase}, but ${actualVerbPhrase}"
-        }.map("\t- " + _).mkString("\n")
-        val message = s"tests failed:\n${failuresList}"
-        fail(message)
+          s"${testName} expected ${expectedVerbPhrase}, saw ${actualVerbPhrase}"
+        }.mkString("\n")
+        fail(failuresList)
       }
     }
   }

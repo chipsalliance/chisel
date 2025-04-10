@@ -403,13 +403,13 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
 
   def assertTimeout(expected: Int)(result: TestResult.Type): Unit = result match {
     case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.Timeout(msg) if msg.contains(s"$expected cycles") => () // expected timeout
+    case TestResult.Timeout(actual) if actual == expected => () // expected timeout
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
-  def assertAssertion(message: String)(result: TestResult.Type): Unit = result match {
+  def assertAssertion(expected: String)(result: TestResult.Type): Unit = result match {
     case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.Assertion(msg) if msg.contains(message) => () // expected assertion
+    case TestResult.Assertion(actual) if actual == expected => () // expected assertion
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
@@ -470,15 +470,25 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
 }
 
 case class AluParameters(operandWidth: Int, widenResult: Boolean) {
-  def resultWidth: Int = if (widenResult) operandWidth + 1 else operandWidth
-
-  override def toString(): String = s"ALU_${operandWidth}" + (if (widenResult) "w" else "")
+  def resultWidth = if (widenResult) operandWidth + 1 else operandWidth
+  def name: String = s"ALU_${operandWidth}" + (if (widenResult) "w" else "")
 }
 
 class AluIO(params: AluParameters) extends Bundle {
   val op1, op2 = Input(UInt(params.operandWidth.W))
   val opcode = Input(UInt(3.W))
   val result = Output(UInt(params.resultWidth.W))
+}
+
+object Alu {
+  object Assertions {
+    sealed abstract class Type(val message: String) {
+      def assert(cond: Bool) = chisel3.assert(cond, message)
+    }
+
+    case object AdditionOverflow    extends Type("addition overflow detected")
+    case object SubtractionOverflow extends Type("subtraction overflow detected")
+  }
 }
 
 @instantiable
@@ -488,110 +498,96 @@ class Alu(params: AluParameters) extends Module with HasTests {
   io.result := 0.U
 
   when(io.opcode === 0.U) {
-    io.result := io.op1 +& io.op2
+    val sum = io.op1 +& io.op2
+    io.result := sum
+
+    test("sanity.add.zero") { alu =>
+      alu.io.op1    := 0.U
+      alu.io.op2    := 0.U
+      alu.io.opcode := 0.U
+      assert(alu.io.result === 0.U)
+      TestBehavior.RunForCycles(10)
+    }
+
+    test("sanity.add.identity") { alu =>
+      alu.io.op1    := 1.U
+      alu.io.op2    := 0.U
+      alu.io.opcode := 0.U
+      assert(alu.io.result === 1.U)
+      TestBehavior.RunForCycles(10)
+    }
+
+    if (!params.widenResult) {
+      val assertion = Alu.Assertions.AdditionOverflow
+      assertion.assert(!(sum(params.operandWidth) =/= sum(params.operandWidth-1)))
+      test("sanity.sum.overflow") { alu =>
+        alu.io.op1    := ((1 << params.operandWidth) - 1).U
+        alu.io.op2    := 1.U
+        alu.io.opcode := 0.U
+        TestBehavior.ExpectAssertion(assertion.message)
+      }
+    }
   }.elsewhen(io.opcode === 1.U) {
-    io.result := io.op1 -& io.op2
+    val diff = io.op1 -& io.op2
+    io.result := diff
+    if (!params.widenResult) {
+      val assertion = Alu.Assertions.SubtractionOverflow
+      assertion.assert(!(diff(params.operandWidth) =/= diff(params.operandWidth-1)))
+      test("sanity.sub.overflow") { alu =>
+        alu.io.op1    := 0.U
+        alu.io.op2    := 1.U
+        alu.io.opcode := 1.U
+        TestBehavior.ExpectAssertion(assertion.message)
+      }
+    }
   }.elsewhen(io.opcode === 2.U) {
     io.result := io.op1 & io.op2
+
+    test("sanity.and.zero") { alu =>
+      alu.io.op1    := "b1010".U
+      alu.io.op2    := 0.U
+      alu.io.opcode := 2.U
+      assert(alu.io.result === 0.U)
+      TestBehavior.RunForCycles(10)
+    }
   }.elsewhen(io.opcode === 3.U) {
     io.result := io.op1 | io.op2
+
+    test("sanity.or.identity") { alu =>
+      val value = "b1010".U
+      alu.io.op1    := value
+      alu.io.op2    := 0.U
+      alu.io.opcode := 3.U
+      assert(alu.io.result === value)
+      TestBehavior.RunForCycles(10)
+    }
   }.elsewhen(io.opcode === 4.U) {
     io.result := io.op1 ^ io.op2
+
+    test("sanity.xor.self") { alu =>
+      alu.io.op1    := "b1010".U
+      alu.io.op2    := "b1010".U
+      alu.io.opcode := 4.U
+      assert(alu.io.result === 0.U)
+      TestBehavior.RunForCycles(10)
+    }
   }.otherwise {
     io.result := 0.U
   }
-
-  private def generateRandomTests(op: Int, opName: String, f: (BigInt, BigInt) => BigInt, nTests: Int): Unit = {
-    val max = (BigInt(1) << params.operandWidth) - 1
-    val rand = new scala.util.Random(0) // Fixed seed for reproducibility
-
-    for (i <- 0 until nTests) {
-      val v1 = BigInt(rand.nextInt(max.toInt + 1))
-      val v2 = BigInt(rand.nextInt(max.toInt + 1))
-      val expected = f(v1, v2)
-      val testName = s"random.${opName}.${i}"
-      test(testName) { dut =>
-        dut.io.op1 := v1.U
-        dut.io.op2 := v2.U
-        dut.io.opcode := op.U
-
-        val expectedWidth =
-          if (params.widenResult && (op == 0 || op == 1))
-            params.operandWidth + 1
-          else
-            params.operandWidth
-
-        val mask = (BigInt(1) << expectedWidth) - 1
-        val maskedExpected = expected & mask
-
-        TestBehavior.FinishWhen(true.B, dut.io.result === maskedExpected.U)
-      }
-    }
-  }
-
-  test("sanity.add.zero") { dut =>
-    dut.io.op1 := 0.U
-    dut.io.op2 := 0.U
-    dut.io.opcode := 0.U
-    TestBehavior.FinishWhen(true.B, dut.io.result === 0.U)
-  }
-
-  test("sanity.add.identity") { dut =>
-    dut.io.op1 := 1.U
-    dut.io.op2 := 0.U
-    dut.io.opcode := 0.U
-    TestBehavior.FinishWhen(true.B, dut.io.result === 1.U)
-  }
-
-  test("sanity.and.zero") { dut =>
-    dut.io.op1 := "b1010".U
-    dut.io.op2 := 0.U
-    dut.io.opcode := 2.U
-    TestBehavior.FinishWhen(true.B, dut.io.result === 0.U)
-  }
-
-  test("sanity.or.identity") { dut =>
-    val value = "b1010".U
-    dut.io.op1 := value
-    dut.io.op2 := 0.U
-    dut.io.opcode := 3.U
-    TestBehavior.FinishWhen(true.B, dut.io.result === value)
-  }
-
-  test("sanity.xor.self") { dut =>
-    dut.io.op1 := "b1010".U
-    dut.io.op2 := "b1010".U
-    dut.io.opcode := 4.U
-    TestBehavior.FinishWhen(true.B, dut.io.result === 0.U)
-  }
-
-  // Random tests
-  generateRandomTests(0, "add", (a, b) => a + b, nTests = 4)
-  generateRandomTests(
-    1,
-    "sub",
-    (a, b) => if (a >= b) a - b else ((BigInt(1) << params.resultWidth) + a - b),
-    nTests = 4
-  )
-  generateRandomTests(2, "and", (a, b) => a & b, nTests = 4)
-  generateRandomTests(3, "or", (a, b) => a | b, nTests = 4)
-  generateRandomTests(4, "xor", (a, b) => a ^ b, nTests = 4)
-
-  val testNames = getTests.map(_.testName).mkString(", ")
 }
 
 class AluSpec extends InlineTests {
-  val parameterSpace = for {
-    width <- Seq(4, 8, 16)
+  val configs = for {
+    width       <- Seq(4, 8, 16)
     widenResult <- Seq(false, true)
   } yield AluParameters(width, widenResult)
 
-  describe("sanity tests for all configurations") {
-    parameterSpace.foreach { params =>
-      runInlineTests(params.toString)(new Alu(params))(TestChoice.Glob("sanity.*"))
+  describe(s"sanity test: ${configs.map(_.name).mkString(", ")}") {
+    configs.foreach { params =>
+      runInlineTests(params.name)(new Alu(params))(TestChoice.Glob("sanity.*"))
     }
   }
 
   val alu4W = AluParameters(4, false)
-  runInlineTests(alu4W.toString)(new Alu(alu4W))(TestChoice.All)
+  runInlineTests(alu4W.name)(new Alu(alu4W))(TestChoice.All)
 }

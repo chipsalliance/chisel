@@ -21,18 +21,22 @@ object TestResult {
 
   /** Test failed somehow. */
   sealed trait Failure extends Type {
-    def message: String
+    def description: String
   }
 
   /** Test timed out. */
-  case class Timeout(message: String) extends Failure
+  case class Timeout(n: BigInt) extends Failure {
+    override def description: String = s"timeout after ${n} cycles"
+  }
 
   /** Test failed with an assertion. */
-  case class Assertion(message: String) extends Failure
+  case class Assertion(message: String) extends Failure {
+    override def description: String = s"assertion '${message}'"
+  }
 
   /** Test signaled failure. */
   case object SignaledFailure extends Failure {
-    val message = "testharness signaled failure"
+    override def description = "test signaled failure"
   }
 }
 
