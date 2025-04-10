@@ -10,7 +10,7 @@ import chisel3.experimental.SourceInfo
 /** A file or I/O device to print to in simulation
   * 
   * {{{
-  * val fd = FileDescriptor("logfile.log")
+  * val fd = SimLog.file("logfile.log")
   * fd.printf(cf"in = $in%0d\n")
   * }}}
   */
