@@ -14,7 +14,7 @@ import chisel3.experimental.SourceInfo
   * fd.printf(cf"in = $in%0d\n")
   * }}}
   */
-sealed trait FileDescriptor extends FileDescriptorIntf {
+sealed trait SimLog extends SimLogIntf {
 
   /** Prints a message in simulation
     *
@@ -75,23 +75,23 @@ sealed trait FileDescriptor extends FileDescriptorIntf {
 }
 
 // Uses firrtl fprintf with a String filename
-private class StringLogFile(filename: String) extends FileDescriptor {
+private case class SimLogFile(filename: String) extends SimLog {
   override protected def fileDescriptor: Option[String] = Some(filename)
 }
 
 // Defaults to firrtl printf
-private object DefaultDescriptor extends FileDescriptor {
+private object StdErrSimLog extends SimLog {
   override protected def fileDescriptor: Option[String] = None
 }
 
-object FileDescriptor {
+object SimLog {
 
   /** Print to a file given by `filename`
     */
-  def apply(filename: String)(implicit sourceInfo: SourceInfo): FileDescriptor = {
-    new StringLogFile(filename)
+  def file(filename: String)(implicit sourceInfo: SourceInfo): SimLog = {
+    new SimLogFile(filename)
   }
 
   /** The default FileDescriptor is stderr */
-  val Default: FileDescriptor = DefaultDescriptor
+  val StdErr: SimLog = StdErrSimLog
 }

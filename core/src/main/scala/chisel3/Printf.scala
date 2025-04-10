@@ -28,7 +28,7 @@ object printf extends PrintfIntf {
     * @param pable [[Printable]] to print
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
-    FileDescriptor.Default.printf(pable)(sourceInfo)
+    SimLog.StdErr.printf(pable)(sourceInfo)
 
   /** Helper for packing escape characters */
   private[chisel3] def format(formatIn: String): String = {

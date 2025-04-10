@@ -7,7 +7,7 @@ import chisel3.experimental.SourceInfo
 
 import scala.language.experimental.macros
 
-private[chisel3] trait FileDescriptorIntf { self: FileDescriptor =>
+private[chisel3] trait SimLogIntf { self: SimLog =>
 
   /** Prints a message in simulation
     *

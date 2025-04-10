@@ -2,6 +2,6 @@
 
 package chisel3
 
-private[chisel3] trait FileDescriptorIntf { self: FileDescriptor =>
+private[chisel3] trait SimLogIntf { self: SimLog =>
   // TODO implement macro for Scala 3
 }

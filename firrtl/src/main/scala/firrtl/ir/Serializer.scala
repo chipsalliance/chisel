@@ -283,6 +283,7 @@ object Serializer {
     case print @ Print(info, string, args, clk, en, _) =>
       b ++= "printf("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= string.escape
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
+      sStmtName(print.name); s(info)
     case print @ Fprint(info, fd, string, args, clk, en, _) =>
       b ++= "fprintf("; s(clk); b ++= ", "; s(en); b ++= ", \""; b ++= fd; b ++= "\", "; b ++= string.escape
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
