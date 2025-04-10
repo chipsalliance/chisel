@@ -71,7 +71,7 @@ object stop {
     block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
       message.foreach(Printable.checkScope(_))
       when(!Module.reset.asBool) {
-        message.foreach(PrintfMacrosCompat.printfWithoutReset(_))
+        message.foreach(FileDescriptor.Default.printfWithoutReset(_))
         pushCommand(chisel3.internal.firrtl.ir.Stop(stopId, sourceInfo, Builder.forcedClock.ref, 0))
       }
     }

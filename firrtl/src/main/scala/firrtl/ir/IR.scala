@@ -436,6 +436,20 @@ case class Print(
     with UseSerializer
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class Fprint(
+  val info:   Info,
+  val fd:     String,
+  val string: StringLit,
+  val args:   Seq[Expression],
+  val clk:    Expression,
+  val en:     Expression,
+  val name:   String = ""
+) extends Statement
+    with HasInfo
+    with IsDeclaration
+    with UseSerializer
+
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeDefine(info: Info, sink: Expression, probeExpr: Expression) extends Statement with UseSerializer
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ProbeExpr(expr: Expression, tpe: Type = UnknownType) extends Expression with UseSerializer

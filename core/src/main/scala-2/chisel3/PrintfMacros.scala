@@ -15,8 +15,10 @@ object PrintfMacrosCompat {
   )(fmt: c.Tree, data: c.Tree*)(sourceInfo: c.Tree): c.Tree = {
     import c.universe._
     _checkFormatString(c)(fmt)
-    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("printfWithReset"))
-    q"$apply_impl_do(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo)"
+    // We just want to call the same function but on the packed Printable
+    val obj = c.prefix.tree.symbol
+    val func = c.macroApplication.symbol.name.toTermName
+    q"$obj.$func(_root_.chisel3.Printable.pack($fmt, ..$data))($sourceInfo)"
   }
 
   private[chisel3] def _checkFormatString(c: blackbox.Context)(fmt: c.Tree): Unit = {
@@ -50,40 +52,4 @@ object PrintfMacrosCompat {
       case _ =>
     }
   }
-
-  private[chisel3] def printfWithReset(
-    pable: Printable
-  )(
-    implicit sourceInfo: SourceInfo
-  ): chisel3.printf.Printf = {
-    var printfId: chisel3.printf.Printf = null
-    when(!Module.reset.asBool) {
-      printfId = printfWithoutReset(pable)
-    }
-    printfId
-  }
-
-  private[chisel3] def printfWithoutReset(
-    pable: Printable
-  )(
-    implicit sourceInfo: SourceInfo
-  ): chisel3.printf.Printf = {
-    val clock = Builder.forcedClock
-    val printfId = new chisel3.printf.Printf(pable)
-
-    Printable.checkScope(pable)
-
-    layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
-      pushCommand(chisel3.internal.firrtl.ir.Printf(printfId, sourceInfo, clock.ref, pable))
-    }
-    printfId
-  }
-
-  private[chisel3] def printfWithoutReset(
-    fmt:  String,
-    data: Bits*
-  )(
-    implicit sourceInfo: SourceInfo
-  ): chisel3.printf.Printf =
-    printfWithoutReset(Printable.pack(fmt, data: _*))
 }

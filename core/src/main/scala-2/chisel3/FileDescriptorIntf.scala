@@ -2,14 +2,12 @@
 
 package chisel3
 
-import chisel3.internal._
-import chisel3.internal.Builder.pushCommand
+import chisel3.PrintfMacrosCompat
 import chisel3.experimental.SourceInfo
-import chisel3.PrintfMacrosCompat._
 
 import scala.language.experimental.macros
 
-private[chisel3] trait PrintfIntf { self: printf.type =>
+private[chisel3] trait FileDescriptorIntf { self: FileDescriptor =>
 
   /** Prints a message in simulation
     *
@@ -48,6 +46,6 @@ private[chisel3] trait PrintfIntf { self: printf.type =>
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
+  def printf(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
     macro PrintfMacrosCompat._applyMacroWithInterpolatorCheck
 }
