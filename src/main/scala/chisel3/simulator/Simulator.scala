@@ -17,8 +17,7 @@ object Exceptions {
           body = message
         )
       )
-      with NoStackTrace {
-      }
+      with NoStackTrace {}
 
   class Timeout private[simulator] (timesteps: BigInt, message: String)
       extends RuntimeException(

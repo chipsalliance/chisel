@@ -3,7 +3,7 @@ package chisel3
 import svsim._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
-import chisel3.experimental.inlinetest.{HasTests, ElaboratedTest, TestParameters, TestHarness}
+import chisel3.experimental.inlinetest.{ElaboratedTest, HasTests, TestHarness, TestParameters}
 import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
@@ -153,7 +153,11 @@ package object simulator {
         val ports = getModuleInfoPorts(elaboratedTest.testHarness)
         val moduleInfo = testWorkspace.initializeModuleInfo(elaboratedTest.testHarness, ports.map(_._2))
         val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
-        (testWorkspace, elaboratedTest.params, new ElaboratedModule(elaboratedTest.testHarness.asInstanceOf[TestHarness[T, _]], ports, layers))
+        (
+          testWorkspace,
+          elaboratedTest.params,
+          new ElaboratedModule(elaboratedTest.testHarness.asInstanceOf[TestHarness[T, _]], ports, layers)
+        )
       }
     }
 

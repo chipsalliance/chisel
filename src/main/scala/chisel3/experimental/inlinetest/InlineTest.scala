@@ -37,26 +37,27 @@ object TestResult {
 
 /** The results of a ChiselSim simulation of a module with tests. Contains results for one
  *  or more test simulations. */
-final class TestResults private[chisel3](digests: Seq[(TestParameters[_, _], Simulator.BackendInvocationDigest[_])]) {
+final class TestResults private[chisel3] (digests: Seq[(TestParameters[_, _], Simulator.BackendInvocationDigest[_])]) {
   private val results: Map[String, (TestParameters[_, _], TestResult.Type)] = digests.map { case (test, digest) =>
     test.testName -> {
       // Try to unpack the result, otherwise figure out what went wrong.
-      val result: TestResult.Type = try {
-        digest.result
-        TestResult.Success
-      } catch {
-        // Simulation ended due to an aserrtion
-        case assertion: simulator.Exceptions.AssertionFailed =>
-          TestResult.Assertion(assertion.getMessage)
-        // Simulation ended because the testharness signaled success=0
-        case _: stimulus.InlineTestSignaledFailureException =>
-          TestResult.SignaledFailure
-        // Simulation timed out
-        case to: simulator.Exceptions.Timeout =>
-          TestResult.Timeout(to.getMessage)
-        // Simulation did not run correctly
-        case e: Throwable => throw e
-      }
+      val result: TestResult.Type =
+        try {
+          digest.result
+          TestResult.Success
+        } catch {
+          // Simulation ended due to an aserrtion
+          case assertion: simulator.Exceptions.AssertionFailed =>
+            TestResult.Assertion(assertion.getMessage)
+          // Simulation ended because the testharness signaled success=0
+          case _: stimulus.InlineTestSignaledFailureException =>
+            TestResult.SignaledFailure
+          // Simulation timed out
+          case to: simulator.Exceptions.Timeout =>
+            TestResult.Timeout(to.getMessage)
+          // Simulation did not run correctly
+          case e: Throwable => throw e
+        }
       (test, result)
     }
   }.toMap
@@ -80,40 +81,39 @@ final class TestResults private[chisel3](digests: Seq[(TestParameters[_, _], Sim
     results.values.collect { case (test, TestResult.Success) => test }.toSeq
 }
 
-  object TestChoice {
+object TestChoice {
 
-    /** A choice of what test(s) to run. */
-    sealed abstract class Type {
-      private[chisel3] def globs: Seq[String]
-      require(globs.nonEmpty, "Must provide at least one test to run")
-    }
-
-    /** Run tests matching any of these globs. */
-    case class Globs(globs: Seq[String]) extends Type
-
-    object Glob {
-
-      /** Run tests matching a glob. */
-      def apply(glob: String) = Globs(Seq(glob))
-    }
-
-    /** Run tests matching any of these names. */
-    case class Names(names: Seq[String]) extends Type {
-      override def globs = names
-    }
-
-    object Name {
-
-      /** Run tests matching this name. */
-      def apply(name: String) = Names(Seq(name))
-    }
-
-    /** Run all tests. */
-    case object All extends Type {
-      override def globs = Seq("*")
-    }
+  /** A choice of what test(s) to run. */
+  sealed abstract class Type {
+    private[chisel3] def globs: Seq[String]
+    require(globs.nonEmpty, "Must provide at least one test to run")
   }
 
+  /** Run tests matching any of these globs. */
+  case class Globs(globs: Seq[String]) extends Type
+
+  object Glob {
+
+    /** Run tests matching a glob. */
+    def apply(glob: String) = Globs(Seq(glob))
+  }
+
+  /** Run tests matching any of these names. */
+  case class Names(names: Seq[String]) extends Type {
+    override def globs = names
+  }
+
+  object Name {
+
+    /** Run tests matching this name. */
+    def apply(name: String) = Names(Seq(name))
+  }
+
+  /** Run all tests. */
+  case object All extends Type {
+    override def globs = Seq("*")
+  }
+}
 
 /** Per-test parametrization needed to build a testharness that instantiates
   * the DUT and elaborates a test body.
@@ -133,7 +133,7 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** The reset type of the DUT module. */
   private[inlinetest] val dutResetType: Option[Module.ResetType.Type],
   /** The expected result when simulating this test. */
-  val expectedResult: TestResult.Type,
+  val expectedResult: TestResult.Type
 ) {
 
   /** The concrete reset type of the testharness module. */
@@ -205,7 +205,7 @@ abstract class TestHarnessWithResult[M <: RawModule](test: TestParameters[M, Tes
 
 /** A test that has been elaborated to the circuit. */
 private[chisel3] case class ElaboratedTest[M <: RawModule, R](
-  params: TestParameters[M, R],
+  params:      TestParameters[M, R],
   testHarness: TestHarness[M, R]
 )
 
@@ -259,10 +259,11 @@ private final class RegisteredTest[M <: RawModule, R](
   /** The testharness generator. */
   testHarnessGenerator: TestHarnessGenerator[M, R]
 ) {
-  val params: TestParameters[M, R] = new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType, expectedResult)
+  val params: TestParameters[M, R] =
+    new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType, expectedResult)
   def elaborate() = ElaboratedTest(
     params,
-    testHarnessGenerator.generate(params),
+    testHarnessGenerator.generate(params)
   )
 }
 
@@ -324,8 +325,8 @@ trait HasTests { module: RawModule =>
     *  @param testBody the circuit to elaborate inside the testharness
     */
   protected final def test[R](
-    testName: String,
-    expectedResult: TestResult.Type = TestResult.Success,
+    testName:       String,
+    expectedResult: TestResult.Type = TestResult.Success
   )(testBody: Instance[M] => R)(implicit testHarnessGenerator: TestHarnessGenerator[M, R]): Unit = {
     require(!registeredTests.contains(testName), s"test '${testName}' already declared")
     val dutResetType = module match {

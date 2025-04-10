@@ -10,15 +10,17 @@ import firrtl.options.StageUtils.dramaticMessage
 private case class FailedTest(
   testName: String,
   expected: TestResult.Type,
-  actual: TestResult.Type
+  actual:   TestResult.Type
 )
 
 abstract class InlineTests extends AnyFunSpec with ChiselSim {
-  def runInlineTests(parametrizationName: String)(gen: => RawModule with HasTests)(tests: TestChoice.Type = TestChoice.All, timeout: Int = 1000): Unit = {
+  def runInlineTests(
+    parametrizationName: String
+  )(gen: => RawModule with HasTests)(tests: TestChoice.Type = TestChoice.All, timeout: Int = 1000): Unit = {
     val testChoicePhrase = tests match {
-      case TestChoice.All => "all tests"
+      case TestChoice.All              => "all tests"
       case TestChoice.Names(testNames) => "tests named " + testNames.map(n => s"'${n}'").mkString(", ")
-      case TestChoice.Globs(globs) => "tests matching " + globs.map(g => s"'${g}'").mkString(", ")
+      case TestChoice.Globs(globs)     => "tests matching " + globs.map(g => s"'${g}'").mkString(", ")
     }
 
     it(s"should pass ${testChoicePhrase} for ${parametrizationName}") {
@@ -34,15 +36,15 @@ abstract class InlineTests extends AnyFunSpec with ChiselSim {
 
       if (failures.nonEmpty) {
         val failuresList = failures.map { case FailedTest(testName, expected, actual) =>
-            val expectedVerbPhrase = expected match {
-              case TestResult.Success => "succeed"
-              case failure: TestResult.Failure => s"fail with: ${failure.message}"
-            }
-            val actualVerbPhrase = actual match {
-              case TestResult.Success => "succeeded"
-              case failure: TestResult.Failure => s"failed: ${failure.message}"
-            }
-            s"${testName} was expected to ${expectedVerbPhrase}, but ${actualVerbPhrase}"
+          val expectedVerbPhrase = expected match {
+            case TestResult.Success => "succeed"
+            case failure: TestResult.Failure => s"fail with: ${failure.message}"
+          }
+          val actualVerbPhrase = actual match {
+            case TestResult.Success => "succeeded"
+            case failure: TestResult.Failure => s"failed: ${failure.message}"
+          }
+          s"${testName} was expected to ${expectedVerbPhrase}, but ${actualVerbPhrase}"
         }.map("\t- " + _).mkString("\n")
         val message = s"tests failed:\n${failuresList}"
         fail(message)

@@ -3,13 +3,14 @@
 package chisel3.simulator
 
 import chisel3.{Module, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, TestHarness, TestResults, TestChoice}
+import chisel3.experimental.inlinetest.{HasTests, TestChoice, TestHarness, TestResults}
 import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
 import java.nio.file.Files
 
 trait SimulatorAPI {
+
   /** Simulate a [[RawModule]] without any initialization procedure.
     *
     * Use of this method is not advised when [[simulate]] can be used instead.

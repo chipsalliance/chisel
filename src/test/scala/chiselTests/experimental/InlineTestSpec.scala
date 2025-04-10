@@ -461,19 +461,19 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   }
 
   def assertFail(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Success         => fail("Test unexpectedly passed")
     case TestResult.SignaledFailure => () // expected failure
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
   def assertTimeout(timeout: Int)(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Success                                                     => fail("Test unexpectedly passed")
     case TestResult.Timeout(msg) if msg.contains(s"after ${timeout} timesteps") => ()
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
 
   def assertAssertion(message: String)(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => fail("Test unexpectedly passed")
+    case TestResult.Success                                           => fail("Test unexpectedly passed")
     case TestResult.Assertion(msg) if msg.contains("counter hit max") => ()
     case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
   }
@@ -603,16 +603,17 @@ class Alu(params: AluParameters) extends Module with HasTests {
         dut.io.op2 := v2.U
         dut.io.opcode := op.U
 
-        val expectedWidth = if (params.widenResult && (op == 0 || op == 1))
-          params.operandWidth + 1
-        else
-          params.operandWidth
+        val expectedWidth =
+          if (params.widenResult && (op == 0 || op == 1))
+            params.operandWidth + 1
+          else
+            params.operandWidth
 
         val mask = (BigInt(1) << expectedWidth) - 1
         val maskedExpected = expected & mask
 
         val result = Wire(new TestResultBundle)
-        result.finish  := RegInit(true.B)
+        result.finish := RegInit(true.B)
         result.success := dut.io.result === maskedExpected.U
         result
       }
@@ -673,7 +674,12 @@ class Alu(params: AluParameters) extends Module with HasTests {
 
   // Random tests
   generateRandomTests(0, "add", (a, b) => a + b, nTests = 4)
-  generateRandomTests(1, "sub", (a, b) => if (a >= b) a - b else ((BigInt(1) << params.resultWidth) + a - b), nTests = 4)
+  generateRandomTests(
+    1,
+    "sub",
+    (a, b) => if (a >= b) a - b else ((BigInt(1) << params.resultWidth) + a - b),
+    nTests = 4
+  )
   generateRandomTests(2, "and", (a, b) => a & b, nTests = 4)
   generateRandomTests(3, "or", (a, b) => a | b, nTests = 4)
   generateRandomTests(4, "xor", (a, b) => a ^ b, nTests = 4)
