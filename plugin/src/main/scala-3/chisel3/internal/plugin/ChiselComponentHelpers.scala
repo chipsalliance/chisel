@@ -14,51 +14,6 @@ import dotty.tools.dotc.ast.tpd
 
 object ChiselTypeHelpers {
 
-  def shouldMatchGen(bases: Type*)(using Context): Type => Boolean = {
-    val cache = mutable.HashMap.empty[Type, Boolean]
-
-    def terminate(t: Type): Boolean = bases.exists(base => t <:< base)
-
-    def outerMatches(t: Type): Boolean = {
-      val str = t.show
-      str.startsWith("Option[") || str.startsWith("Iterable[")
-    }
-
-    def isTupleType(t: Type): Boolean = t.typeSymbol.fullName.startsWith("scala.Tuple")
-
-    def recShouldMatch(tpe: Type, seen: Set[Type]): Boolean = {
-      if (terminate(tpe)) true
-      else if (seen.contains(tpe)) false
-      else if (outerMatches(tpe)) {
-        tpe match {
-          case AppliedType(_, args) if args.nonEmpty =>
-            recShouldMatch(args.head, seen + tpe)
-          case _ => false
-        }
-      } else if (isTupleType(tpe)) {
-        tpe match {
-          case AppliedType(_, args) =>
-            args.exists(arg => recShouldMatch(arg, seen + tpe))
-          case _ => false
-        }
-      } else {
-        tpe.baseClasses.exists(sym => recShouldMatch(sym.typeRef, seen))
-      }
-    }
-
-    def earlyExit(t: Type): Boolean = {
-      !outerMatches(t) && !isTupleType(t)
-    }
-
-    (q: Type) => {
-      cache.getOrElseUpdate(q,
-        if (terminate(q)) true
-        else if (earlyExit(q)) false
-        else recShouldMatch(q, Set.empty)
-      )
-    }
-  }
-
   def okVal(dd: tpd.ValDef)(using Context): Boolean = {
     val badFlags = Set(Flags.Param, Flags.Synthetic, Flags.Deferred, Flags.CaseAccessor, Flags.ParamAccessor)
     val modsOk = badFlags.forall(f => !dd.symbol.flags.is(f))
@@ -78,7 +33,7 @@ object ChiselTypeHelpers {
       case _ => false
     }
     val tpe = dd.tpt.tpe
-    tpe.typeSymbol.fullName.startsWith("scala.Tuple") && flagsOk && !isNull && !dd.rhs.isEmpty
+    tpe.typeSymbol.fullName.startsWith("Tuple") && flagsOk && !isNull && !dd.rhs.isEmpty
   }
 
   def findUnapplyNames(tree: Tree[?]): Option[List[String]] = {
@@ -103,34 +58,39 @@ object ChiselTypeHelpers {
 
   def stringFromTermName(name: TermName): String = name.toString.trim
 
-  def shouldMatchData(using Context): Type => Boolean = {
-    val dataTpe = requiredClassRef("chisel3.Data")
-    shouldMatchGen(dataTpe)
+  def isData(t: Type)(using Context): Boolean = {
+    val dataTpe = getClassIfDefined("chisel3.Data")
+    t.baseClasses.contains(dataTpe)
   }
 
-  def shouldMatchNamedComp(using Context): Type => Boolean = {
-    val dataTpe = requiredClassRef("chisel3.Data")
-    val memBaseTpe = requiredClassRef("chisel3.MemBase")
-    val verifTpe = requiredClassRef("chisel3.VerificationStatement")
-    val disableTpe = requiredClassRef("chisel3.Disable")
-    val affectsTpe = requiredClassRef("chisel3.experimental.AffectsChiselName")
-    val dynObjTpe  = requiredClassRef("chisel3.properties.DynamicObject")
+  def isNamed(t: Type)(using Context): Boolean = {
+    val dataTpe =    getClassIfDefined("chisel3.Data")
+    val memBaseTpe = getClassIfDefined("chisel3.MemBase")
+    val verifTpe =   getClassIfDefined("chisel3.VerificationStatement")
+    val disableTpe = getClassIfDefined("chisel3.Disable")
+    val affectsTpe = getClassIfDefined("chisel3.experimental.AffectsChiselName")
+    val dynObjTpe  = getClassIfDefined("chisel3.properties.DynamicObject")
 
-    shouldMatchGen(dataTpe, memBaseTpe, verifTpe, disableTpe, affectsTpe, dynObjTpe)
+    t.baseClasses.contains(dataTpe)
+    || t.baseClasses.contains(memBaseTpe)
+    || t.baseClasses.contains(verifTpe)
+    || t.baseClasses.contains(disableTpe)
+    || t.baseClasses.contains(affectsTpe)
+    || t.baseClasses.contains(dynObjTpe)
   }
 
-  def shouldMatchModule(using Context): Type => Boolean = {
-    val baseModuleTpe = requiredClassRef("chisel3.experimental.BaseModule")
-    shouldMatchGen(baseModuleTpe)
+  def isModule(t: Type)(using Context): Boolean = {
+    val baseModuleTpe = getClassIfDefined("chisel3.experimental.BaseModule")
+    t.baseClasses.contains(baseModuleTpe)
   }
 
-  def shouldMatchInstance(using Context): Type => Boolean = {
-    val instanceTpe = requiredClassRef("chisel3.experimental.hierarchy.Instance")
-    shouldMatchGen(instanceTpe)
+  def isInstance(t: Type)(using Context): Boolean = {
+    val instanceTpe = getClassIfDefined("chisel3.experimental.hierarchy.Instance")
+    t.baseClasses.contains(instanceTpe)
   }
 
-  def shouldMatchChiselPrefixed(using Context): Type => Boolean = {
-    val affectsTpe = requiredClassRef("chisel3.experimental.AffectsChiselName")
-    shouldMatchGen(affectsTpe)
+  def isPrefixed(t: Type)(using Context): Boolean = {
+    val affectsTpe = getClassIfDefined("chisel3.experimental.AffectsChiselName")
+    t.baseClasses.contains(affectsTpe)
   }
 }
