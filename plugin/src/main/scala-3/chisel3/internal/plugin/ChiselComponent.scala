@@ -74,9 +74,8 @@ class ChiselComponentPhase extends PluginPhase {
     val prefixTpe = requiredClassRef("chisel3.experimental.AffectsChiselPrefix")
     val bundleTpe = requiredClassRef("chisel3.Bundle")
 
-    val pluginModule = requiredModule("chisel3.internal.plugin")
-    val autoNameMethod = pluginModule.requiredMethod("autoNameRecursively")
-    val autoNameProductMethod = pluginModule.requiredMethod("autoNameRecursivelyProduct")
+    val pluginModule = requiredModule("chisel3")
+    val autoNameMethod = pluginModule.requiredMethod("withName")
     val prefixModule = requiredModule("chisel3.experimental.prefix")
     val prefixApplyMethod = prefixModule.requiredMethod("applyString")
     
