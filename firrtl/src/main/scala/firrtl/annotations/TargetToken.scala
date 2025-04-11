@@ -34,6 +34,7 @@ case object TargetToken {
   case class OfModule(value: String) extends TargetToken { override def keyword: String = "of" }
   case class Ref(value: String) extends TargetToken { override def keyword: String = "ref" }
   case class Index(value: Int) extends TargetToken { override def keyword: String = "[]" }
+  case class DynamicIndex(value: Seq[TargetToken]) extends TargetToken { override def keyword: String = "[>]" }
   case class Field(value: String) extends TargetToken { override def keyword: String = "." }
 
   implicit class fromStringToTargetToken(s: String) {
@@ -62,6 +63,7 @@ case object TargetToken {
     "of" -> ((value: String) => OfModule(value)),
     "ref" -> ((value: String) => Ref(value)),
     "[]" -> ((value: String) => Index(value.toInt)),
+    "[>]" -> ((value: String) => DynamicIndex(Seq())),
     "." -> ((value: String) => Field(value))
   )
 }

@@ -36,13 +36,19 @@ sealed trait Target extends Named {
   def serialize: String = {
     val circuitString = "~"
     val moduleString = "|" + moduleOpt.getOrElse("???")
-    val tokensString = tokens.map {
-      case Ref(r)               => s">$r"
-      case Instance(i)          => s"/$i"
-      case OfModule(o)          => s":$o"
-      case TargetToken.Field(f) => s".$f"
-      case Index(v)             => s"[$v]"
-    }.mkString("")
+    val tokensString = {
+      def makeTokensString(tokens: Seq[TargetToken]): String = {
+        tokens.map {
+          case Ref(r)               => s">$r"
+          case Instance(i)          => s"/$i"
+          case OfModule(o)          => s":$o"
+          case TargetToken.Field(f) => s".$f"
+          case Index(v)             => s"[$v]"
+          case DynamicIndex(d)      => s"[${makeTokensString(d)}]"
+        }.mkString("")
+      }
+      makeTokensString(tokens)
+    }
     if (moduleOpt.isEmpty && tokens.isEmpty) {
       circuitString
     } else if (tokens.isEmpty) {
@@ -104,22 +110,51 @@ object Target {
   implicit def convertComponentName2ReferenceTarget(c: ComponentName): ReferenceTarget = c.toTarget
   implicit def convertNamed2Target(n:                  Named):         CompleteTarget = n.toTarget
 
+  /**
+    * split a token Seq to get dynamic index and the remain part
+    *
+    * @param tokens tokens Seq, start with "["
+    * @return two Seq[String], which the first is the tokens of index and the second is the remains
+    */
+  private def splitDynamicIndexTokens(tokens: Seq[String]) = {
+    tokens.tail.foldLeft((1, false, Seq.empty[String], Seq.empty[String])) {
+      case ((level, found, front, back), token) =>
+        if (found) (level, true, front, back :+ token)
+        else
+          token match {
+            case "[" => (level + 1, false, front :+ token, back)
+            case "]" =>
+              val newLevel = level - 1
+              if (newLevel == 0) (0, true, front, Seq.empty)
+              else (newLevel, false, front :+ token, back)
+            case _ =>
+              (level, false, front :+ token, back)
+          }
+    } match { case (_, _, f, b) => (f, b) }
+  }
+
   /** Converts [[ComponentName]]'s name into TargetTokens
     * @param name
     * @return
     */
   def toTargetTokens(name: String): Seq[TargetToken] = {
     val tokens = AnnotationUtils.tokenize(name)
-    val subComps = mutable.ArrayBuffer[TargetToken]()
-    subComps += Ref(tokens.head)
-    if (tokens.tail.nonEmpty) {
-      tokens.tail.zip(tokens.tail.tail).foreach {
-        case (".", value: String) => subComps += Field(value)
-        case ("[", value: String) => subComps += Index(value.toInt)
-        case other                =>
-      }
+
+    def parseTokens(tokens: Seq[String]): Seq[TargetToken] = tokens match {
+      case "." +: value +: tail => Field(value) +: parseTokens(tail)
+      case "[" +: value +: tail =>
+        value.toIntOption match {
+          case Some(lit) => Index(lit) +: parseTokens(tail.tail)
+          case None =>
+            val (index, remains) = splitDynamicIndexTokens(tokens)
+            DynamicIndex(parseTokens(index)) +: parseTokens(remains)
+        }
+      case head +: tail => Ref(head) +: parseTokens(tail)
+      case Nil          => Seq()
+      case _            => throw NamedException(s"Cannot parse name: ${name}")
     }
-    subComps.toSeq
+
+    parseTokens(tokens)
   }
 
   /** Checks if seq only contains [[TargetToken]]'s with select keywords
@@ -133,23 +168,35 @@ object Target {
 
   /** @return [[Target]] from human-readable serialization */
   def deserialize(s: String): Target = {
-    val regex = """(?=[~|>/:.\[])"""
-    s.split(regex)
-      .foldLeft(GenericTarget(None, Vector.empty)) { (t, tokenString) =>
-        val value = tokenString.tail
-        tokenString(0) match {
-          case '~' if t.moduleOpt.isEmpty && t.tokens.isEmpty => t
-          case '|' if t.moduleOpt.isEmpty && t.tokens.isEmpty =>
-            if (value == "???") t else t.copy(moduleOpt = Some(value))
-          case '/'                                  => t.add(Instance(value))
-          case ':'                                  => t.add(OfModule(value))
-          case '>'                                  => t.add(Ref(value))
-          case '.'                                  => t.add(Field(value))
-          case '[' if value.dropRight(1).toInt >= 0 => t.add(Index(value.dropRight(1).toInt))
-          case other                                => throw NamedException(s"Cannot deserialize Target: $s")
+    val syms = """~|>/:.\[\]"""
+    val regex = s"((?<=[${syms}])|(?=[${syms}]))".r
+    val tokens = regex.split(s).filter(_.nonEmpty)
+
+    def parseTokens(target: GenericTarget, tokens: Seq[String]): GenericTarget = tokens match {
+      case "~" +: tail if target.moduleOpt.isEmpty && target.tokens.isEmpty =>
+        // See https://github.com/chipsalliance/chisel/pull/4862
+        parseTokens(target, if (tail.head == "|") tail else tail.tail)
+      case "|" +: value +: tail if target.moduleOpt.isEmpty && target.tokens.isEmpty =>
+        if (value == "???") parseTokens(target, tail) else parseTokens(target.copy(moduleOpt = Some(value)), tail)
+      case "/" +: value +: tail => parseTokens(target.add(Instance(value)), tail)
+      case ":" +: value +: tail => parseTokens(target.add(OfModule(value)), tail)
+      case ">" +: value +: tail => parseTokens(target.add(Ref(value)), tail)
+      case "." +: value +: tail => parseTokens(target.add(Field(value)), tail)
+      case "[" +: value +: tail =>
+        value.toIntOption match {
+          case Some(lit) => parseTokens(target.add(Index(lit)), tail.tail)
+          case None =>
+            val (index, remains) = splitDynamicIndexTokens(tokens)
+            parseTokens(
+              target.add(DynamicIndex(parseTokens(GenericTarget(None, Vector.empty), index).tokens.toSeq)),
+              remains
+            )
         }
-      }
-      .tryToComplete
+      case Nil => target
+      case _   => throw NamedException(s"Cannot deserialize Target: ${s}")
+    }
+
+    parseTokens(GenericTarget(None, Vector.empty), tokens).tryToComplete
   }
 
   /** Returns the module that a [[Target]] "refers" to.
@@ -281,11 +328,12 @@ case class GenericTarget(moduleOpt: Option[String], tokens: Vector[TargetToken])
     */
   def add(token: TargetToken): GenericTarget = {
     token match {
-      case _: Instance => requireLast(true, "inst", "of")
-      case _: OfModule => requireLast(false, "inst")
-      case _: Ref      => requireLast(true, "inst", "of")
-      case _: Field    => requireLast(true, "ref", "[]", ".")
-      case _: Index    => requireLast(true, "ref", "[]", ".")
+      case _: Instance     => requireLast(true, "inst", "of")
+      case _: OfModule     => requireLast(false, "inst")
+      case _: Ref          => requireLast(true, "inst", "of")
+      case _: Field        => requireLast(true, "ref", "[]", "[>]", ".")
+      case _: Index        => requireLast(true, "ref", "[]", "[>]", ".")
+      case _: DynamicIndex => requireLast(true, "ref", "[>]", ".")
     }
     this.copy(tokens = tokens :+ token)
   }

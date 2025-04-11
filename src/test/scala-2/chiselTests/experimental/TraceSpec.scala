@@ -6,16 +6,17 @@ import chisel3._
 import chisel3.experimental.Trace._
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import chisel3.testing.HasTestingDirectory
-import chisel3.testing.scalatest.TestingDirectory
+import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
 import chisel3.util.experimental.InlineInstance
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq
+import firrtl.annotations.Target
 import firrtl.annotations.TargetToken.{Instance, OfModule, Ref}
 import firrtl.annotations.{CompleteTarget, InstanceTarget, ReferenceTarget}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory {
+class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory with FileCheck {
 
   def refTarget(topName: String, ref: String, path: Seq[(Instance, OfModule)] = Seq()) =
     ReferenceTarget(topName, path, ref, Seq())
@@ -347,5 +348,29 @@ class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory {
     allTargets(dut.b(0).toAbsoluteTarget) should be(Seq(refTarget("M", "b_0")))
     allTargets(dut.b(1).toAbsoluteTarget) should be(Seq(refTarget("M", "b_1")))
     allTargets.keys should not contain (dut.b.toAbsoluteTarget)
+  }
+
+  "TraceAnnotation" should "work with dynamic index." in {
+    class MyBundle extends Bundle {
+      val foo = UInt(3.W)
+    }
+
+    class Foo extends Module {
+      val inA = IO(Input(Vec(8, new MyBundle)))
+      val inB = IO(Input(Vec(8, new MyBundle)))
+      val idx = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+
+      val elt = inB(inA(idx).foo).foo
+      out := elt
+      traceName(elt)
+    }
+
+    circt.stage.ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()("""|CHECK:      "class":"chisel3.experimental.Trace$TraceAnnotation",
+                      |CHECK-NEXT: "target":"~|Foo>inB[>inA[>idx].foo].foo",
+                      |CHECK-NEXT: "chiselTarget":"~|Foo>inB[>inA[>idx].foo].foo"
+                      |""".stripMargin)
   }
 }
