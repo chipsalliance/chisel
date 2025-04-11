@@ -171,6 +171,8 @@ Chisel provides `printf` in a similar style to its C namesake. It accepts a doub
 | `%x` | hexadecimal number |
 | `%b` | binary number |
 | `%c` | 8-bit ASCII character |
+| `%n` | name of signal |
+| `%N` | full name of signal |
 | `%%` | literal percent |
 | `%m` | hierarchical name |
 | `%T` | simulation time |

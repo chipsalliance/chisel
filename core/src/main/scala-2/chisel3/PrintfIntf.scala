@@ -44,6 +44,9 @@ private[chisel3] trait PrintfIntf { self: printf.type =>
     *   - `%c` - 8-bit Character
     *   - `%n` - Name of a signal
     *   - `%N` - Full name of a leaf signal (in an aggregate)
+    *   - `%%` - Literal percent
+    *   - `%m` - Hierarchical name of the current module
+    *   - `%T` - Simulation time
     *
     * @param fmt printf format string
     * @param data format string varargs containing data to print
