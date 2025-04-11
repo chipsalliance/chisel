@@ -1,8 +1,9 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
+import chisel3.experimental.inlinetest.{HasTests, TestHarness}
 import firrtl.options.StageUtils.dramaticMessage
-import java.nio.file.Paths
+import java.nio.file.{FileSystems, PathMatcher, Paths}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
@@ -27,6 +28,14 @@ object Exceptions {
       )
       with NoStackTrace
 
+  class TestFailed private[simulator]
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some(s"The test finished and signaled failure"),
+          body = ""
+        )
+      )
+      with NoStackTrace
 }
 
 final object Simulator {
@@ -63,8 +72,9 @@ trait Simulator[T <: Backend] {
     *
     * @return None if no failures found or Some if they are
     */
-  private def postProcessLog: Option[Throwable] = {
-    val log = Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt").toFile
+  private def postProcessLog(workspace: Workspace): Option[Throwable] = {
+    val log =
+      Paths.get(workspace.absolutePath, s"${workspace.workingDirectoryPrefix}-${tag}", "simulation-log.txt").toFile
     val lines = scala.io.Source
       .fromFile(log)
       .getLines()
@@ -116,13 +126,59 @@ trait Simulator[T <: Backend] {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val elaboratedModule =
-      workspace.elaborateGeneratedModule(
+      workspace
+        .elaborateGeneratedModule(
+          () => module,
+          args = chiselOptsModifications(chiselOpts).toSeq,
+          firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
+        )
+    workspace.generateAdditionalSources()
+    _simulate(workspace, elaboratedModule, settings)(body)
+  }
+
+  final def simulateTests[T <: RawModule with HasTests, U](
+    module:           => T,
+    includeTestGlobs: Seq[String],
+    chiselOpts:       Array[String] = Array.empty,
+    firtoolOpts:      Array[String] = Array.empty,
+    settings:         Settings[TestHarness[T, _]] = Settings.defaultRaw[TestHarness[T, _]]
+  )(body: (SimulatedModule[TestHarness[T, _]]) => U)(
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
+  ): Seq[(String, Simulator.BackendInvocationDigest[U])] = {
+    val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
+    workspace.reset()
+    val filesystem = FileSystems.getDefault()
+    workspace
+      .elaborateAndMakeTestHarnessWorkspaces(
         () => module,
+        includeTestGlobs = includeTestGlobs,
         args = chiselOptsModifications(chiselOpts).toSeq,
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
-    workspace.generateAdditionalSources()
+      .flatMap { case (testWorkspace, testName, elaboratedModule) =>
+        val includeTest = includeTestGlobs.map { glob =>
+          filesystem.getPathMatcher(s"glob:$glob")
+        }.exists(_.matches(Paths.get(testName)))
+        Option.when(includeTest) {
+          testWorkspace.generateAdditionalSources()
+          testName -> _simulate(testWorkspace, elaboratedModule, settings)(body)
+        }
+      }
+  }
 
+  private def _simulate[T <: RawModule, U](
+    workspace:        Workspace,
+    elaboratedModule: ElaboratedModule[T],
+    settings:         Settings[T] = Settings.defaultRaw[T]
+  )(body: (SimulatedModule[T]) => U)(
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
+  ): Simulator.BackendInvocationDigest[U] = {
     val commonCompilationSettingsUpdated = commonSettingsModifications(
       commonCompilationSettings.copy(
         // Append to the include directorires based on what the
@@ -190,13 +246,13 @@ trait Simulator[T <: Backend] {
       }
     }.transform(
       s /*success*/ = { case success =>
-        postProcessLog match {
+        postProcessLog(workspace) match {
           case None        => Success(success)
           case Some(error) => Failure(error)
         }
       },
       f /*failure*/ = { case originalError =>
-        postProcessLog match {
+        postProcessLog(workspace) match {
           case None           => Failure(originalError)
           case Some(newError) => Failure(newError)
         }
