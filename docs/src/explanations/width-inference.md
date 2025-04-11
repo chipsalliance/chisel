@@ -16,22 +16,22 @@ The width of a conditionally valid expression is the width of its input expressi
 
 Hardware operators have output widths as defined by the following set of rules:
 
-| operation        | bit width           |
-| ---------        | ---------           |
-| `z = x + y` *or* `z = x +% y`        | `w(z) = max(w(x), w(y))`   |
-| `z = x +& y`       | `w(z) = max(w(x), w(y)) + 1`   |
-| `z = x - y` *or* `z = x -% y`       | `w(z) = max(w(x), w(y))`    |
-| `z = x -& y`       | `w(z) = max(w(x), w(y)) + 1`   |
-| `z = x & y`        | `w(z) = max(w(x), w(y))`    |
-| `z = Mux(c, x, y)` | `w(z) = max(w(x), w(y))`    |
-| `z = w * y`        | `w(z) = w(x) + w(y)`        |
-| `z = x << n`       | `w(z) = w(x) + maxNum(n)` |
-| `z = x >> n`       | `w(z) = w(x) - minNum(n)` |
-| `z = Cat(x, y)`    | `w(z) = w(x) + w(y)`      |
-| `z = Fill(n, x)`   | `w(z) = w(x) * maxNum(n)` |
+| operation                     | bit width                    |
+| ---------                     | ---------                    |
+| `z = x + y` *or* `z = x +% y` | `w(z) = max(w(x), w(y))`     |
+| `z = x +& y`                  | `w(z) = max(w(x), w(y)) + 1` |
+| `z = x - y` *or* `z = x -% y` | `w(z) = max(w(x), w(y))`     |
+| `z = x -& y`                  | `w(z) = max(w(x), w(y)) + 1` |
+| `z = x & y`                   | `w(z) = max(w(x), w(y))`     |
+| `z = Mux(c, x, y)`            | `w(z) = max(w(x), w(y))`     |
+| `z = w * y`                   | `w(z) = w(x) + w(y)`         |
+| `z = x << n`                  | `w(z) = w(x) + maxNum(n)`    |
+| `z = x >> n`                  | `w(z) = w(x) - minNum(n)`    |
+| `z = Cat(x, y)`               | `w(z) = w(x) + w(y)`         |
+| `z = Fill(n, x)`              | `w(z) = w(x) * n`            |
 
->where for instance `w(z)` is the bit width of wire `z`, and the `&`
-rule applies to all bitwise logical operations.
+>where for instance `w(z)` is the bit width of wire `z`, `maxNum(n)` is the maximum number representable
+>by `n`, and the `&` rule applies to all bitwise logical operations.
 
 Given a path of connections that begins with an unspecified width element (most commonly a top-level input), then the compiler will throw an exception indicating a certain width was uninferrable.
 
