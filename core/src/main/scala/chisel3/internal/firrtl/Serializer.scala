@@ -251,9 +251,12 @@ private[chisel3] object Serializer {
       val lbl = e.name
       if (lbl.nonEmpty) { b ++= " : "; b ++= legalize(lbl) }
       serialize(e.sourceInfo)
-    case e @ Printf(_, info, clock, pable) =>
+    case e @ Printf(_, info, filename, clock, pable) =>
       val (fmt, args) = unpack(pable, ctx, info)
-      b ++= "printf("; serialize(clock, ctx, info); b ++= ", UInt<1>(0h1), "; b ++= fir.StringLit(fmt).escape;
+      if (filename.isEmpty) b ++= "printf("; else b ++= "fprintf(";
+      serialize(clock, ctx, info); b ++= ", UInt<1>(0h1), ";
+      filename.foreach { f => b ++= "\""; b ++= f; b ++= "\", " }
+      b ++= fir.StringLit(fmt).escape;
       args.foreach { a => b ++= ", "; serialize(a, ctx, info) }; b += ')'
       val lbl = e.name
       if (lbl.nonEmpty) { b ++= " : "; b ++= legalize(lbl) }

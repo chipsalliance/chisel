@@ -284,6 +284,10 @@ object Serializer {
       b ++= "printf("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= string.escape
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
       sStmtName(print.name); s(info)
+    case print @ Fprint(info, filename, string, args, clk, en, _) =>
+      b ++= "fprintf("; s(clk); b ++= ", "; s(en); b ++= ", \""; b ++= filename; b ++= "\", "; b ++= string.escape
+      if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
+      sStmtName(print.name); s(info)
     case IsInvalid(info, expr)    => b ++= "invalidate "; s(expr); s(info)
     case DefWire(info, name, tpe) => b ++= "wire "; b ++= legalize(name); b ++= " : "; s(tpe); s(info)
     case DefRegister(info, name, tpe, clock) =>
