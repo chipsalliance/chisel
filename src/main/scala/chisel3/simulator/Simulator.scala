@@ -1,23 +1,44 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, TestHarness, TestParameters, SimulatedTest, TestResult}
+import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestHarness, TestParameters}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.{FileSystems, PathMatcher, Paths}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
 
+object SimulationOutcome {
+
+  /** A test result, either success or failure. */
+  sealed trait Type
+
+  /** Test passed. */
+  case object Success extends Type
+
+  /** Test failed somehow. */
+  sealed trait Failure extends Type
+
+  /** Test timed out. */
+  case class Timeout(n: BigInt) extends Failure
+
+  /** Test failed with an assertion. */
+  case class Assertion(simulatorOutput: String) extends Failure
+
+  /** Test signaled failure. */
+  case object SignaledFailure extends Failure
+}
+
 object Exceptions {
 
-  class AssertionFailed private[simulator] (message: String)
+  class AssertionFailed private[simulator] (message: String, val simulatorOutput: String)
       extends RuntimeException(
         dramaticMessage(
           header = Some("One or more assertions failed during Chiselsim simulation"),
           body = message
         )
       )
-      with NoStackTrace {}
+      with NoStackTrace
 
   class Timeout private[simulator] (private[simulator] val timesteps: BigInt, message: String)
       extends RuntimeException(
@@ -75,6 +96,7 @@ trait Simulator[T <: Backend] {
 
     Option.when(lines.nonEmpty)(
       new Exceptions.AssertionFailed(
+        simulatorOutput = lines.map(_._1).mkString("\n"),
         message = s"""|The following assertion failures were extracted from the log file:
                       |
                       |  lineNo  line
@@ -138,7 +160,7 @@ trait Simulator[T <: Backend] {
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
-  ): Seq[SimulatedTest[T]] = {
+  ): Seq[SimulatedTest] = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val filesystem = FileSystems.getDefault()
@@ -153,21 +175,22 @@ trait Simulator[T <: Backend] {
         testWorkspace.generateAdditionalSources()
         val digest = _simulate(testWorkspace, elaboratedModule, settings)(body)
         // Try to unpack the result, otherwise figure out what went wrong.
-        val testResult: TestResult.Type =
+        // TODO: push this down, i.e. all ChiselSim invocations return a SimulationOutcome
+        val outcome: SimulationOutcome.Type =
           try {
             digest.result
-            TestResult.Success
+            SimulationOutcome.Success
           } catch {
             // Simulation ended due to an aserrtion
-            case assertion: Exceptions.AssertionFailed => TestResult.Assertion(assertion.getMessage)
+            case assertion: Exceptions.AssertionFailed => SimulationOutcome.Assertion(assertion.simulatorOutput)
             // Simulation ended because the testharness signaled success=0
-            case _: stimulus.InlineTestSignaledFailureException => TestResult.SignaledFailure
+            case _: stimulus.InlineTestSignaledFailureException => SimulationOutcome.SignaledFailure
             // Simulation timed out
-            case to: Exceptions.Timeout => TestResult.Timeout(to.timesteps)
+            case to: Exceptions.Timeout => SimulationOutcome.Timeout(to.timesteps)
             // Simulation did not run correctly
             case e: Throwable => throw e
           }
-        SimulatedTest(elaboratedTest, testResult)
+        SimulatedTest(elaboratedTest, outcome)
       }
   }
 

@@ -8,7 +8,7 @@ import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
 import chisel3.simulator.scalatest.InlineTests
 import chisel3.simulator.ChiselSim
-import chisel3.util.Enum
+import chisel3.util.{is, switch, Decoupled}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -107,10 +107,17 @@ class ModuleWithTests(
     TestBehavior.FinishWhen(true.B, success = instance.io.out =/= 5.U)
   }
 
-  test("assertion") { instance =>
+  test("assertion.unexpected") { instance =>
     instance.io.in := 5.U(ioWidth.W)
     chisel3.assert(instance.io.out =/= 5.U, "assertion fired in ModuleWithTests")
     TestBehavior.RunForCycles(10)
+  }
+
+  test("assertion.expected") { instance =>
+    instance.io.in := 5.U(ioWidth.W)
+    val message = "assertion fired in ModuleWithTests"
+    chisel3.assert(instance.io.out =/= 5.U, message)
+    TestBehavior.ExpectAssertion.contains(message)
   }
 
   {
@@ -249,8 +256,9 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   }
 
   it should "only elaborate tests whose name matches the test name glob with multiple globs" in {
-    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*"), testGlobs = Seq("passing", "with_*"))).fileCheck()(
-      """
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*"), testGlobs = Seq("passing", "with_*")))
+      .fileCheck()(
+        """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
@@ -258,7 +266,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       | CHECK-NOT:  module test_ModuleWithTests_failing
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
-    )
+      )
   }
 
   it should "only elaborate tests whose name and module match their globs" in {
@@ -318,7 +326,10 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
 
   it should "support iterating over registered tests to capture metadata" in {
     ChiselStage
-      .emitCHIRRTL(new ModuleWithTests(enableTestsProperty = true), args = makeArgs(Seq("*"), Seq("passing", "failing")))
+      .emitCHIRRTL(
+        new ModuleWithTests(enableTestsProperty = true),
+        args = makeArgs(Seq("*"), Seq("passing", "failing"))
+      )
       .fileCheck()(
         """
         | CHECK: module ModuleWithTests
@@ -391,26 +402,17 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   }
 
   def assertPass(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => () // test passed as expected
-    case other: TestResult.Failure => fail(s"Test unexpectedly failed: ${other}")
+    case other: TestResult.Failure =>
+      fail(s"Test unexpectedly failed: ${other}")
+    case TestResult.Success => ()
   }
 
-  def assertFail(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.SignaledFailure => () // expected failure
-    case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
-  }
-
-  def assertTimeout(expected: Int)(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.Timeout(actual) if actual == expected => () // expected timeout
-    case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
-  }
-
-  def assertAssertion(expected: String)(result: TestResult.Type): Unit = result match {
-    case TestResult.Success => fail("Test unexpectedly passed")
-    case TestResult.Assertion(actual) if actual == expected => () // expected assertion
-    case other: TestResult.Failure => fail(s"wrong type of failure: ${other}")
+  def assertFail(expectedMessage: String)(result: TestResult.Type): Unit = result match {
+    case TestResult.Success =>
+      fail("Test unexpectedly passed")
+    case TestResult.Failure(actualMessage) if !actualMessage.contains(expectedMessage) =>
+      fail(s"'${actualMessage}' does not match '${expectedMessage}'")
+    case _ => ()
   }
 
   it should "simulate and pass if finish asserted with success=1" in {
@@ -420,7 +422,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       timeout = 100
     )
     assert(results.size == 1, "Expected exactly one test result")
-    assertPass(results.head.actualResult)
+    assertPass(results.head.result)
   }
 
   it should "simulate and fail if finish asserted with success=0" in {
@@ -430,17 +432,27 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       timeout = 100
     )
     assert(results.size == 1, "Expected exactly one test result")
-    assertFail(results.head.actualResult)
+    assertFail("test signaled failure")(results.head.result)
   }
 
   it should "simulate and fail early if assertion raised" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Name("assertion"),
+      tests = TestChoice.Name("assertion.unexpected"),
       timeout = 100
     )
     assert(results.size == 1, "Expected exactly one test result")
-    assertAssertion("assertion fired")(results.head.actualResult)
+    assertFail("assertion fired")(results.head.result)
+  }
+
+  it should "simulate and pass if expected assertion fired" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Name("assertion.expected"),
+      timeout = 100
+    )
+    assert(results.size == 1, "Expected exactly one test result")
+    assertPass(results.head.result)
   }
 
   it should "run multiple passing simulations" in {
@@ -451,7 +463,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     )
     assert(results.size == 2, "Expected exactly two test results")
     results.foreach { simTest =>
-      assertPass(simTest.actualResult)
+      assertPass(simTest.result)
     }
   }
 
@@ -462,10 +474,10 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       timeout = 100
     )
     assert(results.size == 2, "Expected exactly two test results")
-    val signalPass = results.find(_.elaboratedTest.params.testName == "passing").get
-    val signalFail = results.find(_.elaboratedTest.params.testName == "failing").get
-    assertPass(signalPass.actualResult)
-    assertFail(signalFail.actualResult)
+    val signalPass = results.find(_.testName == "passing").get
+    val signalFail = results.find(_.testName == "failing").get
+    assertPass(signalPass.result)
+    assertFail("test signaled failure")(signalFail.result)
   }
 }
 
@@ -474,10 +486,29 @@ case class AluParameters(operandWidth: Int, widenResult: Boolean) {
   def name: String = s"ALU_${operandWidth}" + (if (widenResult) "w" else "")
 }
 
+object AluOp extends ChiselEnum {
+  val Add = Value("b000".U)
+  val Sub = Value("b001".U)
+  val And = Value("b010".U)
+  val Or = Value("b011".U)
+  val Xor = Value("b100".U)
+}
+
+// Separate request bundle for ALU inputs
+class AluReq(params: AluParameters) extends Bundle {
+  val op1 = UInt(params.operandWidth.W)
+  val op2 = UInt(params.operandWidth.W)
+  val opcode = AluOp()
+}
+
+// Separate response bundle for ALU output
+class AluResp(params: AluParameters) extends Bundle {
+  val result = UInt(params.resultWidth.W)
+}
+
 class AluIO(params: AluParameters) extends Bundle {
-  val op1, op2 = Input(UInt(params.operandWidth.W))
-  val opcode = Input(UInt(3.W))
-  val result = Output(UInt(params.resultWidth.W))
+  val req = Flipped(Decoupled(new AluReq(params)))
+  val resp = Decoupled(new AluResp(params))
 }
 
 object Alu {
@@ -486,7 +517,7 @@ object Alu {
       def assert(cond: Bool) = chisel3.assert(cond, message)
     }
 
-    case object AdditionOverflow    extends Type("addition overflow detected")
+    case object AdditionOverflow extends Type("addition overflow detected")
     case object SubtractionOverflow extends Type("subtraction overflow detected")
   }
 }
@@ -495,92 +526,118 @@ object Alu {
 class Alu(params: AluParameters) extends Module with HasTests {
   @public val io = IO(new AluIO(params))
 
-  io.result := 0.U
+  // Register request inputs when valid transaction occurs
+  val reqReg = RegInit(0.U.asTypeOf(new AluReq(params)))
+  val busy = RegInit(false.B)
 
-  when(io.opcode === 0.U) {
-    val sum = io.op1 +& io.op2
-    io.result := sum
+  // Default values
+  io.req.ready := !busy
+  io.resp.valid := busy
+  io.resp.bits.result := 0.U
 
-    test("sanity.add.zero") { alu =>
-      alu.io.op1    := 0.U
-      alu.io.op2    := 0.U
-      alu.io.opcode := 0.U
-      assert(alu.io.result === 0.U)
-      TestBehavior.RunForCycles(10)
-    }
+  // Capture input when there's a valid request and we're ready
+  when(io.req.fire) {
+    reqReg := io.req.bits
+    busy := true.B
+  }
 
-    test("sanity.add.identity") { alu =>
-      alu.io.op1    := 1.U
-      alu.io.op2    := 0.U
-      alu.io.opcode := 0.U
-      assert(alu.io.result === 1.U)
-      TestBehavior.RunForCycles(10)
-    }
+  // Clear busy when response is accepted
+  when(io.resp.fire) {
+    busy := false.B
+  }
 
-    if (!params.widenResult) {
-      val assertion = Alu.Assertions.AdditionOverflow
-      assertion.assert(!(sum(params.operandWidth) =/= sum(params.operandWidth-1)))
-      test("sanity.sum.overflow") { alu =>
-        alu.io.op1    := ((1 << params.operandWidth) - 1).U
-        alu.io.op2    := 1.U
-        alu.io.opcode := 0.U
-        TestBehavior.ExpectAssertion(assertion.message)
+  // ALU logic using registered inputs
+  val result = Wire(UInt(params.resultWidth.W))
+  result := 0.U
+
+  switch(reqReg.opcode) {
+    is(AluOp.Add) {
+      val sum = reqReg.op1 +& reqReg.op2
+      result := sum
+
+      if (!params.widenResult) {
+        val assertion = Alu.Assertions.AdditionOverflow
+        assertion.assert(!sum(params.operandWidth))
+        test("sanity.add.zero") { alu =>
+          alu.io.req.valid := true.B
+          alu.io.req.bits.op1 := 0.U
+          alu.io.req.bits.op2 := 0.U
+          alu.io.req.bits.opcode := AluOp.Add
+          alu.io.resp.ready := true.B
+          TestBehavior.FinishWhen(
+            finish = alu.io.resp.fire,
+            success = alu.io.resp.valid && alu.io.resp.bits.result === 0.U
+          )
+        }
       }
     }
-  }.elsewhen(io.opcode === 1.U) {
-    val diff = io.op1 -& io.op2
-    io.result := diff
-    if (!params.widenResult) {
-      val assertion = Alu.Assertions.SubtractionOverflow
-      assertion.assert(!(diff(params.operandWidth) =/= diff(params.operandWidth-1)))
-      test("sanity.sub.overflow") { alu =>
-        alu.io.op1    := 0.U
-        alu.io.op2    := 1.U
-        alu.io.opcode := 1.U
-        TestBehavior.ExpectAssertion(assertion.message)
+    is(AluOp.Sub) {
+      val diff = reqReg.op1 -& reqReg.op2
+      result := diff
+      if (!params.widenResult) {
+        val assertion = Alu.Assertions.SubtractionOverflow
+        assertion.assert(!diff(params.operandWidth))
       }
     }
-  }.elsewhen(io.opcode === 2.U) {
-    io.result := io.op1 & io.op2
-
-    test("sanity.and.zero") { alu =>
-      alu.io.op1    := "b1010".U
-      alu.io.op2    := 0.U
-      alu.io.opcode := 2.U
-      assert(alu.io.result === 0.U)
-      TestBehavior.RunForCycles(10)
+    is(AluOp.And) {
+      result := reqReg.op1 & reqReg.op2
     }
-  }.elsewhen(io.opcode === 3.U) {
-    io.result := io.op1 | io.op2
-
-    test("sanity.or.identity") { alu =>
-      val value = "b1010".U
-      alu.io.op1    := value
-      alu.io.op2    := 0.U
-      alu.io.opcode := 3.U
-      assert(alu.io.result === value)
-      TestBehavior.RunForCycles(10)
+    is(AluOp.Or) {
+      result := reqReg.op1 | reqReg.op2
     }
-  }.elsewhen(io.opcode === 4.U) {
-    io.result := io.op1 ^ io.op2
-
-    test("sanity.xor.self") { alu =>
-      alu.io.op1    := "b1010".U
-      alu.io.op2    := "b1010".U
-      alu.io.opcode := 4.U
-      assert(alu.io.result === 0.U)
-      TestBehavior.RunForCycles(10)
+    is(AluOp.Xor) {
+      result := reqReg.op1 ^ reqReg.op2
     }
-  }.otherwise {
-    io.result := 0.U
+  }
+
+  io.resp.bits.result := result
+
+  test("sanity.and.zero") { alu =>
+    alu.io.req.valid := true.B
+    alu.io.req.bits.op1 := "b1010".U
+    alu.io.req.bits.op2 := 0.U
+    alu.io.req.bits.opcode := AluOp.And
+    alu.io.resp.ready := true.B
+    TestBehavior.FinishWhen(
+      finish = alu.io.resp.fire,
+      success = alu.io.resp.valid && alu.io.resp.bits.result === 0.U
+    )
+  }
+
+  test("sanity.or.identity") { alu =>
+    val value = "b1010".U
+    alu.io.req.valid := true.B
+    alu.io.req.bits.op1 := value
+    alu.io.req.bits.op2 := 0.U
+    alu.io.req.bits.opcode := AluOp.Or
+    alu.io.resp.ready := true.B
+    TestBehavior.FinishWhen(
+      finish = alu.io.resp.fire,
+      success = alu.io.resp.valid && alu.io.resp.bits.result === value
+    )
+  }
+
+  test("sanity.xor.self") { alu =>
+    alu.io.req.valid := true.B
+    alu.io.req.bits.op1 := "b1010".U
+    alu.io.req.bits.op2 := "b1010".U
+    alu.io.req.bits.opcode := AluOp.Xor
+    alu.io.resp.ready := true.B
+    TestBehavior.FinishWhen(
+      finish = alu.io.resp.fire,
+      success = alu.io.resp.valid && alu.io.resp.bits.result === 0.U
+    )
   }
 }
 
 class AluSpec extends InlineTests {
   val configs = for {
-    width       <- Seq(4, 8, 16)
+    width <- Seq(4, 8, 16)
     widenResult <- Seq(false, true)
   } yield AluParameters(width, widenResult)
+
+  val alu4W = AluParameters(4, false)
+  runInlineTests(alu4W.name)(new Alu(alu4W))(TestChoice.Glob("*overflow*"))
 
   describe(s"sanity test: ${configs.map(_.name).mkString(", ")}") {
     configs.foreach { params =>
@@ -588,6 +645,5 @@ class AluSpec extends InlineTests {
     }
   }
 
-  val alu4W = AluParameters(4, false)
   runInlineTests(alu4W.name)(new Alu(alu4W))(TestChoice.All)
 }

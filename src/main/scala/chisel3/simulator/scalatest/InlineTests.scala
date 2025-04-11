@@ -7,12 +7,6 @@ import chisel3._
 import chisel3.experimental.inlinetest._
 import firrtl.options.StageUtils.dramaticMessage
 
-private case class FailedTest(
-  testName: String,
-  expected: TestResult.Type,
-  actual:   TestResult.Type
-)
-
 /** Provides APIs for running inline tests inside of a scalatest spec. */
 trait InlineTests extends AnyFunSpec with ChiselSim {
   def runInlineTests(
@@ -30,30 +24,12 @@ trait InlineTests extends AnyFunSpec with ChiselSim {
     }
 
     it(s"should pass ${testChoicePhrase} for ${parametrizationName}") {
-      val results = simulateTests(gen, tests, timeout)
-
-      val failures: Seq[FailedTest] =
-        results.flatMap { result =>
-          val expected = result.elaboratedTest.expectedResult
-          val actual = result.actualResult
-          Option.when(actual != expected) {
-            FailedTest(result.elaboratedTest.params.testName, expected, actual)
-          }
-        }
-
+      val simulated = simulateTests(gen, tests, timeout)
+      val failures = simulated.filter(!_.success)
       if (failures.nonEmpty) {
-        val failuresList = failures.map { case FailedTest(testName, expected, actual) =>
-          val expectedVerbPhrase = expected match {
-            case TestResult.Success => "succeed"
-            case failure: TestResult.Failure => s"${failure.description}"
-          }
-          val actualVerbPhrase = actual match {
-            case TestResult.Success => "succeeded"
-            case failure: TestResult.Failure => s"${failure.description}"
-          }
-          s"${testName} expected ${expectedVerbPhrase}, saw ${actualVerbPhrase}"
-        }.mkString("\n")
-        fail(failuresList)
+        fail(failures.map { failure =>
+          s"\t- ${failure.testName} failed: ${failure.result.asInstanceOf[TestResult.Failure].message}"
+        }.mkString("\n"))
       }
     }
   }

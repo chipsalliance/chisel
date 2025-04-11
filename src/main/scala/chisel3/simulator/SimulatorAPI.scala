@@ -3,7 +3,7 @@
 package chisel3.simulator
 
 import chisel3.{Module, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, TestChoice, TestHarness, SimulatedTest}
+import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestChoice, TestHarness}
 import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
@@ -136,7 +136,7 @@ trait SimulatorAPI {
     firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
-  ): Seq[SimulatedTest[T]] = {
+  ): Seq[SimulatedTest] = {
     val modifiedTestingDirectory = subdirectory match {
       case Some(subdir) => testingDirectory.withSubdirectory(subdir)
       case None         => testingDirectory

@@ -149,7 +149,7 @@ package object simulator {
       val updatedArgs = args ++ includeTestGlobs.map("--include-tests-name=" + _)
       val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
       generated.testHarnesses.map { case elaboratedTest =>
-        val testWorkspace = workspace.shallowCopy(workspace.absolutePath + "/tests/" + elaboratedTest.params.testName)
+        val testWorkspace = workspace.shallowCopy(workspace.absolutePath + "/tests/" + elaboratedTest.testName)
         val ports = getModuleInfoPorts(elaboratedTest.testHarness)
         val moduleInfo = testWorkspace.initializeModuleInfo(elaboratedTest.testHarness, ports.map(_._2))
         val layers = generated.outputAnnotations.collectFirst { case DesignAnnotation(_, layers) => layers }.get
