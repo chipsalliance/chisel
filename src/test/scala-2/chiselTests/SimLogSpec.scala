@@ -58,6 +58,9 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
   }
 
   it should "support writing to a file in simulation" in {
+    val testdir = implicitly[HasTestingDirectory].getDirectory
+    val logfile = testdir.resolve("workdir-verilator").resolve("logfile.log").toFile
+    logfile.delete() // delete the log file if it exists
     class MyModule extends Module {
       val (count, done) = chisel3.util.Counter(0 until 4)
       val fd = SimLog.file("logfile.log")
@@ -65,10 +68,8 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
       when(done) { stop() }
     }
     simulate(new MyModule)(RunUntilFinished(5))
-    val testdir = implicitly[HasTestingDirectory].getDirectory
-    val logfile = testdir.resolve("workdir-verilator").resolve("logfile.log")
     val expected = (0 until 4).map(i => s"count = $i").toList
-    val lines = io.Source.fromFile(logfile.toFile).getLines().toList
+    val lines = io.Source.fromFile(logfile).getLines().toList
     lines should be(expected)
   }
 }
