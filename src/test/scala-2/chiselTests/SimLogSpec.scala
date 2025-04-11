@@ -3,15 +3,15 @@
 package chiselTests
 
 import chisel3._
-import chisel3.FirrtlFormat.FormatWidth
 import circt.stage.ChiselStage
+import chisel3.simulator.scalatest.ChiselSim
+import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.FileCheck
-import org.scalactic.source.Position
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.annotation.nowarn
 
-class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck {
+class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim {
 
   behavior.of("SimLog")
 
@@ -55,5 +55,20 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck {
       .fileCheck()(
         """CHECK: printf(clock, UInt<1>(0h1), "in = %0d\n", in)"""
       )
+  }
+
+  it should "support writing to a file in simulation" in {
+    class MyModule extends Module {
+      val (count, done) = chisel3.util.Counter(0 until 4)
+      val fd = SimLog.file("logfile.log")
+      fd.printf(cf"count = $count%0d\n")
+      when(done) { stop() }
+    }
+    simulate(new MyModule)(RunUntilFinished(5))
+    val testdir = implicitly[HasTestingDirectory].getDirectory
+    val logfile = testdir.resolve("workdir-verilator").resolve("logfile.log")
+    val expected = (0 until 4).map(i => s"count = $i").toList
+    val lines = io.Source.fromFile(logfile.toFile).getLines().toList
+    lines should be(expected)
   }
 }
