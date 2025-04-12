@@ -115,8 +115,15 @@ object Target {
     if (tokens.tail.nonEmpty) {
       tokens.tail.zip(tokens.tail.tail).foreach {
         case (".", value: String) => subComps += Field(value)
-        case ("[", value: String) => subComps += Index(value.toInt)
-        case other                =>
+        case ("[", value: String) =>
+          value.toIntOption match {
+            case Some(lit) => subComps += Index(lit)
+            case None =>
+              throw NamedException(
+                s"${name} contains a dynamic index that Chisel does not support in Target, try wrapping it into WireInit and annotate that."
+              )
+          }
+        case other =>
       }
     }
     subComps.toSeq
