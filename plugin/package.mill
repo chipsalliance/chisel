@@ -37,7 +37,7 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPubli
 
   def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
   def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
-  def scalaCompilerIvy: Dep = v.scalaCompiler(crossScalaVersion)
+  def scalaCompilerIvy:  Dep = v.scalaCompiler(crossScalaVersion)
   def scala3CompilerIvy: Dep = v.scala3Compiler(crossScalaVersion)
 
   def ivyDeps = Task {
