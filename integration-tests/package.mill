@@ -12,7 +12,7 @@ object `package` extends RootModule {
   object cross extends Cross[IntegrationTests](v.scalaCrossVersions)
 }
 
-trait IntegrationTests extends CrossSbtModule with HasScala2Plugin with HasCommonOptions with ScalafmtModule {
+trait IntegrationTests extends CrossSbtModule with HasScalaPlugin with HasCommonOptions with ScalafmtModule {
   def pluginModule = plugin.cross()
   def millSourcePath = super.millSourcePath / os.up
 

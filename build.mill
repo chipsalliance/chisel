@@ -68,9 +68,10 @@ object v extends Module {
   val scopt = ivy"com.github.scopt::scopt:4.1.0"
   val mdoc = ivy"org.scalameta::mdoc:2.6.4"
 
-  def scalaReflect(scalaVersion:  String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
-  def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
-  def scalaLibrary(scalaVersion:  String) = ivy"org.scala-lang:scala-library:$scalaVersion"
+  def scalaReflect(scalaVersion:   String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
+  def scala2Compiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
+  def scala3Compiler(scalaVersion: String) = ivy"org.scala-lang::scala3-compiler:$scalaVersion"
+  def scalaLibrary(scalaVersion:   String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 
   def circt(version: String, os: String, platform: String) =
     s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
@@ -143,20 +144,16 @@ trait HasScala2MacroAnno extends CrossModuleBase {
   }
 }
 
-trait HasScala2Plugin extends CrossModuleBase {
+trait HasScalaPlugin extends CrossModuleBase {
   import build_.plugin.Plugin
   def pluginModule: Plugin
 
   override def scalacOptions = Task {
-    if (!v.isScala3(crossScalaVersion)) {
-      super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
-    } else super.scalacOptions()
+    super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
   }
 
   override def scalacPluginClasspath = Task {
-    if (!v.isScala3(crossScalaVersion)) {
-      super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
-    } else super.scalacPluginClasspath()
+    super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
   }
 }
 
@@ -283,7 +280,7 @@ trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingMod
 // TODO: move chisel src to subfolder once we have dropped sbt flow
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin with ScalafmtModule {
+trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
   def svsimModule = svsim.cross(crossScalaVersion)
   def coreModule = core.cross(crossScalaVersion)
@@ -291,7 +288,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 
   override def scalacOptions = Task {
     if (v.isScala3(crossScalaVersion)) {
-      Seq.empty[String]
+      super.scalacOptions()
     } else {
       super.scalacOptions() ++ v.scala2CommonOptions(Nil)
     }
