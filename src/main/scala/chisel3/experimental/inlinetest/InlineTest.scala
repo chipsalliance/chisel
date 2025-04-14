@@ -2,6 +2,8 @@
 
 package chisel3.experimental.inlinetest
 
+import scala.collection.mutable
+
 import chisel3._
 import chisel3.experimental.hierarchy.{Definition, Instance}
 
@@ -12,12 +14,12 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
   *  @tparam R the type of the result returned by the test body
   */
 final class TestParameters[M <: RawModule, R] private[inlinetest] (
-  /** The [[desiredName]] of the DUT module. */
-  val dutName: String,
+  /** The [[name]] of the DUT module. */
+  private[inlinetest] val dutName: () => String,
   /** The user-provided name of the test. */
   val testName: String,
   /** A Definition of the DUT module. */
-  val dutDefinition: Definition[M],
+  private[inlinetest] val dutDefinition: () => Definition[M],
   /** The body for this test, returns a result. */
   private[inlinetest] val testBody: Instance[M] => R,
   /** The reset type of the DUT module. */
@@ -32,7 +34,7 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   }
 
   /** The [[desiredName]] for the testharness module. */
-  private[inlinetest] final def testHarnessDesiredName = s"test_${dutName}_${testName}"
+  private[inlinetest] final def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
 sealed class TestResultBundle extends Bundle {
@@ -73,7 +75,7 @@ abstract class TestHarness[M <: RawModule, R](test: TestParameters[M, R])
   io.finish := false.B
   io.success := true.B
 
-  protected final val dut = Instance(test.dutDefinition)
+  protected final val dut = Instance(test.dutDefinition())
   protected final val testResult = test.testBody(dut)
 }
 
@@ -121,6 +123,24 @@ object TestHarnessGenerator {
   }
 }
 
+private final class TestGenerator[M <: RawModule, R](
+  /** The user-provided name of the test. */
+  val testName: String,
+  /** Thunk that returns a [[Definition]] of the DUT */
+  dutDefinition: () => Definition[M],
+  /** The (eventually) legalized name for the DUT module */
+  dutName: () => String,
+  /** The body for this test, returns a result. */
+  testBody: Instance[M] => R,
+  /** The reset type of the DUT module. */
+  dutResetType: Option[Module.ResetType.Type],
+  /** The testharness generator. */
+  testHarnessGenerator: TestHarnessGenerator[M, R]
+) {
+  val params = new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType)
+  def generate() = testHarnessGenerator.generate(params)
+}
+
 /** Provides methods to build unit testharnesses inline after this module is elaborated.
   *
   *  @tparam TestResult the type returned from each test body generator, typically
@@ -135,18 +155,34 @@ trait HasTests { module: RawModule =>
   private val inlineTestIncluder = internal.Builder.captureContext().inlineTestIncluder
 
   private def shouldElaborateTest(testName: String) =
-    inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
+    elaborateTests && inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
 
-  /** A Definition of the DUT to be used for each of the tests. */
-  private lazy val moduleDefinition =
-    module.toDefinition.asInstanceOf[Definition[module.type]]
+  /** This module as a definition. Lazy in order to prevent evaluation unless used by a test. */
+  private lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]
 
-  /** Generate an additional parent around this module.
-    *
-    *  @param parent generator function, should instantiate the [[Definition]]
-    */
-  protected final def elaborateParentModule(parent: Definition[module.type] => RawModule with Public): Unit =
-    afterModuleBuilt { Definition(parent(moduleDefinition)) }
+  /** Generators for inline tests by name. LinkedHashMap preserves test insertion order. */
+  private val testGenerators = new mutable.LinkedHashMap[String, TestGenerator[M, _]]
+
+  /** Get the generators for the currently registered tests for this module and whether they are queued
+   *  for elaboration. */
+  private def getRegisteredTestGenerators: Seq[(TestGenerator[M, _], Boolean)] =
+    testGenerators.values.toSeq.map { testGenerator =>
+      (testGenerator, shouldElaborateTest(testGenerator.params.testName))
+    }
+
+  /** Get the currently registered tests for this module and whether they are queued for elaboration. */
+  def getRegisteredTests: Seq[(TestParameters[M, _], Boolean)] =
+    getRegisteredTestGenerators.map { case (testGenerator, shouldElaborate) =>
+      (testGenerator.params, shouldElaborate)
+    }
+
+  private val elaboratedTests = new mutable.HashMap[String, TestHarness[M, _]]
+
+  private[chisel3] def getElaboratedTestModule(testName: String): TestHarness[M, _] =
+    elaboratedTests(testName)
+
+  private[chisel3] def getElaboratedTestModules: Seq[(String, TestHarness[M, _])] =
+    elaboratedTests.toSeq
 
   /** Generate a public module that instantiates this module. The default
     *  testharness has clock and synchronous reset IOs and contains the test
@@ -156,15 +192,33 @@ trait HasTests { module: RawModule =>
     */
   protected final def test[R](
     testName: String
-  )(testBody: Instance[M] => R)(implicit th: TestHarnessGenerator[M, R]): Unit =
-    if (elaborateTests && shouldElaborateTest(testName)) {
-      elaborateParentModule { moduleDefinition =>
-        val resetType = module match {
-          case module: Module => Some(module.resetType)
-          case _ => None
+  )(testBody: Instance[M] => R)(implicit testHarnessGenerator: TestHarnessGenerator[M, R]): Unit = {
+    require(!testGenerators.contains(testName), s"test '${testName}' already declared")
+    val dutResetType = module match {
+      case module: Module => Some(module.resetType)
+      case _ => None
+    }
+    val testGenerator =
+      new TestGenerator(
+        testName,
+        () => moduleDefinition,
+        () => module.name,
+        testBody,
+        dutResetType,
+        testHarnessGenerator
+      )
+    testGenerators += testName -> testGenerator
+  }
+
+  afterModuleBuilt {
+    getRegisteredTestGenerators.foreach { case (testGenerator, shouldElaborate) =>
+      if (shouldElaborate) {
+        Definition {
+          val testHarness = testGenerator.generate()
+          elaboratedTests += testGenerator.params.testName -> testHarness
+          testHarness
         }
-        val test = new TestParameters[M, R](desiredName, testName, moduleDefinition, testBody, resetType)
-        th.generate(test)
       }
     }
+  }
 }
