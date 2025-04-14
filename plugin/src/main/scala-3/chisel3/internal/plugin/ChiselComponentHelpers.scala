@@ -19,7 +19,7 @@ object ChiselTypeHelpers {
     val modsOk = badFlags.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
-      case _ => false
+      case _                       => false
     }
     modsOk && !isNull && !dd.rhs.isEmpty
   }
@@ -30,7 +30,7 @@ object ChiselTypeHelpers {
     val flagsOk = goodFlags.forall(f => dd.symbol.flags.is(f)) && badFlags.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
-      case _ => false
+      case _                       => false
     }
     val tpe = dd.tpt.tpe
     tpe.typeSymbol.fullName.startsWith("Tuple") && flagsOk && !isNull && !dd.rhs.isEmpty
@@ -39,7 +39,7 @@ object ChiselTypeHelpers {
   def findUnapplyNames(tree: Tree[?]): Option[List[String]] = {
     val applyArgs = tree match {
       case Match(_, List(CaseDef(_, _, Apply(_, args)))) => Some(args)
-      case _ => None
+      case _                                             => None
     }
     applyArgs.flatMap { args =>
       var ok = true
@@ -64,12 +64,12 @@ object ChiselTypeHelpers {
   }
 
   def isNamed(t: Type)(using Context): Boolean = {
-    val dataTpe =    getClassIfDefined("chisel3.Data")
+    val dataTpe = getClassIfDefined("chisel3.Data")
     val memBaseTpe = getClassIfDefined("chisel3.MemBase")
-    val verifTpe =   getClassIfDefined("chisel3.VerificationStatement")
+    val verifTpe = getClassIfDefined("chisel3.VerificationStatement")
     val disableTpe = getClassIfDefined("chisel3.Disable")
     val affectsTpe = getClassIfDefined("chisel3.experimental.AffectsChiselName")
-    val dynObjTpe  = getClassIfDefined("chisel3.properties.DynamicObject")
+    val dynObjTpe = getClassIfDefined("chisel3.properties.DynamicObject")
 
     t.baseClasses.contains(dataTpe)
     || t.baseClasses.contains(memBaseTpe)

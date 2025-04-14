@@ -13,7 +13,7 @@ import dotty.tools.dotc.core.StdNames.*
 import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
-import dotty.tools.dotc.transform.{Pickler, PostTyper, Erasure}
+import dotty.tools.dotc.transform.{Erasure, Pickler, PostTyper}
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.util.SourcePosition
@@ -21,7 +21,7 @@ import dotty.tools.dotc.util.SourcePosition
 import scala.collection.mutable
 
 class ChiselComponent extends StandardPlugin {
-  val name: String = "ChiselComponent"
+  val name:                 String = "ChiselComponent"
   override val description: String = "Chisel's type-specific naming"
 
   override def init(options: List[String]): List[PluginPhase] = {
@@ -49,7 +49,7 @@ class ChiselComponentPhase extends PluginPhase {
     val autoNameMethod = pluginModule.requiredMethod("withName")
     val prefixModule = requiredModule("chisel3.experimental.prefix")
     val prefixApplyMethod = prefixModule.requiredMethod("applyString")
-    
+
     val sym = tree.symbol
     val tpt = tree.tpt.tpe
     val name = sym.name
@@ -66,18 +66,22 @@ class ChiselComponentPhase extends PluginPhase {
     if (!ChiselTypeHelpers.okVal(tree)) tree // Cannot name this, so skip
     else if (isData && ChiselTypeHelpers.inBundle(tree)) { // Data in a bundle
       val newRHS = transformFollowing(rhs)
-      val named = tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(newRHS)
+      val named =
+        tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(newRHS)
       cpy.ValDef(tree)(rhs = named)
     } else if (isData || isPrefixed) { // All other Data subtype instances
       val newRHS = transformFollowing(rhs)
-      val prefixed = tpd.ref(prefixModule).select(prefixApplyMethod).appliedToType(tpt).appliedTo(prefixLiteral).appliedTo(newRHS)
+      val prefixed =
+        tpd.ref(prefixModule).select(prefixApplyMethod).appliedToType(tpt).appliedTo(prefixLiteral).appliedTo(newRHS)
       val named =
-        if (isNamedComp) { tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(prefixed)
+        if (isNamedComp) {
+          tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(prefixed)
         } else prefixed
       cpy.ValDef(tree)(rhs = named)
     } else if (ChiselTypeHelpers.isModule(tpt) || ChiselTypeHelpers.isInstance(tpt)) { // Modules or instances
       val newRHS = transformFollowing(rhs)
-      val named = tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(newRHS)
+      val named =
+        tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(newRHS)
       cpy.ValDef(tree)(rhs = named)
     } else {
       super.transformValDef(tree)
