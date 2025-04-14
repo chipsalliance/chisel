@@ -28,7 +28,7 @@ object v extends Module {
     val minVersion = if (javaVersion > 11) java21Min213 else 0
     val versions = minVersion to latest213
     val versionSeq = versions.map(v => s"2.13.$v").toSeq
-    versionSeq ++ Seq("3.3.4", "3.6.3-RC1-bin-SNAPSHOT")
+    versionSeq ++ Seq("3.3.4")
   }
 
   val scalaCrossVersions = Seq(
