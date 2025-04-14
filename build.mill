@@ -70,7 +70,7 @@ object v extends Module {
 
   def scalaReflect(scalaVersion:   String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
   def scala2Compiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
-  def scala3Compiler(scalaVersion: String) = ivy"org.scala-lang:scala3-compiler_3:$scalaVersion"
+  def scala3Compiler(scalaVersion: String) = ivy"org.scala-lang::scala3-compiler_3:$scalaVersion"
   def scalaLibrary(scalaVersion:   String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 
   def circt(version: String, os: String, platform: String) =
