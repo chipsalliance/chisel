@@ -47,4 +47,5 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPubli
       super.ivyDeps() ++ Agg(scala3CompilerIvy)
     }
   }
+  override def unmanagedClasspath = T { Seq(core.cross(crossScalaVersion).jar()) }
 }
