@@ -3,6 +3,7 @@
 package chisel3.experimental.inlinetest
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 import chisel3._
 import chisel3.experimental.hierarchy.{Definition, Instance}
@@ -14,7 +15,7 @@ import chisel3.simulator.{stimulus, Simulator}
   *  @tparam M the type of the DUT module
   *  @tparam R the type of the result returned by the test body
   */
-final class TestParameters[M <: RawModule, R] private[inlinetest] (
+final class TestParameters[M <: RawModule] private[inlinetest] (
   /** The [[name]] of the DUT module. */
   private[inlinetest] val dutName: () => String,
   /** The user-provided name of the test. */
@@ -22,7 +23,7 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** A Definition of the DUT module. */
   private[inlinetest] val dutDefinition: () => Definition[M],
   /** The body for this test, returns a result. */
-  private[inlinetest] val testBody: Instance[M] => R,
+  private[inlinetest] val testBody: Instance[M] => TestBehavior.Type,
   /** The reset type of the DUT module. */
   private[inlinetest] val dutResetType: Option[Module.ResetType.Type]
   /** The expected result when simulating this test. */
@@ -53,6 +54,43 @@ final class TestResultBundle extends Bundle {
   val success = Bool()
 }
 
+object TestBehavior {
+
+  /** How a test should complete. */
+  trait Type {
+    /** Drive the testharness interface (finish, success) in a way that is appropriate for this behavior. */
+    def driveInterface(result: TestResultBundle):   Unit
+  }
+
+  /** Test will run until the DUT or test body calls [[chisel3.stop]] or `$finish`. Note: whatever is simulating
+   *  this test (e.g. ChiselSim) may still enforce a timeout; reaching that likely still constitutes test failure.
+   */
+  case object RunForever extends Type {
+    def driveInterface(intf: TestResultBundle) = {
+      intf.finish := 0.U
+      intf.success := 1.U
+    }
+  }
+
+  /** Test will run for `nCycles` cycles then signal success. The test will only fail if an assertion or `$fatal` is raised. */
+  case class RunForCycles(nCycles: Int) extends Type {
+    def driveInterface(intf: TestResultBundle) = {
+      val counter = chisel3.util.Counter(nCycles)
+      counter.inc()
+      intf.finish := counter.value === (nCycles - 1).U
+      intf.success := 1.U
+    }
+  }
+
+  /** Test will finish when some condition is met. Test will succeed if some condition is met. */
+  case class FinishWhen(finish: Bool, success: Bool) extends Type {
+    def driveInterface(intf: TestResultBundle) = {
+      intf.finish := finish
+      intf.success := success
+    }
+  }
+}
+
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
    *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
    *  that of the DUT, or is [[Synchronous]] if it must be inferred (this can be overriden).
@@ -65,40 +103,23 @@ final class TestResultBundle extends Bundle {
    * - [[finish]]: the test shall be considered complete on the first positive edge of [[finish]].
    *
    *  @tparam M the type of the DUT module
-   *  @tparam R the type of the result returned by the test body
    */
-abstract class TestHarness[M <: RawModule, R](test: TestParameters[M, R])
+abstract class TestHarness[M <: RawModule](test: TestParameters[M])
     extends FixedIOModule(new TestResultBundle)
     with Public {
   override final def desiredName = test.testHarnessDesiredName
   override final def resetType = test.testHarnessResetType
 
-  // Handle the base case where a test has no result. In this case, we expect
-  // the test to end the simulation and signal pass/fail.
-  io.finish := false.B
-  io.success := true.B
-
   protected final val dut = Instance(test.dutDefinition())
   protected final val testResult = test.testBody(dut)
-}
 
-/** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
-   *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
-   *  that of the DUT, or is [[Synchronous]] if it must be inferred (this can be overriden).
-   *
-   *  @tparam M the type of the DUT module
-   *  @tparam R the type of the result returned by the test body
-   */
-abstract class TestHarnessWithResult[M <: RawModule](test: TestParameters[M, TestResultBundle])
-    extends TestHarness[M, TestResultBundle](test) {
-  io.finish := testResult.finish
-  io.success := testResult.success
+  testResult.driveInterface(io)
 }
 
 /** A test that has been elaborated to the circuit. */
-private[chisel3] case class ElaboratedTest[M <: RawModule, R](
-  params:      TestParameters[M, R],
-  testHarness: TestHarness[M, R]
+private[chisel3] case class ElaboratedTest[M <: RawModule](
+  params:      TestParameters[M],
+  testHarness: TestHarness[M]
 )
 
 /** An implementation of a testharness generator. This is a type class that defines how to
@@ -107,33 +128,28 @@ private[chisel3] case class ElaboratedTest[M <: RawModule, R](
   *  @tparam M the type of the DUT module
   *  @tparam R the type of the result returned by the test body
   */
-trait TestHarnessGenerator[M <: RawModule, R] {
+trait TestHarnessGenerator[M <: RawModule] {
 
   /** Generate a testharness module given the test parameters. */
-  def generate(test: TestParameters[M, R]): TestHarness[M, R]
+  def generate(test: TestParameters[M]): TestHarness[M]
 }
 
 object TestHarnessGenerator {
 
   /** Factory for a TestHarnessGenerator typeclass. */
-  def apply[M <: RawModule, R](gen: TestParameters[M, R] => TestHarness[M, R]) =
-    new TestHarnessGenerator[M, R] {
-      override def generate(test: TestParameters[M, R]) = gen(test)
+  def apply[M <: RawModule](gen: TestParameters[M] => TestHarness[M]) =
+    new TestHarnessGenerator[M] {
+      override def generate(test: TestParameters[M]) = gen(test)
     }
 
   /** Provides a default testharness for tests that return [[Unit]]. */
-  implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, Unit] = {
-    TestHarnessGenerator(new TestHarness[M, Unit](_) {})
-  }
-
-  /** Provides a default testharness for tests that return a [[TestResultBundle]] */
-  implicit def resultTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, TestResultBundle] = {
-    TestHarnessGenerator(new TestHarnessWithResult[M](_) {})
+  implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M] = {
+    TestHarnessGenerator(new TestHarness[M](_) {})
   }
 }
 
 /** A test that was registered, but is not necessarily selected for elaboration. */
-private final class RegisteredTest[M <: RawModule, R](
+private final class RegisteredTest[M <: RawModule](
   /** The user-provided name of the test. */
   val testName: String,
   /** Whether or not this test should be elaborated. */
@@ -143,13 +159,13 @@ private final class RegisteredTest[M <: RawModule, R](
   /** The (eventually) legalized name for the DUT module */
   dutName: () => String,
   /** The body for this test, returns a result. */
-  testBody: Instance[M] => R,
+  testBody: Instance[M] => TestBehavior.Type,
   /** The reset type of the DUT module. */
   dutResetType: Option[Module.ResetType.Type],
   /** The testharness generator. */
-  testHarnessGenerator: TestHarnessGenerator[M, R]
+  testHarnessGenerator: TestHarnessGenerator[M]
 ) {
-  val params: TestParameters[M, R] = new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType)
+  val params: TestParameters[M] = new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType)
   def elaborate() = ElaboratedTest(
     params,
     testHarnessGenerator.generate(params)
@@ -178,25 +194,25 @@ trait HasTests { module: RawModule =>
   private lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]
 
   /** Generators for inline tests by name. LinkedHashMap preserves test insertion order. */
-  private val registeredTests = new mutable.LinkedHashMap[String, RegisteredTest[M, _]]
+  private val registeredTests = new mutable.LinkedHashMap[String, RegisteredTest[M]]
 
   /** Get the currently registered tests for this module and whether they are queued for elaboration. */
-  private def getRegisteredTests: Seq[RegisteredTest[M, _]] =
+  private def getRegisteredTests: Seq[RegisteredTest[M]] =
     registeredTests.values.toSeq
 
   /** Get all enabled tests for this module. */
-  def getTests: Seq[TestParameters[M, _]] =
+  def getTests: Seq[TestParameters[M]] =
     getRegisteredTests.filter(_.shouldElaborateToCircuit).map(_.params)
 
   /** Map from test name to elaborated test. */
-  private val elaboratedTests = new mutable.LinkedHashMap[String, ElaboratedTest[M, _]]
+  private val elaboratedTests = new mutable.LinkedHashMap[String, ElaboratedTest[M]]
 
   /** Get the all tests elaborated to the ciruit. */
-  private[chisel3] def getElaboratedTests: Seq[ElaboratedTest[M, _]] =
+  private[chisel3] def getElaboratedTests: Seq[ElaboratedTest[M]] =
     elaboratedTests.values.toSeq
 
   /** Elaborate a test to the circuit as a public definition. */
-  private def elaborateTestToCircuit[R](test: RegisteredTest[M, R]): Unit =
+  private def elaborateTestToCircuit(test: RegisteredTest[M]): Unit =
     Definition {
       val elaboratedTest = test.elaborate()
       elaboratedTests += test.params.testName -> elaboratedTest
@@ -209,9 +225,9 @@ trait HasTests { module: RawModule =>
     *
     *  @param testBody the circuit to elaborate inside the testharness
     */
-  protected final def test[R](
+  protected final def test(
     testName: String
-  )(testBody: Instance[M] => R)(implicit testHarnessGenerator: TestHarnessGenerator[M, R]): Unit = {
+  )(testBody: Instance[M] => TestBehavior.Type)(implicit testHarnessGenerator: TestHarnessGenerator[M]): Unit = {
     require(!registeredTests.contains(testName), s"test '${testName}' already declared")
     val dutResetType = module match {
       case module: Module => Some(module.resetType)
