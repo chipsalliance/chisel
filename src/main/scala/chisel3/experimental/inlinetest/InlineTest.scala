@@ -189,7 +189,7 @@ trait HasTests { module: RawModule =>
     getRegisteredTests.filter(_.shouldElaborateToCircuit).map(_.params)
 
   /** Map from test name to elaborated test. */
-  private val elaboratedTests = new mutable.HashMap[String, ElaboratedTest[M, _]]
+  private val elaboratedTests = new mutable.LinkedHashMap[String, ElaboratedTest[M, _]]
 
   /** Get the all tests elaborated to the ciruit. */
   private[chisel3] def getElaboratedTests: Seq[ElaboratedTest[M, _]] =
