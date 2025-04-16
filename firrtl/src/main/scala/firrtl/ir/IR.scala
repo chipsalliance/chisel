@@ -437,13 +437,14 @@ case class Print(
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Fprint(
-  val info:     Info,
-  val filename: String,
-  val string:   StringLit,
-  val args:     Seq[Expression],
-  val clk:      Expression,
-  val en:       Expression,
-  val name:     String = ""
+  val info:         Info,
+  val filename:     StringLit,
+  val filenameArgs: Seq[Expression],
+  val string:       StringLit,
+  val args:         Seq[Expression],
+  val clk:          Expression,
+  val en:           Expression,
+  val name:         String = ""
 ) extends Statement
     with HasInfo
     with IsDeclaration
