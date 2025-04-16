@@ -30,26 +30,43 @@ class ChiselComponent extends StandardPlugin {
 }
 
 class ChiselComponentPhase extends PluginPhase {
-
   val phaseName: String = "chiselComponentPhase"
   override val runsAfter = Set(TyperPhase.name)
 
+  private var dataTpe    : TypeRef = _
+  private var memBaseTpe : TypeRef = _
+  private var verifTpe   : TypeRef = _
+  private var dynObjTpe  : TypeRef = _
+  private var affectsTpe : TypeRef = _
+  private var moduleTpe  : TypeRef = _
+  private var instTpe    : TypeRef = _
+  private var prefixTpe  : TypeRef = _
+  private var bundleTpe  : TypeRef = _
+
+  private var pluginModule      : TermSymbol = _
+  private var autoNameMethod    : TermSymbol = _
+  private var prefixModule      : TermSymbol = _
+  private var prefixApplyMethod : TermSymbol = _
+
+  override def prepareForUnit(tree: Tree)(using ctx: Context): Context = {
+    dataTpe = requiredClassRef("chisel3.Data")
+    memBaseTpe = requiredClassRef("chisel3.MemBase")
+    verifTpe = requiredClassRef("chisel3.VerificationStatement")
+    dynObjTpe = requiredClassRef("chisel3.Disable")
+    affectsTpe = requiredClassRef("chisel3.experimental.AffectsChiselName")
+    moduleTpe = requiredClassRef("chisel3.experimental.BaseModule")
+    instTpe = requiredClassRef("chisel3.experimental.hierarchy.Instance")
+    prefixTpe = requiredClassRef("chisel3.experimental.AffectsChiselPrefix")
+    bundleTpe = requiredClassRef("chisel3.Bundle")
+
+    pluginModule = requiredModule("chisel3")
+    autoNameMethod = pluginModule.requiredMethod("withName")
+    prefixModule = requiredModule("chisel3.experimental.prefix")
+    prefixApplyMethod = prefixModule.requiredMethod("applyString")
+    ctx
+  }
+
   override def transformValDef(tree: tpd.ValDef)(using Context): tpd.Tree = {
-    val dataTpe = requiredClassRef("chisel3.Data")
-    val memBaseTpe = requiredClassRef("chisel3.MemBase")
-    val verifTpe = requiredClassRef("chisel3.VerificationStatement")
-    val dynObjTpe = requiredClassRef("chisel3.Disable")
-    val affectsTpe = requiredClassRef("chisel3.experimental.AffectsChiselName")
-    val moduleTpe = requiredClassRef("chisel3.experimental.BaseModule")
-    val instTpe = requiredClassRef("chisel3.experimental.hierarchy.Instance")
-    val prefixTpe = requiredClassRef("chisel3.experimental.AffectsChiselPrefix")
-    val bundleTpe = requiredClassRef("chisel3.Bundle")
-
-    val pluginModule = requiredModule("chisel3")
-    val autoNameMethod = pluginModule.requiredMethod("withName")
-    val prefixModule = requiredModule("chisel3.experimental.prefix")
-    val prefixApplyMethod = prefixModule.requiredMethod("applyString")
-
     val sym = tree.symbol
     val tpt = tree.tpt.tpe
     val name = sym.name

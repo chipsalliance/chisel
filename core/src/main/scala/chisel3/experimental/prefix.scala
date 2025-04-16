@@ -28,7 +28,7 @@ object prefix {
     * @tparam T The return type of the provided function
     * @return The return value of the provided function
     */
-  def applyHasId[T](name: HasId)(f: => T): T = {
+  def apply[T](name: HasId)(f: => T): T = {
     val pushed = Builder.pushPrefix(name)
     val ret = f
     if (pushed) {
@@ -45,7 +45,7 @@ object prefix {
     * @tparam T The return type of the provided function
     * @return The return value of the provided function
     */
-  def applyString[T](name: String)(f: => T): T = {
+  def apply[T](name: String)(f: => T): T = {
     Builder.pushPrefix(name)
     val ret = f
     // Sometimes val's can occur between the Module.apply and Module constructor
@@ -56,12 +56,15 @@ object prefix {
     ret
   }
 
-  def apply[T](name: Any)(f: => T): T = {
-    name match {
-      case x: HasId  => applyHasId[T](x)(f)
-      case x: String => applyString[T](x)(f)
-      case _ => f
-    }
+  // Used by the Scala 3 plugin ChiselComponent
+  // TODO(adkian-sifive) This is factored out because the Scala 3
+  // compiler fails to diambiguate the apply overloads using the type
+  // parameter
+  private[chisel3] def applyString[T](name: String)(f: => T): T = {
+    Builder.pushPrefix(name)
+    val ret = f
+    if (Builder.getPrefix.nonEmpty) Builder.popPrefix()
+    ret
   }
 }
 

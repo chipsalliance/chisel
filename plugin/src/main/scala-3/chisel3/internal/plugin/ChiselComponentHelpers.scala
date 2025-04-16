@@ -14,8 +14,9 @@ import dotty.tools.dotc.ast.tpd
 
 object ChiselTypeHelpers {
 
+  val badFlags = Set(Flags.Param, Flags.Synthetic, Flags.Deferred, Flags.CaseAccessor, Flags.ParamAccessor)
+
   def okVal(dd: tpd.ValDef)(using Context): Boolean = {
-    val badFlags = Set(Flags.Param, Flags.Synthetic, Flags.Deferred, Flags.CaseAccessor, Flags.ParamAccessor)
     val modsOk = badFlags.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
