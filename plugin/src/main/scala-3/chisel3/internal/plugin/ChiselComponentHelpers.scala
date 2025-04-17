@@ -14,10 +14,23 @@ import dotty.tools.dotc.ast.tpd
 
 object ChiselTypeHelpers {
 
-  val badFlags = Set(Flags.Param, Flags.Synthetic, Flags.Deferred, Flags.CaseAccessor, Flags.ParamAccessor)
+  val badFlagsVal = Set(
+    Flags.Param,
+    Flags.Synthetic,
+    Flags.Deferred,
+    Flags.CaseAccessor,
+    Flags.ParamAccessor
+  )
+
+  val badFlagsUnapply = Set(
+    Flags.Param,
+    Flags.Deferred,
+    Flags.CaseAccessor,
+    Flags.ParamAccessor
+  )
 
   def okVal(dd: tpd.ValDef)(using Context): Boolean = {
-    val modsOk = badFlags.forall(f => !dd.symbol.flags.is(f))
+    val modsOk = badFlagsVal.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
       case _                       => false
@@ -26,15 +39,19 @@ object ChiselTypeHelpers {
   }
 
   def okUnapply(dd: tpd.ValDef)(using Context): Boolean = {
-    val badFlags = Set(Flags.Param, Flags.Deferred, Flags.CaseAccessor, Flags.ParamAccessor)
     val goodFlags = Set(Flags.Synthetic, Flags.Artifact)
-    val flagsOk = goodFlags.forall(f => dd.symbol.flags.is(f)) && badFlags.forall(f => !dd.symbol.flags.is(f))
+    val flagsOk = goodFlags.forall(f => dd.symbol.flags.is(f)) && badFlagsUnapply.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
       case _                       => false
     }
+
     val tpe = dd.tpt.tpe
-    tpe.typeSymbol.fullName.startsWith("Tuple") && flagsOk && !isNull && !dd.rhs.isEmpty
+
+    tpe.typeSymbol.fullName.startsWith("Tuple")
+    && flagsOk
+    && !isNull
+    && !dd.rhs.isEmpty
   }
 
   def findUnapplyNames(tree: Tree[?]): Option[List[String]] = {
@@ -62,6 +79,22 @@ object ChiselTypeHelpers {
   def isData(t: Type)(using Context): Boolean = {
     val dataTpe = getClassIfDefined("chisel3.Data")
     t.baseClasses.contains(dataTpe)
+  }
+
+  def isBoxedData(t: Type)(using Context): Boolean = {
+    val optionClass = getClassIfDefined("scala.Option")
+    val iterableClass = getClassIfDefined("scala.collection.Iterable")
+
+    t match {
+      case AppliedType(tycon, List(arg)) =>
+        tycon match {
+          case tp: TypeRef =>
+            (tp.symbol == optionClass || tp.symbol.derivesFrom(iterableClass))
+            && isData(arg)
+          case _ => false
+        }
+      case _ => false
+    }
   }
 
   def isNamed(t: Type)(using Context): Boolean = {

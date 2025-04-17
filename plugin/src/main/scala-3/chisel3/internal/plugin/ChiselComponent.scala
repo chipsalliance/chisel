@@ -33,20 +33,21 @@ class ChiselComponentPhase extends PluginPhase {
   val phaseName: String = "chiselComponentPhase"
   override val runsAfter = Set(TyperPhase.name)
 
-  private var dataTpe    : TypeRef = _
-  private var memBaseTpe : TypeRef = _
-  private var verifTpe   : TypeRef = _
-  private var dynObjTpe  : TypeRef = _
-  private var affectsTpe : TypeRef = _
-  private var moduleTpe  : TypeRef = _
-  private var instTpe    : TypeRef = _
-  private var prefixTpe  : TypeRef = _
-  private var bundleTpe  : TypeRef = _
+  private var dataTpe:    TypeRef = _
+  private var memBaseTpe: TypeRef = _
+  private var verifTpe:   TypeRef = _
+  private var dynObjTpe:  TypeRef = _
+  private var affectsTpe: TypeRef = _
+  private var moduleTpe:  TypeRef = _
+  private var instTpe:    TypeRef = _
+  private var prefixTpe:  TypeRef = _
+  private var bundleTpe:  TypeRef = _
 
-  private var pluginModule      : TermSymbol = _
-  private var autoNameMethod    : TermSymbol = _
-  private var prefixModule      : TermSymbol = _
-  private var prefixApplyMethod : TermSymbol = _
+  private var pluginModule:      TermSymbol = _
+  private var autoNameMethod:    TermSymbol = _
+  private var withNames:         TermSymbol = _
+  private var prefixModule:      TermSymbol = _
+  private var prefixApplyMethod: TermSymbol = _
 
   override def prepareForUnit(tree: Tree)(using ctx: Context): Context = {
     dataTpe = requiredClassRef("chisel3.Data")
@@ -61,6 +62,7 @@ class ChiselComponentPhase extends PluginPhase {
 
     pluginModule = requiredModule("chisel3")
     autoNameMethod = pluginModule.requiredMethod("withName")
+    withNames = pluginModule.requiredMethod("withNames")
     prefixModule = requiredModule("chisel3.experimental.prefix")
     prefixApplyMethod = prefixModule.requiredMethod("applyString")
     ctx
@@ -74,31 +76,57 @@ class ChiselComponentPhase extends PluginPhase {
 
     val valName: String = tree.name.show
     val nameLiteral = Literal(Constant(valName))
-    val prefixLiteral = if (valName.head == '_') Literal(Constant(valName.tail)) else Literal(Constant(valName))
+    val prefixLiteral =
+      if (valName.head == '_')
+        Literal(Constant(valName.tail))
+      else Literal(Constant(valName))
 
     val isData = ChiselTypeHelpers.isData(tpt)
-    val isNamedComp = isData || ChiselTypeHelpers.isNamed(tpt)
+    val isBoxedData = ChiselTypeHelpers.isBoxedData(tpt)
+    val isNamedComp = isData || isBoxedData || ChiselTypeHelpers.isNamed(tpt)
     val isPrefixed = isNamedComp || ChiselTypeHelpers.isPrefixed(tpt)
 
     if (!ChiselTypeHelpers.okVal(tree)) tree // Cannot name this, so skip
     else if (isData && ChiselTypeHelpers.inBundle(tree)) { // Data in a bundle
       val newRHS = transformFollowing(rhs)
       val named =
-        tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(newRHS)
+        tpd
+          .ref(pluginModule)
+          .select(autoNameMethod)
+          .appliedToType(tpt)
+          .appliedTo(nameLiteral)
+          .appliedTo(newRHS)
       cpy.ValDef(tree)(rhs = named)
-    } else if (isData || isPrefixed) { // All other Data subtype instances
+    } else if (isData || isBoxedData || isPrefixed) { // All Data subtype instances
       val newRHS = transformFollowing(rhs)
       val prefixed =
-        tpd.ref(prefixModule).select(prefixApplyMethod).appliedToType(tpt).appliedTo(prefixLiteral).appliedTo(newRHS)
-      val named =
-        if (isNamedComp) {
-          tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(prefixed)
-        } else prefixed
+        tpd
+          .ref(prefixModule)
+          .select(prefixApplyMethod)
+          .appliedToType(tpt)
+          .appliedTo(prefixLiteral)
+          .appliedTo(newRHS)
+      val named = if (isNamedComp) {
+        tpd
+          .ref(pluginModule)
+          .select(autoNameMethod)
+          .appliedToType(tpt)
+          .appliedTo(nameLiteral)
+          .appliedTo(prefixed)
+      } else prefixed
       cpy.ValDef(tree)(rhs = named)
-    } else if (ChiselTypeHelpers.isModule(tpt) || ChiselTypeHelpers.isInstance(tpt)) { // Modules or instances
+    } else if ( // Modules or instances
+      ChiselTypeHelpers.isModule(tpt) ||
+      ChiselTypeHelpers.isInstance(tpt)
+    ) {
       val newRHS = transformFollowing(rhs)
       val named =
-        tpd.ref(pluginModule).select(autoNameMethod).appliedToType(tpt).appliedTo(nameLiteral).appliedTo(newRHS)
+        tpd
+          .ref(pluginModule)
+          .select(autoNameMethod)
+          .appliedToType(tpt)
+          .appliedTo(nameLiteral)
+          .appliedTo(newRHS)
       cpy.ValDef(tree)(rhs = named)
     } else {
       super.transformValDef(tree)
