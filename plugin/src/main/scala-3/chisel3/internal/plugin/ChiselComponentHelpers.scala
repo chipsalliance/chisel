@@ -29,6 +29,8 @@ object ChiselTypeHelpers {
     Flags.ParamAccessor
   )
 
+  val goodFlagsUnapply = Set(Flags.Synthetic, Flags.Artifact)
+
   def okVal(dd: tpd.ValDef)(using Context): Boolean = {
     val modsOk = badFlagsVal.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
@@ -39,8 +41,9 @@ object ChiselTypeHelpers {
   }
 
   def okUnapply(dd: tpd.ValDef)(using Context): Boolean = {
-    val goodFlags = Set(Flags.Synthetic, Flags.Artifact)
-    val flagsOk = goodFlags.forall(f => dd.symbol.flags.is(f)) && badFlagsUnapply.forall(f => !dd.symbol.flags.is(f))
+    val flagsOk =
+      goodFlagsUnapply.forall(f => dd.symbol.flags.is(f))
+        && badFlagsUnapply.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
       case _                       => false
@@ -81,18 +84,30 @@ object ChiselTypeHelpers {
     t.baseClasses.contains(dataTpe)
   }
 
-  def isBoxedData(t: Type)(using Context): Boolean = {
+  def isBoxedData(tpe: Type)(using Context): Boolean = {
     val optionClass = getClassIfDefined("scala.Option")
     val iterableClass = getClassIfDefined("scala.collection.Iterable")
 
-    t match {
+    println(s"tpe: $tpe")
+    tpe match {
       case AppliedType(tycon, List(arg)) =>
         tycon match {
           case tp: TypeRef =>
-            (tp.symbol == optionClass || tp.symbol.derivesFrom(iterableClass))
-            && isData(arg)
-          case _ => false
+            val isIterable = tp.symbol.derivesFrom(iterableClass)
+            val isOption   = tp.symbol == optionClass
+            println(s"$isOption, $isIterable, ${isData(arg)}")
+
+            (isOption, isIterable, isData(arg)) match {
+              case (true, false, true) => true
+              case (false, true, true) => true
+              case (false, true, false) => isBoxedData(tp)
+              case _ => false
+            }
+          case _ => isBoxedData(arg)
         }
+      case TypeRef(t, args) =>
+        println(s"Typeref: $t, $args")
+        false
       case _ => false
     }
   }
