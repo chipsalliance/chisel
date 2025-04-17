@@ -43,7 +43,7 @@ object ChiselTypeHelpers {
   def okUnapply(dd: tpd.ValDef)(using Context): Boolean = {
     val flagsOk =
       goodFlagsUnapply.forall(f => dd.symbol.flags.is(f))
-        && badFlagsUnapply.forall(f => !dd.symbol.flags.is(f))
+    && badFlagsUnapply.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
       case _                       => false
@@ -88,28 +88,44 @@ object ChiselTypeHelpers {
     val optionClass = getClassIfDefined("scala.Option")
     val iterableClass = getClassIfDefined("scala.collection.Iterable")
 
-    println(s"tpe: $tpe")
-    tpe match {
-      case AppliedType(tycon, List(arg)) =>
-        tycon match {
-          case tp: TypeRef =>
-            val isIterable = tp.symbol.derivesFrom(iterableClass)
-            val isOption   = tp.symbol == optionClass
-            println(s"$isOption, $isIterable, ${isData(arg)}")
+    // Recursion here is needed only for nested iterables. These
+    // nested iterable may or may not have Data in their leaves.
+    def rec(tpe: Type): Boolean = {
+      tpe match {
+        case AppliedType(tycon, List(arg)) =>
+          tycon match {
+            case tp: TypeRef =>
+              val isIterable = tp.symbol.derivesFrom(iterableClass)
+              val isOption   = tp.symbol == optionClass
 
-            (isOption, isIterable, isData(arg)) match {
-              case (true, false, true) => true
-              case (false, true, true) => true
-              case (false, true, false) => isBoxedData(tp)
-              case _ => false
-            }
-          case _ => isBoxedData(arg)
-        }
-      case TypeRef(t, args) =>
-        println(s"Typeref: $t, $args")
-        false
-      case _ => false
+              (isOption, isIterable, isData(arg)) match {
+                case (true, false, true)  => true // Option
+                case (false, true, true)  => true // Iterable with Data
+                case (false, true, false) => rec(arg) // Possibly nested iterable
+                case _ => false
+              }
+            case _ =>
+              // anonymous subtype of Iterable,
+              // or AppliedType from higher-kinded type
+              rec(arg)
+          }
+
+        case tr: TypeRef =>
+          // Follow abstract type aliases like trait Seq[A] by looking at its info
+          tr.info match {
+            case TypeBounds(lo, hi) if lo != hi =>
+              // Try upper bound if available
+              rec(hi)
+            case TypeAlias(alias) =>
+              rec(alias)
+            case _ =>
+              false
+          }
+        case _ =>
+          false
+      }
     }
+    rec(tpe)
   }
 
   def isNamed(t: Type)(using Context): Boolean = {
