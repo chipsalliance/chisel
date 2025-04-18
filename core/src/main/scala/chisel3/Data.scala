@@ -510,6 +510,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
       case ElementLitBinding(litArg) => "(unhandled literal)"
       case BundleLitBinding(litMap)  => "(unhandled bundle literal)"
       case VecLitBinding(litMap)     => "(unhandled vec literal)"
+      case DynamicIndexBinding(vec)  => _bindingToString(vec.topBinding)
       case _                         => ""
     }
 
@@ -687,9 +688,10 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
         true
       case Some(ViewBinding(target, _))           => target.isVisibleFromModule
       case Some(AggregateViewBinding(mapping, _)) => mapping.values.forall(_.isVisibleFromModule)
-      case Some(pb: SecretPortBinding)            => true // Ignore secret to not require visibility
-      case Some(_: UnconstrainedBinding)          => true
-      case _                                      => false
+      case Some(DynamicIndexBinding(vec)) => vec.isVisibleFromModule // Use underlying Vec visibility for dynamic index
+      case Some(pb: SecretPortBinding)    => true // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding)  => true
+      case _                              => false
     }
   }
   private[chisel3] def visibleFromBlock: Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)

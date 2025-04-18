@@ -95,6 +95,7 @@ private[chisel3] object MonoConnect {
     x.topBinding match {
       case mp: MemoryPortBinding =>
         None // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
+      case DynamicIndexBinding(vec) => checkBlockVisibility(vec) // This goes with the MemoryPortBinding hack
       case bb: BlockBinding => bb.parentBlock.collect { case b: Block if !visible(b) => b.sourceInfo }
       case _ => None
     }

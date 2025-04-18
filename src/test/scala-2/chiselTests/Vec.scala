@@ -7,6 +7,7 @@ import chisel3.util.{Counter, DecoupledIO}
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
+import chisel3.testing.scalatest.FileCheck
 
 class IOTesterModFill(vecSize: Int) extends Module {
   // This should generate a BindingException when we attempt to wire up the Vec.fill elements
@@ -55,7 +56,7 @@ class ReduceTreeTester extends Module {
   dut.io := DontCare
 }
 
-class VecSpec extends AnyPropSpec with Matchers with LogUtils {
+class VecSpec extends AnyPropSpec with Matchers with LogUtils with FileCheck {
 
   private def uint(value: BigInt): String = uint(value, value.bitLength.max(1))
   private def uint(value: BigInt, width: Int): String =
@@ -474,5 +475,51 @@ class VecSpec extends AnyPropSpec with Matchers with LogUtils {
     chirrtl should include("wire _out_WIRE : UInt")
     chirrtl should include("connect _out_WIRE, UInt<1>(0h0)")
     chirrtl should include("connect out, vec[_out_WIRE]")
+  }
+
+  property("It should be legal to dynamically index ports of child modules") {
+    class Child extends RawModule {
+      val in = IO(Input(Vec(4, UInt(8.W))))
+      val out = IO(Output(Vec(4, UInt(8.W))))
+      out := in
+    }
+    class Top extends RawModule {
+      val in = IO(Input(Vec(4, UInt(8.W))))
+      val idx = IO(Input(UInt(2.W)))
+      val out = IO(Output(UInt(8.W)))
+      val child = Module(new Child)
+      child.in := in
+      val index = idx + 1.U // roll-over
+      child.in(index) := 0.U
+      out := child.out(idx)
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK: connect child.in[index], UInt<1>(0h0)
+           |CHECK: connect out, child.out[idx]
+           |""".stripMargin
+      )
+  }
+
+  property("It should be legal to dynamically index the result of a SyncReadMem read") {
+    class Top extends Module {
+      val idx = IO(Input(UInt(2.W)))
+      val jdx = IO(Input(UInt(1.W)))
+      val en = IO(Input(Bool()))
+      val out = IO(Output(UInt(8.W)))
+      val mem = SyncReadMem(4, Vec(2, UInt(8.W)))
+      // SyncReadMem read gets placed in a when block
+      // There is sketchy logic to allow this, make sure it also works for dynamic indexing the mem-port
+      val port = mem.read(idx, en)
+      out := port(jdx)
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK: read mport port = mem[_port_WIRE], clock
+           |CHECK: connect out, port[jdx]
+           |""".stripMargin
+      )
   }
 }
