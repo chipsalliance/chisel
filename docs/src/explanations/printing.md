@@ -265,3 +265,21 @@ val withFile = Module(new MyLogger(SimLog.file("data.log")))
 // Use with stderr
 val withStderr = Module(new MyLogger(SimLog.StdErr))
 ```
+
+### Flush
+
+`SimLog` objects can be flushed to ensure that all buffered output is written.
+This is useful in simulations using the logged output as input to a co-simulated components like a checker or golden model.
+
+```scala mdoc:compile-only
+val log = SimLog.file("logfile.log")
+val in = IO(Input(UInt(8.W)))
+log.printf(cf"in = $in%d\n")
+log.flush() // Flush buffered output right away.
+```
+
+You can also flush standard error:
+
+```scala mdoc:compile-only
+SimLog.StdErr.flush() // This will flush all standard printfs.
+```

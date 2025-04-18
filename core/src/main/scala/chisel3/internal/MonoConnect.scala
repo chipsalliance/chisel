@@ -53,7 +53,7 @@ private[chisel3] object MonoConnect {
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
   def escapedScopeErrorMsg(data: Data, blockInfo: SourceInfo) = {
-    s"'$data' has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
+    s"operand '$data' has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
   }
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")

@@ -19,11 +19,13 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
     class MyModule extends Module {
       val fd = SimLog.file("logfile.log")
       fd.printf(cf"An exact string")
+      fd.flush()
     }
     ChiselStage
       .emitCHIRRTL(new MyModule)
       .fileCheck()(
-        """CHECK: fprintf(clock, UInt<1>(0h1), "logfile.log", "An exact string")"""
+        """|CHECK: fprintf(clock, UInt<1>(0h1), "logfile.log", "An exact string")
+           |CHECK: fflush(clock, UInt<1>(0h1), "logfile.log")""".stripMargin
       )
   }
 
@@ -44,16 +46,19 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
     class MyModule(fd: SimLog) extends Module {
       val in = IO(Input(UInt(8.W)))
       fd.printf(cf"in = $in%0d\n")
+      fd.flush()
     }
     ChiselStage
       .emitCHIRRTL(new MyModule(SimLog.file("logfile.log")))
       .fileCheck()(
-        """CHECK: fprintf(clock, UInt<1>(0h1), "logfile.log", "in = %0d\n", in)"""
+        """|CHECK: fprintf(clock, UInt<1>(0h1), "logfile.log", "in = %0d\n", in)
+           |CHECK: fflush(clock, UInt<1>(0h1), "logfile.log")""".stripMargin
       )
     ChiselStage
       .emitCHIRRTL(new MyModule(SimLog.StdErr))
       .fileCheck()(
-        """CHECK: printf(clock, UInt<1>(0h1), "in = %0d\n", in)"""
+        """|CHECK: printf(clock, UInt<1>(0h1), "in = %0d\n", in)
+           |CHECK: fflush(clock, UInt<1>(0h1))""".stripMargin
       )
   }
 
@@ -62,15 +67,17 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
       val idx = IO(Input(UInt(8.W)))
       val fd = SimLog.file(cf"logfile_$idx%0d.log")
       fd.printf(cf"An exact string")
+      fd.flush()
     }
     ChiselStage
       .emitCHIRRTL(new MyModule)
       .fileCheck()(
-        """CHECK: fprintf(clock, UInt<1>(0h1), "logfile_%0d.log", idx, "An exact string")"""
+        """|CHECK: fprintf(clock, UInt<1>(0h1), "logfile_%0d.log", idx, "An exact string")
+           |CHECK: fflush(clock, UInt<1>(0h1), "logfile_%0d.log", idx)""".stripMargin
       )
   }
 
-  it should "check scope for Printable filenames" in {
+  it should "check scope for Printable filenames on printf" in {
     class Child(log: SimLog) extends Module {
       val bar = IO(Input(UInt(8.W)))
       log.printf(cf"bar = $bar%0d\n")
@@ -83,6 +90,19 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
     }
     val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
     (e.getMessage should include).regex("SimLog filename operand '.*' is not visible from the current module Child")
+  }
+
+  it should "check scope for Printable filenames on flush" in {
+    class MyModule extends Module {
+      var log: SimLog = null
+      when(true.B) {
+        val foo = Wire(UInt(8.W))
+        log = SimLog.file(cf"logfile_$foo%0d.log")
+      }
+      log.flush()
+    }
+    val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    (e.getMessage should include).regex("SimLog filename operand '.*' has escaped the scope of the block")
   }
 
   it should "support writing to a file in simulation" in {
