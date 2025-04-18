@@ -116,6 +116,40 @@ class DontTouchSpec extends AnyFlatSpec with Matchers with FileCheck {
     e.getMessage should include("must not be a literal")
   }
 
+  it should "give a decent error when used on dynamic indices" in {
+    val e = the[chisel3.ExpectedAnnotatableException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        override def desiredName = "Top"
+        val idx = Wire(UInt(2.W))
+        val vec = Wire(Vec(4, UInt(8.W)))
+        val x = vec(idx)
+        dontTouch(x)
+      })
+    }
+    e.getMessage should include(
+      "Data marked dontTouch 'Top.vec[idx]: Wire[UInt<8>]' must not be a dynamic index into a Vec. Try assigning it to a Wire."
+    )
+  }
+
+  it should "give a decent error when used on subfields of dynamic indices" in {
+    class MyBundle extends Bundle {
+      val a = UInt(8.W)
+      val b = UInt(8.W)
+    }
+    val e = the[chisel3.ExpectedAnnotatableException] thrownBy {
+      ChiselStage.emitCHIRRTL(new Module {
+        override def desiredName = "Top"
+        val idx = Wire(UInt(2.W))
+        val vec = Wire(Vec(4, new MyBundle))
+        val x = vec(idx).a
+        dontTouch(x)
+      })
+    }
+    e.getMessage should include(
+      "Data marked dontTouch 'Top.vec[idx].a: Wire[UInt<8>]' must not be a dynamic index into a Vec. Try assigning it to a Wire."
+    )
+  }
+
   "fields" should "be marked don't touch by default" in {
     ChiselStage
       .emitCHIRRTL(new HasDeadCodeLeaves())
