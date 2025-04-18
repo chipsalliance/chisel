@@ -500,6 +500,12 @@ private[chisel3] object ir {
     pable:      Printable
   ) extends Definition
 
+  case class Flush(
+    sourceInfo: SourceInfo,
+    filename:   Option[Printable],
+    clock:      Arg
+  ) extends Command
+
   case class ProbeDefine(sourceInfo: SourceInfo, sink: Arg, probe: Arg) extends Command
   case class ProbeForceInitial(sourceInfo: SourceInfo, probe: Arg, value: Arg) extends Command
   case class ProbeReleaseInitial(sourceInfo: SourceInfo, probe: Arg) extends Command

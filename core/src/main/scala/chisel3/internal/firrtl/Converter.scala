@@ -201,6 +201,10 @@ private[chisel3] object Converter {
         firrtl.Utils.one,
         e.name
       )
+    case e @ Flush(info, filename, clock) =>
+      val (fmt, args) = filename.map(unpack(_, ctx, info)).getOrElse(("", Seq.empty))
+      val fn = Option.when(fmt.nonEmpty)(fir.StringLit(fmt))
+      fir.Flush(convert(info), fn, args.map(a => convert(a, ctx, info)), convert(clock, ctx, info))
     case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
       fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo))
     case e @ ProbeForceInitial(sourceInfo, probe, value) =>

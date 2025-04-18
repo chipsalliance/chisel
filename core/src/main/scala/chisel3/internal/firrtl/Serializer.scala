@@ -265,6 +265,14 @@ private[chisel3] object Serializer {
       val lbl = e.name
       if (lbl.nonEmpty) { b ++= " : "; b ++= legalize(lbl) }
       serialize(e.sourceInfo)
+    case e @ Flush(info, filename, clock) =>
+      b ++= "fflush("; serialize(clock, ctx, info); b ++= ", UInt<1>(0h1)";
+      filename.foreach { fable =>
+        val (ffmt, fargs) = unpack(fable, ctx, info)
+        b ++= ", "; b ++= fir.StringLit(ffmt).escape
+        fargs.foreach { a => b ++= ", "; serialize(a, ctx, info) }
+      }
+      b += ')'; serialize(info)
     case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
       b ++= "define "; serialize(sink, ctx, sourceInfo); b ++= " = "; serialize(probeExpr, ctx, sourceInfo);
       serialize(sourceInfo)

@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3._
-import chisel3.internal.firrtl.ir.Printf
+import chisel3.internal.firrtl.ir.{Flush, Printf}
 import chisel3.internal.Builder
 import chisel3.experimental.SourceInfo
 
@@ -41,6 +41,18 @@ sealed trait SimLog extends SimLogIntf {
     */
   def printf(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf = {
     this.printfWithReset(pable)(sourceInfo)
+  }
+
+  /** Flush any buffered output immediately */
+  def flush()(implicit sourceInfo: SourceInfo): Unit = {
+    val clock = Builder.forcedClock
+    _filename.foreach(Printable.checkScope(_, "SimLog filename "))
+
+    when(!Module.reset.asBool) {
+      layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+        Builder.pushCommand(Flush(sourceInfo, _filename, clock.ref))
+      }
+    }
   }
 
   // Eventually this might be a richer type but for now Some[Printable] is filename, None is Stderr

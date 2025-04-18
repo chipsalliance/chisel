@@ -290,6 +290,10 @@ object Serializer {
       b ++= string.escape
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
       sStmtName(print.name); s(info)
+    case flush @ Flush(info, filename, args, clk) =>
+      b ++= "fflush("; s(clk); b ++= ", UInt<1>(0h1)";
+      filename.foreach { f => b ++= ", "; b ++= f.escape; b ++= ", "; s(args, ", ") }
+      b += ')'; s(info)
     case IsInvalid(info, expr)    => b ++= "invalidate "; s(expr); s(info)
     case DefWire(info, name, tpe) => b ++= "wire "; b ++= legalize(name); b ++= " : "; s(tpe); s(info)
     case DefRegister(info, name, tpe, clock) =>
