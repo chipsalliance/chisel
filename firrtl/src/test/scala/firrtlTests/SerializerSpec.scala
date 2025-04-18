@@ -421,5 +421,12 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
         "label"
       )
     ) should include("""fprintf(clock, enable, "filename_%0d", x, "hello %x", arg) : label""")
+    info("flush okay!")
+    Serializer.serialize(
+      Flush(NoInfo, Some(StringLit("filename_%0d")), Seq(Reference("x")), Reference("clock"))
+    ) should include("""fflush(clock, UInt<1>(0h1), "filename_%0d", x)""")
+    Serializer.serialize(
+      Flush(NoInfo, None, Seq.empty, Reference("clock"))
+    ) should include("""fflush(clock, UInt<1>(0h1))""")
   }
 }
