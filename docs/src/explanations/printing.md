@@ -232,6 +232,23 @@ class MyModule extends Module {
 This is the same as standard `printf`.
 :::
 
+SimLog filenames can themselves be `Printable` values:
+
+```scala mdoc:compile-only
+class MyModule extends Module {
+  val idx = IO(Input(UInt(8.W)))
+  val log = SimLog.file(cf"logfile_$idx%0d.log")
+  val in = IO(Input(UInt(8.W)))
+  log.printf(cf"in = $in%d\n")
+}
+```
+
+It is strongly recommended to use `%0d` with UInts in filenames to avoid spaces in the filename.
+
+:::warning
+Be careful to avoid uninitialized registers in the filename.
+:::
+
 ### Writing Generic Code
 
 `SimLog` allows you to write code that can work with any log destination. This is useful when creating reusable components:

@@ -255,7 +255,11 @@ private[chisel3] object Serializer {
       val (fmt, args) = unpack(pable, ctx, info)
       if (filename.isEmpty) b ++= "printf("; else b ++= "fprintf(";
       serialize(clock, ctx, info); b ++= ", UInt<1>(0h1), ";
-      filename.foreach { f => b ++= "\""; b ++= f; b ++= "\", " }
+      filename.foreach { fable =>
+        val (ffmt, fargs) = unpack(fable, ctx, info)
+        b ++= fir.StringLit(ffmt).escape; b ++= ", "
+        fargs.foreach { a => serialize(a, ctx, info); b ++= ", " }
+      }
       b ++= fir.StringLit(fmt).escape;
       args.foreach { a => b ++= ", "; serialize(a, ctx, info) }; b += ')'
       val lbl = e.name

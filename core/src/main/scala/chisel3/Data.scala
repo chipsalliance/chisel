@@ -694,12 +694,14 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   }
   private[chisel3] def visibleFromBlock: Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)
   private[chisel3] def requireVisible()(implicit info: SourceInfo): Unit = {
+    this.checkVisible.foreach(err => Builder.error(err))
+  }
+  // Some is an error message, None means no error
+  private[chisel3] def checkVisible(implicit info: SourceInfo): Option[String] = {
     if (!isVisibleFromModule) {
-      throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
-    }
-    visibleFromBlock match {
-      case Some(blockInfo) => MonoConnect.escapedScopeError(this, blockInfo)
-      case None            => ()
+      Some(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+    } else {
+      visibleFromBlock.map(MonoConnect.escapedScopeErrorMsg(this, _))
     }
   }
 

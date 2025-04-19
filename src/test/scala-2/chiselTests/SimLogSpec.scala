@@ -57,6 +57,34 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
       )
   }
 
+  it should "support Printable filenames" in {
+    class MyModule extends Module {
+      val idx = IO(Input(UInt(8.W)))
+      val fd = SimLog.file(cf"logfile_$idx%0d.log")
+      fd.printf(cf"An exact string")
+    }
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """CHECK: fprintf(clock, UInt<1>(0h1), "logfile_%0d.log", idx, "An exact string")"""
+      )
+  }
+
+  it should "check scope for Printable filenames" in {
+    class Child(log: SimLog) extends Module {
+      val bar = IO(Input(UInt(8.W)))
+      log.printf(cf"bar = $bar%0d\n")
+    }
+    class MyModule extends Module {
+      val foo = Wire(UInt(8.W))
+      val log = SimLog.file(cf"logfile_$foo%0d.log")
+      val child = Module(new Child(log))
+      child.bar := foo
+    }
+    val e = the[ChiselException] thrownBy ChiselStage.emitCHIRRTL(new MyModule, Array("--throw-on-first-error"))
+    (e.getMessage should include).regex("SimLog filename operand '.*' is not visible from the current module Child")
+  }
+
   it should "support writing to a file in simulation" in {
     val testdir = implicitly[HasTestingDirectory].getDirectory
     val logfile = testdir.resolve("workdir-verilator").resolve("logfile.log").toFile

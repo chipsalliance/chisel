@@ -3,6 +3,7 @@
 package chisel3
 
 import chisel3.experimental.SourceInfo
+import chisel3.internal.Builder
 import chisel3.internal.firrtl.ir.Component
 import chisel3.FirrtlFormat.FormatWidth
 
@@ -167,7 +168,7 @@ object Printable {
     }
   }
 
-  private[chisel3] def checkScope(message: Printable)(implicit info: SourceInfo): Unit = {
+  private[chisel3] def checkScope(message: Printable, msg: String = "")(implicit info: SourceInfo): Unit = {
     def getData(x: Printable): Seq[Data] = {
       x match {
         case y: FirrtlFormat => Seq(y.bits)
@@ -177,7 +178,11 @@ object Printable {
         case _             => Seq() // Handles subtypes PString and Percent
       }
     }
-    getData(message).foreach(_.requireVisible())
+    for (data <- getData(message)) {
+      for (err <- data.checkVisible) {
+        Builder.error(msg + err)
+      }
+    }
   }
 
   /** Extract the Data that will be arguments to Firrtl
