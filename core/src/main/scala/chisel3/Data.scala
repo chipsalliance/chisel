@@ -510,6 +510,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
       case ElementLitBinding(litArg) => "(unhandled literal)"
       case BundleLitBinding(litMap)  => "(unhandled bundle literal)"
       case VecLitBinding(litMap)     => "(unhandled vec literal)"
+      case DynamicIndexBinding(vec)  => _bindingToString(vec.topBinding)
       case _                         => ""
     }
 

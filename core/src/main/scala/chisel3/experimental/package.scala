@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.experimental.SourceInfo
+import chisel3.internal.binding.DynamicIndexBinding
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
   *
@@ -66,11 +67,16 @@ package object experimental {
     */
   object requireIsAnnotatable {
     def apply(node: Data, msg: String = ""): Unit = {
+      def prefix = if (msg.nonEmpty) s"$msg " else ""
       requireIsHardware(node, msg)
       if (node.isLit) {
-        val prefix = if (msg.nonEmpty) s"$msg " else ""
         throw ExpectedAnnotatableException(
           s"$prefix'$node' must not be a literal."
+        )
+      }
+      if (node.topBinding.isInstanceOf[DynamicIndexBinding]) {
+        throw ExpectedAnnotatableException(
+          s"$prefix'$node' must not be a dynamic index into a Vec. Try assigning it to a Wire."
         )
       }
     }
