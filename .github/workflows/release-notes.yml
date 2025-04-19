@@ -18,7 +18,7 @@ on:
 jobs:
   generate_release_notes:
     name: Generate Release Notes
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
 
@@ -49,4 +49,3 @@ jobs:
       - name: Error on uncategorized PRs
         if: steps.release-notes.outputs.uncategorized_prs != 0
         run: exit 1
-
