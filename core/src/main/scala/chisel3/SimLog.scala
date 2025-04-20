@@ -8,10 +8,19 @@ import chisel3.internal.Builder
 import chisel3.experimental.SourceInfo
 
 /** A file or I/O device to print to in simulation
-  * 
+  *
   * {{{
-  * val fd = SimLog.file("logfile.log")
-  * fd.printf(cf"in = $in%0d\n")
+  * val log = SimLog.file("logfile.log")
+  * log.printf(cf"in = $in%0d\n")
+  * 
+  * val stderr = SimLog.StdErr
+  * stderr.printf(cf"in = $in%0d\n")
+  * 
+  * // SimLog filenames themselves can be Printable.
+  * // Be careful to avoid uninitialized registers.
+  * val idx = Wire(UInt(8.W))
+  * val log2 = SimLog.file(cf"logfile_$idx%0d.log")
+  * log2.printf(cf"in = $in%0d\n")
   * }}}
   */
 sealed trait SimLog extends SimLogIntf {
@@ -34,8 +43,8 @@ sealed trait SimLog extends SimLogIntf {
     this.printfWithReset(pable)(sourceInfo)
   }
 
-  // Eventually this might be a richer type but for now Some[String] is filename, None is Stderr
-  protected def _filename: Option[String]
+  // Eventually this might be a richer type but for now Some[Printable] is filename, None is Stderr
+  protected def _filename: Option[Printable]
 
   private[chisel3] def printfWithReset(
     pable: Printable
@@ -57,7 +66,8 @@ sealed trait SimLog extends SimLogIntf {
     val clock = Builder.forcedClock
     val printfId = new chisel3.printf.Printf(pable)
 
-    Printable.checkScope(pable)
+    Printable.checkScope(pable, "printf ")
+    _filename.foreach(Printable.checkScope(_, "SimLog filename "))
 
     layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
       Builder.pushCommand(Printf(printfId, sourceInfo, _filename, clock.ref, pable))
@@ -74,14 +84,14 @@ sealed trait SimLog extends SimLogIntf {
     printfWithoutReset(Printable.pack(fmt, data: _*))
 }
 
-// Uses firrtl fprintf with a String filename
-private case class SimLogFile(filename: String) extends SimLog {
-  override protected def _filename: Option[String] = Some(filename)
+// Uses firrtl fprintf with a Printable filename
+private case class SimLogFile(filename: Printable) extends SimLog {
+  override protected def _filename: Option[Printable] = Some(filename)
 }
 
 // Defaults to firrtl printf
 private object StdErrSimLog extends SimLog {
-  override protected def _filename: Option[String] = None
+  override protected def _filename: Option[Printable] = None
 }
 
 object SimLog {
@@ -89,6 +99,10 @@ object SimLog {
   /** Print to a file given by `filename`
     */
   def file(filename: String)(implicit sourceInfo: SourceInfo): SimLog = {
+    new SimLogFile(PString(filename))
+  }
+
+  def file(filename: Printable)(implicit sourceInfo: SourceInfo): SimLog = {
     new SimLogFile(filename)
   }
 

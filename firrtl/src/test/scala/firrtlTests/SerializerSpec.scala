@@ -412,13 +412,14 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(
       Fprint(
         NoInfo,
-        "filename",
+        StringLit("filename_%0d"),
+        Seq(Reference("x")),
         StringLit("hello %x"),
         Seq(Reference("arg")),
         Reference("clock"),
         Reference("enable"),
         "label"
       )
-    ) should include("""fprintf(clock, enable, "filename", "hello %x", arg) : label""")
+    ) should include("""fprintf(clock, enable, "filename_%0d", x, "hello %x", arg) : label""")
   }
 }
