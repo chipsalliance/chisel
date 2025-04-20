@@ -5,7 +5,7 @@ on:
     inputs:
       system:
         description: 'The GitHub runner to use'
-        default: 'ubuntu-22.04'
+        default: 'ubuntu-24.04'
         required: true
         type: string
       jvm:
@@ -61,8 +61,8 @@ jobs:
       - name: Install FileCheck
         run: |
           sudo apt update
-          sudo apt install llvm-12-tools
-          echo "/usr/lib/llvm-12/bin" >> $GITHUB_PATH
+          sudo apt install llvm-19-tools
+          echo "/usr/lib/llvm-19/bin" >> $GITHUB_PATH
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -93,7 +93,7 @@ jobs:
 
   mill:
     name: compile project with mill
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -131,7 +131,7 @@ jobs:
 
   doc:
     name: Formatting
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -149,7 +149,7 @@ jobs:
 
   integration:
     name: Integration Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -183,7 +183,7 @@ jobs:
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
     name: Benchmarking Sanity Check
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -199,7 +199,7 @@ jobs:
 
   std:
     name: Standard Library
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         scala: ["2.13.16"]
@@ -220,7 +220,7 @@ jobs:
 
   website:
     name: Build Mdoc & Website
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
