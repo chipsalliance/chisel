@@ -54,6 +54,13 @@ object TestConfiguration {
     )
   }
 
+  def apply(finish: Bool): TestConfiguration =
+    new TestConfiguration(
+      finishCondition = Some(finish),
+      successCondition = None,
+      failureMessage = None
+    )
+
   def apply(finish: Bool, success: Bool, failureMessage: Printable): TestConfiguration =
     new TestConfiguration(
       finishCondition = Some(finish),
@@ -73,6 +80,10 @@ private[chisel3] class SimulatedTest private (
     case SimulationOutcome.Assertion(simulatorOutput) => TestResult.Failure(simulatorOutput)
     case SimulationOutcome.Timeout(n)                 => TestResult.Failure(s"timeout reached after ${n} timesteps")
     case SimulationOutcome.SignaledFailure            => TestResult.Failure(s"test signaled failure")
+  }
+  def requirePass() = result match {
+    case TestResult.Failure(why) => throw new RuntimeException(s"${dutName}.${testName} failed: ${why}")
+    case _ => ()
   }
   val success = result match {
     case TestResult.Success => true
