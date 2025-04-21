@@ -54,7 +54,7 @@ trait HasProtocolInterface extends HasTests { this: RawModule =>
 
   test("check1") { dut =>
     ProtocolChecks.check(1)(dut)
-    TestBehavior.RunForCycles(10)
+    TestConfiguration.runForCycles(10)
   }
 }
 
@@ -99,25 +99,22 @@ class ModuleWithTests(
   test("passing") { instance =>
     instance.io.in := 3.U(ioWidth.W)
     assert(instance.io.out === 3.U)
-    TestBehavior.RunForCycles(10)
+    TestConfiguration.runForCycles(10)
   }
 
   test("failing") { instance =>
     instance.io.in := 5.U(ioWidth.W)
-    TestBehavior.FinishWhen(true.B, success = instance.io.out =/= 5.U)
+    TestConfiguration(
+      finish = RegNext(true.B),
+      success = instance.io.out =/= 5.U,
+      cf"unexpected output"
+    )
   }
 
-  test("assertion.unexpected") { instance =>
+  test("assertion") { instance =>
     instance.io.in := 5.U(ioWidth.W)
     chisel3.assert(instance.io.out =/= 5.U, "assertion fired in ModuleWithTests")
-    TestBehavior.RunForCycles(10)
-  }
-
-  test("assertion.expected") { instance =>
-    instance.io.in := 5.U(ioWidth.W)
-    val message = "assertion fired in ModuleWithTests"
-    chisel3.assert(instance.io.out =/= 5.U, message)
-    TestBehavior.ExpectAssertion.contains(message)
+    TestConfiguration.runForCycles(10)
   }
 
   {
@@ -125,13 +122,13 @@ class ModuleWithTests(
     test("with_monitor") { instance =>
       instance.io.in := 5.U(ioWidth.W)
       assert(instance.io.out =/= 0.U)
-      TestBehavior.RunForCycles(10)
+      TestConfiguration.runForCycles(10)
     }
   }
 
   test("check2") { dut =>
     ProtocolChecks.check(2)(dut)
-    TestBehavior.RunForCycles(10)
+    TestConfiguration.runForCycles(10)
   }
 }
 
@@ -142,7 +139,7 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   test("passing") { instance =>
     instance.io.in := 3.U(ioWidth.W)
     assert(instance.io.out === 3.U)
-    TestBehavior.RunForCycles(10)
+    TestConfiguration.runForCycles(10)
   }
 }
 
@@ -438,21 +435,11 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   it should "simulate and fail early if assertion raised" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Name("assertion.unexpected"),
+      tests = TestChoice.Name("assertion"),
       timeout = 100
     )
     assert(results.size == 1, "Expected exactly one test result")
     assertFail("assertion fired")(results.head.result)
-  }
-
-  it should "simulate and pass if expected assertion fired" in {
-    val results = simulateTests(
-      new ModuleWithTests,
-      tests = TestChoice.Name("assertion.expected"),
-      timeout = 100
-    )
-    assert(results.size == 1, "Expected exactly one test result")
-    assertPass(results.head.result)
   }
 
   it should "run multiple passing simulations" in {
@@ -479,171 +466,4 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     assertPass(signalPass.result)
     assertFail("test signaled failure")(signalFail.result)
   }
-}
-
-case class AluParameters(operandWidth: Int, widenResult: Boolean) {
-  def resultWidth = if (widenResult) operandWidth + 1 else operandWidth
-  def name: String = s"ALU_${operandWidth}" + (if (widenResult) "w" else "")
-}
-
-object AluOp extends ChiselEnum {
-  val Add = Value("b000".U)
-  val Sub = Value("b001".U)
-  val And = Value("b010".U)
-  val Or = Value("b011".U)
-  val Xor = Value("b100".U)
-}
-
-// Separate request bundle for ALU inputs
-class AluReq(params: AluParameters) extends Bundle {
-  val op1 = UInt(params.operandWidth.W)
-  val op2 = UInt(params.operandWidth.W)
-  val opcode = AluOp()
-}
-
-// Separate response bundle for ALU output
-class AluResp(params: AluParameters) extends Bundle {
-  val result = UInt(params.resultWidth.W)
-}
-
-class AluIO(params: AluParameters) extends Bundle {
-  val req = Flipped(Decoupled(new AluReq(params)))
-  val resp = Decoupled(new AluResp(params))
-}
-
-object Alu {
-  object Assertions {
-    sealed abstract class Type(val message: String) {
-      def assert(cond: Bool) = chisel3.assert(cond, message)
-    }
-
-    case object AdditionOverflow extends Type("addition overflow detected")
-    case object SubtractionOverflow extends Type("subtraction overflow detected")
-  }
-}
-
-@instantiable
-class Alu(params: AluParameters) extends Module with HasTests {
-  @public val io = IO(new AluIO(params))
-
-  // Register request inputs when valid transaction occurs
-  val reqReg = RegInit(0.U.asTypeOf(new AluReq(params)))
-  val busy = RegInit(false.B)
-
-  // Default values
-  io.req.ready := !busy
-  io.resp.valid := busy
-  io.resp.bits.result := 0.U
-
-  // Capture input when there's a valid request and we're ready
-  when(io.req.fire) {
-    reqReg := io.req.bits
-    busy := true.B
-  }
-
-  // Clear busy when response is accepted
-  when(io.resp.fire) {
-    busy := false.B
-  }
-
-  // ALU logic using registered inputs
-  val result = Wire(UInt(params.resultWidth.W))
-  result := 0.U
-
-  switch(reqReg.opcode) {
-    is(AluOp.Add) {
-      val sum = reqReg.op1 +& reqReg.op2
-      result := sum
-
-      if (!params.widenResult) {
-        val assertion = Alu.Assertions.AdditionOverflow
-        assertion.assert(!sum(params.operandWidth))
-        test("sanity.add.zero") { alu =>
-          alu.io.req.valid := true.B
-          alu.io.req.bits.op1 := 0.U
-          alu.io.req.bits.op2 := 0.U
-          alu.io.req.bits.opcode := AluOp.Add
-          alu.io.resp.ready := true.B
-          TestBehavior.FinishWhen(
-            finish = alu.io.resp.fire,
-            success = alu.io.resp.valid && alu.io.resp.bits.result === 0.U
-          )
-        }
-      }
-    }
-    is(AluOp.Sub) {
-      val diff = reqReg.op1 -& reqReg.op2
-      result := diff
-      if (!params.widenResult) {
-        val assertion = Alu.Assertions.SubtractionOverflow
-        assertion.assert(!diff(params.operandWidth))
-      }
-    }
-    is(AluOp.And) {
-      result := reqReg.op1 & reqReg.op2
-    }
-    is(AluOp.Or) {
-      result := reqReg.op1 | reqReg.op2
-    }
-    is(AluOp.Xor) {
-      result := reqReg.op1 ^ reqReg.op2
-    }
-  }
-
-  io.resp.bits.result := result
-
-  test("sanity.and.zero") { alu =>
-    alu.io.req.valid := true.B
-    alu.io.req.bits.op1 := "b1010".U
-    alu.io.req.bits.op2 := 0.U
-    alu.io.req.bits.opcode := AluOp.And
-    alu.io.resp.ready := true.B
-    TestBehavior.FinishWhen(
-      finish = alu.io.resp.fire,
-      success = alu.io.resp.valid && alu.io.resp.bits.result === 0.U
-    )
-  }
-
-  test("sanity.or.identity") { alu =>
-    val value = "b1010".U
-    alu.io.req.valid := true.B
-    alu.io.req.bits.op1 := value
-    alu.io.req.bits.op2 := 0.U
-    alu.io.req.bits.opcode := AluOp.Or
-    alu.io.resp.ready := true.B
-    TestBehavior.FinishWhen(
-      finish = alu.io.resp.fire,
-      success = alu.io.resp.valid && alu.io.resp.bits.result === value
-    )
-  }
-
-  test("sanity.xor.self") { alu =>
-    alu.io.req.valid := true.B
-    alu.io.req.bits.op1 := "b1010".U
-    alu.io.req.bits.op2 := "b1010".U
-    alu.io.req.bits.opcode := AluOp.Xor
-    alu.io.resp.ready := true.B
-    TestBehavior.FinishWhen(
-      finish = alu.io.resp.fire,
-      success = alu.io.resp.valid && alu.io.resp.bits.result === 0.U
-    )
-  }
-}
-
-class AluSpec extends InlineTests {
-  val configs = for {
-    width <- Seq(4, 8, 16)
-    widenResult <- Seq(false, true)
-  } yield AluParameters(width, widenResult)
-
-  val alu4W = AluParameters(4, false)
-  runInlineTests(alu4W.name)(new Alu(alu4W))(TestChoice.Glob("*overflow*"))
-
-  describe(s"sanity test: ${configs.map(_.name).mkString(", ")}") {
-    configs.foreach { params =>
-      runInlineTests(params.name)(new Alu(params))(TestChoice.Glob("sanity.*"))
-    }
-  }
-
-  runInlineTests(alu4W.name)(new Alu(alu4W))(TestChoice.All)
 }

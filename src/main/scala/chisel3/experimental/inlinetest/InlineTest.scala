@@ -10,6 +10,7 @@ import chisel3.simulator.SimulationOutcome
 import chisel3.util.Counter
 
 import firrtl.options.StageUtils.dramaticMessage
+import chisel3.simulator.SimulationOutcome.Assertion
 
 object TestResult {
 
@@ -23,100 +24,56 @@ object TestResult {
   case class Failure(message: String) extends Type
 }
 
-object TestBehavior {
-
-  /** How a test should complete. */
-  sealed trait Type {
-    private[inlinetest] def getResult(actual:      SimulationOutcome.Type): TestResult.Type
-    private[inlinetest] def driveInterface(result: TestHarnessInterface):   Unit
-  }
-
-  /** Test is expected to pass. */
-  sealed trait ExpectsSuccess extends Type {
-    def getResult(actual: SimulationOutcome.Type) =
-      actual match {
-        case SimulationOutcome.Success =>
-          TestResult.Success
-        case SimulationOutcome.Assertion(output) =>
-          TestResult.Failure(output)
-        case SimulationOutcome.Timeout(n) =>
-          TestResult.Failure(s"timed out after ${n} cycles")
-        case SimulationOutcome.SignaledFailure =>
-          TestResult.Failure(s"test signaled failure")
+final class TestConfiguration private (
+  finishCondition:  Option[Bool],
+  successCondition: Option[Bool],
+  failureMessage:   Option[Printable]
+) {
+  private[inlinetest] def driveInterface(testName: String, intf: TestHarnessInterface) = {
+    intf.finish := finishCondition.getOrElse(false.B)
+    intf.success := successCondition.getOrElse(true.B)
+    failureMessage.foreach { failureMessage =>
+      when(intf.finish && intf.success) {
+        printf(cf"${testName} failed: ${failureMessage}")
       }
-  }
-
-  /** Test will run until someone calls `stop` or `finish`. */
-  case object AwaitFinish extends ExpectsSuccess {
-    def driveInterface(intf: TestHarnessInterface) = {
-      intf.finish := 0.U
-      intf.success := 1.U
     }
   }
+}
 
-  /** Test will run for `nCycles` cycles then signal success. */
-  case class RunForCycles(nCycles: Int) extends ExpectsSuccess {
-    def driveInterface(intf: TestHarnessInterface) = {
-      val counter = Counter(nCycles)
-      counter.inc()
-      intf.finish := counter.value === (nCycles - 1).U
-      intf.success := 1.U
-    }
+object TestConfiguration {
+  def default(): TestConfiguration =
+    new TestConfiguration(finishCondition = None, successCondition = None, failureMessage = None)
+
+  def runForCycles(nCycles: Int): TestConfiguration = {
+    val counter = Counter(nCycles)
+    counter.inc()
+    new TestConfiguration(
+      finishCondition = Some(counter.value === (nCycles - 1).U),
+      successCondition = None,
+      failureMessage = None
+    )
   }
 
-  /** Test will finish when some condition is met. Test will succeed if some
-   *  condition is met.
-   */
-  case class FinishWhen(finish: Bool, success: Bool) extends ExpectsSuccess {
-    def driveInterface(intf: TestHarnessInterface) = {
-      intf.finish := finish
-      intf.success := success
-    }
-  }
-
-  /** Test will finish when an assertion is raised and will check that the actual
-   *  assertion matched what was expected.
-   */
-  case class ExpectAssertion private (isExpected: SimulationOutcome.Assertion => Boolean) extends Type {
-    def getResult(actual: SimulationOutcome.Type) =
-      actual match {
-        case assertion: SimulationOutcome.Assertion if isExpected(assertion) =>
-          TestResult.Success
-        case assertion: SimulationOutcome.Assertion =>
-          TestResult.Failure(s"unexpected assertion: ${assertion.simulatorOutput}")
-        case SimulationOutcome.Timeout(n) =>
-          TestResult.Failure(s"timed out after ${n} cycles")
-        case SimulationOutcome.SignaledFailure =>
-          TestResult.Failure(s"test signaled failure")
-        case SimulationOutcome.Success =>
-          TestResult.Failure(s"expected assertion, but simulation finished successfully")
-      }
-    def driveInterface(intf: TestHarnessInterface) = {
-      intf.finish := 0.U
-      intf.success := 1.U
-    }
-  }
-
-  object ExpectAssertion {
-
-    /** Test will finish when an assertion is raised and will check that the actual
-     *  assertion contains the provided substring.
-     */
-    def contains(message: String) =
-      ExpectAssertion { actual =>
-        actual.simulatorOutput.contains(message)
-      }
-  }
+  def apply(finish: Bool, success: Bool, failureMessage: Printable): TestConfiguration =
+    new TestConfiguration(
+      finishCondition = Some(finish),
+      successCondition = Some(success),
+      failureMessage = Some(failureMessage)
+    )
 }
 
 /** A test, its expected behavior, and actual outcome. */
 private[chisel3] class SimulatedTest private (
   val dutName:  String,
   val testName: String,
-  testBehavior: TestBehavior.Type,
   outcome:      SimulationOutcome.Type
 ) {
-  val result = testBehavior.getResult(outcome)
+  val result = outcome match {
+    case SimulationOutcome.Success                    => TestResult.Success
+    case SimulationOutcome.Assertion(simulatorOutput) => TestResult.Failure(simulatorOutput)
+    case SimulationOutcome.Timeout(n)                 => TestResult.Failure(s"timeout reached after ${n} timesteps")
+    case SimulationOutcome.SignaledFailure            => TestResult.Failure(s"test signaled failure")
+  }
   val success = result match {
     case TestResult.Success => true
     case _                  => false
@@ -130,7 +87,6 @@ object SimulatedTest {
     new SimulatedTest(
       elaboratedTest.dutName,
       elaboratedTest.testName,
-      elaboratedTest.testBehavior,
       outcome
     )
 }
@@ -182,7 +138,7 @@ final class TestParameters[M <: RawModule] private[inlinetest] (
   /** A Definition of the DUT module. */
   private[inlinetest] val dutDefinition: () => Definition[M],
   /** The body for this test, returns a result. */
-  private[inlinetest] val testBody: Instance[M] => TestBehavior.Type,
+  private[inlinetest] val testBody: Instance[M] => TestConfiguration,
   /** The reset type of the DUT module. */
   private[inlinetest] val dutResetType: Option[Module.ResetType.Type]
 ) {
@@ -225,9 +181,9 @@ abstract class TestHarness[M <: RawModule](test: TestParameters[M])
   override final def resetType = test.testHarnessResetType
 
   protected final val dut = Instance(test.dutDefinition())
-  private[inlinetest] final val behavior = test.testBody(dut)
+  private[inlinetest] final val testConfig = test.testBody(dut)
 
-  behavior.driveInterface(io)
+  testConfig.driveInterface(test.testName, io)
 }
 
 /** A test that has been elaborated to the circuit. */
@@ -235,9 +191,7 @@ private[chisel3] class ElaboratedTest[M <: RawModule] private (
   val dutName:     String,
   val testName:    String,
   val testHarness: TestHarness[M]
-) {
-  val testBehavior = testHarness.behavior
-}
+)
 
 object ElaboratedTest {
   def apply[M <: RawModule](generator: TestHarnessGenerator[M], params: TestParameters[M]) =
@@ -284,7 +238,7 @@ private final class RegisteredTest[M <: RawModule](
   /** The (eventually) legalized name for the DUT module */
   dutName: () => String,
   /** The body for this test, returns a result. */
-  testBody: Instance[M] => TestBehavior.Type,
+  testBody: Instance[M] => TestConfiguration,
   /** The reset type of the DUT module. */
   dutResetType: Option[Module.ResetType.Type],
   /** The testharness generator. */
@@ -351,7 +305,7 @@ trait HasTests { module: RawModule =>
     */
   protected final def test(
     testName: String
-  )(testBody: Instance[M] => TestBehavior.Type)(implicit testHarnessGenerator: TestHarnessGenerator[M]): Unit = {
+  )(testBody: Instance[M] => TestConfiguration)(implicit testHarnessGenerator: TestHarnessGenerator[M]): Unit = {
     require(!registeredTests.contains(testName), s"test '${testName}' already declared")
     val dutResetType = module match {
       case module: Module => Some(module.resetType)
