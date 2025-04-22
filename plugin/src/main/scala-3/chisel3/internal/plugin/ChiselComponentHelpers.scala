@@ -43,7 +43,7 @@ object ChiselTypeHelpers {
   def okUnapply(dd: tpd.ValDef)(using Context): Boolean = {
     val flagsOk =
       goodFlagsUnapply.forall(f => dd.symbol.flags.is(f))
-    && badFlagsUnapply.forall(f => !dd.symbol.flags.is(f))
+        && badFlagsUnapply.forall(f => !dd.symbol.flags.is(f))
     val isNull = dd.rhs match {
       case Literal(Constant(null)) => true
       case _                       => false
@@ -96,13 +96,13 @@ object ChiselTypeHelpers {
           tycon match {
             case tp: TypeRef =>
               val isIterable = tp.symbol.derivesFrom(iterableClass)
-              val isOption   = tp.symbol == optionClass
+              val isOption = tp.symbol == optionClass
 
               (isOption, isIterable, isData(arg)) match {
                 case (true, false, true)  => true // Option
                 case (false, true, true)  => true // Iterable with Data
                 case (false, true, false) => rec(arg) // Possibly nested iterable
-                case _ => false
+                case _                    => false
               }
             case _ =>
               // anonymous subtype of Iterable,
