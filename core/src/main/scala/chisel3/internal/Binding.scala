@@ -37,7 +37,9 @@ private[chisel3] object binding {
             case ActualDirection.Input  => Input
             case dir                    => throw new RuntimeException(s"Unexpected port element direction '$dir'")
           }
-        case _ => Internal
+        // Dynamic indices use the direction of the underlying Vec
+        case DynamicIndexBinding(vec) => from(vec.topBinding, direction)
+        case _                        => Internal
       }
     }
   }
@@ -88,6 +90,15 @@ private[chisel3] object binding {
       with BlockBinding
   case class RegBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
   case class WireBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
+
+  /** Special binding for Vec dynamic indexing */
+  case class DynamicIndexBinding(vec: Vec[_]) extends ConstrainedBinding with BlockBinding {
+    def parentBlock: Option[Block] = vec.topBinding match {
+      case b: BlockBinding => b.parentBlock
+      case _ => None
+    }
+    def enclosure: BaseModule = vec._parent.get
+  }
 
   case class ClassBinding(enclosure: Class) extends ConstrainedBinding with ReadOnlyBinding
 
