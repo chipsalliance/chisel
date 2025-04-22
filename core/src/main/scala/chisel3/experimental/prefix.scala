@@ -55,6 +55,17 @@ object prefix {
     if (Builder.getPrefix.nonEmpty) Builder.popPrefix()
     ret
   }
+
+  // Used by the Scala 3 plugin ChiselComponent
+  // TODO(adkian-sifive) This is factored out because the Scala 3
+  // compiler fails to diambiguate the apply overloads using the type
+  // parameter
+  private[chisel3] def applyString[T](name: String)(f: => T): T = {
+    Builder.pushPrefix(name)
+    val ret = f
+    if (Builder.getPrefix.nonEmpty) Builder.popPrefix()
+    ret
+  }
 }
 
 /** Use to eliminate any existing prefixes within the provided scope.
