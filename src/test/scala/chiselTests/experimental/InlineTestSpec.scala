@@ -15,15 +15,15 @@ import circt.stage.ChiselStage.emitCHIRRTL
 
 // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
 // socket to which to attach a monitor.
-class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M, Unit])
-    extends TestHarness[M, Unit](test) {
+class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M])
+    extends TestHarness[M](test) {
   val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
   monitor.io :#= probe.read(dut.monProbe)
 }
 
 object TestHarnessWithMonitorSocket {
   implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket] =
-    TestHarnessGenerator[M, Unit](new TestHarnessWithMonitorSocket(_))
+    TestHarnessGenerator[M](new TestHarnessWithMonitorSocket(_))
 }
 
 @instantiable
@@ -43,7 +43,7 @@ class ProtocolBundle(width: Int) extends Bundle {
 
 class ProtocolMonitor(bundleType: ProtocolBundle) extends Module {
   val io = IO(Input(bundleType))
-  assert(io.in === io.out, "in === out")
+  chisel3.assert(io.in === io.out, "in === out")
 }
 
 @instantiable
@@ -56,7 +56,7 @@ trait HasProtocolInterface extends HasTests { this: RawModule =>
 object ProtocolChecks {
   def check(v: Int)(instance: Instance[RawModule with HasProtocolInterface]) = {
     instance.io.in := v.U
-    assert(instance.io.out === v.U): Unit
+    chisel3.assert(instance.io.out === v.U)
   }
 }
 
@@ -93,35 +93,22 @@ class ModuleWithTests(
 
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    assert(instance.io.out === 3.U): Unit
+    chisel3.assert(instance.io.out === 3.U)
+    TestBehavior.RunForCycles(10)
   }
 
   test("bar") { instance =>
     instance.io.in := 5.U(ioWidth.W)
-    assert(instance.io.out =/= 0.U): Unit
-  }
-
-  test("with_result") { instance =>
-    val result = Wire(new TestResultBundle)
-    val timer = RegInit(0.U)
-    timer := timer + 1.U
-    instance.io.in := 5.U(ioWidth.W)
-    val outValid = instance.io.out =/= 0.U
-    when(outValid) {
-      result.success := 0.U
-      result.finish := timer > 1000.U
-    }.otherwise {
-      result.success := 1.U
-      result.finish := true.B
-    }
-    result
+    chisel3.assert(instance.io.out =/= 0.U)
+    TestBehavior.RunForCycles(10)
   }
 
   {
     import TestHarnessWithMonitorSocket._
     test("with_monitor") { instance =>
       instance.io.in := 5.U(ioWidth.W)
-      assert(instance.io.out =/= 0.U): Unit
+      chisel3.assert(instance.io.out =/= 0.U)
+      TestBehavior.RunForCycles(10)
     }
   }
 
@@ -134,7 +121,7 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   io.out := io.in
   test("foo") { instance =>
     instance.io.in := 3.U(ioWidth.W)
-    assert(instance.io.out === 3.U): Unit
+    chisel3.assert(instance.io.out === 3.U)
   }
 }
 
@@ -175,13 +162,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
-      | CHECK:      public module test_ModuleWithTests_with_result
-      | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
-      | CHECK-NEXT:   output finish : UInt<1>
-      | CHECK-NEXT:   output success : UInt<1>
-      | CHECK:        inst dut of ModuleWithTests
-      |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset
@@ -210,7 +190,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK-NOT:  module test_ModuleWithTests_foo
       | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
@@ -224,7 +203,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK:      module test_ModuleWithTests_foo
       | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
@@ -238,7 +216,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK:      module test_ModuleWithTests_foo
       | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
@@ -252,7 +229,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK:      module test_ModuleWithTests_foo
       | CHECK:      module test_ModuleWithTests_bar
-      | CHECK:      module test_ModuleWithTests_with_result
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
     )
@@ -266,7 +242,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK:      module test_ModuleWithTests_foo
       | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK:      module test_ModuleWithTests_with_result
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
     )
@@ -281,7 +256,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK:      module test_ModuleWithTests_foo
       | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK:      module test_ModuleWithTests_with_result
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
       )
@@ -295,7 +269,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK-NOT:  module test_ModuleWithTests_foo
       | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
@@ -309,7 +282,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       |
       | CHECK-NOT:  module test_ModuleWithTests_foo
       | CHECK-NOT:  module test_ModuleWithTests_bar
-      | CHECK-NOT:  module test_ModuleWithTests_with_result
       | CHECK-NOT:  module test_ModuleWithTests_with_monitor
       """
     )
@@ -324,7 +296,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK: module test_ModuleWithTests_check1
       | CHECK: module test_ModuleWithTests_foo
       | CHECK: module test_ModuleWithTests_bar
-      | CHECK: module test_ModuleWithTests_with_result
       | CHECK: module test_ModuleWithTests_with_monitor
       | CHECK: module test_ModuleWithTests_check2
       """
@@ -363,12 +334,6 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck {
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_bar
-      | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
-      | CHECK-NEXT:   output finish : UInt<1>
-      | CHECK-NEXT:   output success : UInt<1>
-      |
-      | CHECK:      public module test_ModuleWithTests_with_result
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input reset : ${resetType}
       | CHECK-NEXT:   output finish : UInt<1>
