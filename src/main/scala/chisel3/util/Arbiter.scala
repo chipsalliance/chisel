@@ -75,10 +75,18 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
   }
 }
 
-class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
-    extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  // this register is not initialized on purpose, see #267
-  lazy val lastGrant = RegEnable(io.chosen, io.out.fire)
+class LockingRRArbiter[T <: Data](
+  gen:           T,
+  n:             Int,
+  count:         Int,
+  needsLock:     Option[T => Bool] = None,
+  initLastGrant: Boolean = false
+) extends LockingArbiterLike[T](gen, n, count, needsLock) {
+  lazy val lastGrant = if (initLastGrant) {
+    RegEnable(io.chosen, 0.U, io.out.fire)
+  } else {
+    RegEnable(io.chosen, io.out.fire)
+  }
   lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
   lazy val validMask = io.in.zip(grantMask).map { case (in, g) => in.valid && g }
 
@@ -108,6 +116,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   *
   * @param gen data type
   * @param n number of inputs
+  * @param initLastGrant when true, initialize the `lastGrant` register to 0
   * @example {{{
   * val arb = Module(new RRArbiter(UInt(), 2))
   * arb.io.in(0) <> producer0.io.out
@@ -115,7 +124,8 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * consumer.io.in <> arb.io.out
   * }}}
   */
-class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](gen, n, 1)
+class RRArbiter[T <: Data](val gen: T, val n: Int, initLastGrant: Boolean = false)
+    extends LockingRRArbiter[T](gen, n, 1, initLastGrant = initLastGrant)
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
   * Priority is given to lower producer.
