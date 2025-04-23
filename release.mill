@@ -7,14 +7,14 @@ import mill.scalalib.publish._
 import mill.api.Result
 import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import mill.util.Jvm.createJar
-import $ivy.`io.chris-kipp::mill-ci-release_mill0.12:0.2.1` // https://github.com/ckipp01/mill-ci-release/pull/143
-import io.kipp.mill.ci.release.{CiReleaseModule, SonatypeHost}
-import de.tobiasroeser.mill.vcs.version.VcsVersion // pulled in by mill-ci-release
+
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.1`
+import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 import build._
 
 /** Adds basic publishing information--useful for local publishing */
-trait BaseChiselPublishModule extends PublishModule {
+trait ChiselPublishModule extends PublishModule {
   // Publish information
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -36,11 +36,6 @@ trait BaseChiselPublishModule extends PublishModule {
       revHashDigits = 8,
       untaggedSuffix = "-SNAPSHOT"
     )
-}
-
-/** Integrates the Module into the Chisel CI publishing flow */
-trait ChiselPublishModule extends CiReleaseModule with BaseChiselPublishModule {
-  override def sonatypeHost = Some(SonatypeHost.s01)
 }
 
 /** Aggregate project for publishing Chisel as a single artifact

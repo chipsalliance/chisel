@@ -11,7 +11,7 @@ object `package` extends RootModule with CIRCTPanamaBinding
 
 // Java Codegen for all declared functions.
 // All of these functions are not private API which is subject to change.
-trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.BaseChiselPublishModule {
+trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.ChiselPublishModule {
   override def javadocOptions = Task(super.javadocOptions() ++ Seq("--enable-preview", "--release", "21"))
 
   object utils extends Module {
