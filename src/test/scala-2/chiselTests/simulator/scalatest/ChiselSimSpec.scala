@@ -3,7 +3,7 @@
 package chiselTests.simulator.scalatest
 
 import chisel3._
-import chisel3.simulator.PeekPokeAPI.FailedExpectationException
+import chisel3.simulator.FailedExpectationException
 import chisel3.simulator.{HasSimulator, MacroText, Randomization, Settings}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilSuccess
