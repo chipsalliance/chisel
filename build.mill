@@ -40,12 +40,16 @@ object v extends Module {
 
   def buildUnits(): Seq[ScalaModule] = {
     scalaCrossVersions.flatMap { ver =>
-      Seq(chisel(ver), stdlib.cross(ver), unipublish)
+      Seq(
+        chisel(ver),
+        stdlib.cross(ver),
+        chisel(ver).test,
+        firrtl.cross(ver).test,
+        svsim.cross(ver).test,
+        unipublish
+      )
     } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
       Seq(
-        chisel(ver2).test,
-        firrtl.cross(ver2).test,
-        svsim.cross(ver2).test,
         `integration-tests`.cross(ver2).test,
         lit.utility.cross(ver2),
         panamaconverter.cross(ver2),

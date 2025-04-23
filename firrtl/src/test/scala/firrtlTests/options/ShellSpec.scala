@@ -4,7 +4,7 @@ package firrtlTests.options
 
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.Shell
+import firrtl.options.{BareShell, Shell}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -16,7 +16,7 @@ class ShellSpec extends AnyFlatSpec with Matchers {
   case object D extends NoTargetAnnotation
   case object E extends NoTargetAnnotation
 
-  trait AlphabeticalCli { this: Shell =>
+  trait AlphabeticalCli extends BareShell { this: Shell =>
     parser.opt[Unit]('c', "c-option").unbounded().action((x, c) => C +: c)
     parser.opt[Unit]('d', "d-option").unbounded().action((x, c) => D +: c)
     parser.opt[Unit]('e', "e-option").unbounded().action((x, c) => E +: c)
