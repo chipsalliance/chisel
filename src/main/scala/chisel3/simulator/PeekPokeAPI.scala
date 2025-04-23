@@ -133,18 +133,13 @@ trait PeekPokeAPI {
       simulationPort.check(isSigned = isSigned)(checkFn)
     }
 
-    private[simulator] protected final def expect[U](
-      expected:         U,
-      sameValue:        (Simulation.Value, U) => Boolean,
-      formatObserved:   (Simulation.Value) => String = encode(_).toString,
-      formatExpected:   U => String = (u: U) => u.toString,
-      buildMessageFunc: (Simulation.Value, U) => String = null
+    protected final def expect[U](
+      expected:       U,
+      sameValue:      (Simulation.Value, U) => Boolean,
+      formatObserved: (Simulation.Value) => String,
+      formatExpected: U => String,
+      buildMessage:   (Simulation.Value, U) => String
     )(implicit sourceInfo: SourceInfo): Unit = {
-      val buildMessage = if (buildMessageFunc != null) {
-        buildMessageFunc
-      } else { (observedValue: Simulation.Value, expected: U) =>
-        s"Expectation failed: observed value ${formatObserved(observedValue)} != ${formatExpected(expected)}"
-      }
       check(observedValue =>
         if (!sameValue(observedValue, expected)) {
           throw FailedExpectationException(
@@ -157,38 +152,68 @@ trait PeekPokeAPI {
       )
     }
 
+    protected final def expect[U](
+      expected:       U,
+      sameValue:      (Simulation.Value, U) => Boolean,
+      formatObserved: (Simulation.Value) => String,
+      formatExpected: U => String
+    )(implicit sourceInfo: SourceInfo): Unit = expect[U](
+      expected,
+      sameValue,
+      formatObserved,
+      formatExpected,
+      (observedValue: Simulation.Value, expected: U) =>
+        s"Expectation failed: observed value ${formatObserved(observedValue)} != ${formatExpected(expected)}"
+    )
+
+    protected final def expect[U](
+      expected:     U,
+      sameValue:    (Simulation.Value, U) => Boolean,
+      buildMessage: (Simulation.Value, U) => String
+    )(implicit sourceInfo: SourceInfo): Unit = expect[U](
+      expected,
+      sameValue,
+      (observedValue: Simulation.Value) => encode(observedValue).toString,
+      (expected: U) => expected.toString,
+      buildMessage
+    )
+
     override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
+      require(expected.isLit, s"Expected value: $expected must be a literal")
       expect(
         expected,
-        (observed: String, expected: T) => s"Expectation failed: observed value $observed != $expected"
+        (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
+        formatObserved = (obs: Simulation.Value) => encode(obs).toString,
+        formatExpected = (exp: T) => exp.toString
       )
     }
 
     override def expect(expected: T, buildMessage: (String, T) => String)(implicit sourceInfo: SourceInfo): Unit = {
       require(expected.isLit, s"Expected value: $expected must be a literal")
-
       expect(
         expected,
         (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
-        buildMessageFunc = (obs: Simulation.Value, exp: T) => buildMessage(encode(obs).toString, exp)
+        buildMessage = (obs: Simulation.Value, exp: T) => buildMessage(encode(obs).toString, exp)
       )
     }
 
-    final def expect(expected: BigInt, buildMessage: (Simulation.Value, BigInt) => String)(
+    final def expect(expected: BigInt, buildMessage: (BigInt, BigInt) => String)(
       implicit sourceInfo: SourceInfo
     ): Unit = expect[BigInt](
       expected,
       (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
-      buildMessageFunc = buildMessage
+      buildMessage = (obs: Simulation.Value, exp: BigInt) => buildMessage(obs.asBigInt, exp)
     )
 
     final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect[BigInt](
       expected,
-      (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp
+      (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
+      formatObserved = (obs: Simulation.Value) => obs.asBigInt.toString,
+      formatExpected = (exp: BigInt) => exp.toString
     )
 
     final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, (_: Simulation.Value, _: BigInt) => message)
+      expect(expected, (_: BigInt, _: BigInt) => message)
 
   }
 

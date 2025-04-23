@@ -192,7 +192,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       }
       thrown.getMessage must include("observed value UInt<32>(3) != UInt<3>(5)")
       (thrown.getMessage must include).regex(
-        """ @\[.*chiselTests/simulator/PeekPokeApiSpec\.scala:\d+:\d+\]"""
+        """ @\[.*chiselTests/simulator/PeekPokeAPISpec\.scala:\d+:\d+\]"""
       )
       thrown.getMessage must include("dut.io.out.bits.c.expect(5.U)")
       thrown.getMessage must include("                        ^")
@@ -233,7 +233,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       thrown.getMessage must include("Expected value: 'UInt<66>(35)")
       thrown.getMessage must include("Expectation failed: observed value AnonymousBundle")
       (thrown.getMessage must include).regex(
-        """ @\[.*chiselTests/simulator/PeekPokeApiSpec\.scala:\d+:\d+\]"""
+        """ @\[.*chiselTests/simulator/PeekPokeAPISpec\.scala:\d+:\d+\]"""
       )
       thrown.getMessage must include("dut.io.out.bits.expect(expectedBits)")
       thrown.getMessage must include("                      ^")
@@ -273,7 +273,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       }
       thrown.getMessage must include("Expectation failed: observed value")
       (thrown.getMessage must include).regex(
-        """ @\[.*chiselTests/simulator/PeekPokeApiSpec\.scala:\d+:\d+\]"""
+        """ @\[.*chiselTests/simulator/PeekPokeAPISpec\.scala:\d+:\d+\]"""
       )
       thrown.getMessage must include("dut.io.out.bits.expect(")
       thrown.getMessage must include("                      ^")
