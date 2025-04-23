@@ -125,7 +125,13 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * }}}
   */
 class RRArbiter[T <: Data](val gen: T, val n: Int, initLastGrant: Boolean = false)
-    extends LockingRRArbiter[T](gen, n, 1, initLastGrant = initLastGrant)
+    extends LockingRRArbiter[T](gen, n, 1, initLastGrant = initLastGrant) {
+
+  /** Give this Arbiter a default, stable desired name using the supplied `Data`
+    * generator's `typeName` and input count parameter
+    */
+  override def desiredName = s"RRArbiter${n}_${gen.typeName}"
+}
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
   * Priority is given to lower producer.
