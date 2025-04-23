@@ -134,16 +134,22 @@ trait PeekPokeAPI {
     }
 
     private[simulator] protected final def expect[U](
-      expected:     U,
-      sameValue:    (Simulation.Value, U) => Boolean,
-      buildMessage: (Simulation.Value, U) => String,
-      sourceInfo:   SourceInfo
-    ): Unit = {
+      expected:         U,
+      sameValue:        (Simulation.Value, U) => Boolean,
+      formatObserved:   (Simulation.Value) => String = encode(_).toString,
+      formatExpected:   U => String = (u: U) => u.toString,
+      buildMessageFunc: (Simulation.Value, U) => String = null
+    )(implicit sourceInfo: SourceInfo): Unit = {
+      val buildMessage = if (buildMessageFunc != null) {
+        buildMessageFunc
+      } else { (observedValue: Simulation.Value, expected: U) =>
+        s"Expectation failed: observed value ${formatObserved(observedValue)} != ${formatExpected(expected)}"
+      }
       check(observedValue =>
         if (!sameValue(observedValue, expected)) {
           throw FailedExpectationException(
-            encode(observedValue).toString,
-            expected.toString,
+            formatObserved(observedValue),
+            formatExpected(expected),
             buildMessage(observedValue, expected),
             sourceInfo
           )
@@ -164,23 +170,21 @@ trait PeekPokeAPI {
       expect(
         expected,
         (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
-        (obs: Simulation.Value, exp: T) => buildMessage(encode(obs).toString, exp),
-        sourceInfo
+        buildMessageFunc = (obs: Simulation.Value, exp: T) => buildMessage(encode(obs).toString, exp)
       )
     }
 
     final def expect(expected: BigInt, buildMessage: (Simulation.Value, BigInt) => String)(
       implicit sourceInfo: SourceInfo
-    ): Unit = expect(
+    ): Unit = expect[BigInt](
       expected,
       (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
-      buildMessage,
-      sourceInfo
+      buildMessageFunc = buildMessage
     )
 
-    final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect(
+    final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect[BigInt](
       expected,
-      (observed: Simulation.Value, expected: BigInt) => s"Expectation failed: observed value $observed != $expected"
+      (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp
     )
 
     final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
@@ -216,7 +220,22 @@ trait PeekPokeAPI {
 
     def peekBoolean(): Boolean = peek().litToBoolean
 
-    override def expect(expected: Bool)(implicit sourceInfo: SourceInfo): Unit = expect(expected.litValue)
+    //// FIXME: wouldn't it make more sense to have true/false in the messages, instead of 0/1?
+    //// If yes, change chiselTests.simulator.scalatest.ChiselSimSpec and replace below
+    ////
+    // override def expect(expected: Bool)(implicit sourceInfo: SourceInfo): Unit = expect[Bool](
+    //   expected,
+    //   (obs: Simulation.Value, exp: Bool) => (obs.asBigInt == 1) == exp.litToBoolean,
+    //   formatObserved = (obs: Simulation.Value) => (obs.asBigInt == 1).toString,
+    //   formatExpected = (exp: Bool) => exp.litToBoolean.toString
+    // )
+
+    override def expect(expected: Bool)(implicit sourceInfo: SourceInfo): Unit = expect[Bool](
+      expected,
+      (obs: Simulation.Value, exp: Bool) => obs.asBigInt == exp.litValue,
+      formatObserved = (obs: Simulation.Value) => obs.asBigInt.toString,
+      formatExpected = (exp: Bool) => exp.litValue.toString
+    )
 
     def expect(value: Boolean)(implicit sourceInfo: SourceInfo): Unit = expect(value.B)
   }
