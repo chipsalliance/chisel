@@ -34,7 +34,7 @@
       },
       {
         "title": "## Build and Internal Changes",
-        "labels": ["Internal"]
+        "labels": ["Internal", "Scala 3"]
       },
       {
         "title": "## Uncategorized",
