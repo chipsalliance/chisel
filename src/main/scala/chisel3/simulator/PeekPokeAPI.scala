@@ -1,22 +1,22 @@
 package chisel3.simulator
 
-import svsim._
 import chisel3._
-
-import chisel3.reflect.DataMirror
-import chisel3.experimental.{SourceInfo, SourceLine}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
+import chisel3.experimental.{SourceInfo, SourceLine}
 import chisel3.internal.ExceptionHelpers
+import chisel3.reflect.DataMirror
 import firrtl.options.StageUtils.dramaticMessage
+import svsim._
+
 import scala.util.control.NoStackTrace
 
 trait Peekable[T <: Data] {
 
   /**
-    * Peek the value of a data port.
+    * Get the value of a data port as a literal.
     *
-    * @return the value of the data port
+    * @return the value of the peeked data
     */
   def peek(): T
 
@@ -25,14 +25,16 @@ trait Peekable[T <: Data] {
     *
     * @param expected the expected value
     * @param buildMessage a function that builds a message for the failure case
+    * @throws FailedExpectationException if the observed value does not match the expected value
     */
-  def expect(expected: T, buildMessage: (String, T) => String)(implicit sourceInfo: SourceInfo): Unit
+  def expect(expected: T, buildMessage: (T, T) => String)(implicit sourceInfo: SourceInfo): Unit
 
   /**
     * Expect the value of a data port to be equal to the expected value.
     *
     * @param expected the expected value
     * @param message a message for the failure case
+    * @throws FailedExpectationException if the observed value does not match the expected value
     */
   def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
     expect(expected, (_, _) => message)
@@ -41,15 +43,29 @@ trait Peekable[T <: Data] {
       * Expect the value of a data port to be equal to the expected value.
       *
       * @param expected the expected value
+      * @throws FailedExpectationException if the observed value does not match the expected value
       */
   def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit =
     expect(expected, (observed, expected) => s"Expectation failed: observed value $observed != $expected")
+
+  private[simulator] final def dataToString(data: Data): String = {
+    data match {
+      case x: Bundle =>
+        x.elements.map { case (name, elt) =>
+          s"$name: ${dataToString(elt)}"
+        }.mkString("{", ", ", "}")
+      case x: Vec[_]   => x.getElements.map(dataToString).mkString("[", ", ", "]")
+      case x: EnumType => x.toString
+      case x if x.isLit => x.litValue.toString
+      case _            => data.toString
+    }
+  }
 }
 
 trait Pokable[T <: Data] {
 
   /**
-    * Poke (set) the value of a data port.
+    * Sets the value of a data port.
     *
     * @param literal the value to set, which must be a literal
     */
@@ -104,9 +120,132 @@ object FailedExpectationException {
   }
 }
 
-object PeekPokeAPI extends PeekPokeAPI
+sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
+  protected def isSigned = false
 
-trait PeekPokeAPI {
+  private[simulator] def encode(width: Int, value: BigInt): T
+
+  private[simulator] final def encode(value: Simulation.Value): T = {
+    encode(value.bitCount, value.asBigInt)
+  }
+
+  final def peekValue(): Simulation.Value = {
+    simulatedModule.willPeek()
+    simulationPort.get(isSigned = isSigned)
+  }
+
+  def peek(): T = encode(peekValue())
+
+  def poke(literal: T): Unit = poke(literal.litValue)
+
+  def poke(value: BigInt): Unit = {
+    simulatedModule.willPoke()
+    simulationPort.set(value)
+  }
+
+  private[simulator] def check[U](checkFn: Simulation.Value => Unit): Unit = {
+    simulatedModule.willPeek()
+    simulationPort.check(isSigned = isSigned)(checkFn)
+  }
+
+  protected final def expect[U](
+    expected:       U,
+    sameValue:      (Simulation.Value, U) => Boolean,
+    formatObserved: (Simulation.Value) => String,
+    formatExpected: U => String,
+    buildMessage:   (Simulation.Value, U) => String,
+    sourceInfo:     SourceInfo
+  ): Unit = {
+    check(observedValue =>
+      if (!sameValue(observedValue, expected)) {
+        throw FailedExpectationException(
+          formatObserved(observedValue),
+          formatExpected(expected),
+          buildMessage(observedValue, expected),
+          sourceInfo
+        )
+      }
+    )
+  }
+
+  protected final def expect[U](
+    expected:       U,
+    sameValue:      (Simulation.Value, U) => Boolean,
+    formatObserved: (Simulation.Value) => String,
+    formatExpected: U => String,
+    sourceInfo:     SourceInfo
+  ): Unit = expect[U](
+    expected,
+    sameValue,
+    formatObserved,
+    formatExpected,
+    (observedValue: Simulation.Value, expected: U) =>
+      s"Expectation failed: observed value ${formatObserved(observedValue)} != ${formatExpected(expected)}",
+    sourceInfo
+  )
+
+  protected final def expect[U](
+    expected:     U,
+    sameValue:    (Simulation.Value, U) => Boolean,
+    buildMessage: (Simulation.Value, U) => String,
+    sourceInfo:   SourceInfo
+  ): Unit = expect[U](
+    expected,
+    sameValue,
+    (observedValue: Simulation.Value) => encode(observedValue).toString,
+    (expected: U) => expected.toString,
+    buildMessage,
+    sourceInfo
+  )
+
+  override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
+    require(expected.isLit, s"Expected value: $expected must be a literal")
+    expect(
+      expected,
+      (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
+      formatObserved = (obs: Simulation.Value) => encode(obs).toString,
+      formatExpected = (exp: T) => exp.toString,
+      sourceInfo = sourceInfo
+    )
+  }
+
+  def expect(expected: T, buildMessage: (T, T) => String)(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    require(expected.isLit, s"Expected value: $expected must be a literal")
+    expect[T](
+      expected,
+      (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
+      buildMessage = (obs: Simulation.Value, exp: T) => buildMessage(encode(obs), exp),
+      formatObserved = (obs: Simulation.Value) => encode(obs).toString,
+      formatExpected = (exp: T) => exp.toString,
+      sourceInfo = sourceInfo
+    )
+  }
+
+  final def expect(expected: BigInt, buildMessage: (BigInt, BigInt) => String)(
+    implicit sourceInfo: SourceInfo
+  ): Unit = expect[BigInt](
+    expected,
+    (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
+    buildMessage = (obs: Simulation.Value, exp: BigInt) => buildMessage(obs.asBigInt, exp),
+    sourceInfo = sourceInfo
+  )
+
+  final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect[BigInt](
+    expected,
+    (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
+    formatObserved = (obs: Simulation.Value) => obs.asBigInt.toString,
+    formatExpected = (exp: BigInt) => exp.toString,
+    sourceInfo = sourceInfo
+  )
+
+  final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
+    expect(expected, (_: BigInt, _: BigInt) => message)
+
+}
+
+object PeekPokeAPI {
 
   implicit class TestableClock(clock: Clock) extends AnyTestableData[Clock] {
     val data = clock
@@ -127,9 +266,9 @@ trait PeekPokeAPI {
     }
 
     /** Ticks this clock up to `maxCycles`.
-      *
-      * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
-      */
+    *
+    * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
+    */
     def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int): Unit = {
       simulatedModule.willEvaluate()
       simulationPort.tick(
@@ -140,127 +279,6 @@ trait PeekPokeAPI {
         sentinel = Some(simulatedModule.port(sentinelPort), sentinelValue)
       )
     }
-  }
-
-  sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
-    protected def isSigned = false
-
-    private[simulator] protected def encode(width: Int, value: BigInt): T
-
-    private[simulator] final def encode(value: Simulation.Value): T = {
-      encode(value.bitCount, value.asBigInt)
-    }
-
-    final def peekValue(): Simulation.Value = {
-      simulatedModule.willPeek()
-      simulationPort.get(isSigned = isSigned)
-    }
-
-    def peek(): T = encode(peekValue())
-
-    def poke(literal: T): Unit = poke(literal.litValue)
-
-    def poke(value: BigInt): Unit = {
-      simulatedModule.willPoke()
-      simulationPort.set(value)
-    }
-
-    private[simulator] protected def check[U](checkFn: Simulation.Value => Unit): Unit = {
-      simulatedModule.willPeek()
-      simulationPort.check(isSigned = isSigned)(checkFn)
-    }
-
-    protected final def expect[U](
-      expected:       U,
-      sameValue:      (Simulation.Value, U) => Boolean,
-      formatObserved: (Simulation.Value) => String,
-      formatExpected: U => String,
-      buildMessage:   (Simulation.Value, U) => String,
-      sourceInfo:     SourceInfo
-    ): Unit = {
-      check(observedValue =>
-        if (!sameValue(observedValue, expected)) {
-          throw FailedExpectationException(
-            formatObserved(observedValue),
-            formatExpected(expected),
-            buildMessage(observedValue, expected),
-            sourceInfo
-          )
-        }
-      )
-    }
-
-    protected final def expect[U](
-      expected:       U,
-      sameValue:      (Simulation.Value, U) => Boolean,
-      formatObserved: (Simulation.Value) => String,
-      formatExpected: U => String,
-      sourceInfo:     SourceInfo
-    ): Unit = expect[U](
-      expected,
-      sameValue,
-      formatObserved,
-      formatExpected,
-      (observedValue: Simulation.Value, expected: U) =>
-        s"Expectation failed: observed value ${formatObserved(observedValue)} != ${formatExpected(expected)}",
-      sourceInfo
-    )
-
-    protected final def expect[U](
-      expected:     U,
-      sameValue:    (Simulation.Value, U) => Boolean,
-      buildMessage: (Simulation.Value, U) => String,
-      sourceInfo:   SourceInfo
-    ): Unit = expect[U](
-      expected,
-      sameValue,
-      (observedValue: Simulation.Value) => encode(observedValue).toString,
-      (expected: U) => expected.toString,
-      buildMessage,
-      sourceInfo
-    )
-
-    override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
-      require(expected.isLit, s"Expected value: $expected must be a literal")
-      expect(
-        expected,
-        (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
-        formatObserved = (obs: Simulation.Value) => encode(obs).toString,
-        formatExpected = (exp: T) => exp.toString,
-        sourceInfo = sourceInfo
-      )
-    }
-
-    override def expect(expected: T, buildMessage: (String, T) => String)(implicit sourceInfo: SourceInfo): Unit = {
-      require(expected.isLit, s"Expected value: $expected must be a literal")
-      expect[T](
-        expected,
-        (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
-        buildMessage = (obs: Simulation.Value, exp: T) => buildMessage(encode(obs).toString, exp),
-        sourceInfo = sourceInfo
-      )
-    }
-
-    final def expect(expected: BigInt, buildMessage: (BigInt, BigInt) => String)(
-      implicit sourceInfo: SourceInfo
-    ): Unit = expect[BigInt](
-      expected,
-      (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
-      buildMessage = (obs: Simulation.Value, exp: BigInt) => buildMessage(obs.asBigInt, exp),
-      sourceInfo = sourceInfo
-    )
-
-    final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect[BigInt](
-      expected,
-      (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
-      formatObserved = (obs: Simulation.Value) => obs.asBigInt.toString,
-      formatExpected = (exp: BigInt) => exp.toString,
-      sourceInfo = sourceInfo
-    )
-
-    final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, (_: BigInt, _: BigInt) => message)
-
   }
 
   implicit final class TestableSInt(val data: SInt) extends TestableElement[SInt] {
@@ -314,7 +332,7 @@ trait PeekPokeAPI {
     }
   }
 
-  implicit class TestableRecord[T <: Record](val data: T)(implicit sourceInfo: SourceInfo) extends PeekPokable[T] {
+  implicit class TestableRecord[T <: Record](val data: T) extends PeekPokable[T] {
 
     override def peek(): T = {
       chiselTypeOf(data).Lit(
@@ -328,34 +346,106 @@ trait PeekPokeAPI {
       d.poke(value.elements(name))
     }
 
-    def expect(expected: T, buildMessage: (String, T) => String, allowPartial: Boolean)(
+    def expect(expected: T, buildMessage: (T, T, String) => String, allowPartial: Boolean)(
       implicit sourceInfo: SourceInfo
     ): Unit = {
       require(DataMirror.checkTypeEquivalence(data, expected), "Type mismatch")
 
       // FIXME: I can't understand why but _not_ getting the peeked value as a `val` beforehand results in infinite recursion
-      val peekedValue = peek().toString
+      val peekedValue = peek()
 
-      data.elements.foreach { case (name, d) =>
-        expected.elements(name) match {
+      data.elements.foreach { case (elName, elData) =>
+        expected.elements(elName) match {
           case DontCare =>
             if (!allowPartial) {
               throw new Exception(
-                s"Field '$name' is not initiazlized in the expected value $expected"
+                s"Field '$elName' is not initialized in the expected value $expected"
               )
             }
-          case exp =>
-            d.expect(
-              exp,
-              (obs: String, _) =>
-                s"${buildMessage(peekedValue, expected)}:\n Expected value of field '$name' to be $exp, got $obs"
+          case elExp =>
+            elData.expect(
+              elExp,
+              (_, _) => buildMessage(peekedValue, expected, elName)
             )
         }
       }
     }
 
-    override def expect(expected: T, buildMessage: (String, T) => String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, buildMessage, allowPartial = false)
+    def expect(expected: T, buildMessage: (T, T) => String, allowPartial: Boolean)(
+      implicit sourceInfo: SourceInfo
+    ): Unit = expect(
+      expected,
+      (observed: T, _: T, elName: String) => {
+        val userMsg = buildMessage(observed, expected)
+        val msg = if (userMsg.nonEmpty) s"${userMsg}:\n" else ""
+        val expEl = expected.elements(elName)
+        val obsEl = observed.elements(elName)
+        s"${msg}Expected the value of element '$elName' to be ${dataToString(expEl)}, got ${dataToString(obsEl)}"
+      },
+      allowPartial = allowPartial
+    )
+
+    def expect(expected: T, buildMessage: (T, T) => String)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, (observed: T, _: T) => buildMessage(observed, expected), allowPartial = false)
+
+    def expect(expected: T, allowPartial: Boolean)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, (obs: T, exp: T) => "", allowPartial)
+
+    override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, (obs: T, exp: T) => "", allowPartial = false)
+  }
+
+  implicit class TestableVec[T <: Data](val data: Vec[T]) extends PeekPokable[Vec[T]] {
+    override def peek(): Vec[T] = {
+      val elementValues = data.getElements.map(_.peek().asInstanceOf[T])
+      chiselTypeOf(data).Lit(elementValues.zipWithIndex.map { _.swap }: _*)
+    }
+
+    override def poke(literal: Vec[T]): Unit = {
+      require(data.length == literal.length, s"Vec length mismatch: expected ${data.length}, got ${literal.length}")
+      data.getElements.zip(literal.getElements).foreach {
+        case (portEl, valueEl) if portEl.getClass == valueEl.getClass =>
+          portEl.poke(valueEl)
+        case (portEl, valueEl) =>
+          throw new Exception(
+            s"This should never happen! Port element type: ${portEl.getClass} != literal element ${valueEl.getClass}"
+          )
+      }
+    }
+
+    final def expectVec[U <: Data](expected: Vec[U], buildMessage: (Vec[T], Vec[U], Int) => String)(
+      implicit sourceInfo: SourceInfo
+    ): Unit = {
+      require(
+        expected.length == data.length,
+        s"Vec length mismatch: Data port has ${data.length} elements while the expected value is of length ${expected.length}"
+      )
+      val peekedValue = data.peek()
+      data.zip(expected).zipWithIndex.foreach { case ((datEl, expEl), index) =>
+        expEl match {
+          case DontCare =>
+          // TODO: missing elements?
+          case exp if exp.getClass == datEl.getClass =>
+            datEl.expect(
+              exp.asInstanceOf[T],
+              (obs: T, exp: T) => buildMessage(peekedValue, expected, index)
+            )
+          case _ =>
+            throw new Exception(
+              s"Type mismatch: ${expEl.getClass} != ${datEl.getClass}"
+            )
+        }
+      }
+    }
+
+    override def expect(expected: Vec[T], buildMessage: (Vec[T], Vec[T]) => String)(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
+      expectVec[T](
+        expected,
+        (observed: Vec[T], expected: Vec[T], idx: Int) =>
+          buildMessage(observed, expected) + s". Mismatch at index $idx."
+      )
   }
 
   implicit class TestableData[T <: Data](val data: T) extends PeekPokable[T] {
@@ -367,20 +457,20 @@ trait PeekPokeAPI {
         case x: SInt     => new TestableSInt(x).peek().asInstanceOf[T]
         case x: EnumType => new TestableEnum(x).peek().asInstanceOf[T]
         case x: Record   => new TestableRecord(x).peek().asInstanceOf[T]
-        case x: Vec[_] =>
-          val elementValueFns = x.getElements.map(_.peek())
-          Vec.Lit(elementValueFns: _*).asInstanceOf[T]
+        case x: Vec[_]   => new TestableVec(x).peek().asInstanceOf[T]
         case x => throw new Exception(s"don't know how to peek $x")
       }
     }
 
     override def expect(
       expected:     T,
-      buildMessage: (String, T) => String
+      buildMessage: (T, T) => String
     )(implicit sourceInfo: SourceInfo): Unit = {
 
-      def buildMsgFn[S](observed: String, expected: S): String =
-        buildMessage(observed, expected.asInstanceOf[T])
+      def buildMsgFn[S](obs: S, exp: S): String = {
+        require(obs.getClass == exp.getClass, s"Type mismatch: ${obs.getClass} != ${exp.getClass}")
+        buildMessage(obs.asInstanceOf[T], exp.asInstanceOf[T])
+      }
 
       (data, expected) match {
         case (dat: Bool, exp: Bool) =>
@@ -394,22 +484,13 @@ trait PeekPokeAPI {
         case (dat: Record, exp: Record) =>
           new TestableRecord(dat).expect(exp, buildMsgFn _)
         case (dat: Vec[_], exp: Vec[_]) =>
-          require(
-            exp.length == dat.length,
-            s"Vec length mismatch: Data port has ${dat.length} elements while the expected value is of length ${exp.length}"
-          )
-          val peekedValue = dat.peek().toString
-          dat.getElements.zip(exp.getElements).zipWithIndex.foreach { case ((datEl, valEl), index) =>
-            valEl match {
-              case DontCare =>
-              // TODO: missing elements?
-              case ve =>
-                datEl.expect(
-                  ve,
-                  (obs: String, exp: Data) => buildMessage(peekedValue, exp.asInstanceOf[T]) + s" at index $index"
-                )
+          new TestableVec(dat).expectVec(
+            exp,
+            (obs: Data, _: Data, idx: Int) => {
+              require(obs.getClass == exp.getClass, s"Type mismatch: ${obs.getClass} != ${exp.getClass}")
+              buildMessage(obs.asInstanceOf[T], expected.asInstanceOf[T]) + s". Mismatch at index $idx."
             }
-          }
+          )
         case x => throw new Exception(s"don't know how to expect $x")
       }
     }
@@ -423,9 +504,36 @@ trait PeekPokeAPI {
       case (x: Vec[_], lit: Vec[_]) =>
         require(x.length == lit.length, s"Vec length mismatch: expected ${x.length}, got ${lit.length}")
         x.getElements.zip(lit.getElements).foreach { case (portEl, valueEl) =>
+          require(
+            portEl.getClass == valueEl.getClass,
+            s"Vec element type mismatch: expected ${portEl.getClass}, got ${valueEl.getClass}"
+          )
           portEl.poke(valueEl)
         }
-      case x => throw new Exception(s"don't know how to poke $x")
+      case x => throw new Exception(s"Don't know how to poke $x")
     }
   }
+}
+
+trait PeekPokeAPI {
+  import scala.language.implicitConversions
+
+  implicit def toTestableClock(clock: Clock): PeekPokeAPI.TestableClock = new PeekPokeAPI.TestableClock(clock)
+
+  implicit def toTestableSInt(sint: SInt): PeekPokeAPI.TestableSInt = new PeekPokeAPI.TestableSInt(sint)
+
+  implicit def toTestableUInt(uint: UInt): PeekPokeAPI.TestableUInt = new PeekPokeAPI.TestableUInt(uint)
+
+  implicit def toTestableBool(bool: Bool): PeekPokeAPI.TestableBool = new PeekPokeAPI.TestableBool(bool)
+
+  implicit def toTestableReset(reset: Reset): PeekPokeAPI.TestableReset = new PeekPokeAPI.TestableReset(reset)
+
+  implicit def toTestableEnum[T <: EnumType](data: T): PeekPokeAPI.TestableEnum[T] = new PeekPokeAPI.TestableEnum(data)
+
+  implicit def toTestableRecord[T <: Record](record: T): PeekPokeAPI.TestableRecord[T] =
+    new PeekPokeAPI.TestableRecord(record)
+
+  implicit def toTestableVec[T <: Data](vec: Vec[T]): PeekPokeAPI.TestableVec[T] = new PeekPokeAPI.TestableVec(vec)
+
+  implicit def toTestableData[T <: Data](data: T): PeekPokeAPI.TestableData[T] = new PeekPokeAPI.TestableData(data)
 }
