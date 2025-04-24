@@ -444,7 +444,7 @@ object PeekPokeAPI {
       expectVec[T](
         expected,
         (observed: Vec[T], expected: Vec[T], idx: Int) =>
-          buildMessage(observed, expected) + s". Mismatch at index $idx."
+          buildMessage(observed, expected) + s". First mismatch at index $idx."
       )
   }
 
@@ -488,7 +488,7 @@ object PeekPokeAPI {
             exp,
             (obs: Data, _: Data, idx: Int) => {
               require(obs.getClass == exp.getClass, s"Type mismatch: ${obs.getClass} != ${exp.getClass}")
-              buildMessage(obs.asInstanceOf[T], expected.asInstanceOf[T]) + s". Mismatch at index $idx."
+              buildMessage(obs.asInstanceOf[T], expected.asInstanceOf[T]) + s". First mismatch at index $idx."
             }
           )
         case x => throw new Exception(s"don't know how to expect $x")
