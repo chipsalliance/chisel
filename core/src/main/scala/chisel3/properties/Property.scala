@@ -454,9 +454,9 @@ object PropertySequenceOps {
   import PropertyExpressionHelpers._
 
   // Type class instances for Property sequence operations.
-  implicit def seqOps[U]: PropertySequenceOps[Property[Seq[U]]] =
-    new PropertySequenceOps[Property[Seq[U]]] {
-      def concat(lhs: Property[Seq[U]], rhs: Property[Seq[U]])(implicit sourceInfo: SourceInfo) =
+  implicit def seqOps[U, S[U] <: Seq[U]]: PropertySequenceOps[Property[S[U]]] =
+    new PropertySequenceOps[Property[S[U]]] {
+      def concat(lhs: Property[S[U]], rhs: Property[S[U]])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.ListConcatOp, lhs, rhs)
     }
 }
