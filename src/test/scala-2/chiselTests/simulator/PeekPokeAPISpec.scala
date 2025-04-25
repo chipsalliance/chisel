@@ -13,14 +13,14 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
 
   import PeekPokeTestModule._
 
+  val numTests = 200
+
   describe("PeekPokeAPI with TestableData") {
     val w = 32
-    it("should peek and poke various data types correctly") {
-      val numTests = 100
+    it("should correctly poke, peek, and peekValue Elements and Aggregates") {
       simulate(new PeekPokeTestModule(w)) { dut =>
         assert(w == dut.io.in.bits.a.getWidth)
         val vecDim = dut.vecDim
-        val truncationMask = (BigInt(1) << w) - 1
         for {
           _ <- 0 until numTests
           a = BigInt(w, rand)
@@ -41,58 +41,99 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
           dut.io.in.valid.poke(true)
           dut.io.op.poke(op)
           dut.clock.step()
-          dut.io.in.valid.poke(false)
+          dut.io.in.valid.poke(0.B)
 
           val peekedOp = dut.io.op.peek()
           assert(peekedOp.litValue == op.litValue)
-          assert(peekedOp.toString.contains(TestOp.getClass.getSimpleName.stripSuffix("$")))
+          assert(peekedOp.toString.startsWith(TestOp.getClass.getSimpleName.stripSuffix("$")))
 
-          val expected = op match {
-            case TestOp.Add => a + b
-            case TestOp.Sub => a - b
-            case TestOp.Mul => a * b
-            case _          => throw new Exception("Invalid operation")
-          }
-          val expectedCmp = a.compare(b) match {
-            case -1 => CmpResult.LT
-            case 0  => CmpResult.EQ
-            case 1  => CmpResult.GT
-          }
-
-          dut.io.out.valid.expect(true.B)
-          dut.io.out.valid.expect(true)
-          dut.io.out.bits.c.expect(expected & truncationMask)
-
-          assert(dut.io.out.bits.cmp.peek().litValue == expectedCmp.litValue)
-          dut.io.out.bits.cmp.expect(expectedCmp)
-
-          val expectedVSum = Vec.Lit(v1.zip(v2).map { case (x, y) => (x + y).U((w + 1).W) }: _*)
-
-          dut.io.out.bits.vSum.expect(expectedVSum)
-
-          val expVOutProduct = Vec.Lit(
-            v1.map { x =>
-              Vec.Lit(v2.map { y => (x * y).U((2 * w).W) }: _*)
-            }: _*
-          )
-
-          dut.io.out.bits.vOutProduct.expect(expVOutProduct)
+          val expectedScalar = calcExpectedScalarOpResult(op, a, b, w)
+          val expectedCmp = calcExpectedCmp(a, b)
+          val expectedVSum = calcExpectedVSum(v1, v2, w)
+          val expVecProduct = calcExpectedVecProduct(v1, v2, w)
+          val expectedVDot = calcExpectedVDot(v1, v2, w)
 
           val expectedBits = chiselTypeOf(dut.io.out.bits).Lit(
-            _.c -> (expected & truncationMask).U,
+            _.c -> expectedScalar.U,
             _.cmp -> expectedCmp,
             _.vSum -> expectedVSum,
-            _.vDot -> v1.zip(v2).map { case (x, y) => x * y }.reduce(_ + _).U((2 * w + vecDim - 1).W),
-            _.vOutProduct -> expVOutProduct
+            _.vDot -> expectedVDot,
+            _.vOutProduct -> expVecProduct
           )
-
-          dut.io.out.bits.expect(expectedBits)
+          assert(dut.io.out.bits.cmp.peekValue().asBigInt == expectedCmp.litValue)
+          assert(dut.io.out.bits.cmp.peek() == expectedCmp)
+          assert(dut.io.out.bits.vSum.zip(expectedVSum).forall { case (portEl, expEl) =>
+            portEl.peekValue().asBigInt == expEl.litValue
+          })
+          assert(dut.io.out.bits.vSum.peek().litValue == expectedVSum.litValue)
+          assert(dut.io.out.bits.vOutProduct.zip(expVecProduct).forall { case (portVecEl, expVecEl) =>
+            portVecEl.zip(expVecEl).forall { case (portEl, expEl) =>
+              portEl.peek().litValue == expEl.litValue
+            }
+          })
 
           val peekedBits = dut.io.out.bits.peek()
           assert(peekedBits.c.litValue == expectedBits.c.litValue)
           assert(peekedBits.cmp.litValue == expectedBits.cmp.litValue)
-
           assert(peekedBits.elements.forall { case (name, el) => expectedBits.elements(name).litValue == el.litValue })
+        }
+      }
+    }
+
+    it("should expect various data types correctly") {
+      simulate(new PeekPokeTestModule(w)) { dut =>
+        assert(w == dut.io.in.bits.a.getWidth)
+        val vecDim = dut.vecDim
+        for {
+          _ <- 0 until numTests
+          a = BigInt(w, rand)
+          b = BigInt(w, rand)
+          v1 = Seq.fill(vecDim)(BigInt(w, rand))
+          v2 = Seq.fill(vecDim)(BigInt(w, rand))
+          op <- TestOp.all
+        } {
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> a.U,
+              _.b -> b.U,
+              _.v1 -> Vec.Lit(v1.map(_.U(w.W)): _*),
+              _.v2 -> Vec.Lit(v2.map(_.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(true.B)
+          dut.io.op.poke(op)
+          dut.clock.step()
+          dut.io.in.valid.poke(false.B)
+
+          val expectedScalar = calcExpectedScalarOpResult(op, a, b, w)
+          val expectedCmp = calcExpectedCmp(a, b)
+
+          dut.io.out.valid.expect(true.B)
+          dut.io.out.valid.expect(true)
+          dut.io.out.valid.expect(1)
+          dut.io.out.bits.c.expect(expectedScalar)
+          dut.io.out.bits.c.expect(expectedScalar.U)
+          dut.io.out.bits.c.expect(expectedScalar.U(w.W))
+          dut.io.out.bits.cmp.expect(expectedCmp)
+
+          val expectedVSum = calcExpectedVSum(v1, v2, w)
+          dut.io.out.bits.vSum.expect(expectedVSum)
+
+          val expVecProduct = calcExpectedVecProduct(v1, v2, w)
+          val expVDot = calcExpectedVDot(v1, v2, w)
+
+          dut.io.out.bits.vOutProduct.expect(expVecProduct)
+
+          val expectedBits = chiselTypeOf(dut.io.out.bits).Lit(
+            _.c -> expectedScalar.U,
+            _.cmp -> expectedCmp,
+            _.vSum -> expectedVSum,
+            _.vDot -> expVDot,
+            _.vOutProduct -> expVecProduct
+          )
+
+          dut.io.out.bits.expect(expectedBits)
 
           dut.io.out.expect(
             chiselTypeOf(dut.io.out).Lit(
@@ -104,7 +145,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       }
     }
 
-    it("reports failed expects correctly") {
+    it("should report failed expects correctly") {
       val thrown = the[FailedExpectationException[_]] thrownBy {
         simulate(new PeekPokeTestModule(w)) { dut =>
           assert(w == dut.io.in.bits.a.getWidth)
@@ -123,9 +164,11 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
           dut.io.op.poke(TestOp.Add)
           dut.clock.step()
 
-          dut.io.out.bits.c.expect(5.U)
+          dut.io.out.bits.c.expect(3) // correct
+          dut.io.out.bits.c.expect(5.U) // incorrect
         }
       }
+      thrown.getMessage must include("dut.io.out.bits.c.expect(5.U)")
       thrown.getMessage must include("observed value UInt<32>(3) != UInt<3>(5)")
     }
 
@@ -152,7 +195,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
             _.c -> 3.U,
             _.cmp -> CmpResult.LT,
             _.vSum -> Vec.Lit(Seq.fill(vecDim)(7.U((w + 1).W)): _*),
-            _.vDot -> 35.U((2 * w + vecDim - 1).W),
+            _.vDot -> 35.U,
             _.vOutProduct -> Vec.Lit(
               Seq.fill(vecDim)(Vec.Lit(Seq.tabulate(vecDim)(i => (12 + i).U((2 * w).W)): _*)): _*
             )
@@ -160,13 +203,14 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
           dut.io.out.bits.expect(expectedBits)
         }
       }
+      thrown.getMessage must include("dut.io.out.bits.expect(expectedBits)")
       thrown.getMessage must include("Observed value: 'UInt<66>(36)")
       thrown.getMessage must include("Expected value: 'UInt<66>(35)")
       thrown.getMessage must include("dut.io.out.bits.expect(expectedBits)")
       thrown.getMessage must include("Expected the value of element 'vDot' to be ")
     }
 
-    it("reports failed expect of Records with Vec fields correctly") {
+    it("should report failed expect of Records with Vec fields correctly") {
       val thrown = the[FailedExpectationException[_]] thrownBy {
         simulate(new PeekPokeTestModule(w)) { dut =>
           assert(w == dut.io.in.bits.a.getWidth)
@@ -185,20 +229,19 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
           dut.io.op.poke(TestOp.Add)
           dut.clock.step()
 
-          dut.io.out.bits.expect(
-            chiselTypeOf(dut.io.out.bits).Lit(
-              _.c -> 3.U,
-              _.cmp -> CmpResult.LT,
-              _.vSum -> Vec.Lit(Seq.fill(vecDim)(7.U((w + 1).W)): _*),
-              _.vDot -> 36.U((2 * w + vecDim - 1).W),
-              _.vOutProduct -> Vec.Lit(
-                Seq.fill(vecDim)(Vec.Lit(Seq.tabulate(vecDim)(i => (12 + i).U((2 * w).W)): _*)): _*
-              )
+          val expRecord = chiselTypeOf(dut.io.out.bits).Lit(
+            _.c -> 3.U,
+            _.cmp -> CmpResult.LT,
+            _.vSum -> Vec.Lit(Seq.fill(vecDim)(7.U((w + 1).W)): _*),
+            _.vDot -> 36.U((2 * w + vecDim - 1).W),
+            _.vOutProduct -> Vec.Lit(
+              Seq.fill(vecDim)(Vec.Lit(Seq.tabulate(vecDim)(i => (12 + i).U((2 * w).W)): _*)): _*
             )
           )
+          dut.io.out.bits.expect(expRecord)
         }
       }
-      thrown.getMessage must include("dut.io.out.bits.expect(")
+      thrown.getMessage must include("dut.io.out.bits.expect(expRecord)")
       thrown.getMessage must include("Expected the value of element 'vOutProduct' to be ")
     }
   }

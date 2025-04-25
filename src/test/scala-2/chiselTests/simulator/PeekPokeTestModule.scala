@@ -15,6 +15,51 @@ object PeekPokeTestModule {
   object CmpResult extends ChiselEnum {
     val LT, EQ, GT = Value
   }
+
+  def calcExpectedScalarOpResult(op: TestOp.Type, a: BigInt, b: BigInt, w: Int): BigInt = {
+    val truncationMask = (BigInt(1) << w) - 1
+    (op match {
+      case TestOp.Add => a + b
+      case TestOp.Sub => a - b
+      case TestOp.Mul => a * b
+      case _          => throw new Exception("Invalid operation")
+    }) & truncationMask
+  }
+
+  def calcExpectedCmp(a: BigInt, b: BigInt): CmpResult.Type = {
+    a.compare(b) match {
+      case -1 => CmpResult.LT
+      case 0  => CmpResult.EQ
+      case 1  => CmpResult.GT
+    }
+  }
+
+  def calcExpectedVSumBigInts(v1: Seq[BigInt], v2: Seq[BigInt]): Seq[BigInt] = v1.zip(v2).map { case (x, y) => x + y }
+
+  def calcExpectedVSum(v1: Seq[BigInt], v2: Seq[BigInt]): Vec[UInt] =
+    Vec.Lit(calcExpectedVSumBigInts(v1, v2).map(_.U): _*)
+
+  def calcExpectedVSum(v1: Seq[BigInt], v2: Seq[BigInt], w: Int): Vec[UInt] =
+    Vec.Lit(calcExpectedVSumBigInts(v1, v2).map(_.U((w + 1).W)): _*)
+
+  def calcExpectedVecProductBigInts(v1: Seq[BigInt], v2: Seq[BigInt]): Seq[Seq[BigInt]] = v1.map { x => v2.map(x * _) }
+
+  def calcExpectedVecProduct(v1: Seq[BigInt], v2: Seq[BigInt], w: Int): Vec[Vec[UInt]] = Vec.Lit(
+    calcExpectedVecProductBigInts(v1, v2).map { x =>
+      Vec.Lit(x.map { y =>
+        val p = y
+        if (w > 0) p.U((2 * w).W) else p.U
+      }: _*)
+    }: _*
+  )
+
+  def calcExpectedVDotBigInt(v1: Seq[BigInt], v2: Seq[BigInt]): BigInt = v1.zip(v2).map { case (x, y) => x * y }.sum
+
+  def calcExpectedVDot(v1: Seq[BigInt], v2: Seq[BigInt], w: Int = -1): UInt = {
+    val dp = calcExpectedVDotBigInt(v1, v2)
+    if (w > 0) dp.U((2 * w + v1.length - 1).W) else dp.U
+  }
+
 }
 
 class PeekPokeTestModule(w: Int, val vecDim: Int = 3) extends Module {
