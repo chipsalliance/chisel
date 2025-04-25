@@ -298,10 +298,10 @@ object PeekPokeAPI {
         value.byteValue match {
           case 0 => false.B
           case 1 => true.B
-          case x => throw new Exception(s"peeked Bool with value $x, not 0 or 1")
+          case x => throw new Exception(s"encode Bool with value $x, not 0 or 1")
         }
       } else {
-        throw new Exception(s"peeked Bool with value $value, not 0 or 1")
+        throw new Exception(s"encode Bool with value $value, not 0 or 1")
       }
     }
 
@@ -343,7 +343,12 @@ object PeekPokeAPI {
     }
 
     override def poke(value: T): Unit = data.elements.foreach { case (name, d) =>
-      d.poke(value.elements(name))
+      val valueEl = value.elements(name)
+      require(
+        d.getClass == valueEl.getClass,
+        s"Type mismatch for Record element '$name': expected ${d.getClass}, got ${valueEl.getClass}"
+      )
+      d.poke(valueEl)
     }
 
     def expect(expected: T, buildMessage: (T, T, String) => String, allowPartial: Boolean)(
@@ -401,19 +406,23 @@ object PeekPokeAPI {
       chiselTypeOf(data).Lit(elementValues.zipWithIndex.map { _.swap }: _*)
     }
 
-    override def poke(literal: Vec[T]): Unit = {
+    // internal
+    private[simulator] final def _poke[U <: Data](literal: Seq[U]): Unit = {
       require(data.length == literal.length, s"Vec length mismatch: expected ${data.length}, got ${literal.length}")
-      data.getElements.zip(literal.getElements).foreach {
+      data.getElements.zip(literal).foreach {
         case (portEl, valueEl) if portEl.getClass == valueEl.getClass =>
           portEl.poke(valueEl)
         case (portEl, valueEl) =>
           throw new Exception(
-            s"This should never happen! Port element type: ${portEl.getClass} != literal element ${valueEl.getClass}"
+            s"Port element type: ${portEl.getClass} != literal element ${valueEl.getClass}"
           )
       }
     }
 
-    final def expectVec[U <: Data](expected: Vec[U], buildMessage: (Vec[T], Vec[U], Int) => String)(
+    override def poke(literal: Vec[T]): Unit = _poke[T](literal)
+
+    // internal
+    private[simulator] final def _expect[U <: Data](expected: Vec[U], buildMessage: (Vec[T], Vec[U], Int) => String)(
       implicit sourceInfo: SourceInfo
     ): Unit = {
       require(
@@ -441,7 +450,7 @@ object PeekPokeAPI {
     override def expect(expected: Vec[T], buildMessage: (Vec[T], Vec[T]) => String)(
       implicit sourceInfo: SourceInfo
     ): Unit =
-      expectVec[T](
+      _expect[T](
         expected,
         (observed: Vec[T], expected: Vec[T], idx: Int) =>
           buildMessage(observed, expected) + s". First mismatch at index $idx."
@@ -484,9 +493,9 @@ object PeekPokeAPI {
         case (dat: Record, exp: Record) =>
           new TestableRecord(dat).expect(exp, buildMsgFn _)
         case (dat: Vec[_], exp: Vec[_]) =>
-          new TestableVec(dat).expectVec(
+          new TestableVec(dat)._expect(
             exp,
-            (obs: Data, _: Data, idx: Int) => {
+            (obs: Vec[_], _: Vec[_], idx: Int) => {
               require(obs.getClass == exp.getClass, s"Type mismatch: ${obs.getClass} != ${exp.getClass}")
               buildMessage(obs.asInstanceOf[T], expected.asInstanceOf[T]) + s". First mismatch at index $idx."
             }
@@ -496,21 +505,13 @@ object PeekPokeAPI {
     }
 
     def poke(literal: T): Unit = (data, literal) match {
-      case (x: Bool, lit: Bool)         => x.poke(lit)
-      case (x: UInt, lit: UInt)         => x.poke(lit)
-      case (x: SInt, lit: SInt)         => x.poke(lit)
-      case (x: EnumType, lit: EnumType) => x.poke(lit)
-      case (x: Record, lit: Record)     => x.poke(lit)
-      case (x: Vec[_], lit: Vec[_]) =>
-        require(x.length == lit.length, s"Vec length mismatch: expected ${x.length}, got ${lit.length}")
-        x.getElements.zip(lit.getElements).foreach { case (portEl, valueEl) =>
-          require(
-            portEl.getClass == valueEl.getClass,
-            s"Vec element type mismatch: expected ${portEl.getClass}, got ${valueEl.getClass}"
-          )
-          portEl.poke(valueEl)
-        }
-      case x => throw new Exception(s"Don't know how to poke $x")
+      case (x: Bool, lit: Bool)         => new TestableBool(x).poke(lit)
+      case (x: UInt, lit: UInt)         => new TestableUInt(x).poke(lit)
+      case (x: SInt, lit: SInt)         => new TestableSInt(x).poke(lit)
+      case (x: EnumType, lit: EnumType) => new TestableEnum(x).poke(lit)
+      case (x: Record, lit: Record)     => new TestableRecord(x).poke(lit)
+      case (x: Vec[_], lit: Vec[_])     => new TestableVec(x)._poke(lit)
+      case x                            => throw new Exception(s"Don't know how to poke $x")
     }
   }
 }
