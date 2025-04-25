@@ -28,8 +28,6 @@ object `package` extends RootModule with SbtModule with HasScalaPlugin with HasC
 
   override def moduleDeps = Seq(chisel(v.scalaVersion))
 
-  override def mainClass = Task(Some("mdoc.Main"))
-
   // Suppress missing interpolator warnings because mdoc appears to introduce them.
   override def extraWarnConf = Seq("msg=possible missing interpolator:s")
 
@@ -79,24 +77,22 @@ object `package` extends RootModule with SbtModule with HasScalaPlugin with HasC
     super.generatedSources() :+ firtoolVersionsTable()
   }
 
-  def mdocArgs = Task.Anon {
+  def mdoc = T {
     val classpath = runClasspath().map(_.path)
     val outDir = mdocOutDir()
+
     val inOutArgs =
       mdocSources().flatMap(inDir => Seq[String]("--in", inDir.path.toString, "--out", outDir.toString))
+    val mdocArgs =
+      Seq("--classpath", classpath.mkString(":")) ++
+        Seq("--scalac-options", scalacOptions().map("\"" + _ + "\"").mkString(" ")) ++
+        inOutArgs ++ mdocExtraArguments()
 
-    val args = Seq("--classpath", classpath.mkString(":")) ++
-      Seq("--scalac-options", scalacOptions().map("\"" + _ + "\"").mkString(" ")) ++
-      inOutArgs ++ mdocExtraArguments()
+    T.log.debug("Running mdoc with args: " + mdocArgs.mkString(" "))
 
-    T.log.debug("Running mdoc with args: " + args.mkString(" "))
+    Jvm.runLocal("mdoc.Main", classpath, mdocArgs)
 
-    Args(args)
-  }
-
-  def mdoc = Task {
-    runLocal(mdocArgs)()
-    PathRef(mdocOutDir())
+    PathRef(outDir)
   }
 
   def contributors = Task {
