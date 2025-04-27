@@ -478,17 +478,19 @@ object PeekPokeAPI {
 
   implicit class TestableData[T <: Data](val data: T) extends PeekPokable[T] {
 
-    def peek(): T = {
+    private def toPeekable: Peekable[_] = {
       data match {
-        case x: Bool     => new TestableBool(x).peek().asInstanceOf[T]
-        case x: UInt     => new TestableUInt(x).peek().asInstanceOf[T]
-        case x: SInt     => new TestableSInt(x).peek().asInstanceOf[T]
-        case x: EnumType => new TestableEnum(x).peek().asInstanceOf[T]
-        case x: Record   => new TestableRecord(x).peek().asInstanceOf[T]
-        case x: Vec[_]   => new TestableVec(x).peek().asInstanceOf[T]
+        case x: Bool     => new TestableBool(x)
+        case x: UInt     => new TestableUInt(x)
+        case x: SInt     => new TestableSInt(x)
+        case x: EnumType => new TestableEnum(x)
+        case x: Record   => new TestableRecord(x)
+        case x: Vec[_]   => new TestableVec(x)
         case x => throw new Exception(s"don't know how to peek $x")
       }
     }
+
+    def peek(): T = toPeekable.peek().asInstanceOf[T]
 
     override def expect(
       expected:     T,
@@ -513,7 +515,7 @@ object PeekPokeAPI {
           new TestableRecord(dat).expect(exp, buildMsgFn _)
         case (dat: Vec[_], exp: Vec[_]) =>
           new TestableVec(dat)._expect(exp, buildMsgFn _, appendFailedIndexToMsg = true)
-        case x => throw new Exception(s"Don't know how to expect $x")
+        case (dat, exp) => throw new Exception(s"Don't know how to expect $exp from $dat")
       }
     }
 
@@ -524,7 +526,7 @@ object PeekPokeAPI {
       case (x: EnumType, lit: EnumType) => new TestableEnum(x).poke(lit)
       case (x: Record, lit: Record)     => new TestableRecord(x).poke(lit)
       case (x: Vec[_], lit: Vec[_])     => new TestableVec(x)._poke(lit)
-      case x                            => throw new Exception(s"Don't know how to poke $x")
+      case (x, lit)                     => throw new Exception(s"Don't know how to poke $x with $lit")
     }
   }
 }
