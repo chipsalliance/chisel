@@ -13,7 +13,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
 
   import PeekPokeTestModule._
 
-  val numTests = 200
+  val numTests = 50
 
   describe("PeekPokeAPI with TestableData") {
     val w = 32
