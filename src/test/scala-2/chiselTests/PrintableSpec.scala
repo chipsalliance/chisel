@@ -318,7 +318,9 @@ class PrintableSpec extends AnyFlatSpec with Matchers with FileCheck {
   it should "support all legal format specifiers" in {
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
-      printf(cf"$SimulationTime $HierarchicalModuleName $in%d $in%x $in%b $in%c %%\n")
+      layer.elideBlocks {
+        printf(cf"$SimulationTime $HierarchicalModuleName $in%d $in%x $in%b $in%c %%\n")
+      }
     }
     ChiselStage
       .emitCHIRRTL(new MyModule)
