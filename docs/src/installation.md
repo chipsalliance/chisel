@@ -105,6 +105,20 @@ scoop install temurin17-jdk
 
 Windows users may also prefer using an [installer](https://adoptium.net/temurin/releases/?version=17&os=windows&arch=x86&package=jdk).
 
+#### Java Versions
+
+Different JVM versions need diffrent Scala versions. And the highest Scala version is set by the compiler plugin for a Chisel version.
+
+current highest supported versions are:
+
+| Chisel | Scala   | Java
+|--------|---------|------
+| 3.5.6  | 2.13.10 | 17
+| 3.6.1  | 2.13.14 | 22
+| 5.3.x  | 2.13.14 | 22
+| 6.5.x  | 2.13.14 | 22
+
+Note that `brew` currently installs Java 23, is not supported by the current Scala version.
 
 ### Build Tools
 
