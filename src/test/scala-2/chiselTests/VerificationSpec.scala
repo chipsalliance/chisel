@@ -45,9 +45,11 @@ class VerificationSpec extends AnyPropSpec with FileCheck {
         val out = Output(UInt(8.W))
       })
       io.out := io.in
-      val cov = cover(io.in === 3.U)
-      val assm = chisel3.assume(io.in =/= 2.U)
-      val asst = chisel3.assert(io.out === io.in)
+      layer.elideBlocks {
+        val cov = cover(io.in === 3.U)
+        val assm = chisel3.assume(io.in =/= 2.U)
+        val asst = chisel3.assert(io.out === io.in)
+      }
     }
     // check that verification appear in verilog output
     ChiselStage.emitSystemVerilog(new LabelTest).fileCheck() {
