@@ -388,16 +388,19 @@ class PanamaCIRCT {
     )
 
   def circtFirtoolPopulateCHIRRTLToLowFIRRTL(
-    pm:            MlirPassManager,
-    options:       CirctFirtoolFirtoolOptions,
-    module:        MlirModule,
-    inputFilename: String
+    pm:      MlirPassManager,
+    options: CirctFirtoolFirtoolOptions,
+    module:  MlirModule
   ) = MlirLogicalResult(
-    CAPI.circtFirtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, options.get, newString(inputFilename).get)
+    CAPI.circtFirtoolPopulateCHIRRTLToLowFIRRTL(arena, pm.get, options.get)
   )
 
-  def circtFirtoolPopulateLowFIRRTLToHW(pm: MlirPassManager, options: CirctFirtoolFirtoolOptions) = MlirLogicalResult(
-    CAPI.circtFirtoolPopulateLowFIRRTLToHW(arena, pm.get, options.get)
+  def circtFirtoolPopulateLowFIRRTLToHW(
+    pm:            MlirPassManager,
+    options:       CirctFirtoolFirtoolOptions,
+    inputFilename: String
+  ) = MlirLogicalResult(
+    CAPI.circtFirtoolPopulateLowFIRRTLToHW(arena, pm.get, options.get, newString(inputFilename).get)
   )
 
   def circtFirtoolPopulateHWToSV(pm: MlirPassManager, options: CirctFirtoolFirtoolOptions) = MlirLogicalResult(
