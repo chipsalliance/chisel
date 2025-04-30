@@ -89,7 +89,7 @@ class PrintfSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitSystemVerilog(new MyModule)
       .fileCheck()(
-        """CHECK: $fwrite(`PRINTF_FD_, "%0t %m %d %x %b %c %%\n", $time, in, in, in, in);"""
+        """CHECK: $fwrite(32'h80000002, "%0t %m %d %x %b %c %%\n", $time, in, in, in, in);"""
       )
   }
 
