@@ -210,40 +210,78 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
     }
 
     // Return a Verilator `HasSimulator` that will dump waves to `trace.vcd`.
-    def verilatorWithWaves = HasSimulator.simulators
+    def verilatorWithVcd = HasSimulator.simulators
       .verilator(verilatorSettings =
         svsim.verilator.Backend.CompilationSettings(
-          traceStyle =
-            Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
+          traceStyle = Some(
+            svsim.verilator.Backend.CompilationSettings.TraceStyle
+              .Vcd(traceUnderscore = true, maxArraySize = 1024, maxWidth = 1024, traceDepth = 1024)
+          )
         )
       )
 
-    it("should dump a waveform when enableWaves is used") {
+    // Return a Verilator `HasSimulator` that will dump waves to `trace.fst`.
+    def verilatorWithFst = HasSimulator.simulators
+      .verilator(verilatorSettings =
+        svsim.verilator.Backend.CompilationSettings(
+          traceStyle = Some(
+            svsim.verilator.Backend.CompilationSettings.TraceStyle
+              .Fst(traceUnderscore = true, maxArraySize = 1024, maxWidth = 1024, traceDepth = 1024, traceThreads = 2)
+          )
+        )
+      )
 
-      implicit val vaerilator = verilatorWithWaves
+    it("should dump a VCD waveform when traceStyle is Vcd and enableWaves is used") {
+
+      implicit val vaerilator = verilatorWithVcd
 
       class Foo extends Module {
         stop()
       }
 
-      val vcdFile = FileSystems
+      val waveFile = FileSystems
         .getDefault()
         .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.vcd")
         .toFile
 
-      vcdFile.delete
+      waveFile.delete
 
       simulateRaw(new Foo) { _ =>
         enableWaves()
       }
 
-      info(s"$vcdFile exists")
-      vcdFile should (exist)
+      info(s"$waveFile exists")
+      waveFile should (exist)
+      waveFile.length() should be > 1L
+    }
+
+    it("should dump a FST waveform when traceStyle is Fst and enableWaves is used") {
+
+      implicit val vaerilator = verilatorWithFst
+
+      class Foo extends Module {
+        stop()
+      }
+
+      val waveFile = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.fst")
+        .toFile
+
+      waveFile.delete
+
+      simulateRaw(new Foo) { _ =>
+        enableWaves()
+      }
+
+      info(s"$waveFile exists")
+      waveFile should (exist)
+      waveFile.length() should be > 1L
     }
 
     it("should dump a waveform using ChiselSim settings") {
 
-      implicit val vaerilator = verilatorWithWaves
+      implicit val vaerilator = verilatorWithVcd
 
       class Foo extends Module {
         stop()
