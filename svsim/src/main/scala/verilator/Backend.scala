@@ -8,9 +8,54 @@ import scala.collection.mutable
 
 object Backend {
   object CompilationSettings {
-    sealed trait TraceStyle
+    sealed trait TraceStyle {
+      private[verilator] def traceArgs: Seq[String] = Seq("--trace") ++
+        Option.when(traceUnderscore)("--trace-underscore") ++
+        Option.when(maxArraySize > 0)(s"--trace-max-array-size=$maxArraySize") ++
+        Option.when(maxWidth > 0)(s"--trace-max-width=$maxWidth") ++
+        Option.when(traceDepth > 0)(s"--trace-depth=$traceDepth")
+
+      def traceUnderscore: Boolean
+      def maxArraySize:    Int
+      def maxWidth:        Int
+      def traceDepth:      Int
+    }
     object TraceStyle {
-      case class Vcd(traceUnderscore: Boolean = false, filename: String = "") extends TraceStyle
+
+      /**
+        * Trace style for VCD files.
+        *
+        * @param traceUnderscore Enable tracing of _signals
+        * @param maxArraySize Maximum array depth for tracing
+        * @param maxWidth Maximum bit width for tracing
+        * @param traceDepth Depth of tracing
+        */
+      case class Vcd(
+        traceUnderscore: Boolean = false,
+        maxArraySize:    Int = 0,
+        maxWidth:        Int = 0,
+        traceDepth:      Int = 0
+      ) extends TraceStyle
+
+      /**
+        * Trace style for FST files.
+        *
+        * @param traceUnderscore Enable tracing of _signals
+        * @param maxArraySize Maximum array depth for tracing
+        * @param maxWidth Maximum bit width for tracing
+        * @param traceDepth Depth of tracing
+        * @param traceThreads Enable FST waveform creation on separate threads
+        */
+      case class Fst(
+        traceUnderscore: Boolean = false,
+        maxArraySize:    Int = 0,
+        maxWidth:        Int = 0,
+        traceDepth:      Int = 0,
+        traceThreads:    Int = 0
+      ) extends TraceStyle {
+        override def traceArgs: Seq[String] = super.traceArgs ++ Seq("--trace-fst") ++
+          Option.when(traceThreads > 0)(s"--trace-threads=$traceThreads")
+      }
     }
 
     object Timing {
@@ -89,12 +134,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
           },
 
           backendSpecificSettings.traceStyle match {
-            case Some(TraceStyle.Vcd(traceUnderscore, _)) =>
-              if (traceUnderscore) {
-                Seq("--trace", "--trace-underscore")
-              } else {
-                Seq("--trace")
-              }
+            case Some(traceStyle) => traceStyle.traceArgs
             case None => Seq()
           },
 
