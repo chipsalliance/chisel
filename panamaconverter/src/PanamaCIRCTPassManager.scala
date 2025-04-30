@@ -18,9 +18,9 @@ private[panamaconverter] class PanamaCIRCTPassManager(
 
   def populatePreprocessTransforms(): Boolean = isSuccess(circt.circtFirtoolPopulatePreprocessTransforms(pm, options))
   def populateCHIRRTLToLowFIRRTL(): Boolean = isSuccess(
-    circt.circtFirtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirModule, "-")
+    circt.circtFirtoolPopulateCHIRRTLToLowFIRRTL(pm, options, mlirModule)
   )
-  def populateLowFIRRTLToHW(): Boolean = isSuccess(circt.circtFirtoolPopulateLowFIRRTLToHW(pm, options))
+  def populateLowFIRRTLToHW(): Boolean = isSuccess(circt.circtFirtoolPopulateLowFIRRTLToHW(pm, options, "-"))
   def populateLowHWToSV():     Boolean = isSuccess(circt.circtFirtoolPopulateHWToSV(pm, options))
   def populateExportVerilog(callback: String => Unit): Boolean = isSuccess(
     circt.circtFirtoolPopulateExportVerilog(pm, options, callback)
