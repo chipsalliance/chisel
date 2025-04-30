@@ -8,18 +8,22 @@ import scala.collection.mutable
 
 object Backend {
   object CompilationSettings {
-    sealed trait TraceStyle {
-      private[verilator] def traceArgs: Seq[String] = Seq("--trace") ++
-        Option.when(traceUnderscore)("--trace-underscore") ++
-        Option.when(maxArraySize > 0)(s"--trace-max-array-size=$maxArraySize") ++
-        Option.when(maxWidth > 0)(s"--trace-max-width=$maxWidth") ++
-        Option.when(traceDepth > 0)(s"--trace-depth=$traceDepth")
 
+    sealed trait TraceStyle {
       def traceUnderscore: Boolean
       def maxArraySize:    Int
       def maxWidth:        Int
       def traceDepth:      Int
+
+      private[verilator] def traceArgs: Seq[String] = Seq("--trace") ++
+        Option.when(traceUnderscore)("--trace-underscore") ++
+        (
+          Option.when(maxArraySize > 0)(Seq(s"--trace-max-array", maxArraySize.toString)) ++
+            Option.when(maxWidth > 0)(Seq("--trace-max-width", maxWidth.toString)) ++
+            Option.when(traceDepth > 0)(Seq("--trace-depth", traceDepth.toString))
+        ).flatten
     }
+
     object TraceStyle {
 
       /**
@@ -54,7 +58,7 @@ object Backend {
         traceThreads:    Int = 0
       ) extends TraceStyle {
         override def traceArgs: Seq[String] = super.traceArgs ++ Seq("--trace-fst") ++
-          Option.when(traceThreads > 0)(s"--trace-threads=$traceThreads")
+          Option.when(traceThreads > 0)(Seq("--trace-threads", traceThreads.toString)).toSeq.flatten
       }
     }
 
@@ -208,8 +212,11 @@ final class Backend(executablePath: String) extends svsim.Backend {
             commonSettings.verilogPreprocessorDefines,
             backendSpecificSettings.traceStyle match {
               case None => Seq()
-              case Some(value) => Seq(
+              case Some(Backend.CompilationSettings.TraceStyle.Vcd(_,_,_,_)) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
+              )
+              case Some(Backend.CompilationSettings.TraceStyle.Fst(_,_,_,_,_)) => Seq(
+                VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport)
               )
             },
           ).flatten.map(_.toCommandlineArgument(this)),
