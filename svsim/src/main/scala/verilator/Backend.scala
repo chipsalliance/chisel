@@ -15,7 +15,11 @@ object Backend {
       def maxWidth:        Int
       def traceDepth:      Int
 
-      private[verilator] def traceArgs: Seq[String] = Seq("--trace") ++
+      private[verilator] def traceArgs: Seq[String] = Seq(
+        "--trace",
+        "--trace-structs",
+        "--trace-params" // Maybe useful when having parameterized BlackBoxes
+      ) ++
         Option.when(traceUnderscore)("--trace-underscore") ++
         (
           Option.when(maxArraySize > 0)(Seq(s"--trace-max-array", maxArraySize.toString)) ++
