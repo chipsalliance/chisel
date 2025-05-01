@@ -89,8 +89,8 @@ trait FileCheck {
       // Filecheck needs to have the thing to check in a file.
       //
       // TODO: This could be made ephemeral or use a named pipe?
-      // os.makeDir(os.RelPath(testingDirectory.getDirectory))
-      val dir = os.pwd / os.RelPath(testingDirectory.getDirectory)
+      val testingDir = os.FilePath(testingDirectory.getDirectory)
+      val dir = testingDir.resolveFrom(os.pwd)
       os.makeDir.all(dir)
       val tempDir = os.temp.dir(dir = dir, deleteOnExit = false)
       val checkFile = tempDir / "check"
