@@ -207,7 +207,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       thrown.getMessage must include("Observed value: 'UInt<66>(36)")
       thrown.getMessage must include("Expected value: 'UInt<66>(35)")
       thrown.getMessage must include("dut.io.out.bits.expect(expectedBits)")
-      thrown.getMessage must include("Expected the value of element 'vDot' to be ")
+      thrown.getMessage must include("element 'vDot'")
     }
 
     it("should report failed expect of Records with Vec fields correctly") {
@@ -242,7 +242,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
         }
       }
       thrown.getMessage must include("dut.io.out.bits.expect(expRecord)")
-      thrown.getMessage must include("Expected the value of element 'vOutProduct' to be ")
+      thrown.getMessage must include("element 'vOutProduct'")
     }
   }
 }
