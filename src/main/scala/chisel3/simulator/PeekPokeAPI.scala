@@ -114,7 +114,7 @@ sealed trait TestableAggregate[T <: Aggregate] extends PeekPokable[T] {
 
   /**
    * Expect the value of a data port to be equal to the expected value, skipping all uninitialized elements.
-   * 
+   *
    * @param expected the expected value
    *  @param message a message for the failure case
    * @throws FailedExpectationException if the observed value does not match the expected value
@@ -123,7 +123,7 @@ sealed trait TestableAggregate[T <: Aggregate] extends PeekPokable[T] {
 
   /**
    * Expect the value of a data port to be equal to the expected value, skipping all uninitialized elements.
-   * 
+   *
    * @param expected the expected value
    * @throws FailedExpectationException if the observed value does not match the expected value
    */
