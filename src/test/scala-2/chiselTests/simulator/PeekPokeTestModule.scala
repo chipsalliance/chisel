@@ -53,6 +53,9 @@ object PeekPokeTestModule {
     }: _*
   )
 
+  def calcExpectedVecProduct(v1: Vec[UInt], v2: Vec[UInt], w: Int): Vec[Vec[UInt]] =
+    calcExpectedVecProduct(v1.map(_.litValue), v2.map(_.litValue), w)
+
   def calcExpectedVDotBigInt(v1: Seq[BigInt], v2: Seq[BigInt]): BigInt = v1.zip(v2).map { case (x, y) => x * y }.sum
 
   def calcExpectedVDot(v1: Seq[BigInt], v2: Seq[BigInt], w: Int = -1): UInt = {
