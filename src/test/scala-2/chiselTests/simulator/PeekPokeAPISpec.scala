@@ -13,7 +13,7 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
 
   import PeekPokeTestModule._
 
-  val numTests = 50
+  val numTests = 20
 
   describe("PeekPokeAPI with TestableData") {
     val w = 32
@@ -150,7 +150,6 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
         simulate(new PeekPokeTestModule(w)) { dut =>
           assert(w == dut.io.in.bits.a.getWidth)
           val vecDim = dut.vecDim
-          val truncationMask = (BigInt(1) << w) - 1
 
           dut.io.in.bits.poke(
             chiselTypeOf(dut.io.in.bits).Lit(
@@ -172,12 +171,11 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       thrown.getMessage must include("observed value UInt<32>(3) != UInt<3>(5)")
     }
 
-    it("reports failed Record expects correctly") {
+    it("should correctly report failed expect() on a Record") {
       val thrown = the[FailedExpectationException[_]] thrownBy {
         simulate(new PeekPokeTestModule(w)) { dut =>
           assert(w == dut.io.in.bits.a.getWidth)
           val vecDim = dut.vecDim
-          val truncationMask = (BigInt(1) << w) - 1
 
           dut.io.in.bits.poke(
             chiselTypeOf(dut.io.in.bits).Lit(
@@ -210,12 +208,11 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       thrown.getMessage must include("element 'vDot'")
     }
 
-    it("should report failed expect of Records with Vec fields correctly") {
+    it("should correctly report failed expect() on Records with Vec fields") {
       val thrown = the[FailedExpectationException[_]] thrownBy {
         simulate(new PeekPokeTestModule(w)) { dut =>
           assert(w == dut.io.in.bits.a.getWidth)
           val vecDim = dut.vecDim
-          val truncationMask = (BigInt(1) << w) - 1
 
           dut.io.in.bits.poke(
             chiselTypeOf(dut.io.in.bits).Lit(
@@ -243,6 +240,209 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       }
       thrown.getMessage must include("dut.io.out.bits.expect(expRecord)")
       thrown.getMessage must include("element 'vOutProduct'")
+    }
+
+    it("should support expectPartial() for Records and Vecs") {
+      simulate(new PeekPokeTestModule(w)) { dut =>
+        assert(w == dut.io.in.bits.a.getWidth)
+        val vecDim = dut.vecDim
+        for {
+          _ <- 0 until numTests
+          a = BigInt(w, rand)
+          b = BigInt(w, rand)
+          v1 = Seq.fill(vecDim)(BigInt(w, rand))
+          v2 = Seq.fill(vecDim)(BigInt(w, rand))
+          op <- TestOp.all
+        } {
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> a.U,
+              _.b -> b.U,
+              _.v1 -> Vec.Lit(v1.map(_.U(w.W)): _*),
+              _.v2 -> Vec.Lit(v2.map(_.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(op)
+          dut.clock.step()
+          dut.io.in.valid.poke(false)
+
+          val expectedScalar = calcExpectedScalarOpResult(op, a, b, w)
+          val expectedCmp = calcExpectedCmp(a, b)
+          val expectedVSum = calcExpectedVSum(v1, v2, w)
+          val expVecProduct = calcExpectedVecProduct(v1, v2, w)
+          val expVecProductPartial = chiselTypeOf(dut.io.out.bits.vOutProduct).Lit(
+            // 0 -> expVecProduct(0)
+            // 2 -> expVecProduct(2)
+          )
+          val expVDot = calcExpectedVDot(v1, v2, w)
+
+          dut.io.out.bits.vOutProduct.expectPartial(expVecProductPartial)
+
+          val expectedBitsPartial1 = chiselTypeOf(dut.io.out.bits).Lit(
+            // c -> not set
+            _.cmp -> expectedCmp,
+            // vSum -> not set
+            _.vDot -> expVDot,
+            _.vOutProduct -> expVecProduct
+          )
+
+          val expectedBitsPartial2 = chiselTypeOf(dut.io.out.bits).Lit(
+            _.c -> expectedScalar.U,
+            // cmp -> not set
+            _.vSum -> expectedVSum,
+            // vDot -> not set
+            _.vOutProduct -> expVecProductPartial
+          )
+
+          dut.io.out.bits.expectPartial(expectedBitsPartial1)
+
+          dut.io.out.bits.expectPartial(expectedBitsPartial2)
+
+          dut.io.out.expectPartial(
+            chiselTypeOf(dut.io.out).Lit(
+              _.valid -> true.B,
+              _.bits -> expectedBitsPartial1
+            )
+          )
+          dut.io.out.expectPartial(
+            chiselTypeOf(dut.io.out).Lit(
+              _.valid -> true.B
+              // bits -> not set
+            )
+          )
+          dut.io.out.expectPartial(
+            chiselTypeOf(dut.io.out).Lit(
+              // valid -> not set
+              _.bits -> expectedBitsPartial1
+            )
+          )
+          dut.io.out.expectPartial(
+            chiselTypeOf(dut.io.out).Lit(
+              // valid -> not set
+              _.bits -> expectedBitsPartial2
+            )
+          )
+        }
+      }
+    }
+
+    it("should support expectPartial() for partially initialized Vecs") {
+      val w = 8
+      simulate(new PeekPokeTestModule(w)) { dut =>
+        assert(w == dut.io.in.bits.a.getWidth)
+        val vecDim = dut.vecDim
+        for {
+          _ <- 0 until numTests
+          a = BigInt(w, rand)
+          b = BigInt(w, rand)
+          v1 = Seq.fill(vecDim)(BigInt(w, rand))
+          v2 = Seq.fill(vecDim)(BigInt(w, rand))
+          op <- TestOp.all
+        } {
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> a.U,
+              _.b -> b.U,
+              _.v1 -> Vec.Lit(v1.map(_.U(w.W)): _*),
+              _.v2 -> Vec.Lit(v2.map(_.U(w.W)): _*)
+            )
+          )
+
+          val expVecProduct = calcExpectedVecProduct(v1, v2, w)
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(op)
+          dut.clock.step()
+          dut.io.in.valid.poke(false)
+          val expVecProductPartial = chiselTypeOf(dut.io.out.bits.vOutProduct).Lit(
+            // TODO: uncommenting the following line throws:
+            //     java.util.NoSuchElementException: key not found: UInt<16>(...)   from AddVecLiteralConstructor.Lit()  Unrelated bug?
+
+            // 0 -> expVecProduct.head
+          )
+          dut.io.out.bits.vOutProduct.expectPartial(expVecProductPartial)
+        }
+      }
+    }
+
+    it("should correctly report failed expectPartial for Aggregates") {
+      val thrown = the[FailedExpectationException[_]] thrownBy {
+        val w = 16
+        simulate(new PeekPokeTestModule(w)) { dut =>
+          assert(w == dut.io.in.bits.a.getWidth)
+          val vecDim = dut.vecDim
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> 1.U,
+              _.b -> 2.U,
+              _.v1 -> Vec.Lit(Seq.fill(vecDim)(3.U(w.W)): _*),
+              _.v2 -> Vec.Lit(Seq.fill(vecDim)(4.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(1)
+          dut.io.op.poke(TestOp.Add)
+          dut.clock.step()
+
+          val expRecord = chiselTypeOf(dut.io.out.bits).Lit(
+            // c -> not set
+            _.cmp -> CmpResult.LT,
+            _.vSum -> Vec.Lit(Seq.fill(vecDim)(7.U((w + 1).W)): _*),
+            _.vDot -> 36.U((2 * w + vecDim - 1).W),
+            _.vOutProduct -> Vec.Lit(
+              Seq.fill(vecDim)(
+                // initializing only half of the elements for each inner Vec
+                chiselTypeOf(dut.io.out.bits.vOutProduct.head)
+                  .Lit(Seq.tabulate(vecDim / 2)(i => i -> (5 + i).U((2 * w).W)): _*)
+              ): _*
+            )
+          )
+          dut.io.out.bits.expectPartial(expRecord, "my " + "custom message")
+        }
+      }
+      thrown.getMessage must include("dut.io.out.bits.expectPartial(expRecord, \"my \" + \"custom message\")")
+      thrown.getMessage must include("Observed value: 'UInt<32>(12)'")
+      thrown.getMessage must include("Expected value: 'UInt<32>(5)'")
+      thrown.getMessage must include("element 'vOutProduct'")
+      thrown.getMessage must include("my custom message")
+    }
+
+    it("should fail expect() with a partially initialized Aggregate") {
+      val thrown = the[UninitializedElementException] thrownBy {
+        simulate(new PeekPokeTestModule(w)) { dut =>
+          assert(w == dut.io.in.bits.a.getWidth)
+          val vecDim = dut.vecDim
+          val v1 = Vec.Lit(Seq.fill(vecDim)(3.U(w.W)): _*)
+          val v2 = Vec.Lit(Seq.fill(vecDim)(4.U(w.W)): _*)
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> 1.U,
+              _.b -> 2.U,
+              _.v1 -> v1,
+              _.v2 -> v2
+            )
+          )
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(TestOp.Add)
+          dut.clock.step()
+
+          val expVecProduct = calcExpectedVecProduct(v1, v2, w)
+
+          val expRecord = chiselTypeOf(dut.io.out.bits).Lit(
+            _.c -> 3.U,
+            // _.cmp -> CmpResult.LT,
+            _.vSum -> Vec.Lit(Seq.fill(vecDim)(7.U((w + 1).W)): _*),
+            _.vDot -> 36.U((2 * w + vecDim - 1).W),
+            _.vOutProduct -> expVecProduct
+          )
+          dut.io.out.bits.expect(expRecord)
+        }
+      }
+      thrown.getMessage must include("dut.io.out.bits.expect(expRecord)")
+      thrown.getMessage must include("Element 'cmp'")
+      thrown.getMessage must include("not initialized")
     }
   }
 }

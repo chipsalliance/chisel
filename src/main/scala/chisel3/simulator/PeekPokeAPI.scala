@@ -72,6 +72,8 @@ sealed trait AnyTestableData[T <: Data] {
 
 trait PeekPokable[T <: Data] extends Peekable[T] with Pokable[T] with AnyTestableData[T]
 
+trait PeekPokeApiException extends NoStackTrace
+
 /**
   * Exception thrown when an expectation fails.
   *
@@ -88,7 +90,7 @@ case class FailedExpectationException[T <: Serializable](observed: T, expected: 
                    |$message""".stripMargin
       )
     )
-    with NoStackTrace
+    with PeekPokeApiException
 
 object FailedExpectationException {
   def apply[T <: Serializable](
@@ -109,6 +111,25 @@ object FailedExpectationException {
     new FailedExpectationException[T](observed, expected, fullMessage)
   }
 }
+
+case class UninitializedElementException(message: String)(implicit sourceInfo: SourceInfo)
+    extends RuntimeException(
+      {
+        val extraContext =
+          sourceInfo match {
+            case sl: SourceLine =>
+              ExceptionHelpers.getErrorLineInFile(Seq(), sl)
+            case _ =>
+              Seq()
+          }
+        dramaticMessage(
+          header = Some("Uninitialized Element"),
+          body = s"$message ${sourceInfo.makeMessage()}" +
+            (if (extraContext.nonEmpty) s"\n${extraContext.mkString("\n")}" else "")
+        )
+      }
+    )
+    with PeekPokeApiException
 
 sealed trait TestableAggregate[T <: Aggregate] extends PeekPokable[T] {
 
@@ -361,9 +382,9 @@ object PeekPokeAPI {
     ): Unit = {
       data.elements.foreach { case (elName, portEl) =>
         expected.elements(elName) match {
-          case expEl if expEl.topBindingOpt == Some(DontCareBinding()) =>
+          case expEl: Element if expEl.topBindingOpt == Some(DontCareBinding()) =>
             if (!allowPartial) {
-              throw new Exception(
+              throw new UninitializedElementException(
                 s"Element '$elName' in the expected value is not initialized"
               )
             }
@@ -397,7 +418,7 @@ object PeekPokeAPI {
       s"Expectation failed for element '$elName': observed value ${dataToString(observed.elements(elName))} != expected value ${dataToString(expected.elements(elName))}"
 
     override def expectPartial(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, defaultMessageBuilder(_, _, _), allowPartial = true)
+      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = true)
 
     override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
       expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = false)
@@ -448,9 +469,11 @@ object PeekPokeAPI {
       implicit sourceInfo: SourceInfo
     ): Unit = {
       data.getElements.zip(expected).zipWithIndex.foreach {
-        case ((datEl, expEl), idx) if expEl.topBindingOpt == Some(DontCareBinding()) =>
+        case ((datEl: Element, expEl: Element), idx) if expEl.topBindingOpt == Some(DontCareBinding()) =>
           if (!allowPartial)
-            throw new Exception(s"Vec element at index $idx in the expected value is not initialized")
+            throw new UninitializedElementException(
+              s"Vec element at index $idx in the expected value is not initialized"
+            )
         case ((datEl, expEl), idx) if datEl.getClass == expEl.getClass =>
           val message = buildMessage(peek(), expected, idx)
           (allowPartial, datEl) match {
