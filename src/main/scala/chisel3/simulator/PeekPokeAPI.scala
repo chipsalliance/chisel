@@ -213,7 +213,7 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
   * Expect the value of a data port to be equal to the expected value.
   *
   * @param expected the expected value
-  * @param buildMessage a function that builds a message for the failure case
+  * @param buildMessage a function taking (observedValue: T, expectedValue: T) and returning a String message for the failure case
   * @throws FailedExpectationException if the observed value does not match the expected value
   */
   def expect(expected: T, buildMessage: (T, T) => String)(
@@ -233,15 +233,6 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
   override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
     expect(expected, (_: T, _: T) => message)
 
-  final def expect(expected: BigInt, buildMessage: (BigInt, BigInt) => String)(
-    implicit sourceInfo: SourceInfo
-  ): Unit = expect[BigInt](
-    expected,
-    (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
-    buildMessage = (obs: Simulation.Value, exp: BigInt) => buildMessage(obs.asBigInt, exp),
-    sourceInfo = sourceInfo
-  )
-
   final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect[BigInt](
     expected,
     (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
@@ -251,7 +242,12 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
   )
 
   final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, (_: BigInt, _: BigInt) => message)
+    expect[BigInt](
+      expected,
+      (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
+      buildMessage = (_: Simulation.Value, _: BigInt) => message,
+      sourceInfo = sourceInfo
+    )
 
   override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
     require(expected.isLit, s"Expected value: $expected must be a literal")
@@ -263,7 +259,6 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
       sourceInfo = sourceInfo
     )
   }
-
 }
 
 object PeekPokeAPI {
