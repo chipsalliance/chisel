@@ -689,4 +689,29 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
            |""".stripMargin
       )
   }
+
+  it should "create colored probes when used in a layer" in {
+
+    object A extends layer.Layer(layer.LayerConfig.Extract())
+
+    class Baz extends RawModule {
+      val bar = Module(new Bar)
+    }
+    class Bar extends RawModule {
+      val a = dontTouch(WireInit(false.B))
+    }
+
+    class Foo extends RawModule {
+
+      val baz = Module(new Baz)
+
+      layer.block(A) {
+        val result = dontTouch(WireInit(BoringUtils.tapAndRead(baz.bar.a)))
+      }
+    }
+
+    val firrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    firrtl should include("output result_bore : Probe<UInt<1>, A>")
+  }
+
 }

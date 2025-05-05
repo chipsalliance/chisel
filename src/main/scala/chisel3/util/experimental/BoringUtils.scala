@@ -408,7 +408,7 @@ object BoringUtils {
     */
   def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix {
-      boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = None)))
+      boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = Builder.layerStack.headOption)))
     }
     if (tapIntermediate.probeInfo.nonEmpty) {
       probe.read(tapIntermediate)
