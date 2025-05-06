@@ -4,6 +4,7 @@ package chisel3.internal.plugin
 
 import dotty.tools.dotc.*
 import dotty.tools.dotc.ast.tpd
+import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.ast.Trees
 import dotty.tools.dotc.core.Contexts.*
@@ -102,32 +103,44 @@ object BundleHelpers {
       // && (ChiselTypeHelpers.isData(m) || ChiselTypeHelpers.isBoxedData(m))
     }
 
-    val currentFields: List[Tree] = bundleSym.info.decls.toList.collect {
+    val currentFields: List[(String, Tree)] = bundleSym.info.decls.toList.collect {
       case m if isBundleDataField(m) =>
         val name = m.name.show.trim
-        val sel = tpd.Select(thiz, m.name)
-        List(tpd.Literal(Constant(name)), sel)
-    }.flatten.reverse
+        val thisRef: tpd.Tree = tpd.This(bundleSym.asClass)
+        val sel: tpd.Tree = tpd.Select(thisRef, m.termRef)
+        (name, sel)
+    }.reverse
     println(s"current fields: $currentFields")
 
-    def mkTuple(elems: List[Tree]): Tree = {
-      val tupleObj = tpd.ref(requiredModule("scala.Tuple").termRef)
-      tpd.Apply(tupleObj, elems)
+    val vec = tpd.ref(requiredModule("scala.collection.immutable.Vector"))
+    val tuple2 = tpd.ref(requiredModule("scala.Tuple2"))
+
+    val tuples = currentFields.map { case (name, t) =>
+      val n = Literal(Constant(name))
+      TypeApply(
+        Select(tuple2, nme.apply),
+        (n, t).toList
+      )
     }
 
-    val pairTuples: List[Tree] = {
-      currentFields.grouped(2).toList.map {
-        case List(strLit, sel) => mkTuple(List(strLit, sel))       // ("foo", this.foo)
-      }
-    }
+    val rhs =
+      Apply(
+        TypeApply(
+          Select(vec, nme.apply),
+          List(TypeTree(defn.StringType), TypeTree(defn.AnyType))
+        ),
+        tuples
+      )
+  
 
-    val rhs: Tree = mkTuple(pairTuples)
     val elementsSym: Symbol = {
       newSymbol(
         bundleSym.owner,
         Names.termName("_elementsImpl"),
         Flags.Method | Flags.Override | Flags.Protected,
-        Types.ExprType(rhs.tpe)                                  // exact TupleN type
+        Types.ExprType(
+          defn.tupleType(List(defn.StringType, defn.AnyType))
+        )
       )
     }
     val dd =     tpd.DefDef(elementsSym.asTerm, _ => rhs)
