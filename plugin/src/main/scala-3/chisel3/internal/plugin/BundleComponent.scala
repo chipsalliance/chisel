@@ -88,52 +88,52 @@ object BundleHelpers {
     }))
   }
 
-  def generateElements(record: tpd.TypeDef, thiz: tpd.This)(using Context): Unit// tpd.DefDef
-  = {
+  def generateElements(record: tpd.TypeDef, thiz: tpd.This)(using Context): Unit = {
     val bundleSym = record.symbol.asClass
     val recordTpe = requiredClass("chisel3.Record")
     def isBundleDataField(m: Symbol): Boolean = {
       m.isPublic
       && (
         ChiselTypeHelpers.isData(m.info)
-        || ChiselTypeHelpers.isBoxedData(m.info)
+          || ChiselTypeHelpers.isBoxedData(m.info)
       )
       // todo these take valdef, but we have symbol here
       // && ChiselTypeHelpers.inBundle(m)
       // && (ChiselTypeHelpers.isData(m) || ChiselTypeHelpers.isBoxedData(m))
     }
-    println("sym info decls:")
-    bundleSym.info.decls.toList.foreach {x =>
-      println(s"\tx: $x")
-      println(s"\tx.bc: ${x.info.baseClasses}")
-      println(s"\tisDataField: ${isBundleDataField(x)}")
-      println(s"\t\tpublic: ${x.isPublic}")
-      println(s"\t\taccessor: ${x.is(Flags.Accessor)}")
-    }
-    // println(s"sym field decls: ${bundleSym.info.decls.toList}")
+
     val currentFields: List[Tree] = bundleSym.info.decls.toList.collect {
       case m if isBundleDataField(m) =>
         val name = m.name.show.trim
         val sel = tpd.Select(thiz, m.name)
         List(tpd.Literal(Constant(name)), sel)
     }.flatten.reverse
-
-    val elementsSym: Symbol = newSymbol(
-      bundleSym.owner,
-      Names.termName("_elementsImpl"),
-      Flags.Method | Flags.Override | Flags.Protected,
-      Types.ExprType(
-        defn.tupleType(List(defn.StringType, defn.AnyType))
-      )
-    )
-
-    // val vectorApply = nme.apply
-    // val rhs = tpd.Apply(vectorApply, currentFields)
     println(s"current fields: $currentFields")
-    // tpd.DefDef(elementsSym.asTerm, _ => rhs)
 
+    def mkTuple(elems: List[Tree]): Tree = {
+      val tupleObj = tpd.ref(requiredModule("scala.Tuple").termRef)
+      tpd.Apply(tupleObj, elems)
+    }
+
+    val pairTuples: List[Tree] = {
+      currentFields.grouped(2).toList.map {
+        case List(strLit, sel) => mkTuple(List(strLit, sel))       // ("foo", this.foo)
+      }
+    }
+
+    val rhs: Tree = mkTuple(pairTuples)
+    val elementsSym: Symbol = {
+      newSymbol(
+        bundleSym.owner,
+        Names.termName("_elementsImpl"),
+        Flags.Method | Flags.Override | Flags.Protected,
+        Types.ExprType(rhs.tpe)                                  // exact TupleN type
+      )
+    }
+    val dd =     tpd.DefDef(elementsSym.asTerm, _ => rhs)
+    println(s"dd: $dd")
+    dd
   }
-
 }
 
 class BundleComponent extends StandardPlugin {
