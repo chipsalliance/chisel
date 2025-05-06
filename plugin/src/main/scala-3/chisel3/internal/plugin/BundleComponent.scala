@@ -1,0 +1,206 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package chisel3.internal.plugin
+
+import dotty.tools.dotc.*
+import dotty.tools.dotc.ast.tpd
+import dotty.tools.dotc.ast.tpd.*
+import dotty.tools.dotc.ast.Trees
+import dotty.tools.dotc.core.Contexts.*
+import dotty.tools.dotc.core.Symbols.*
+import dotty.tools.dotc.core.Names
+import dotty.tools.dotc.core.StdNames.*
+import dotty.tools.dotc.core.Constants.Constant
+import dotty.tools.dotc.typer.TyperPhase
+import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
+import dotty.tools.dotc.transform.{Erasure, Pickler, PostTyper}
+import dotty.tools.dotc.core.Types
+import dotty.tools.dotc.core.Types.*
+import dotty.tools.dotc.core.Flags
+import dotty.tools.dotc.util.SourcePosition
+import dotty.tools.dotc.core.Decorators.toTermName
+
+import scala.collection.mutable
+
+object BundleHelpers {
+  def cloneTypeFull(tree: Tree)(using Context): Tree = {
+    val cloneSym =
+      requiredMethod("chisel3.reflect.DataMirror.internal.chiselTypeClone")
+    tpd.Apply(
+      tpd.TypeApply(
+        tpd.ref(cloneSym),
+        List(tpd.TypeTree(tree.tpe))
+      ),
+      List(tree)
+    )
+  }
+
+  def generateAutoCloneType(
+    record: tpd.TypeDef,
+    thiz: tpd.This,
+    conArgsOpt: Option[List[List[tpd.Tree]]],
+    isBundle: Boolean
+  )(using Context): Option[tpd.DefDef] = {
+    conArgsOpt.flatMap { conArgs =>
+      val newExpr = tpd.New(record.symbol.typeRef, conArgs.flatten)
+
+      val cloneTypeSym = newSymbol(
+        record.symbol.owner,
+        Names.termName("_cloneTypeImpl"),
+        Flags.Method | Flags.Override | Flags.Protected,
+        MethodType(Nil)(_ => Nil, _ => record.symbol.typeRef)
+      )
+
+      Some(tpd.DefDef(cloneTypeSym.asTerm, _ => newExpr))
+    }
+  }
+
+  def extractConArgs(
+    record: tpd.TypeDef,
+    thiz: tpd.This,
+    isBundle: Boolean
+  )(using Context): Option[List[List[tpd.Tree]]] = {
+    val body = record.rhs.asInstanceOf[tpd.Template].body
+
+    val primaryConstructorOpt = body.collectFirst {
+      case dd: tpd.DefDef if dd.symbol.isPrimaryConstructor => dd
+    }
+
+    val paramAccessors = record.symbol.primaryConstructor.paramSymss.flatten
+
+    if (primaryConstructorOpt.isEmpty) {
+      report.warning("Unable to determine primary constructor!", record.sourcePos)
+      return None
+    }
+
+    val constructor = primaryConstructorOpt.get
+    val paramLookup = paramAccessors.map(sym => sym.name.toString -> sym).toMap
+
+    Some(constructor.termParamss.map(_.map { vp =>
+      val p = paramLookup(vp.name.toString)
+      val select = tpd.Select(thiz, p.name)
+      val cloned: tpd.Tree = if (ChiselTypeHelpers.isData(vp.tpt.tpe))
+        cloneTypeFull(select) else select
+
+      if (vp.tpt.tpe.isRepeatedParam)
+        tpd.SeqLiteral(List(cloned), cloned)
+      else cloned
+    }))
+  }
+
+  def generateElements(record: tpd.TypeDef, thiz: tpd.This)(using Context): Unit// tpd.DefDef
+  = {
+    val bundleSym = record.symbol.asClass
+    val recordTpe = requiredClass("chisel3.Record")
+    def isBundleDataField(m: Symbol): Boolean = {
+      m.isPublic
+      && (
+        ChiselTypeHelpers.isData(m.info)
+        || ChiselTypeHelpers.isBoxedData(m.info)
+      )
+      // todo these take valdef, but we have symbol here
+      // && ChiselTypeHelpers.inBundle(m)
+      // && (ChiselTypeHelpers.isData(m) || ChiselTypeHelpers.isBoxedData(m))
+    }
+    println("sym info decls:")
+    bundleSym.info.decls.toList.foreach {x =>
+      println(s"\tx: $x")
+      println(s"\tx.bc: ${x.info.baseClasses}")
+      println(s"\tisDataField: ${isBundleDataField(x)}")
+      println(s"\t\tpublic: ${x.isPublic}")
+      println(s"\t\taccessor: ${x.is(Flags.Accessor)}")
+    }
+    // println(s"sym field decls: ${bundleSym.info.decls.toList}")
+    val currentFields: List[Tree] = bundleSym.info.decls.toList.collect {
+      case m if isBundleDataField(m) =>
+        val name = m.name.show.trim
+        val sel = tpd.Select(thiz, m.name)
+        List(tpd.Literal(Constant(name)), sel)
+    }.flatten.reverse
+
+    val elementsSym: Symbol = newSymbol(
+      bundleSym.owner,
+      Names.termName("_elementsImpl"),
+      Flags.Method | Flags.Override | Flags.Protected,
+      Types.ExprType(
+        defn.tupleType(List(defn.StringType, defn.AnyType))
+      )
+    )
+
+    // val vectorApply = nme.apply
+    // val rhs = tpd.Apply(vectorApply, currentFields)
+    println(s"current fields: $currentFields")
+    // tpd.DefDef(elementsSym.asTerm, _ => rhs)
+
+  }
+
+}
+
+class BundleComponent extends StandardPlugin {
+  val name:                 String = "BundleComponent"
+  override val description: String = "Bundle handling"
+
+  override def init(options: List[String]): List[PluginPhase] = {
+    (new BundleComponentPhase) :: Nil
+  }
+}
+
+class BundleComponentPhase extends PluginPhase {
+  val phaseName: String = "bundleComponentPhase"
+  override val runsAfter = Set(TyperPhase.name)
+
+  override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
+    println("running bundle")
+    val k = ChiselTypeHelpers.isRecord(record.tpe) && !record.symbol.flags.is(Flags.Abstract)
+    println(s"ChiselTypeHelpers.isRecord(record.tpe): ${ChiselTypeHelpers.isRecord(record.tpe)}")
+    println(s"record.symbol.flags.is(Flags.Abstract): ${record.symbol.flags.is(Flags.Abstract)}")
+    println(s"entering this $k")
+    println(s"record tpe: ${record.tpe}")
+    if (ChiselTypeHelpers.isRecord(record.tpe)
+      && !record.symbol.flags.is(Flags.Abstract)) {
+
+      val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
+      val thiz: tpd.This = tpd.This(record.symbol.asClass)
+      val conArgs: Option[List[List[tpd.Tree]]] = BundleHelpers.extractConArgs(record, thiz, isBundle)
+
+      // ==================== Generate _cloneTypeImpl ====================
+      val cloneTypeImplOpt = BundleHelpers.generateAutoCloneType(record, thiz, conArgs, isBundle)
+
+      println(s"record: $record")
+      println(s"isBundle: $isBundle")
+      // ==================== Generate val elements (Bundles only) ====================
+      val elementsImplOpt =
+        if (isBundle) Some(BundleHelpers.generateElements(record, thiz)) else None
+
+      // ==================== Generate _usingPlugin ====================
+      val usingPluginOpt =
+        if (isBundle) {
+          val isPluginSym = newSymbol(
+            record.symbol.owner,
+            Names.termName("_usingPlugin"),
+            Flags.Method | Flags.Override | Flags.Protected,
+            defn.BooleanType
+          )
+          Some(tpd.DefDef(
+            isPluginSym.asTerm,
+            _ => tpd.Literal(Constant(true))
+          ))
+        } else None
+
+      // val autoTypenameOpt =
+      //   if (BundleHelpers.isAutoTypenamed(record.symbol)) {
+      //     BundleHelpers.generateAutoTypename(record, thiz, conArgs.map(_.flatten))
+      //   } else None
+
+      // val withMethods = BundleHelpers.deriveClassDef(record) { t =>
+      //   deriveTemplate(t) { stats =>
+      //     stats ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt ++ autoTypenameOpt
+      //   }
+      // }
+      super.transformTypeDef(record)
+      // super.transformTypeDef(typed(withMethods).asInstanceOf[tpd.ClassDef])
+    } else {
+      super.transformTypeDef(record)
+    }
+  }
+}
