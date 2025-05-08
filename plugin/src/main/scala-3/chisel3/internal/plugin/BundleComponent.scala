@@ -89,7 +89,7 @@ object BundleHelpers {
     }))
   }
 
-  def generateElements(record: tpd.TypeDef, thiz: tpd.This)(using Context): Unit = {
+  def generateElements(record: tpd.TypeDef, thiz: tpd.This)(using Context): tpd.DefDef = {
     val bundleSym = record.symbol.asClass
     val recordTpe = requiredClass("chisel3.Record")
     def isBundleDataField(m: Symbol): Boolean = {
@@ -98,10 +98,13 @@ object BundleHelpers {
         ChiselTypeHelpers.isData(m.info)
           || ChiselTypeHelpers.isBoxedData(m.info)
       )
-      // todo these take valdef, but we have symbol here
-      // && ChiselTypeHelpers.inBundle(m)
-      // && (ChiselTypeHelpers.isData(m) || ChiselTypeHelpers.isBoxedData(m))
     }
+
+
+    // println(s"symbol decls:")
+    // bundleSym.info.decls.toList.foreach { x =>
+    //   println(s"\t${x}")
+    // }
 
     val currentFields: List[(String, Tree)] = bundleSym.info.decls.toList.collect {
       case m if isBundleDataField(m) =>
@@ -110,28 +113,38 @@ object BundleHelpers {
         val sel: tpd.Tree = tpd.Select(thisRef, m.termRef)
         (name, sel)
     }.reverse
-    println(s"current fields: $currentFields")
+    // println(s"current fields: $currentFields")
 
     val vec = tpd.ref(requiredModule("scala.collection.immutable.Vector"))
     val tuple2 = tpd.ref(requiredModule("scala.Tuple2"))
 
+    val tupleTpe = defn.TupleClass.typeRef.appliedTo(
+      List(defn.StringClass.typeRef, defn.AnyType)
+    )
+
     val tuples = currentFields.map { case (name, t) =>
       val n = Literal(Constant(name))
-      TypeApply(
+      tpd.TypeApply(
         Select(tuple2, nme.apply),
         (n, t).toList
       )
     }
 
-    val rhs =
-      Apply(
-        TypeApply(
-          Select(vec, nme.apply),
-          List(TypeTree(defn.StringType), TypeTree(defn.AnyType))
-        ),
-        tuples
-      )
-  
+    val varargs = SeqLiteral(tuples, TypeTree(tupleTpe))
+    // val wrapped = Typed(varargs, TypeTree(defn.RepeatedParamType))
+    val rhs = Apply(
+      TypeApply(Select(vec, nme.apply), List(TypeTree(tupleTpe))),
+      varargs :: Nil
+    )
+
+    // val rhs =
+    //   Apply(
+    //     TypeApply(
+    //       Select(vec, nme.apply),
+    //       List(TypeTree(tupleTpe))
+    //     ),
+    //     tuples
+    //   )
 
     val elementsSym: Symbol = {
       newSymbol(
@@ -139,7 +152,9 @@ object BundleHelpers {
         Names.termName("_elementsImpl"),
         Flags.Method | Flags.Override | Flags.Protected,
         Types.ExprType(
-          defn.tupleType(List(defn.StringType, defn.AnyType))
+          defn.ArrayClass.typeRef.appliedTo(
+            defn.tupleType(List(defn.StringType, defn.AnyType))
+          )
         )
       )
     }
@@ -174,15 +189,16 @@ class BundleComponentPhase extends PluginPhase {
 
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz: tpd.This = tpd.This(record.symbol.asClass)
-      val conArgs: Option[List[List[tpd.Tree]]] = BundleHelpers.extractConArgs(record, thiz, isBundle)
 
-      // ==================== Generate _cloneTypeImpl ====================
-      val cloneTypeImplOpt = BundleHelpers.generateAutoCloneType(record, thiz, conArgs, isBundle)
+      // todo: test this after genElements
+      // // ==================== Generate _cloneTypeImpl ====================
+      // val conArgs: Option[List[List[tpd.Tree]]] = BundleHelpers.extractConArgs(record, thiz, isBundle)
+      // val cloneTypeImplOpt = BundleHelpers.generateAutoCloneType(record, thiz, conArgs, isBundle)
 
       println(s"record: $record")
       println(s"isBundle: $isBundle")
       // ==================== Generate val elements (Bundles only) ====================
-      val elementsImplOpt =
+      val elementsImplOpt: Option[tpd.DefDef] =
         if (isBundle) Some(BundleHelpers.generateElements(record, thiz)) else None
 
       // ==================== Generate _usingPlugin ====================
@@ -200,18 +216,25 @@ class BundleComponentPhase extends PluginPhase {
           ))
         } else None
 
+      // todo
       // val autoTypenameOpt =
       //   if (BundleHelpers.isAutoTypenamed(record.symbol)) {
       //     BundleHelpers.generateAutoTypename(record, thiz, conArgs.map(_.flatten))
       //   } else None
 
-      // val withMethods = BundleHelpers.deriveClassDef(record) { t =>
-      //   deriveTemplate(t) { stats =>
-      //     stats ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt ++ autoTypenameOpt
-      //   }
-      // }
-      super.transformTypeDef(record)
-      // super.transformTypeDef(typed(withMethods).asInstanceOf[tpd.ClassDef])
+      val ret = record match {
+        case td @ TypeDef(name, tmpl: tpd.Template) => {
+          val newDefs = elementsImplOpt.toList
+          val newTemplate =
+            if (tmpl.body.size >= 1)
+              cpy.Template(tmpl)(body = newDefs ++ tmpl.body)
+            else
+              cpy.Template(tmpl)(body = newDefs)
+          tpd.cpy.TypeDef(td)(name, newTemplate)
+        }
+        case _ => super.transformTypeDef(record)
+      }
+      ret
     } else {
       super.transformTypeDef(record)
     }
