@@ -1841,7 +1841,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         val in = IO(Input(UInt(8.W)))
         val out = IO(Output(UInt(4.W)))
         out :#= in
-        // Easier mistake for users to make, name will be null for error above
+        // Easy mistake for users to make, name will be null for error above.
         override val desiredName: String = "Top"
       }
       val e = intercept[ChiselException] {
