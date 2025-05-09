@@ -18,6 +18,7 @@ import chisel3.util.simpleClassName
 
 import scala.reflect.ClassTag
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /** User-specified directions.
   */
@@ -471,7 +472,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
 
-  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
+  // Only used in error messages, this is not allowed to fail
+  private[chisel3] def parentNameOpt: Option[String] = try {
+    this._parent.map(_.name)
+  } catch {
+    case NonFatal(_) => Some("<unknown>")
+  }
 
   /** Useful information for recoverable errors that will allow the error to deduplicate */
   private[chisel3] def _localErrorContext: String = {
