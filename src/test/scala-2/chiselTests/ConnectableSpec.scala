@@ -1836,6 +1836,21 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         ChiselStage.emitCHIRRTL({ new MyModule() })
       }
     }
+    it("(8.n) Errors should be reasonable even if the name of the parent Module is null") {
+      class MyModule extends Module {
+        val in = IO(Input(UInt(8.W)))
+        val out = IO(Output(UInt(4.W)))
+        out :#= in
+        // Easy mistake for users to make, name will be null for error above.
+        override val desiredName: String = "Top"
+      }
+      val e = intercept[ChiselException] {
+        ChiselStage.emitCHIRRTL(new MyModule, args = Array("--throw-on-first-error"))
+      }
+      e.getMessage should include(
+        "mismatched widths of <unknown>.out: IO[UInt<4>] and <unknown>.in: IO[UInt<8>] might require truncation of <unknown>.in: IO[UInt<8>]"
+      )
+    }
   }
   describe("(9): HasCustomConnectable") {
     describe("(9.a) customizing waive behavior") {
