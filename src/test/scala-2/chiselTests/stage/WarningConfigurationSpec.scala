@@ -92,7 +92,7 @@ class WarningConfigurationSpec extends AnyFunSpec with Matchers with chiselTests
   }
 
   private def makeFile(name: String)(contents: String)(implicit testingDirectory: HasTestingDirectory): java.io.File = {
-    val dir = os.pwd / os.RelPath(testingDirectory.getDirectory)
+    val dir = os.FilePath(testingDirectory.getDirectory).resolveFrom(os.pwd)
     os.makeDir.all(dir)
     val file = dir / name
     os.write.over(file, contents)
