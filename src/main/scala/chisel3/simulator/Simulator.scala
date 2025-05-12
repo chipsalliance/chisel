@@ -138,7 +138,7 @@ trait Simulator[T <: Backend] {
       }
 
       override def postVisitDirectory(dir: Path, ioe: java.io.IOException): FileVisitResult = {
-        primarySourcesDirectories += dir.toString()
+        primarySourcesDirectories += dir.toString
         FileVisitResult.CONTINUE
       }
 
