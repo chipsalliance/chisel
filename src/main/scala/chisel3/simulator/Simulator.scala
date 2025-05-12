@@ -2,7 +2,9 @@ package chisel3.simulator
 
 import chisel3.{Data, RawModule}
 import firrtl.options.StageUtils.dramaticMessage
-import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileVisitResult, FileVisitor, Files, Path, Paths}
+import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
@@ -123,12 +125,36 @@ trait Simulator[T <: Backend] {
       )
     workspace.generateAdditionalSources()
 
+    // Find all the directories that exist under another directory.
+    val primarySourcesDirectories = mutable.LinkedHashSet.empty[String]
+    class DirectoryFinder extends FileVisitor[Path] {
+
+      override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+        FileVisitResult.CONTINUE
+      }
+
+      override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+        FileVisitResult.CONTINUE
+      }
+
+      override def postVisitDirectory(dir: Path, ioe: java.io.IOException): FileVisitResult = {
+        primarySourcesDirectories += dir.toString
+        FileVisitResult.CONTINUE
+      }
+
+      override def visitFileFailed(file: Path, ioe: java.io.IOException): FileVisitResult = {
+        throw ioe
+      }
+
+    }
+    Files.walkFileTree(Paths.get(workspace.primarySourcesPath), new DirectoryFinder)
+
     val commonCompilationSettingsUpdated = commonSettingsModifications(
       commonCompilationSettings.copy(
         // Append to the include directorires based on what the
         // workspace indicates is the path for primary sources.  This
         // ensures that `` `include `` directives can be resolved.
-        includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
+        includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) ++ primarySourcesDirectories),
         verilogPreprocessorDefines =
           commonCompilationSettings.verilogPreprocessorDefines ++ settings.preprocessorDefines(elaboratedModule),
         fileFilter =
