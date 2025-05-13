@@ -20,6 +20,7 @@ import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.util.SourcePosition
 import dotty.tools.dotc.core.Decorators.toTermName
+import dotty.tools.dotc.core.Definitions
 
 import scala.collection.mutable
 
@@ -89,6 +90,32 @@ object BundleHelpers {
     }))
   }
 
+  private def ArrayLiteral(values: List[Tree], tpt: Tree)(using Context): Tree = {
+    val clazzOf = TypeApply(ref(defn.Predef_classOf.termRef), tpt :: Nil)
+    val ctag    = Apply(TypeApply(ref(defn.ClassTagModule_apply.termRef), tpt :: Nil), clazzOf :: Nil)
+    val apply   = Select(ref(defn.ArrayModule.termRef), nme.apply)
+    Apply(Apply(TypeApply(apply, tpt :: Nil), values), ctag :: Nil)
+  }
+
+  /** Creates the tuple containing the given elements */
+  def tupleTree(elems: List[Tree])(using Context): Tree = {
+    val arity = elems.length
+    if arity == 0 then
+      ref(defn.EmptyTupleModule)
+    else if arity <= Definitions.MaxTupleArity then
+      // TupleN[elem1Tpe, ...](elem1, ...)
+      ref(defn.TupleType(arity).nn.typeSymbol.companionModule)
+      .select(nme.apply)
+      .appliedToTypes(elems.map(_.tpe.widenIfUnstable))
+      .appliedToArgs(elems)
+    else
+      // TupleXXL.apply(elems*) // TODO add and use Tuple.apply(elems*) ?
+      ref(defn.TupleXXLModule)
+        .select(nme.apply)
+        .appliedToVarargs(elems.map(_.asInstance(defn.ObjectType)), TypeTree(defn.ObjectType))
+        .asInstance(defn.tupleType(elems.map(elem => elem.tpe.widenIfUnstable)))
+  }
+
   def generateElements(record: tpd.TypeDef, thiz: tpd.This)(using Context): tpd.DefDef = {
     val bundleSym = record.symbol.asClass
     val recordTpe = requiredClass("chisel3.Record")
@@ -137,27 +164,15 @@ object BundleHelpers {
       varargs :: Nil
     )
 
-    // val rhs =
-    //   Apply(
-    //     TypeApply(
-    //       Select(vec, nme.apply),
-    //       List(TypeTree(tupleTpe))
-    //     ),
-    //     tuples
-    //   )
-
     val elementsSym: Symbol = {
       newSymbol(
         bundleSym.owner,
         Names.termName("_elementsImpl"),
         Flags.Method | Flags.Override | Flags.Protected,
-        Types.ExprType(
-          defn.ArrayClass.typeRef.appliedTo(
-            defn.tupleType(List(defn.StringType, defn.AnyType))
-          )
-        )
+        MethodType(Nil, Nil, defn.AnyType)
       )
     }
+
     val dd =     tpd.DefDef(elementsSym.asTerm, _ => rhs)
     println(s"dd: $dd")
     dd
