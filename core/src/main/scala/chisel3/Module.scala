@@ -858,7 +858,14 @@ package experimental {
     private[chisel3] def createSecretIO[A <: Data](data: => A)(implicit sourceInfo: SourceInfo): A = {
       val iodef = data
       requireIsChiselType(iodef, "io type")
-      require(!isFullyClosed, "Cannot create secret ports if module is fully closed")
+      if (isFullyClosed)
+        Builder.error(s"Cannot bore or tap into fully closed ${this.name} (from ${Builder.currentModule.get.name})")
+      if (!isIOCreationAllowed)
+        Builder.error(
+          s"Cannot bore or tap into ${this.name} (from ${Builder.currentModule.get.name}) if IO creation is not allowed: ${_whereIOCreationIsDisallowed
+              .map(_.makeMessage { (s: String) => s })
+              .mkString(",")}"
+        )
 
       Module.assignCompatDir(iodef)
       iodef.bind(SecretPortBinding(this), iodef.specifiedDirection)
