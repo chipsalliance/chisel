@@ -859,7 +859,7 @@ package experimental {
       val iodef = data
       requireIsChiselType(iodef, "io type")
       if (isFullyClosed) Builder.error(s"Cannot create secret ports into fully closed ${this.name} (from ${Builder.currentModule.get.name})")
-      if (!isIOCreationAllowed) Builder.error(s"Cannot create secret ports into ${this.name} (from ${Builder.currentModule.get.name}) if IO creation is not allowed")
+      if (!isIOCreationAllowed) Builder.error(s"Cannot create bore or tap into ${this.name} (from ${Builder.currentModule.get.name}) if IO creation is not allowed")
 
       Module.assignCompatDir(iodef)
       iodef.bind(SecretPortBinding(this), iodef.specifiedDirection)
