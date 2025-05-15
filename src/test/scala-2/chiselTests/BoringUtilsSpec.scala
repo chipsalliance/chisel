@@ -704,6 +704,6 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
     val e = intercept[Exception] {
       circt.stage.ChiselStage.emitCHIRRTL(new Bar, args)
     }
-    e.getMessage should include("Cannot create secret ports into Baz (from Bar) if IO creation is not allowed")
+    e.getMessage should include("Cannot bore or tap into Baz (from Bar) if IO creation is not allowed")
   }
 }
