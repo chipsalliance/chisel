@@ -5,6 +5,7 @@ package svsim
 import scala.collection.mutable.Queue
 import scala.util.{Success, Try}
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
+import java.nio.file.{Path, Paths}
 
 final class Simulation private[svsim] (
   executableName:           String,
@@ -12,7 +13,16 @@ final class Simulation private[svsim] (
   val workingDirectoryPath: String,
   moduleInfo:               ModuleInfo
 ) {
-  private val executionScriptPath = s"$workingDirectoryPath/execution-script.txt"
+  private val executionScriptPath = s"$workingDirectory/execution-script.txt"
+
+  def workingDirectory: Path = {
+    val path = Paths.get(workingDirectoryPath)
+    if (path.isAbsolute) {
+      path
+    } else {
+      Simulation.getProjectRootOrCwd.resolve(path)
+    }
+  }
 
   def run[T](body: Simulation.Controller => T): T = run()(body)
   def run[T](
@@ -22,16 +32,17 @@ final class Simulation private[svsim] (
     executionScriptLimit:          Option[Int] = None
   )(body: Simulation.Controller => T): T = {
     val cwd = settings.customWorkingDirectory match {
-      case None => workingDirectoryPath
+      case None => workingDirectory
       case Some(value) =>
-        if (value.startsWith("/"))
-          value
+        val p = Paths.get(value)
+        if (p.isAbsolute)
+          p
         else
-          s"$workingDirectoryPath/$value"
+          workingDirectory.resolve(p)
     }
-    val command = Seq(s"$workingDirectoryPath/$executableName") ++ settings.arguments
+    val command = Seq(s"$workingDirectory/$executableName") ++ settings.arguments
     val processBuilder = new ProcessBuilder(command: _*)
-    processBuilder.directory(new File(cwd))
+    processBuilder.directory(cwd.toFile)
     processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
     val environment = settings.environment ++ Seq(
       Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
@@ -440,4 +451,21 @@ object Simulation {
       }
     }
   }
+
+  /**
+    * Tries to detect the project root (workspace) directory based on "chisel.project.root" Java system property
+    *  as well as CHISEL_PROJECT_ROOT, MILL_WORKSPACE_ROOT (set by mill), and PWD environment variables (tried in that order).
+    * If none of those work, returns the current working directory.
+    *
+    * @return the absolute path to the project root or current working directory
+    */
+  def getProjectRootOrCwd: Path =
+    sys.props
+      .get("chisel.project.root")
+      .orElse(sys.env.get("CHISEL_PROJECT_ROOT"))
+      .orElse(sys.env.get("MILL_WORKSPACE_ROOT"))
+      .orElse(sys.env.get("PWD"))
+      .map(Paths.get("").toAbsolutePath.resolve(_))
+      .getOrElse(Paths.get(""))
+      .toAbsolutePath
 }
