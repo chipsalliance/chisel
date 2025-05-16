@@ -54,7 +54,7 @@ for ((client, decoupled) <- arbiter.clients.zip(needToArbitrate)) {
 ```
 
 This works, but its a bit clunky.
-Considering the implementation of `PriorityArbiter`, is only 6 lines of Scala, it's not ideal that it takes another 4 lines to use it.
+Considering the implementation of `PriorityArbiter` is only 6 lines of Scala, it's not ideal that it takes another 4 lines to use it.
 
 ## Generalizing the Arbiter
 
@@ -77,14 +77,16 @@ However, for our example above, this would be a bit difficult.
 `Decoupled` is defined within Chisel itself--how can a user make Chisel's `Decoupled` inherit from `Arbitrable`?
 
 Instead, we can try something different.
-We could make the Arbiter generic to the type of the client and then use higher-order functions to extract the request and grant signals.
+We could make the Arbiter generic to the type of the client and then require additional function arguments that tell how extract the request and grant signals from the particular client type we are using.
 
 ```scala
 class GenericPriorityArbiter[A <: Data](
     nClients: Int,
     clientType: A
   )(
+    /** Function that indicates how to connect request from type A */
     requestFn: A => Bool,
+    /** Function that indicates how to connect the grant from type A */
     grantFn: (A, Bool) => Unit) extends Module {
   val clients = IO(Vec(nClients, Flipped(clientType)))
 
@@ -98,7 +100,7 @@ class GenericPriorityArbiter[A <: Data](
 ```
 
 You may notice this looks quite similar to the original `PriorityArbiter` in its implementation.
-It uses two parameter lists in order to help the Scala type inferencer derive the types of the functions of the type of the client--we could do this with one parameter list but then it would require explicitly passing the type of the client.
+> NOTE: It uses two parameter lists in order to help the Scala type inferencer derive the types of the functions of the type of the client--we could do this with one parameter list but then it would require explicitly passing the type of the client.
 
 Now we can use it for both our `ArbiterClient` and `Decoupled` interfaces.
 
@@ -131,7 +133,7 @@ arbiter2.clients :<>= clients3
 
 ## Introducing a Type Class
 
-To clean this up even more, we can introduce a type class that captures the "arbitrable" pattern:
+To clean this up even more, we can introduce a _type class_ that captures the "arbitrable" pattern:
 
 ```scala
 trait Arbitrable[A] {
@@ -141,7 +143,7 @@ trait Arbitrable[A] {
 ```
 
 Effectively, we have taken the two arguments to the arbiter and turned them into methods on the type class.
-This looks similar to the proposed object-oriented version of `Arbitrable` above, but note how it is parameterized by the type of the client and accepts the client as an argument.
+This looks similar to the proposed object-oriented version of `Arbitrable` above, but note how it is parameterized by the type of the client and each function defined in the trait accepts the client as an argument.
 
 We can then provide instances of this type class for specific types. For example, for `ArbiterClient` and `Decoupled`:
 
@@ -157,7 +159,7 @@ class DecoupledArbitrable[T <: Data] extends Arbitrable[DecoupledIO[T]] {
 }
 ```
 
-Then, we can refactor the arbiter to use the type class:
+Then, we can refactor the arbiter to use the type class so that we're getting one 'package' of functions for type A, not having to pass them individually:
 
 ```scala
 class GenericPriorityArbiter[A <: Data](nClients: Int, clientType: A, arbitrable: Arbitrable[A]) extends Module {
@@ -184,19 +186,20 @@ val arbiter2 = Module(new GenericPriorityArbiter(4, Decoupled(UInt(8.W)), new De
 arbiter2.clients :<>= clients2
 ```
 
-At least we aren't repeating logic anymore, instead we get to just refer to the type class instance.
+At least we aren't repeating logic anymore, instead we get to reuse the code for making the type class.
 
 However, we can do even better.
 
 ## Implicit Type Class Instances
 
 Scala has a powerful feature called **implicit resolution**.
-This allows us to avoid passing around the type class instance explicitly.
-Instead, we can define the type class instance as an implicit value and the compiler will automatically find it for us.
+This allows us to avoid figuring out what type class we need to instantiate at every call site.
+Instead, we can define a default function to use when a specific type class is needed, and the compiler will automatically find it for us. We do this by making the argument to the function implicit, then making sure the implicit value of the type class is in scope.
 
-Let us rewrite our typeclass instances as implicit values:
+Let us instantiate implicit functions to create our type class instances. This tells the compiler, "if you need a function to create an `Arbitrable[ArbiterClient]`, use this one."
 
 ```scala
+// We could make a def, but since this function is the same every time, we just make this a `val`.
 implicit val arbiterClientArbitrable: Arbitrable[ArbiterClient] =
   new Arbitrable[ArbiterClient] {
     def request(a: ArbiterClient) = a.request
@@ -204,7 +207,8 @@ implicit val arbiterClientArbitrable: Arbitrable[ArbiterClient] =
   }
 
 // In chisel3.util, the type is DecoupledIO while we construct instances of it with Decoupled.
-// Note that this is a def because DecoupledIO itself takes a type parameter.
+// Note that this is a def because DecoupledIO itself takes a type parameter,
+// so we can't reuse the same one for every call-site.
 implicit def decoupledArbitrable[T <: Data]: Arbitrable[DecoupledIO[T]] =
   new Arbitrable[DecoupledIO[T]] {
     def request(a: DecoupledIO[T]) = a.valid
@@ -212,7 +216,7 @@ implicit def decoupledArbitrable[T <: Data]: Arbitrable[DecoupledIO[T]] =
   }
 ```
 
-And then we can refactor the arbiter to use the implicit type class instance:
+Now we can refactor the arbiter to make its `arbitrable` argument `implicit`:
 
 ```scala
 class GenericPriorityArbiter[A <: Data](nClients: Int, clientType: A)(implicit arbitrable: Arbitrable[A]) extends Module {
@@ -239,11 +243,14 @@ val arbiter2 = Module(new GenericPriorityArbiter(4, Decoupled(UInt(8.W))))
 arbiter2.clients :<>= clients2
 ```
 
-This is much cleaner and more readable.
+This is much cleaner and more readable. Even more importantly, it makes it the responsibility of the library
+writer to determine how to make a certain type `Arbitrable`, not everyone who instantiates an arbiter.
 
-Scala also has special syntax for implicit typeclass instances:
+Scala also has special syntax for the second, implicit argument list:
 
 ```scala
+// Equivalent to:
+// class GenericPriorityArbiter[A <: Data](nClients: Int, clientType: A)(implicit arbitrable: Arbitrable[A]) extends Module {
 class GenericPriorityArbiter[A <: Data : Arbitrable](nClients: Int, clientType: A) extends Module {
   ...
 }
@@ -272,7 +279,7 @@ For more information, see [further reading](#further-reading) below.
 ## Conclusion
 
 This example only scratches the surface of what type classes can do in Chisel and Scala.
-Whenever you find yourself passing around the same bits of logic repeatedly, think about whether a type class could capture that pattern.
+Whenever you find yourself passing functions around repeatedly, or are struggling with an inheritance pattern, think about whether a type class could capture that pattern.
 
 ### Further Reading
 
