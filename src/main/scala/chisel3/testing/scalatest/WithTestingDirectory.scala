@@ -54,7 +54,7 @@ trait TestingDirectory extends TestSuiteMixin { self: TestSuite =>
 
     // A sequence of regular expressions and their replacements that should be
     // applied to the test name.
-    val res = Seq("\\s|\\(|\\)|\\$".r -> "-", "\"|\'|#|:".r -> "")
+    val res = Seq("\\s|\\(|\\)|\\$".r -> "-", "\"|\'|#|:|;|<|>".r -> "")
 
     /** Return the test name with minimal sanitization applied:
       *
