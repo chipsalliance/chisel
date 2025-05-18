@@ -341,7 +341,7 @@ object PeekPokeAPI {
       }
     }
 
-    def peekBoolean(): Boolean = peek().litToBoolean
+    def peekBoolean(): Boolean = peekValue().asBigInt == 1
 
     override def expect(expected: Bool)(implicit sourceInfo: SourceInfo): Unit = expect[Bool](
       expected,
@@ -353,13 +353,13 @@ object PeekPokeAPI {
 
     def expect(value: Boolean)(implicit sourceInfo: SourceInfo): Unit = expect(value.B)
 
-    def poke(value: Boolean): Unit = poke(value.B)
+    def poke(value: Boolean): Unit = poke(if (value) 1 else 0)
   }
 
   implicit final class TestableReset(val data: Reset) extends TestableElement[Reset] {
     def encode(width: Int, value: BigInt): Reset = TestableBool(data.asBool).encode(width, value)
 
-    def poke(value: Boolean): Unit = poke(value.B)
+    def poke(value: Boolean): Unit = poke(if (value) 1 else 0)
   }
 
   implicit class TestableEnum[T <: EnumType](val data: T) extends TestableElement[T] {
