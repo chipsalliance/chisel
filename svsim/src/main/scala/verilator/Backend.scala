@@ -12,6 +12,13 @@ object Backend {
     object TraceStyle {
       case class Vcd(traceUnderscore: Boolean = false, filename: String = "") extends TraceStyle
     }
+
+    sealed trait Timing
+    object Timing {
+      case object TimingEnabled extends Timing
+      case object TimingDisabled extends Timing
+      type Type = Timing
+    }
   }
 
   case class CompilationSettings(
@@ -20,7 +27,8 @@ object Backend {
     outputSplitCFuncs:          Option[Int] = None,
     disabledWarnings:           Seq[String] = Seq(),
     disableFatalExitOnWarnings: Boolean = false,
-    enableAllAssertions:        Boolean = false
+    enableAllAssertions:        Boolean = false,
+    timing:                     Option[CompilationSettings.Timing.Type] = None
   ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
@@ -89,6 +97,12 @@ final class Backend(executablePath: String) extends svsim.Backend {
                 Seq("--trace")
               }
             case None => Seq()
+          },
+
+          backendSpecificSettings.timing match {
+            case Some(Timing.TimingEnabled)   => Seq("--timing")
+            case Some(Timing.TimingDisabled)  => Seq("--no-timing")
+            case None                         => Seq()
           },
 
           Seq(
