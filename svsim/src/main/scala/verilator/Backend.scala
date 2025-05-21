@@ -10,7 +10,7 @@ object Backend {
   object CompilationSettings {
 
     sealed trait TraceKind {
-      protected def toCompileFlags: Seq[String]
+      def toCompileFlags: Seq[String]
     }
 
     object TraceKind {
@@ -19,7 +19,14 @@ object Backend {
         * VCD tracing
         */
       case object Vcd extends TraceKind {
-        override protected def toCompileFlags = Seq("--trace")
+        override def toCompileFlags = Seq("--trace")
+      }
+
+      private[Backend] sealed trait FstKind extends TraceKind {
+        val traceThreads: Int
+        override def toCompileFlags =
+          Seq("--trace-fst") ++
+            Option.when(traceThreads > 0)(Seq("--trace-threads", traceThreads.toString)).toSeq.flatten
       }
 
       /**
@@ -27,11 +34,9 @@ object Backend {
         * 
         * @param traceThreads If set to a positive value, enables FST waveform creation using `traceThreads` separate threads
         */
-      case class Fst(traceThreads: Int) extends TraceKind {
-        override protected def toCompileFlags =
-          Seq("--trace-fst") ++
-            Option.when(traceThreads > 0)(Seq("--trace-threads", traceThreads.toString)).toSeq.flatten
-      }
+      case class Fst(traceThreads: Int = 0) extends FstKind
+
+      case object Fst extends FstKind { override val traceThreads = 0 }
     }
 
     case class TraceStyle(
@@ -43,15 +48,15 @@ object Backend {
       maxArraySize:    Int = 0,
       traceDepth:      Int = 0
     ) {
-      def toCompileFlags: Seq[String] =
-        Option.when(traceUnderscore)("--trace-underscore").toSeq ++
-          Option.when(traceStructs)("--trace-structs") ++
-          Option.when(traceParams)("--trace-params") ++
-          (
-            Option.when(maxArraySize > 0)(Seq(s"--trace-max-array", maxArraySize.toString)) ++
-              Option.when(maxWidth > 0)(Seq("--trace-max-width", maxWidth.toString)) ++
-              Option.when(traceDepth > 0)(Seq("--trace-depth", traceDepth.toString))
-          ).flatten
+      def toCompileFlags: Seq[String] = kind.toCompileFlags ++
+        Option.when(traceUnderscore)("--trace-underscore") ++
+        Option.when(traceStructs)("--trace-structs") ++
+        Option.when(traceParams)("--trace-params") ++
+        (
+          Option.when(maxArraySize > 0)(Seq(s"--trace-max-array", maxArraySize.toString)) ++
+            Option.when(maxWidth > 0)(Seq("--trace-max-width", maxWidth.toString)) ++
+            Option.when(traceDepth > 0)(Seq("--trace-depth", traceDepth.toString))
+        ).flatten
     }
 
     object Timing {
@@ -207,7 +212,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
               case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Vcd, _, _, _, _, _, _) ) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
               )
-              case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Fst(_), _, _, _, _, _, _)) => Seq(
+              case Some(Backend.CompilationSettings.TraceStyle(_: Backend.CompilationSettings.TraceKind.FstKind, _, _, _, _, _, _)) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport)
               )
             },
