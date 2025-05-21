@@ -214,8 +214,14 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       .verilator(verilatorSettings =
         svsim.verilator.Backend.CompilationSettings(
           traceStyle = Some(
-            svsim.verilator.Backend.CompilationSettings.TraceStyle
-              .Vcd(traceUnderscore = true, maxArraySize = 1024, maxWidth = 1024, traceDepth = 1024)
+            svsim.verilator.Backend.CompilationSettings
+              .TraceStyle(
+                svsim.verilator.Backend.CompilationSettings.TraceKind.Vcd,
+                traceUnderscore = true,
+                maxArraySize = 1024,
+                maxWidth = 1024,
+                traceDepth = 1024
+              )
           )
         )
       )
@@ -225,8 +231,14 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       .verilator(verilatorSettings =
         svsim.verilator.Backend.CompilationSettings(
           traceStyle = Some(
-            svsim.verilator.Backend.CompilationSettings.TraceStyle
-              .Fst(traceUnderscore = true, maxArraySize = 1024, maxWidth = 1024, traceDepth = 1024, traceThreads = 2)
+            svsim.verilator.Backend.CompilationSettings
+              .TraceStyle(
+                svsim.verilator.Backend.CompilationSettings.TraceKind.Fst(2),
+                traceUnderscore = true,
+                maxArraySize = 1024,
+                maxWidth = 1024,
+                traceDepth = 1024
+              )
           )
         )
       )

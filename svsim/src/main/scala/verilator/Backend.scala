@@ -9,61 +9,49 @@ import scala.collection.mutable
 object Backend {
   object CompilationSettings {
 
-    sealed trait TraceStyle {
-      def traceUnderscore: Boolean
-      def maxArraySize:    Int
-      def maxWidth:        Int
-      def traceDepth:      Int
-
-      private[verilator] def traceArgs: Seq[String] = Seq(
-        "--trace",
-        "--trace-structs",
-        "--trace-params" // Maybe useful when having parameterized BlackBoxes
-      ) ++
-        Option.when(traceUnderscore)("--trace-underscore") ++
-        (
-          Option.when(maxArraySize > 0)(Seq(s"--trace-max-array", maxArraySize.toString)) ++
-            Option.when(maxWidth > 0)(Seq("--trace-max-width", maxWidth.toString)) ++
-            Option.when(traceDepth > 0)(Seq("--trace-depth", traceDepth.toString))
-        ).flatten
+    sealed trait TraceKind {
+      protected def toCompileFlags: Seq[String]
     }
 
-    object TraceStyle {
+    object TraceKind {
 
       /**
-        * Trace style for VCD files.
-        *
-        * @param traceUnderscore Enable tracing of _signals
-        * @param maxArraySize Maximum array depth for tracing
-        * @param maxWidth Maximum bit width for tracing
-        * @param traceDepth Depth of tracing
+        * VCD tracing
         */
-      case class Vcd(
-        traceUnderscore: Boolean = false,
-        maxArraySize:    Int = 0,
-        maxWidth:        Int = 0,
-        traceDepth:      Int = 0
-      ) extends TraceStyle
-
-      /**
-        * Trace style for FST files.
-        *
-        * @param traceUnderscore Enable tracing of _signals
-        * @param maxArraySize Maximum array depth for tracing
-        * @param maxWidth Maximum bit width for tracing
-        * @param traceDepth Depth of tracing
-        * @param traceThreads Enable FST waveform creation on separate threads
-        */
-      case class Fst(
-        traceUnderscore: Boolean = false,
-        maxArraySize:    Int = 0,
-        maxWidth:        Int = 0,
-        traceDepth:      Int = 0,
-        traceThreads:    Int = 0
-      ) extends TraceStyle {
-        override def traceArgs: Seq[String] = super.traceArgs ++ Seq("--trace-fst") ++
-          Option.when(traceThreads > 0)(Seq("--trace-threads", traceThreads.toString)).toSeq.flatten
+      case object Vcd extends TraceKind {
+        override protected def toCompileFlags = Seq("--trace")
       }
+
+      /**
+        * FST tracing
+        * 
+        * @param traceThreads If set to a positive value, enables FST waveform creation using `traceThreads` separate threads
+        */
+      case class Fst(traceThreads: Int) extends TraceKind {
+        override protected def toCompileFlags =
+          Seq("--trace-fst") ++
+            Option.when(traceThreads > 0)(Seq("--trace-threads", traceThreads.toString)).toSeq.flatten
+      }
+    }
+
+    case class TraceStyle(
+      kind:            TraceKind,
+      traceUnderscore: Boolean = false,
+      traceStructs:    Boolean = true,
+      traceParams:     Boolean = false,
+      maxWidth:        Int = 0,
+      maxArraySize:    Int = 0,
+      traceDepth:      Int = 0
+    ) {
+      def toCompileFlags: Seq[String] =
+        Option.when(traceUnderscore)("--trace-underscore").toSeq ++
+          Option.when(traceStructs)("--trace-structs") ++
+          Option.when(traceParams)("--trace-params") ++
+          (
+            Option.when(maxArraySize > 0)(Seq(s"--trace-max-array", maxArraySize.toString)) ++
+              Option.when(maxWidth > 0)(Seq("--trace-max-width", maxWidth.toString)) ++
+              Option.when(traceDepth > 0)(Seq("--trace-depth", traceDepth.toString))
+          ).flatten
     }
 
     object Timing {
@@ -142,7 +130,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
           },
 
           backendSpecificSettings.traceStyle match {
-            case Some(traceStyle) => traceStyle.traceArgs
+            case Some(traceStyle) => traceStyle.toCompileFlags
             case None => Seq()
           },
 
@@ -216,10 +204,10 @@ final class Backend(executablePath: String) extends svsim.Backend {
             commonSettings.verilogPreprocessorDefines,
             backendSpecificSettings.traceStyle match {
               case None => Seq()
-              case Some(Backend.CompilationSettings.TraceStyle.Vcd(_,_,_,_)) => Seq(
+              case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Vcd, _, _, _, _, _, _) ) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
               )
-              case Some(Backend.CompilationSettings.TraceStyle.Fst(_,_,_,_,_)) => Seq(
+              case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Fst(_), _, _, _, _, _, _)) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport)
               )
             },
