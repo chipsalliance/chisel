@@ -38,22 +38,20 @@ object Workspace {
   }
 
   /**
-  * Detect the project root (workspace) directory. It uses the "chisel.project.root" Java system property if it is set.
-  *   Otherwise, checks the environment variables CHISEL_PROJECT_ROOT (can be set by user) and MILL_WORKSPACE_ROOT (set by mill).
-  * If none of those work, returns the current working directory.
-  *
-  * @return the absolute path to the project root or the current working directory
-  */
-  def getProjectRootOrCwd: Path =
-    sys.props
-      .get("chisel.project.root")
-      .orElse(sys.env.get("CHISEL_PROJECT_ROOT"))
-      .orElse(sys.env.get("MILL_WORKSPACE_ROOT"))
-      .map(Paths.get("").toAbsolutePath.resolve(_))
-      .getOrElse(Paths.get(""))
-      .toAbsolutePath
+    * Detect the project root (workspace) directory. It uses the `chisel.project.root` Java system property if it is set.
+    * Otherwise, checks the environment variables `CHISEL_PROJECT_ROOT` (which can be set by user) and `MILL_WORKSPACE_ROOT` (set by mill).
+    * If none of those are available, returns the current working directory.
+    *
+    * @return the absolute path to the project root or the current working directory
+    */
+  def getProjectRootOrCwd: Path = sys.props
+    .get("chisel.project.root")
+    .orElse(sys.env.get("CHISEL_PROJECT_ROOT"))
+    .orElse(sys.env.get("MILL_WORKSPACE_ROOT"))
+    .map(Paths.get("").toAbsolutePath.resolve(_))
+    .getOrElse(Paths.get(""))
+    .toAbsolutePath
 }
-
 final class Workspace(
   path: String,
   /** The prefix for the working directory used when invoking `compile`
