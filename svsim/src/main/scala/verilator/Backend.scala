@@ -13,11 +13,10 @@ object Backend {
       case class Vcd(traceUnderscore: Boolean = false, filename: String = "") extends TraceStyle
     }
 
-    sealed trait Timing
     object Timing {
-      case object TimingEnabled extends Timing
-      case object TimingDisabled extends Timing
-      type Type = Timing
+      sealed trait Type
+      case object TimingEnabled extends Type
+      case object TimingDisabled extends Type
     }
   }
 
