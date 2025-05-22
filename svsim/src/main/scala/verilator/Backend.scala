@@ -10,7 +10,7 @@ object Backend {
   object CompilationSettings {
 
     sealed trait TraceKind {
-      private[svsim] def toCompileFlags: Seq[String]
+      private[Backend] def toCompileFlags: Seq[String]
     }
 
     object TraceKind {
