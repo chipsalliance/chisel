@@ -26,6 +26,7 @@ import chisel3._
   * // Note: if given address 0.U, the above would hardware evaluate to List(10.U, 11.U, 12.U)
   * }}}
   */
+@deprecated("please switching to chisel3.util.experimental.decode API, this API will be removed in Chisel 3.6", "Chisel 3.5")
 object ListLookup {
   def apply[T <: Data](addr: UInt, default: List[T], mapping: Array[(BitPat, List[T])]): List[T] = {
     val map = mapping.map(m => (m._1 === addr, m._2))
@@ -47,6 +48,7 @@ object ListLookup {
   * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPat]] (compared against addr) and the
   *          output value if the BitPat matches
   */
+@deprecated("please switching to chisel3.util.experimental.decode API, this API will be removed in Chisel 3.6", "Chisel 3.5")
 object Lookup {
   def apply[T <: Bits](addr: UInt, default: T, mapping: Seq[(BitPat, T)]): T =
     ListLookup(addr, List(default), mapping.map(m => (m._1, List(m._2))).toArray).head
