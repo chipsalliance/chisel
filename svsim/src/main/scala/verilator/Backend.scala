@@ -10,7 +10,7 @@ object Backend {
   object CompilationSettings {
 
     sealed trait TraceKind {
-      def toCompileFlags: Seq[String]
+      private[svsim] def toCompileFlags: Seq[String]
     }
 
     object TraceKind {
@@ -19,12 +19,12 @@ object Backend {
         * VCD tracing
         */
       case object Vcd extends TraceKind {
-        override def toCompileFlags = Seq("--trace")
+        final def toCompileFlags = Seq("--trace")
       }
 
-      private[Backend] sealed trait FstKind extends TraceKind {
-        val traceThreads: Int
-        override def toCompileFlags =
+      private[Backend] sealed trait FstTraceKind { self: TraceKind =>
+        protected val traceThreads: Int
+        final def toCompileFlags: Seq[String] =
           Seq("--trace-fst") ++
             Option.when(traceThreads > 0)(Seq("--trace-threads", traceThreads.toString)).toSeq.flatten
       }
@@ -34,9 +34,9 @@ object Backend {
         * 
         * @param traceThreads If set to a positive value, enables FST waveform creation using `traceThreads` separate threads
         */
-      case class Fst(traceThreads: Int = 0) extends FstKind
+      case class Fst(traceThreads: Int) extends TraceKind with FstTraceKind
 
-      case object Fst extends FstKind { override val traceThreads = 0 }
+      case object Fst extends TraceKind with FstTraceKind { override val traceThreads = 0 }
     }
 
     case class TraceStyle(
@@ -212,7 +212,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
               case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Vcd, _, _, _, _, _, _) ) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
               )
-              case Some(Backend.CompilationSettings.TraceStyle(_: Backend.CompilationSettings.TraceKind.FstKind, _, _, _, _, _, _)) => Seq(
+              case Some(Backend.CompilationSettings.TraceStyle(_: Backend.CompilationSettings.TraceKind.FstTraceKind, _, _, _, _, _, _)) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport)
               )
             },
