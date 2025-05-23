@@ -91,10 +91,11 @@ object BundleHelpers {
   }
 
   private def ArrayLiteral(values: List[Tree], tpt: Tree)(using Context): Tree = {
-    val clazzOf = TypeApply(ref(defn.Predef_classOf.termRef), tpt :: Nil)
-    val ctag    = Apply(TypeApply(ref(defn.ClassTagModule_apply.termRef), tpt :: Nil), clazzOf :: Nil)
-    val apply   = Select(ref(defn.ArrayModule.termRef), nme.apply)
-    Apply(Apply(TypeApply(apply, tpt :: Nil), values), ctag :: Nil)
+    // val clazzOf = TypeApply(ref(defn.Predef_classOf.termRef), tpt :: Nil)
+    // val ctag    = Apply(TypeApply(ref(defn.ClassTagModule_apply.termRef), tpt :: Nil), clazzOf :: Nil)
+    val apply   = Select(ref(defn.SeqModule.termRef), nme.apply)
+    // Apply(Apply(TypeApply(apply, tpt :: Nil), values), ctag :: Nil)
+    Apply(TypeApply(apply, tpt :: Nil), values)
   }
 
   /** Creates the tuple containing the given elements */
@@ -133,37 +134,20 @@ object BundleHelpers {
     //   println(s"\t${x}")
     // }
 
-    val currentFields: List[(String, Tree)] = bundleSym.info.decls.toList.collect {
+    val currentFields: List[Tree] = bundleSym.info.decls.toList.collect {
       case m if isBundleDataField(m) =>
         val name = m.name.show.trim
         val thisRef: tpd.Tree = tpd.This(bundleSym.asClass)
         val sel: tpd.Tree = tpd.Select(thisRef, m.termRef)
-        (name, sel)
-    }.reverse
-    // println(s"current fields: $currentFields")
-
-    val vec = tpd.ref(requiredModule("scala.collection.immutable.Vector"))
-    val tuple2 = tpd.ref(requiredModule("scala.Tuple2"))
-
-    val tupleTpe = defn.TupleClass.typeRef.appliedTo(
-      List(defn.StringClass.typeRef, defn.AnyType)
-    )
-
-    val tuples = currentFields.map { case (name, t) =>
-      val n = Literal(Constant(name))
-      tpd.TypeApply(
-        Select(tuple2, nme.apply),
-        (n, t).toList
-      )
+        tupleTree(List(tpd.Literal(Constant(name)), sel))
     }
 
-    val varargs = SeqLiteral(tuples, TypeTree(tupleTpe))
-    // val wrapped = Typed(varargs, TypeTree(defn.RepeatedParamType))
-    val rhs = Apply(
-      TypeApply(Select(vec, nme.apply), List(TypeTree(tupleTpe))),
-      varargs :: Nil
-    )
-
+    // val rhs = ArrayLiteral(currentFields, tpd.ref(requiredModule("List[Tree]")))
+    val dataTpe = requiredClassRef("chisel3.Data")
+    // val tupleTpe = defn.TupleClass.typeRef.appliedTo(List(defn.StringClass, dataTpe))
+    val rhs = ArrayLiteral(currentFields, TypeTree(defn.Tuple2.typeRef))
+    // val rhs = ArrayLiteral(currentFields, TypeTree(defn.ListType))
+    println(s"rhs: ${rhs.toString}")
     val elementsSym: Symbol = {
       newSymbol(
         bundleSym.owner,
@@ -173,7 +157,7 @@ object BundleHelpers {
       )
     }
 
-    val dd =     tpd.DefDef(elementsSym.asTerm, _ => rhs)
+    val dd =     tpd.DefDef(elementsSym.asTerm, rhs)
     println(s"dd: $dd")
     dd
   }
