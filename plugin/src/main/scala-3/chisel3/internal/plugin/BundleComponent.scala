@@ -90,12 +90,11 @@ object BundleHelpers {
     }))
   }
 
-  private def ArrayLiteral(values: List[Tree], tpt: Tree)(using Context): Tree = {
-    // val clazzOf = TypeApply(ref(defn.Predef_classOf.termRef), tpt :: Nil)
-    // val ctag    = Apply(TypeApply(ref(defn.ClassTagModule_apply.termRef), tpt :: Nil), clazzOf :: Nil)
-    val apply   = Select(ref(defn.SeqModule.termRef), nme.apply)
-    // Apply(Apply(TypeApply(apply, tpt :: Nil), values), ctag :: Nil)
-    Apply(TypeApply(apply, tpt :: Nil), values)
+  private def makeArray(values: List[Tree])(using Context): Tree = {
+    val elemTpe = defn.AnyType
+    val seqApply = Select(ref(defn.SeqModule.termRef), nme.apply)
+    val typedApply = TypeApply(seqApply, List(TypeTree(elemTpe)))
+    Apply(typedApply, List(SeqLiteral(values, TypeTree(elemTpe))))
   }
 
   /** Creates the tuple containing the given elements */
@@ -128,12 +127,6 @@ object BundleHelpers {
       )
     }
 
-
-    // println(s"symbol decls:")
-    // bundleSym.info.decls.toList.foreach { x =>
-    //   println(s"\t${x}")
-    // }
-
     val currentFields: List[Tree] = bundleSym.info.decls.toList.collect {
       case m if isBundleDataField(m) =>
         val name = m.name.show.trim
@@ -142,12 +135,9 @@ object BundleHelpers {
         tupleTree(List(tpd.Literal(Constant(name)), sel))
     }
 
-    // val rhs = ArrayLiteral(currentFields, tpd.ref(requiredModule("List[Tree]")))
     val dataTpe = requiredClassRef("chisel3.Data")
-    // val tupleTpe = defn.TupleClass.typeRef.appliedTo(List(defn.StringClass, dataTpe))
-    val rhs = ArrayLiteral(currentFields, TypeTree(defn.Tuple2.typeRef))
-    // val rhs = ArrayLiteral(currentFields, TypeTree(defn.ListType))
-    println(s"rhs: ${rhs.toString}")
+    val rhs = makeArray(currentFields)
+
     val elementsSym: Symbol = {
       newSymbol(
         bundleSym.owner,
@@ -157,7 +147,7 @@ object BundleHelpers {
       )
     }
 
-    val dd =     tpd.DefDef(elementsSym.asTerm, rhs)
+    val dd = tpd.DefDef(elementsSym.asTerm, rhs)
     println(s"dd: $dd")
     dd
   }
