@@ -4,16 +4,17 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
-import chisel3.simulator.{HasSimulator, MacroText, Randomization, Settings}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilSuccess
+import chisel3.simulator.{HasSimulator, MacroText, Randomization, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
 import chisel3.util.Counter
 import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
-import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.nio.file.FileSystems
 import scala.reflect.io.Directory
 
 class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck {
@@ -218,9 +219,9 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
               .TraceStyle(
                 svsim.verilator.Backend.CompilationSettings.TraceKind.Vcd,
                 traceUnderscore = true,
-                maxArraySize = 1024,
-                maxWidth = 1024,
-                traceDepth = 1024
+                maxArraySize = Some(1024),
+                maxWidth = Some(1024),
+                traceDepth = Some(1024)
               )
           )
         )
@@ -233,11 +234,11 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
           traceStyle = Some(
             svsim.verilator.Backend.CompilationSettings
               .TraceStyle(
-                svsim.verilator.Backend.CompilationSettings.TraceKind.Fst(2),
+                svsim.verilator.Backend.CompilationSettings.TraceKind.Fst(Some(2)),
                 traceUnderscore = true,
-                maxArraySize = 1024,
-                maxWidth = 1024,
-                traceDepth = 1024
+                maxArraySize = Some(1024),
+                maxWidth = Some(1024),
+                traceDepth = Some(1024)
               )
           )
         )

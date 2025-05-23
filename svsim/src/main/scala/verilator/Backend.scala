@@ -3,59 +3,61 @@
 package svsim.verilator
 
 import svsim._
-import scala.sys.process._
+
 import scala.collection.mutable
+import scala.sys.process._
 
 object Backend {
   object CompilationSettings {
 
-    sealed trait TraceKind {
-      private[Backend] def toCompileFlags: Seq[String]
-    }
-
     object TraceKind {
 
-      /**
-        * VCD tracing
-        */
-      case object Vcd extends TraceKind {
+      sealed trait Type {
+        private[Backend] def toCompileFlags: Seq[String]
+      }
+
+      /** VCD tracing */
+      case object Vcd extends Type {
         final def toCompileFlags = Seq("--trace")
       }
 
-      private[Backend] sealed trait FstTraceKind { self: TraceKind =>
-        protected val traceThreads: Int
-        final def toCompileFlags: Seq[String] =
-          Seq("--trace-fst") ++
-            Option.when(traceThreads > 0)(Seq("--trace-threads", traceThreads.toString)).toSeq.flatten
-      }
-
-      /**
-        * FST tracing
+      /** FST tracing
         * 
-        * @param traceThreads If set to a positive value, enables FST waveform creation using `traceThreads` separate threads
+        * @param traceThreads Enable FST waveform creation using `traceThreads` separate threads
         */
-      case class Fst(traceThreads: Int) extends TraceKind with FstTraceKind
-
-      case object Fst extends TraceKind with FstTraceKind { override val traceThreads = 0 }
+      case class Fst(traceThreads: Option[Int] = None) extends Type {
+        final def toCompileFlags: Seq[String] =
+          Seq("--trace-fst") ++ traceThreads.map(n => Seq("--trace-threads", n.toString)).toSeq.flatten
+      }
     }
 
+    /** Trace style options for verilator
+      *
+      * @param kind The format of the trace to generate, e.g., VCD or FST
+      * @param traceUnderscore Whether to trace signals with names starting with an underscore
+      * @param traceStructs Whether to trace structs
+      * @param traceParams Whether to trace parameters
+      * @param maxWidth The maximum bit width for tracing
+      * @param maxArraySize The maximum array depth for tracing
+      * @param traceDepth The maximum depth of tracing
+      */
     case class TraceStyle(
-      kind:            TraceKind,
+      kind:            TraceKind.Type,
       traceUnderscore: Boolean = false,
       traceStructs:    Boolean = true,
       traceParams:     Boolean = false,
-      maxWidth:        Int = 0,
-      maxArraySize:    Int = 0,
-      traceDepth:      Int = 0
+      maxWidth:        Option[Int] = None,
+      maxArraySize:    Option[Int] = None,
+      traceDepth:      Option[Int] = None
     ) {
       def toCompileFlags: Seq[String] = kind.toCompileFlags ++
         Option.when(traceUnderscore)("--trace-underscore") ++
         Option.when(traceStructs)("--trace-structs") ++
         Option.when(traceParams)("--trace-params") ++
         (
-          Option.when(maxArraySize > 0)(Seq(s"--trace-max-array", maxArraySize.toString)) ++
-            Option.when(maxWidth > 0)(Seq("--trace-max-width", maxWidth.toString)) ++
-            Option.when(traceDepth > 0)(Seq("--trace-depth", traceDepth.toString))
+          maxArraySize.map(n => Seq(s"--trace-max-array", n.toString)) ++
+            maxWidth.map(n => Seq("--trace-max-width", n.toString)) ++
+            traceDepth.map(n => Seq("--trace-depth", n.toString))
         ).flatten
     }
 
@@ -96,8 +98,8 @@ final class Backend(executablePath: String) extends svsim.Backend {
     commonSettings:          CommonCompilationSettings,
     backendSpecificSettings: CompilationSettings
   ): svsim.Backend.Parameters = {
-    import CommonCompilationSettings._
     import Backend.CompilationSettings._
+    import CommonCompilationSettings._
     //format: off
     svsim.Backend.Parameters(
       compilerPath = executablePath,
@@ -212,7 +214,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
               case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Vcd, _, _, _, _, _, _) ) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
               )
-              case Some(Backend.CompilationSettings.TraceStyle(_: Backend.CompilationSettings.TraceKind.FstTraceKind, _, _, _, _, _, _)) => Seq(
+              case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Fst(_), _, _, _, _, _, _)) => Seq(
                 VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport)
               )
             },

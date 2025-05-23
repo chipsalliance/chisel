@@ -5,12 +5,13 @@ package svsimTests
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
+import svsimTests.Resources.TestWorkspace
+
 import java.io.{BufferedReader, FileReader}
 import java.nio.file.{Path, Paths}
+import scala.jdk.StreamConverters._
 import scala.util.Either
 import scala.util.matching.Regex
-import scala.jdk.StreamConverters._
-import svsimTests.Resources.TestWorkspace
 
 class VCSSpec extends BackendSpec {
 
@@ -197,7 +198,7 @@ class VerilatorFstTraceSpec extends BackendSpec {
   import verilator.Backend.CompilationSettings._
   val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
   val compilationSettings = verilator.Backend.CompilationSettings(
-    traceStyle = Some(TraceStyle(TraceKind.Fst, traceUnderscore = true))
+    traceStyle = Some(TraceStyle(TraceKind.Fst(), traceUnderscore = true))
   )
   test("verilator", backend)(compilationSettings)
 
