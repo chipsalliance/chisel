@@ -91,10 +91,11 @@ object BundleHelpers {
   }
 
   private def makeArray(values: List[Tree])(using Context): Tree = {
-    val elemTpe = defn.AnyType
-    val seqApply = Select(ref(defn.SeqModule.termRef), nme.apply)
-    val typedApply = TypeApply(seqApply, List(TypeTree(elemTpe)))
-    Apply(typedApply, List(SeqLiteral(values, TypeTree(elemTpe))))
+  val elemTpe = defn.AnyType
+  val vectorModule = ref(requiredModule("scala.collection.immutable.Vector").termRef)
+  val applySym = vectorModule.symbol.requiredMethod(nme.apply)
+  val typedApply = TypeApply(Select(vectorModule, applySym.name), List(TypeTree(elemTpe)))
+  Apply(typedApply, List(SeqLiteral(values, TypeTree(elemTpe))))
   }
 
   /** Creates the tuple containing the given elements */
