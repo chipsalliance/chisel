@@ -138,14 +138,33 @@ object BundleHelpers {
     val dataTpe = requiredClassRef("chisel3.Data")
     val rhs = makeArray(currentFields)
 
+    // Create outer accessor symbols manually and clone declarations
+    val decls = bundleSym.info.decls
+    val newDecls = decls.cloneScope
+
+    // Mimic newOuterAccessors behavior
+    val outerName = nme.OUTER
+    val outerFlags = Flags.Method | Flags.Synthetic | Flags.Artifact
+    val outerSym = newSymbol(bundleSym, outerName, outerFlags, bundleSym.owner.thisType)
+    newDecls.enter(outerSym)
+
+    val updatedInfo = bundleSym.info match {
+      case classInfo: ClassInfo =>
+        classInfo.derivedClassInfo(decls = newDecls)
+      case other =>
+        report.error("Expected ClassInfo for bundleSym"); other
+    }
+    // bundleSym.updateInfo(updatedInfo)
+
     val elementsSym: Symbol = {
       newSymbol(
-        bundleSym.owner,
+        bundleSym,
         Names.termName("_elementsImpl"),
         Flags.Method | Flags.Override | Flags.Protected,
-        MethodType(Nil, Nil, defn.AnyType)
+        MethodType(Nil, Nil, defn.AnyType),
       )
     }
+    println(s"OUTER: ${elementsSym.info.decl(nme.OUTER).symbol}")
 
     val dd = tpd.DefDef(elementsSym.asTerm, rhs)
     println(s"dd: $dd")
@@ -213,7 +232,7 @@ class BundleComponentPhase extends PluginPhase {
 
       val ret = record match {
         case td @ TypeDef(name, tmpl: tpd.Template) => {
-          val newDefs = elementsImplOpt.toList
+          val newDefs = elementsImplOpt.toList ++ usingPluginOpt.toList
           val newTemplate =
             if (tmpl.body.size >= 1)
               cpy.Template(tmpl)(body = newDefs ++ tmpl.body)
