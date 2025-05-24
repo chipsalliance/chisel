@@ -186,12 +186,6 @@ class BundleComponentPhase extends PluginPhase {
   override val runsAfter = Set(TyperPhase.name)
 
   override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
-    println("running bundle")
-    val k = ChiselTypeHelpers.isRecord(record.tpe) && !record.symbol.flags.is(Flags.Abstract)
-    println(s"ChiselTypeHelpers.isRecord(record.tpe): ${ChiselTypeHelpers.isRecord(record.tpe)}")
-    println(s"record.symbol.flags.is(Flags.Abstract): ${record.symbol.flags.is(Flags.Abstract)}")
-    println(s"entering this $k")
-    println(s"record tpe: ${record.tpe}")
     if (ChiselTypeHelpers.isRecord(record.tpe)
       && !record.symbol.flags.is(Flags.Abstract)) {
 
@@ -200,11 +194,11 @@ class BundleComponentPhase extends PluginPhase {
 
       // todo: test this after genElements
       // // ==================== Generate _cloneTypeImpl ====================
-      // val conArgs: Option[List[List[tpd.Tree]]] = BundleHelpers.extractConArgs(record, thiz, isBundle)
-      // val cloneTypeImplOpt = BundleHelpers.generateAutoCloneType(record, thiz, conArgs, isBundle)
+      val conArgs: Option[List[List[tpd.Tree]]] =
+        BundleHelpers.extractConArgs(record, thiz, isBundle)
+      val cloneTypeImplOpt =
+        BundleHelpers.generateAutoCloneType(record, thiz, conArgs, isBundle)
 
-      println(s"record: $record")
-      println(s"isBundle: $isBundle")
       // ==================== Generate val elements (Bundles only) ====================
       val elementsImplOpt: Option[tpd.DefDef] =
         if (isBundle) Some(BundleHelpers.generateElements(record, thiz)) else None
@@ -232,7 +226,8 @@ class BundleComponentPhase extends PluginPhase {
 
       val ret = record match {
         case td @ TypeDef(name, tmpl: tpd.Template) => {
-          val newDefs = elementsImplOpt.toList ++ usingPluginOpt.toList
+          val newDefs =
+            elementsImplOpt.toList ++ usingPluginOpt.toList ++ cloneTypeImplOpt.toList
           val newTemplate =
             if (tmpl.body.size >= 1)
               cpy.Template(tmpl)(body = newDefs ++ tmpl.body)
