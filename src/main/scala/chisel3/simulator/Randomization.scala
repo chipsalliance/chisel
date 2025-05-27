@@ -75,6 +75,8 @@ object Randomization {
     * that Chisel does not have control of (e.g., blackboxes) will be brought up
     * in a different state unless they opt-in to the FIRRTL/Verilog ABI.
     *
+    * Non-two-state values (i.e., `x`)
+    *
     * @note The FIRRTL/Verilog ABI for randomization is undocumented in the
     * FIRRTL ABI specification.
     */
@@ -83,26 +85,6 @@ object Randomization {
     memories = true,
     delay = Some(1),
     randomValue = Some("$urandom")
-  )
-
-  /** Set everything to `'x`.
-    *
-    * This will put all Chisel-generated Verilog into an `x` state at time 1.
-    * Any blackboxes will be brought up in a state they specify or in a
-    * simulator-dependent state unless they manually implement the
-    * FIRRTL/Verilog randomization ABI.
-    *
-    * @note If a simulator does not support `x`, then this will have a
-    * simulator-dependent effect.  E.g., doing this with Verilator will likely
-    * have no effect.
-    * @note The FIRRTL/Verilog ABI for randomization is undocumented in the
-    * FIRRTL ABI specification.
-    */
-  def x = new Randomization(
-    registers = true,
-    memories = true,
-    delay = Some(1),
-    randomValue = Some("{32{1'bx}}")
   )
 
 }
