@@ -221,6 +221,7 @@ object Lookupable {
     implicit sourceInfo: SourceInfo
   ): B = {
     def impl[C <: Data](d: C): C = d match {
+      case x: Data if !x.isSynthesizable                      => x.asInstanceOf[C]
       case x: Data if ioMap.nonEmpty && ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
       case x: Data if cache.contains(x)                       => cache(x).asInstanceOf[C]
       case _ =>
