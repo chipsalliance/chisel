@@ -454,4 +454,26 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
     )
   }
 
+  behavior.of("Failed earlier tests")
+
+  it should "A" in {
+    class Foo extends RawModule {
+      override def localModulePrefix = Some("A")
+      throw new Exception("A")
+    }
+    intercept[Exception] {
+      ChiselStage.elaborate(new Foo)
+    }
+  }
+
+  it should "B" in {
+    class Foo extends RawModule {
+      override def localModulePrefix = Some("B")
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()("CHECK: module B_Foo")
+  }
+
 }
