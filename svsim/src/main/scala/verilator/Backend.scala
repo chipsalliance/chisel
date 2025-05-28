@@ -132,7 +132,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
           },
 
           commonSettings.defaultTimescale match {
-            case Some(Timescale.FromString(value)) => Seq("--timescale", value)
+            case Some(value) => Seq("--timescale", value.toString)
             case None => Seq()
           },
 

@@ -123,7 +123,6 @@ trait Simulator[T <: Backend] {
         args = chiselOptsModifications(chiselOpts).toSeq,
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
-    workspace.generateAdditionalSources()
 
     // Find all the directories that exist under another directory.
     val primarySourcesDirectories = mutable.LinkedHashSet.empty[String]
@@ -169,6 +168,8 @@ trait Simulator[T <: Backend] {
         )
       )
     )
+
+    workspace.generateAdditionalSources(timescale = commonCompilationSettingsUpdated.defaultTimescale)
 
     // Compile the design.  Early exit if the compilation fails for any reason.
     val compilationStartTime = System.nanoTime()

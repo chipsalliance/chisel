@@ -83,7 +83,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
            |CHECK:      lineNo  line
            |CHECK-NEXT: ---
-           |CHECK-NEXT:      0  [5] %Error:
+           |CHECK-NEXT:      0  [30] %Error:
            |CHECK:      For more information, see the complete log file:
            |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-a-chisel3.assert-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
@@ -108,7 +108,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
            |CHECK:      lineNo  line
            |CHECK-NEXT: ---
-           |CHECK-NEXT:      0  [5] %Error:
+           |CHECK-NEXT:      0  [30] %Error:
            |CHECK:      For more information, see the complete log file:
            |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
@@ -423,6 +423,23 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         info(s"sequential read memory index zero is 42")
         cmemValue should be(42)
       }
+
+    }
+
+    it("should allow setting the frequency to 1GHz") {
+
+      import chisel3.simulator.stimulus.RunUntilFinished
+      import svsim.{CommonCompilationSettings, CommonSettingsModifications}
+
+      class Foo extends Module {
+
+        when(Counter(true.B, 8)._2) {
+          stop()
+        }
+
+      }
+
+      simulate(new Foo)(RunUntilFinished(10, period = 10))
 
     }
 

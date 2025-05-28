@@ -125,7 +125,7 @@ final class Workspace(
   /** Generate additional sources necessary for simulating the module.
     */
   //format: off
-  final def generateAdditionalSources() = {
+  final def generateAdditionalSources(timescale: Option[CommonCompilationSettings.Timescale]) = {
     val dut = _moduleInfo.get
     val ports = dut.ports.zipWithIndex
 
@@ -193,7 +193,7 @@ final class Workspace(
       l("  task run_simulation;")
       l("    input int timesteps;")
       l("    output int finish;")
-      l("    #timesteps;")
+      l(s"    #(timesteps*${timescale.map(_.tickPrecision).getOrElse(1)});")
       l("    finish = 0;")
       l("  endtask")
       l("  `else")

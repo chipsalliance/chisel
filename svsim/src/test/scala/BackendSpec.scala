@@ -45,7 +45,7 @@ class VCSSpec extends BackendSpec {
           import Resources._
           workspace.reset()
           workspace.elaborateGCD()
-          workspace.generateAdditionalSources()
+          workspace.generateAdditionalSources(None)
           val simulation = workspace.compile(
             backend
           )(
@@ -86,7 +86,7 @@ class VCSSpec extends BackendSpec {
           import Resources._
           workspace.reset()
           workspace.elaborateGCD()
-          workspace.generateAdditionalSources()
+          workspace.generateAdditionalSources(None)
           val simulation = workspace.compile(
             backend
           )(
@@ -168,7 +168,7 @@ class VerilatorSpec extends BackendSpec {
       import Resources._
       workspace.reset()
       workspace.elaborateGCD()
-      workspace.generateAdditionalSources()
+      workspace.generateAdditionalSources(None)
       val simulation = workspace.compile(
         backend
       )(
@@ -254,7 +254,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         import Resources._
         workspace.reset()
         workspace.elaborateGCD()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -354,7 +354,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         import Resources._
         workspace.reset()
         workspace.elaborateSIntTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -441,7 +441,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
       it("handles initial statements correctly (#3962)") {
         workspace.reset()
         workspace.elaborateInitialTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -464,7 +464,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
       it("ends the simulation on '$finish' (#4700)") {
         workspace.reset()
         workspace.elaborateFinishTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -497,7 +497,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
       it("should support both $value$plusargs and $test$plusargs") {
         workspace.reset()
         workspace.elaboratePlusArgTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(

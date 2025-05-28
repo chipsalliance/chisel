@@ -24,6 +24,9 @@ trait RunUntilSuccess[A] extends Stimulus.Type[A] {
   /** A function that returns the success port. */
   protected def _getSuccess: (A) => Bool
 
+  /** The clock period in time precision units. */
+  protected def _period: Int
+
   /** Apply stimulus to the unit
     *
     * @param the unit to apply stimulus to
@@ -33,9 +36,14 @@ trait RunUntilSuccess[A] extends Stimulus.Type[A] {
     val clock = module.port(_getClock(dut))
     val success = module.port(_getSuccess(dut))
 
+    require(
+      _period >= 2,
+      s"specified period, '${_period}', must be 2 or greater because an integer half period must be non-zero"
+    )
+
     clock
       .tick(
-        timestepsPerPhase = 1,
+        timestepsPerPhase = _period / 2,
         maxCycles = _maxCycles,
         inPhaseValue = 1,
         outOfPhaseValue = 0,
@@ -58,15 +66,18 @@ object RunUntilSuccess {
     * @param getSuccess a function to return a port which asserts when the
     * simulation has sucessfully finished
     */
-  def module[A <: Module](maxCycles: Int, getSuccess: A => Bool): RunUntilSuccess[A] = new RunUntilSuccess[A] {
+  def module[A <: Module](maxCycles: Int, getSuccess: A => Bool, period: Int = 10): RunUntilSuccess[A] =
+    new RunUntilSuccess[A] {
 
-    override protected final val _maxCycles = maxCycles
+      override protected final val _maxCycles = maxCycles
 
-    override protected final val _getClock = _.clock
+      override protected final val _getClock = _.clock
 
-    override protected final val _getSuccess = getSuccess
+      override protected final val _getSuccess = getSuccess
 
-  }
+      override protected final val _period = period
+
+    }
 
   /** Return stimulus for any type.  This requires the user to specify how to
     * extract the clock and the success port from the type.
@@ -77,15 +88,18 @@ object RunUntilSuccess {
     * @param getSuccess a function to return a port which asserts when the
     * simulation has sucessfully finished
     */
-  def any[A](maxCycles: Int, getClock: A => Clock, getSuccess: A => Bool): RunUntilSuccess[A] = new RunUntilSuccess[A] {
+  def any[A](maxCycles: Int, getClock: A => Clock, getSuccess: A => Bool, period: Int = 10): RunUntilSuccess[A] =
+    new RunUntilSuccess[A] {
 
-    override protected final val _maxCycles = maxCycles
+      override protected final val _maxCycles = maxCycles
 
-    override protected final val _getClock = getClock
+      override protected final val _getClock = getClock
 
-    override protected final val _getSuccess = getSuccess
+      override protected final val _getSuccess = getSuccess
 
-  }
+      override protected final val _period = period
+
+    }
 
   /** Return default stimulus.  This is the same as [[module]].
     *
@@ -94,6 +108,7 @@ object RunUntilSuccess {
     * @param getSuccess a function to return a port which asserts when the
     * simulation has sucessfully finished
     */
-  def apply[A <: Module](maxCycles: Int, getSuccess: A => Bool): RunUntilSuccess[A] = module(maxCycles, getSuccess)
+  def apply[A <: Module](maxCycles: Int, getSuccess: A => Bool, period: Int = 10): RunUntilSuccess[A] =
+    module(maxCycles, getSuccess, period)
 
 }
