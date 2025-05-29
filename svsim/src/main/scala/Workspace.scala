@@ -223,7 +223,7 @@ final class Workspace(
       l("    `endif")
       l("    `ifdef SVSIM_ENABLE_FSDB_TRACING_SUPPORT")
       l("      $fsdbDumpfile({traceFilePath,\".fsdb\"});")
-      l("      $fsdbDumpvars(0, ", dut.instanceName,");")
+      l("      $fsdbDumpvars(0, ", dut.instanceName,", \"+all\");")
       l("      traceSupported = 1;")
       l("    `endif")
       l("  endfunction")
