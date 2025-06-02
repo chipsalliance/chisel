@@ -91,7 +91,7 @@ object RawClockedVoidFunctionCall {
     *
     * Please refer https://github.com/llvm/circt/blob/main/docs/Dialects/FIRRTL/FIRRTLIntrinsics.md#dpi-intrinsic-abi for DPI function ABI.
     * @example {{{
-    * RawClockedVoidFunctionCall("dpi_func_foo", UInt(1.W))(clock, enable, b, c)
+    * RawClockedVoidFunctionCall("dpi_func_foo")(clock, enable, b, c)
     * }}}
     */
   def apply(
