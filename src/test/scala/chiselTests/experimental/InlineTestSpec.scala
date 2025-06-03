@@ -6,7 +6,6 @@ import chisel3.experimental.inlinetest._
 import chisel3.testers._
 import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
-import chisel3.simulator.scalatest.InlineTests
 import chisel3.simulator.ChiselSim
 import chisel3.util.{is, switch, Decoupled}
 import circt.stage.ChiselStage
