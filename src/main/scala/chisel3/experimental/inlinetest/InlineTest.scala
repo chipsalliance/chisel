@@ -83,7 +83,7 @@ private[chisel3] class SimulatedTest private (
   }
   def requirePass() = result match {
     case TestResult.Failure(why) => throw new RuntimeException(s"${dutName}.${testName} failed: ${why}")
-    case _ => ()
+    case _                       => ()
   }
   val success = result match {
     case TestResult.Success => true
