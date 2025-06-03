@@ -454,16 +454,46 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     }
   }
 
-  it should "run one passing and one failing simulation" in {
+  it should "run one passing and one failing-with-signal simulation" in {
     val results = simulateTests(
       new ModuleWithTests,
       tests = TestChoice.Names(Seq("passing", "failing")),
       timeout = 100
     )
     assert(results.size == 2, "Expected exactly two test results")
-    val signalPass = results.find(_.testName == "passing").get
-    val signalFail = results.find(_.testName == "failing").get
-    assertPass(signalPass.result)
-    assertFail("test signaled failure")(signalFail.result)
+    val resultPassing = results.find(_.testName == "passing").get
+    val resultFailing = results.find(_.testName == "failing").get
+    assertPass(resultPassing.result)
+    assertFail("test signaled failure")(resultFailing.result)
+  }
+
+  it should "run one failing-with-assertion and one passing simulation" in {
+    val results = simulateTests(
+      new ModuleWithTests,
+      tests = TestChoice.Names(Seq("assertion", "passing")),
+      timeout = 100
+    )
+    assert(results.size == 2, "Expected exactly two test results")
+    val resultAssertion = results.find(_.testName == "assertion").get
+    val resultPassing = results.find(_.testName == "passing").get
+    assertFail("assertion fired")(resultAssertion.result)
+    assertPass(resultPassing.result)
+  }
+
+  it should "run one failing-with-assertion, one passing, and one failing-with-signal simulation in any order" in {
+    Seq("passing", "failing", "assertion").permutations.foreach { testNames =>
+      val results = simulateTests(
+        new ModuleWithTests,
+        tests = TestChoice.Names(testNames),
+        timeout = 100
+      )
+      assert(results.size == 3, "Expected exactly three test results")
+      val resultAssertion = results.find(_.testName == "assertion").get
+      val resultPassing = results.find(_.testName == "passing").get
+      val resultFailing = results.find(_.testName == "failing").get
+      assertFail("assertion fired")(resultAssertion.result)
+      assertPass(resultPassing.result)
+      assertFail("test signaled failure")(resultFailing.result)
+    }
   }
 }
