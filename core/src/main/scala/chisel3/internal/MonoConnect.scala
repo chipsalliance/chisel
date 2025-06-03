@@ -52,9 +52,8 @@ private[chisel3] object MonoConnect {
     MonoConnectException(
       s"""${formatName(sink)} cannot be written from module ${source.parentNameOpt.getOrElse("(unknown)")}."""
     )
-  def escapedScopeError(data: Data, blockInfo: SourceInfo)(implicit lineInfo: SourceInfo): Unit = {
-    val msg = s"'$data' has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
-    Builder.error(msg)
+  def escapedScopeErrorMsg(data: Data, blockInfo: SourceInfo) = {
+    s"operand '$data' has escaped the scope of the block (${blockInfo.makeMessage()}) in which it was constructed."
   }
   def UnknownRelationException =
     MonoConnectException("Sink or source unavailable to current module.")
@@ -96,6 +95,7 @@ private[chisel3] object MonoConnect {
     x.topBinding match {
       case mp: MemoryPortBinding =>
         None // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
+      case DynamicIndexBinding(vec) => checkBlockVisibility(vec) // This goes with the MemoryPortBinding hack
       case bb: BlockBinding => bb.parentBlock.collect { case b: Block if !visible(b) => b.sourceInfo }
       case _ => None
     }
@@ -284,12 +284,12 @@ private[chisel3] object MonoConnect {
     }
 
     checkBlockVisibility(sink) match {
-      case Some(blockInfo) => escapedScopeError(sink, blockInfo)
+      case Some(blockInfo) => Builder.error(escapedScopeErrorMsg(sink, blockInfo))
       case None            => ()
     }
 
     checkBlockVisibility(source) match {
-      case Some(blockInfo) => escapedScopeError(source, blockInfo)
+      case Some(blockInfo) => Builder.error(escapedScopeErrorMsg(source, blockInfo))
       case None            => ()
     }
 
@@ -516,7 +516,7 @@ private[chisel3] object checkConnect {
     // Import helpers and exception types.
     import MonoConnect.{
       checkBlockVisibility,
-      escapedScopeError,
+      escapedScopeErrorMsg,
       UnknownRelationException,
       UnreadableSourceException,
       UnwritableSinkException
@@ -594,12 +594,12 @@ private[chisel3] object checkConnect {
     else throw UnknownRelationException
 
     checkBlockVisibility(sink) match {
-      case Some(blockInfo) => escapedScopeError(sink, blockInfo)(sourceInfo)
+      case Some(blockInfo) => Builder.error(escapedScopeErrorMsg(sink, blockInfo))(sourceInfo)
       case None            => ()
     }
 
     checkBlockVisibility(source) match {
-      case Some(blockInfo) => escapedScopeError(source, blockInfo)(sourceInfo)
+      case Some(blockInfo) => Builder.error(escapedScopeErrorMsg(source, blockInfo))(sourceInfo)
       case None            => ()
     }
   }

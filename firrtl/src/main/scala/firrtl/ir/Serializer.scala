@@ -4,18 +4,20 @@ package firrtl.ir
 
 import firrtl.annotations.{Annotation, JsonProtocol}
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Version(major: Int, minor: Int, patch: Int) {
   def serialize: String = s"$major.$minor.$patch"
   def incompatible(that: Version): Boolean =
     this.major > that.major || (this.major == that.major && this.minor > that.minor)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Serializer {
   val NewLine = '\n'
   val Indent = "  "
 
   // The version supported by the serializer.
-  val version = Version(4, 2, 0)
+  val version = Version(5, 1, 0)
 
   /** Converts a `FirrtlNode` into its string representation with
     * default indentation.
@@ -282,6 +284,16 @@ object Serializer {
       b ++= "printf("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= string.escape
       if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
       sStmtName(print.name); s(info)
+    case print @ Fprint(info, filename, fargs, string, args, clk, en, _) =>
+      b ++= "fprintf("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= filename.escape; b ++= ", "
+      s(fargs, ", "); if (fargs.nonEmpty) b ++= ", ";
+      b ++= string.escape
+      if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
+      sStmtName(print.name); s(info)
+    case flush @ Flush(info, filename, args, clk) =>
+      b ++= "fflush("; s(clk); b ++= ", UInt<1>(0h1)";
+      filename.foreach { f => b ++= ", "; b ++= f.escape; b ++= ", "; s(args, ", ") }
+      b += ')'; s(info)
     case IsInvalid(info, expr)    => b ++= "invalidate "; s(expr); s(info)
     case DefWire(info, name, tpe) => b ++= "wire "; b ++= legalize(name); b ++= " : "; s(tpe); s(info)
     case DefRegister(info, name, tpe, clock) =>

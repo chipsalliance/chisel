@@ -17,6 +17,7 @@ import scala.collection.mutable
   *   - Complete: moduleOpt is non-empty, and all Instance(_) are followed by OfModule(_)
   *   - Local: tokens does not refer to things through an instance hierarchy (no Instance(_) or OfModule(_) tokens)
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait Target extends Named {
 
   /** @return Module name, if it exists */
@@ -79,6 +80,7 @@ sealed trait Target extends Named {
   def path: Seq[(Instance, OfModule)]
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Target {
   def asTarget(m: ModuleTarget)(e: Expression): ReferenceTarget = e match {
     case r: ir.Reference => m.ref(r.name)
@@ -113,8 +115,15 @@ object Target {
     if (tokens.tail.nonEmpty) {
       tokens.tail.zip(tokens.tail.tail).foreach {
         case (".", value: String) => subComps += Field(value)
-        case ("[", value: String) => subComps += Index(value.toInt)
-        case other                =>
+        case ("[", value: String) =>
+          value.toIntOption match {
+            case Some(lit) => subComps += Index(lit)
+            case None =>
+              throw NamedException(
+                s"${name} contains a dynamic index that Chisel does not support in Target, try wrapping it into WireInit and annotate that."
+              )
+          }
+        case other =>
       }
     }
     subComps.toSeq
@@ -193,6 +202,7 @@ object Target {
   * @param moduleOpt Optional module name
   * @param tokens [[TargetToken]]s to represent the target in a module
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class GenericTarget(moduleOpt: Option[String], tokens: Vector[TargetToken]) extends Target {
 
   override def toGenericTarget: GenericTarget = this
@@ -342,6 +352,7 @@ case class GenericTarget(moduleOpt: Option[String], tokens: Vector[TargetToken])
 /** Concretely points to a FIRRTL target, no generic selectors
   * IsLegal
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait CompleteTarget extends Target {
 
   def getComplete: Option[CompleteTarget] = Some(this)
@@ -363,6 +374,7 @@ trait CompleteTarget extends Target {
 /** A member of a FIRRTL Circuit
   * Concrete Subclasses are: [[ModuleTarget]], [[InstanceTarget]], and [[ReferenceTarget]]
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait IsMember extends CompleteTarget {
 
   /** @return Root module, e.g. top-level module of this target */
@@ -414,6 +426,7 @@ trait IsMember extends CompleteTarget {
 
 /** References a module-like target (e.g. a [[ModuleTarget]] or an [[InstanceTarget]])
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait IsModule extends IsMember {
 
   /** @return Creates a new Target, appending a ref */
@@ -427,6 +440,7 @@ trait IsModule extends IsMember {
 
 /** A component of a FIRRTL Module (e.g. cannot point to a ModuleTarget)
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait IsComponent extends IsMember {
 
   /** Removes n levels of instance hierarchy
@@ -477,6 +491,7 @@ trait IsComponent extends IsMember {
 /** Target pointing to a FIRRTL [[firrtl.ir.DefModule]]
   * @param module Name of the module
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ModuleTarget(module: String) extends IsModule {
 
   override def moduleOpt: Option[String] = Some(module)
@@ -520,6 +535,7 @@ case class ModuleTarget(module: String) extends IsModule {
   * @param ref Name of component
   * @param component Subcomponent of this reference, e.g. field or index
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ReferenceTarget(
   module:            String,
   override val path: Seq[(Instance, OfModule)],
@@ -613,6 +629,7 @@ case class ReferenceTarget(
   * @param instance Name of the instance
   * @param ofModule Name of the instance's module
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class InstanceTarget(
   module:            String,
   override val path: Seq[(Instance, OfModule)],
@@ -677,15 +694,18 @@ case class InstanceTarget(
 }
 
 /** Named classes associate an annotation with a component in a Firrtl circuit */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait Named {
   def toTarget: CompleteTarget
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 final case class ModuleName(name: String) extends Named {
   if (!validModuleName(name)) throw AnnotationException(s"Illegal module name: $name")
   def toTarget: ModuleTarget = ModuleTarget(name)
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 final case class ComponentName(name: String, module: ModuleName) extends Named {
   if (!validComponentName(name)) throw AnnotationException(s"Illegal component name: $name")
   def expr: Expression = toExp(name)

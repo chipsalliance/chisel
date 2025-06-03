@@ -8,3 +8,12 @@ seldridge:
     x: theSchuyler
     github: seldridge
     linkedin: schuylereldridge
+jackkoenig:
+  name: Jack Koenig
+  title: Senior Staff Engineer at SiFive
+  image_url: https://github.com/jackkoenig.png
+  page: true
+  socials:
+    x: jackakattack
+    github: jackkoenig
+    linkedin: koenigjack

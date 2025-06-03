@@ -127,7 +127,7 @@ output. The factory method takes the input IO to the queue and an optional param
 for depth.
 
 ```scala
-val queueOut = Queue(queueIn, depth=10)
+val queueOut = Queue(queueIn, entries=10)
 ```
 
 The latter can be used for composing multiple functions into a single line.
@@ -136,10 +136,10 @@ The latter can be used for composing multiple functions into a single line.
 val queueOut = Queue(
   Arbitrate.byRoundRobin(
     Queue(a), // depth assumed to be 1
-    Queue(b, depth=3),
-    Queue(c, depth=4)
+    Queue(b, entries=3),
+    Queue(c, entries=4)
   ),
-  depth=10
+  entries=10
 )
 ```
 

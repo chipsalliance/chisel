@@ -17,9 +17,9 @@ trait PanamaConverter
     extends ScalaModule
     with HasPanamaOMModule
     with CrossModuleBase
-    with HasScala2Plugin
+    with HasScalaPlugin
     with ScalafmtModule
-    with release.BaseChiselPublishModule {
+    with release.ChiselPublishModule {
   def millSourcePath = super.millSourcePath / os.up
 
   def panamaOMModule = panamaom.cross(crossScalaVersion)

@@ -3,6 +3,7 @@
 package chisel3.testing.scalatest
 
 import chisel3.testing.HasTestingDirectory
+import svsim.Workspace.getProjectRootOrCwd
 import java.nio.file.{FileSystems, Path, Paths}
 import org.scalatest.{TestSuite, TestSuiteMixin}
 import scala.util.DynamicVariable
@@ -32,7 +33,7 @@ trait TestingDirectory extends TestSuiteMixin { self: TestSuite =>
     *
     * For different behavior, please override this in your test suite.
     */
-  def buildDir: Path = Paths.get("build", "chiselsim")
+  def buildDir: Path = getProjectRootOrCwd.resolve("build").resolve("chiselsim")
 
   // Assemble all the directories that should be created for this test.  This is
   // done by examining the test (via a fixture) and then setting a dynamic
@@ -54,7 +55,7 @@ trait TestingDirectory extends TestSuiteMixin { self: TestSuite =>
 
     // A sequence of regular expressions and their replacements that should be
     // applied to the test name.
-    val res = Seq("\\s|\\(|\\)|\\$".r -> "-", "\"|\'|#|:".r -> "")
+    val res = Seq("\\s|\\(|\\)|\\$|/|\\\\".r -> "-", "\"|\'|#|:|;|<|>".r -> "")
 
     /** Return the test name with minimal sanitization applied:
       *

@@ -185,9 +185,15 @@ private[chisel3] object Converter {
       fir.DefObject(convert(info), e.name, className)
     case e @ Stop(_, info, clock, ret) =>
       fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one, e.name)
-    case e @ Printf(_, info, clock, pable) =>
+    case e @ Printf(_, info, filename, clock, pable) =>
+      val mkPrintf = filename match {
+        case None => fir.Print.apply _
+        case Some(f) =>
+          val (ffmt, fargs) = unpack(f, ctx, info)
+          fir.Fprint.apply(_, fir.StringLit(ffmt), fargs.map(a => convert(a, ctx, info)), _, _, _, _, _)
+      }
       val (fmt, args) = unpack(pable, ctx, info)
-      fir.Print(
+      mkPrintf(
         convert(info),
         fir.StringLit(fmt),
         args.map(a => convert(a, ctx, info)),
@@ -195,6 +201,10 @@ private[chisel3] object Converter {
         firrtl.Utils.one,
         e.name
       )
+    case e @ Flush(info, filename, clock) =>
+      val (fmt, args) = filename.map(unpack(_, ctx, info)).getOrElse(("", Seq.empty))
+      val fn = Option.when(fmt.nonEmpty)(fir.StringLit(fmt))
+      fir.Flush(convert(info), fn, args.map(a => convert(a, ctx, info)), convert(clock, ctx, info))
     case e @ ProbeDefine(sourceInfo, sink, probeExpr) =>
       fir.ProbeDefine(convert(sourceInfo), convert(sink, ctx, sourceInfo), convert(probeExpr, ctx, sourceInfo))
     case e @ ProbeForceInitial(sourceInfo, probe, value) =>

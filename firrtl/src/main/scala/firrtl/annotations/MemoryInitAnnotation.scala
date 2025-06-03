@@ -7,11 +7,13 @@ package firrtl.annotations
   * While not supported on normal ASIC flows, it can be useful for simulation and FPGA flows.
   * This annotation is consumed by the verilog emitter.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait MemoryInitAnnotation extends SingleTargetAnnotation[ReferenceTarget] {
   def isRandomInit: Boolean
 }
 
 /** Initialize the `target` memory with inline readmem[hb] statement. */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class MemoryFileInlineAnnotation(
   target:      ReferenceTarget,
   filename:    String,

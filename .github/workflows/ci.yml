@@ -17,7 +17,7 @@ jobs:
     name: ci
     strategy:
       matrix:
-        system: ["ubuntu-22.04"]
+        system: ["ubuntu-24.04"]
         jvm: [21]
         scala: ["2.13.16"]
         espresso: ["2.4"]
@@ -36,7 +36,7 @@ jobs:
   check-tests:
     name: "check tests"
     needs: ci
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       success: ${{ steps.setoutput.outputs.success }}
     steps:
@@ -51,7 +51,7 @@ jobs:
   # See: https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
   all_tests_passed:
     name: "all tests passed"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: always() # Always run so that we never skip this check
     needs: check-tests
       # Pass only if check-tests set its output value
@@ -70,7 +70,7 @@ jobs:
   # separate from a Scala versions build matrix to avoid duplicate publishing
   publish:
     needs: [all_tests_passed]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: github.event_name == 'push'
 
     steps:
@@ -85,7 +85,7 @@ jobs:
         with:
           jvm: temurin:11
       - name: Publish
-        run: ./mill -i io.kipp.mill.ci.release.ReleaseModule/publishAll
+        run: ./mill publish.publishAll
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
@@ -98,7 +98,7 @@ jobs:
 
   deploy_website:
     name: Deploy Website
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     needs: [all_tests_passed]

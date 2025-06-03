@@ -1,8 +1,10 @@
 package build
 
 import mill._
+import mill.api.Result
 import mill.scalalib._
 import mill.scalalib.scalafmt._
+import mill.scalalib.publish.{Artifact, SonatypePublisher}
 
 import $packages._
 import build._
@@ -40,12 +42,16 @@ object v extends Module {
 
   def buildUnits(): Seq[ScalaModule] = {
     scalaCrossVersions.flatMap { ver =>
-      Seq(chisel(ver), stdlib.cross(ver), unipublish)
+      Seq(
+        chisel(ver),
+        stdlib.cross(ver),
+        chisel(ver).test,
+        firrtl.cross(ver).test,
+        svsim.cross(ver).test,
+        unipublish
+      )
     } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
       Seq(
-        chisel(ver2).test,
-        firrtl.cross(ver2).test,
-        svsim.cross(ver2).test,
         `integration-tests`.cross(ver2).test,
         lit.utility.cross(ver2),
         panamaconverter.cross(ver2),
@@ -54,6 +60,10 @@ object v extends Module {
       )
     }
   }
+
+  // Projects that we publish to Maven
+  def publishedProjects: Seq[PublishModule] =
+    pluginScalaCrossVersions.filterNot(isScala3).map(plugin.cross(_)) ++ Seq(unipublish)
 
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
@@ -64,20 +74,21 @@ object v extends Module {
   val scalacheck = ivy"org.scalatestplus::scalacheck-1-18:3.2.19.0"
   val json4s = ivy"org.json4s::json4s-native:4.0.7"
   val dataclass = ivy"io.github.alexarchambault::data-class:0.2.7"
-  val commonText = ivy"org.apache.commons:commons-text:1.13.0"
+  val commonText = ivy"org.apache.commons:commons-text:1.13.1"
   val scopt = ivy"com.github.scopt::scopt:4.1.0"
   val mdoc = ivy"org.scalameta::mdoc:2.6.4"
 
-  def scalaReflect(scalaVersion:  String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
-  def scalaCompiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
-  def scalaLibrary(scalaVersion:  String) = ivy"org.scala-lang:scala-library:$scalaVersion"
+  def scalaReflect(scalaVersion:   String) = ivy"org.scala-lang:scala-reflect:$scalaVersion"
+  def scala2Compiler(scalaVersion: String) = ivy"org.scala-lang:scala-compiler:$scalaVersion"
+  def scala3Compiler(scalaVersion: String) = ivy"org.scala-lang::scala3-compiler:$scalaVersion"
+  def scalaLibrary(scalaVersion:   String) = ivy"org.scala-lang:scala-library:$scalaVersion"
 
   def circt(version: String, os: String, platform: String) =
     s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
 
   val scala2WarnConf = Seq(
     "msg=APIs in chisel3.internal:s",
-    "msg=Importing from firrtl:s",
+    "msg=All APIs in package firrtl:s",
     "msg=migration to the MLIR:s",
     "msg=method hasDefiniteSize in trait IterableOnceOps is deprecated:s", // replacement `knownSize` is not in 2.12
     "msg=object JavaConverters in package collection is deprecated:s",
@@ -143,20 +154,16 @@ trait HasScala2MacroAnno extends CrossModuleBase {
   }
 }
 
-trait HasScala2Plugin extends CrossModuleBase {
+trait HasScalaPlugin extends CrossModuleBase {
   import build_.plugin.Plugin
   def pluginModule: Plugin
 
   override def scalacOptions = Task {
-    if (!v.isScala3(crossScalaVersion)) {
-      super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
-    } else super.scalacOptions()
+    super.scalacOptions() ++ Agg(s"-Xplugin:${pluginModule.jar().path}")
   }
 
   override def scalacPluginClasspath = Task {
-    if (!v.isScala3(crossScalaVersion)) {
-      super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
-    } else super.scalacPluginClasspath()
+    super.scalacPluginClasspath() ++ Agg(pluginModule.jar())
   }
 }
 
@@ -283,7 +290,7 @@ trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingMod
 // TODO: move chisel src to subfolder once we have dropped sbt flow
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin with ScalafmtModule {
+trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin with ScalafmtModule {
   override def millSourcePath = super.millSourcePath / os.up
   def svsimModule = svsim.cross(crossScalaVersion)
   def coreModule = core.cross(crossScalaVersion)
@@ -291,7 +298,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 
   override def scalacOptions = Task {
     if (v.isScala3(crossScalaVersion)) {
-      Seq.empty[String]
+      super.scalacOptions()
     } else {
       super.scalacOptions() ++ v.scala2CommonOptions(Nil)
     }
@@ -316,3 +323,66 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScala2Plugin
 }
 
 object unipublish extends release.Unipublish
+
+/** Tasks for publishing to Sonatype */
+object publish extends Module {
+
+  def getEnvVar(name: String) = Task.Command {
+    Task.env.get(name) match {
+      case Some(value) => Result.Success(value)
+      case None        => Result.Failure(s"Must define environment variable $name")
+    }
+  }
+
+  def sonatypeCredentials: Task[String] = Task.Anon {
+    val username = getEnvVar("SONATYPE_USERNAME")()
+    val password = getEnvVar("SONATYPE_PASSWORD")()
+    s"$username:$password"
+  }
+
+  def importPgp = Task.Anon {
+    val secret = getEnvVar("PGP_SECRET")()
+    os.call(
+      ("gpg", "--import", "--no-tty", "--batch", "--yes"),
+      stdin = java.util.Base64.getDecoder.decode(secret)
+    )
+  }
+
+  // We can't directly use mill.scalalib.PublishModule.publishAll because
+  // there's no easy way to programmatically pick which PublishModules to
+  // publish, and we don't want to publish everything.
+  // We aren't yet publishing Scala 3 cross-builds nor the CIRCT bindings.
+  def publishAll(): Command[Unit] = Task.Command {
+    val sonatypeUrl = "https://s01.oss.sonatype.org/service/local"
+    val sonatypeSnapshotUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+
+    val artifacts: Seq[(Seq[(os.Path, String)], Artifact)] =
+      Task.traverse(v.publishedProjects)(_.publishArtifacts)().map { case PublishModule.PublishData(a, s) =>
+        (s.map { case (p, f) => (p.path, f) }, a)
+      }
+
+    val sonatypeCreds = sonatypeCredentials()
+    // Import GPG, this is mutating the environment
+    importPgp()
+    val pgpPass = getEnvVar("PGP_PASSPHRASE")()
+    val gpgArgs = PublishModule.defaultGpgArgsForPassphrase(Some(pgpPass))
+
+    new SonatypePublisher(
+      sonatypeUrl,
+      sonatypeSnapshotUrl,
+      sonatypeCreds,
+      signed = true,
+      gpgArgs,
+      readTimeout = 10 * 60 * 1000,
+      connectTimeout = 10 * 1000,
+      Task.log,
+      Task.workspace,
+      Task.env,
+      awaitTimeout = 10 * 60 * 1000,
+      stagingRelease = true
+    ).publishAll(
+      release = false, // We like to confirm in the Sonatype UI
+      artifacts: _*
+    )
+  }
+}

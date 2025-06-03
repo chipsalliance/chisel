@@ -6,6 +6,7 @@ package firrtl.options
   * @param message exception message
   * @param cause an underlying Exception that this wraps
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class PhaseException(val message: String, cause: Throwable = null) extends RuntimeException(message, cause)
 
 /** Indicate an error related to a bad [[firrtl.annotations.Annotation Annotation]] or it's command line option
@@ -14,12 +15,15 @@ class PhaseException(val message: String, cause: Throwable = null) extends Runti
   * @param message exception message [[scala.Predef.String String]]
   * @param cause the reason for this exception (a Java [[java.lang.Throwable Throwable]])
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class OptionsException(val message: String, cause: Throwable = null) extends IllegalArgumentException(message, cause)
 
 /** Indicates that a [[Phase]] is missing some mandatory information. This likely occurs either if a user ran something
   * out of order or if the compiler did not run things in the correct order.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class PhasePrerequisiteException(message: String, cause: Throwable = null) extends PhaseException(message, cause)
 
 /** Indicates that a [[Stage]] or [[Phase]] has run into a situation where it cannot continue. */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 final class StageError(val code: ExitFailure = GeneralError, cause: Throwable = null) extends Error("", cause)

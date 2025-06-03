@@ -415,7 +415,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.
     // Perhaps there's a cleaner way of accomplishing this...
-    port.bind(ChildBinding(this), reconstructedResolvedDirection)
+    port.bind(DynamicIndexBinding(this), reconstructedResolvedDirection)
 
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo)
     port.setRef(Node(this), i)

@@ -31,6 +31,7 @@ import scala.collection.mutable
   *    b) Annotations extending [[CustomFileEmission]] are written to the file they specify using the serialization they
   *    define.  They show up in the output Annotation file using their "replacements", if one is specified.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class WriteOutputAnnotations extends Phase {
 
   override def prerequisites =

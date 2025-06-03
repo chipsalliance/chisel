@@ -13,6 +13,7 @@ import scala.collection.mutable
 /** Check that an [[firrtl.AnnotationSeq AnnotationSeq]] has all necessary [[firrtl.annotations.Annotation Annotation]]s
   * for a [[Logger]]
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Checks extends Phase {
 
   override def prerequisites = Seq(Dependency[AddDefaults])

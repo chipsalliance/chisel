@@ -17,6 +17,7 @@ import chisel3.util.simpleClassName
 
 import scala.reflect.ClassTag
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /** User-specified directions.
   */
@@ -510,12 +511,18 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
       case ElementLitBinding(litArg) => "(unhandled literal)"
       case BundleLitBinding(litMap)  => "(unhandled bundle literal)"
       case VecLitBinding(litMap)     => "(unhandled vec literal)"
+      case DynamicIndexBinding(vec)  => _bindingToString(vec.topBinding)
       case _                         => ""
     }
 
   private[chisel3] def earlyName: String = Arg.earlyLocalName(this)
 
-  private[chisel3] def parentNameOpt: Option[String] = this._parent.map(_.name)
+  // Only used in error messages, this is not allowed to fail
+  private[chisel3] def parentNameOpt: Option[String] = try {
+    this._parent.map(_.name)
+  } catch {
+    case NonFatal(_) => Some("<unknown>")
+  }
 
   /** Useful information for recoverable errors that will allow the error to deduplicate */
   private[chisel3] def _localErrorContext: String = {
@@ -687,19 +694,22 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
         true
       case Some(ViewBinding(target, _))           => target.isVisibleFromModule
       case Some(AggregateViewBinding(mapping, _)) => mapping.values.forall(_.isVisibleFromModule)
-      case Some(pb: SecretPortBinding)            => true // Ignore secret to not require visibility
-      case Some(_: UnconstrainedBinding)          => true
-      case _                                      => false
+      case Some(DynamicIndexBinding(vec)) => vec.isVisibleFromModule // Use underlying Vec visibility for dynamic index
+      case Some(pb: SecretPortBinding)    => true // Ignore secret to not require visibility
+      case Some(_: UnconstrainedBinding)  => true
+      case _                              => false
     }
   }
   private[chisel3] def visibleFromBlock: Option[SourceInfo] = MonoConnect.checkBlockVisibility(this)
   private[chisel3] def requireVisible()(implicit info: SourceInfo): Unit = {
+    this.checkVisible.foreach(err => Builder.error(err))
+  }
+  // Some is an error message, None means no error
+  private[chisel3] def checkVisible(implicit info: SourceInfo): Option[String] = {
     if (!isVisibleFromModule) {
-      throwException(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
-    }
-    visibleFromBlock match {
-      case Some(blockInfo) => MonoConnect.escapedScopeError(this, blockInfo)
-      case None            => ()
+      Some(s"operand '$this' is not visible from the current module ${Builder.currentModule.get.name}")
+    } else {
+      visibleFromBlock.map(MonoConnect.escapedScopeErrorMsg(this, _))
     }
   }
 

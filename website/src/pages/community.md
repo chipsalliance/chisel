@@ -12,9 +12,7 @@ import Contributors from './generated/contributors.md'
 
 If you're a Chisel user and want to stay connected to the wider user community, any of the following are great avenues:
 
-- Interact with other Chisel users in one of our Gitter chat rooms:
-  - [Chisel](https://gitter.im/freechipsproject/chisel3)
-  - [FIRRTL](https://gitter.im/freechipsproject/firrtl)
+- Interact with Chisel users and developers in our chat room: [Chisel](https://gitter.im/freechipsproject/chisel3)
 - Ask/Answer [Questions on Stack Overflow using the `[chisel]` tag](https://stackoverflow.com/questions/tagged/chisel)
 - Ask questions and discuss ideas on the Chisel/FIRRTL Mailing Lists:
   - [Chisel Users](https://groups.google.com/forum/#!forum/chisel-users)
@@ -70,14 +68,10 @@ If you want to add your project to the list, let us know on the [Chisel users ma
 
 ## Chisel Developers Community
 
-If you want to get *more involved* with the Chisel/FIRRTL ecosystem of projects, feel free to reach out to us on any of the mediums above. If you prefer to dive right in (or have bugs to report), a complete list of the associated Chisel/FIRRTL ecosystem of projects is below:
+If you want to get *more involved* with the Chisel/FIRRTL ecosystem of projects, feel free to reach out to us on any of the mediums above. If you prefer to dive right in (or have bugs to report), click the Github logo on the top-right of the website header or follow one of the links below:
 
-- [Chisel](https://github.com/freechipsproject/chisel3)
-- [FIRRTL](https://github.com/freechipsproject/firrtl)
-- [Chisel Testers/`chisel3.iotesters`](https://github.com/freechipsproject/chisel-testers)
-- [Chisel Testers2/`chisel3.testers`](https://github.com/ucb-bar/chisel-testers)
-- [Treadle](https://github.com/freechipsproject/treadle)
-- [Diagrammer](https://github.com/freechipsproject/diagrammer)
+- [Chisel](https://github.com/chipsalliance/chisel)
+- [CIRCT](https://github.com/llvm/circt)
 
 ## Contributors
 

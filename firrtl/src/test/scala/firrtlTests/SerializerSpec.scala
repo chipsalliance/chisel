@@ -408,5 +408,25 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
         "42_label"
       )
     ) should include("""assert(`42_clock`, `42_predicate`, `42_enable`, "message %d", `42_arg`) : `42_label`""")
+    info("fprintf okay!")
+    Serializer.serialize(
+      Fprint(
+        NoInfo,
+        StringLit("filename_%0d"),
+        Seq(Reference("x")),
+        StringLit("hello %x"),
+        Seq(Reference("arg")),
+        Reference("clock"),
+        Reference("enable"),
+        "label"
+      )
+    ) should include("""fprintf(clock, enable, "filename_%0d", x, "hello %x", arg) : label""")
+    info("flush okay!")
+    Serializer.serialize(
+      Flush(NoInfo, Some(StringLit("filename_%0d")), Seq(Reference("x")), Reference("clock"))
+    ) should include("""fflush(clock, UInt<1>(0h1), "filename_%0d", x)""")
+    Serializer.serialize(
+      Flush(NoInfo, None, Seq.empty, Reference("clock"))
+    ) should include("""fflush(clock, UInt<1>(0h1))""")
   }
 }

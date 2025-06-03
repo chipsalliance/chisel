@@ -36,6 +36,21 @@ object Workspace {
       FileVisitResult.CONTINUE
     }
   }
+
+  /**
+    * Detect the project root (workspace) directory. It uses the `chisel.project.root` Java system property if it is set.
+    * Otherwise, checks the environment variables `CHISEL_PROJECT_ROOT` (which can be set by user) and `MILL_WORKSPACE_ROOT` (set by mill).
+    * If none of those are available, returns the current working directory.
+    *
+    * @return the absolute path to the project root or the current working directory
+    */
+  def getProjectRootOrCwd: Path = sys.props
+    .get("chisel.project.root")
+    .orElse(sys.env.get("CHISEL_PROJECT_ROOT"))
+    .orElse(sys.env.get("MILL_WORKSPACE_ROOT"))
+    .map(Paths.get("").toAbsolutePath.resolve(_))
+    .getOrElse(Paths.get(""))
+    .toAbsolutePath
 }
 final class Workspace(
   path: String,
@@ -110,7 +125,7 @@ final class Workspace(
   /** Generate additional sources necessary for simulating the module.
     */
   //format: off
-  final def generateAdditionalSources() = {
+  final def generateAdditionalSources(timescale: Option[CommonCompilationSettings.Timescale]) = {
     val dut = _moduleInfo.get
     val ports = dut.ports.zipWithIndex
 
@@ -178,7 +193,7 @@ final class Workspace(
       l("  task run_simulation;")
       l("    input int timesteps;")
       l("    output int finish;")
-      l("    #timesteps;")
+      l(s"    #(timesteps*${timescale.map(_.tickPrecision).getOrElse(1)});")
       l("    finish = 0;")
       l("  endtask")
       l("  `else")
@@ -191,7 +206,11 @@ final class Workspace(
       l("  export \"DPI-C\" function simulation_initializeTrace;")
       l("  function void simulation_initializeTrace;")
       l("    input string traceFilePath;")
-      l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
+      l("    `ifdef SVSIM_ENABLE_FST_TRACING_SUPPORT")
+      l("      $dumpfile({traceFilePath,\".fst\"});")
+      l("      $dumpvars(0, ", dut.instanceName,");")
+      l("      traceSupported = 1;")
+      l("    `elsif SVSIM_ENABLE_VCD_TRACING_SUPPORT")
       l("      $dumpfile({traceFilePath,\".vcd\"});")
       l("      $dumpvars(0, ", dut.instanceName,");")
       l("      traceSupported = 1;")
@@ -204,7 +223,7 @@ final class Workspace(
       l("    `endif")
       l("    `ifdef SVSIM_ENABLE_FSDB_TRACING_SUPPORT")
       l("      $fsdbDumpfile({traceFilePath,\".fsdb\"});")
-      l("      $fsdbDumpvars(0, ", dut.instanceName,");")
+      l("      $fsdbDumpvars(0, ", dut.instanceName,", \"+all\");")
       l("      traceSupported = 1;")
       l("    `endif")
       l("  endfunction")
@@ -213,6 +232,8 @@ final class Workspace(
       l("    output int success;")
       l("    success = traceSupported;")
       l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
+      l("    $dumpon;")
+      l("    `elsif SVSIM_ENABLE_FST_TRACING_SUPPORT")
       l("    $dumpon;")
       l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpon;")
@@ -226,6 +247,8 @@ final class Workspace(
       l("    output int success;")
       l("    success = traceSupported;")
       l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
+      l("    $dumpoff;")
+      l("    `elsif SVSIM_ENABLE_FST_TRACING_SUPPORT")
       l("    $dumpoff;")
       l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpoff;")

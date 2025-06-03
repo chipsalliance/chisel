@@ -7,19 +7,26 @@ import java.io.File
 
 import firrtl.ir._
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class InvalidAnnotationFileException(file: File, cause: FirrtlUserException = null)
     extends FirrtlUserException(s"$file", cause)
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class UnrecogizedAnnotationsException(msg: String) extends FirrtlUserException(s"Unrecognized annotations $msg")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class InvalidAnnotationJSONException(msg: String) extends FirrtlUserException(msg)
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class AnnotationFileNotFoundException(file: File)
     extends FirrtlUserException(
       s"Annotation file $file not found!"
     )
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class AnnotationClassNotFoundException(className: String)
     extends FirrtlUserException(
       s"Annotation class $className not found! Please check spelling and classpath"
     )
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class UnserializableAnnotationException private (msg: String) extends FirrtlUserException(msg)
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object UnserializableAnnotationException {
   private def toMessage(pair: (Annotation, Throwable)): String =
     s"Failed to serialiaze annotation of type ${pair._1.getClass.getName} because '${pair._2.getMessage}'"
@@ -30,6 +37,7 @@ object UnserializableAnnotationException {
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object AnnotationUtils {
 
   /** Returns true if a valid Module name */

@@ -4,6 +4,7 @@ package firrtl
 
 package object options {
 
+  @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
   implicit object StageOptionsView extends OptionsView[StageOptions] {
     def view(options: AnnotationSeq): StageOptions = options.collect { case a: StageOption => a }
       .foldLeft(new StageOptions())((c, x) =>

@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.annotations._
 
 /** Marks modules as "must deduplicate" */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class MustDeduplicateAnnotation(modules: Seq[IsModule]) extends Annotation {
 
   def update(renames: RenameMap): Seq[MustDeduplicateAnnotation] = {

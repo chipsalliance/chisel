@@ -8,12 +8,18 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.options.{HasShellOptions, ShellOption}
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait PassOption
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object InputConfigFileName extends PassOption
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object OutputConfigFileName extends PassOption
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object PassCircuitName extends PassOption
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object PassModuleName extends PassOption
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object PassConfigUtil {
   type PassOptionMap = Map[PassOption, String]
 
@@ -40,8 +46,10 @@ object PassConfigUtil {
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ReplSeqMemAnnotation(inputFileName: String, outputConfig: String) extends NoTargetAnnotation
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object ReplSeqMemAnnotation extends HasShellOptions {
   def parse(t: String): ReplSeqMemAnnotation = {
     val usage = """

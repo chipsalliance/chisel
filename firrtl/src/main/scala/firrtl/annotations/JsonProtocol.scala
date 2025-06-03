@@ -17,6 +17,7 @@ import org.json4s.native.Serialization.{read, write, writePretty}
 import scala.collection.mutable
 import java.io.{StringWriter, Writer}
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait HasSerializationHints {
   // For serialization of complicated constructor arguments, let the annotation
   // writer specify additional type hints for relevant classes that might be
@@ -25,8 +26,10 @@ trait HasSerializationHints {
 }
 
 /** Wrapper [[Annotation]] for Annotations that cannot be serialized */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class UnserializeableAnnotation(error: String, content: String) extends NoTargetAnnotation
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object JsonProtocol extends LazyLogging {
   private val GetClassPattern = "[^']*'([^']+)'.*".r
 

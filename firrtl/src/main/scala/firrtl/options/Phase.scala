@@ -11,6 +11,7 @@ import scala.collection.mutable.LinkedHashSet
 import scala.reflect.ClassTag
 import java.lang.reflect.Modifier
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object Dependency {
   def apply[A <: DependencyAPI[_]: ClassTag]: Dependency[A] = {
     val clazz = reflect.classTag[A].runtimeClass
@@ -45,6 +46,7 @@ object Dependency {
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Dependency[+A <: DependencyAPI[_]](id: Either[Class[_ <: A], A with Singleton]) {
   def getObject(): A = id match {
     case Left(c)  => safeConstruct(c)
@@ -77,6 +79,7 @@ case class Dependency[+A <: DependencyAPI[_]](id: Either[Class[_ <: A], A with S
 /** A polymorphic mathematical transform
   * @tparam A the transformed type
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait TransformLike[A] extends LazyLogging {
 
   /** An identifier of this [[TransformLike]] that can be used for logging and informational printing */
@@ -94,6 +97,7 @@ trait TransformLike[A] extends LazyLogging {
   * type.
   * @tparam A the transformed type
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait IdentityLike[A] { this: TransformLike[A] =>
 
   /** The internal operation of this transform which, in order for this to be an identity function, must return nothing.
@@ -130,6 +134,7 @@ trait IdentityLike[A] { this: TransformLike[A] =>
   * @define seqNote @note The use of a Seq here is to preserve input order. Internally, this will be converted to a private,
   * ordered Set.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
 
   /** All transform that must run before this transform
@@ -173,6 +178,7 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
   * built from a sequence of [[firrtl.options.Phase Phase]]s applied to an [[AnnotationSeq]]. Note that a
   * [[firrtl.options.Phase Phase]] may consist of multiple phases internally.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait Phase extends TransformLike[AnnotationSeq] with DependencyAPI[Phase] {
 
   /** The name of this [[firrtl.options.Phase Phase]]. This will be used to generate debug/error messages or when deleting
@@ -192,6 +198,7 @@ trait Phase extends TransformLike[AnnotationSeq] with DependencyAPI[Phase] {
   * @tparam A the type of the [[firrtl.options.TransformLike TransformLike]]
   * @tparam B the internal type
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 trait Translator[A, B] extends TransformLike[A] {
 
   /** A method converting type `A` into type `B`

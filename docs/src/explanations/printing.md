@@ -11,7 +11,9 @@ Chisel provides the `printf` function for debugging purposes. It comes in two fl
 * [Scala-style](#scala-style)
 * [C-style](#c-style)
 
-### Scala-style
+Chisel also provides "logging" support for printing to files in addition to the default standard error, see [Logging](#logging).
+
+## Scala-style
 
 Chisel also supports printf in a style similar to [Scala's String Interpolation](http://docs.scala-lang.org/overviews/core/string-interpolation.html). Chisel provides a custom string interpolator `cf` which follows C-style format specifiers (see section [C-style](#c-style) below).
 
@@ -43,7 +45,7 @@ val myUInt = 33.U
 printf("my normal string" + cf"myUInt = $myUInt")
 ```
 
-#### Simple formatting
+### Simple formatting
 
 Other formats are available as follows:
 
@@ -57,7 +59,7 @@ printf(cf"myUInt = $myUInt%b") // myUInt = 100001
 printf(cf"myUInt = $myUInt%c") // myUInt = !
 ```
 
-#### Special values
+### Special values
 
 There are special values you can include in your `cf` interpolated string:
 
@@ -76,7 +78,7 @@ printf(cf"100$Percent\n") // 100%
 printf(cf"100%%\n") // equivalent to the above
 ```
 
-#### Format modifiers
+### Format modifiers
 
 Chisel supports standard Verilog-style modifiers for `%d`, `%x`, and `%b` between the `%` and the format specifier.
 
@@ -101,7 +103,7 @@ printf(cf"bar = $bar%0b!\n") // foo = 101!
 printf(cf"bar = $bar%4b!\n") // foo = 0101!
 ```
 
-#### Aggregate data-types
+### Aggregate data-types
 
 Chisel provides default custom "pretty-printing" for Vecs and Bundles. The default printing of a Vec is similar to printing a Seq or List in Scala while printing a Bundle is similar to printing a Scala Map.
 
@@ -118,7 +120,7 @@ myBundle.bar := 11.U
 printf(cf"myBundle = $myBundle") // myBundle = Bundle(a -> 3, b -> 11)
 ```
 
-#### Custom Printing
+### Custom Printing
 
 Chisel also provides the ability to specify _custom_ printing for user-defined Bundles.
 
@@ -159,7 +161,7 @@ Message:
 
 Notice the use of `+` between `cf` interpolated "strings". The results of `cf` interpolation can be concatenated by using the `+` operator.
 
-### C-Style
+## C-Style
 
 Chisel provides `printf` in a similar style to its C namesake. It accepts a double-quoted format string and a variable number of arguments which will then be printed on rising clock edges. Chisel supports the following format specifiers:
 
@@ -169,6 +171,8 @@ Chisel provides `printf` in a similar style to its C namesake. It accepts a doub
 | `%x` | hexadecimal number |
 | `%b` | binary number |
 | `%c` | 8-bit ASCII character |
+| `%n` | name of signal |
+| `%N` | full name of signal |
 | `%%` | literal percent |
 | `%m` | hierarchical name |
 | `%T` | simulation time |
@@ -192,4 +196,90 @@ Thus printf can be used in a way very similar to how it is used in C:
 ```scala mdoc:compile-only
 val myUInt = 32.U
 printf("myUInt = %d", myUInt) // myUInt = 32
+```
+
+## Logging
+
+Chisel supports logging via the `SimLog` API.
+`SimLog` provides a way to write simulation logs to files or standard error. It's particularly useful when you need to:
+* Write simulation output to specific files.
+* Have multiple log files in a single simulation.
+* Write reusable code that can target different log destinations.
+
+### Basic Usage
+
+The most common use of `SimLog` is to write to a file:
+
+```scala mdoc:compile-only
+class MyModule extends Module {
+  val log = SimLog.file("logfile.log")
+  val in = IO(Input(UInt(8.W)))
+  log.printf(cf"in = $in%d\n")
+}
+```
+
+You can also write to standard error using the default file descriptor:
+
+```scala mdoc:compile-only
+class MyModule extends Module {
+  val log = SimLog.StdErr
+  val in = IO(Input(UInt(8.W)))
+  log.printf(cf"in = $in%d\n")
+}
+```
+
+:::note
+This is the same as standard `printf`.
+:::
+
+SimLog filenames can themselves be `Printable` values:
+
+```scala mdoc:compile-only
+class MyModule extends Module {
+  val idx = IO(Input(UInt(8.W)))
+  val log = SimLog.file(cf"logfile_$idx%0d.log")
+  val in = IO(Input(UInt(8.W)))
+  log.printf(cf"in = $in%d\n")
+}
+```
+
+It is strongly recommended to use `%0d` with UInts in filenames to avoid spaces in the filename.
+
+:::warning
+Be careful to avoid uninitialized registers in the filename.
+:::
+
+### Writing Generic Code
+
+`SimLog` allows you to write code that can work with any log destination. This is useful when creating reusable components:
+
+```scala mdoc:compile-only
+class MyLogger(log: SimLog) extends Module {
+  val in = IO(Input(UInt(8.W)))
+  log.printf(cf"in = $in%d\n")
+}
+
+// Use with a file
+val withFile = Module(new MyLogger(SimLog.file("data.log")))
+
+// Use with stderr
+val withStderr = Module(new MyLogger(SimLog.StdErr))
+```
+
+### Flush
+
+`SimLog` objects can be flushed to ensure that all buffered output is written.
+This is useful in simulations using the logged output as input to a co-simulated components like a checker or golden model.
+
+```scala mdoc:compile-only
+val log = SimLog.file("logfile.log")
+val in = IO(Input(UInt(8.W)))
+log.printf(cf"in = $in%d\n")
+log.flush() // Flush buffered output right away.
+```
+
+You can also flush standard error:
+
+```scala mdoc:compile-only
+SimLog.StdErr.flush() // This will flush all standard printfs.
 ```

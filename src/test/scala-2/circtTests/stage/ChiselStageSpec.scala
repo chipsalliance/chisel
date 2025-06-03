@@ -1145,6 +1145,32 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       info(s"'$expectedOutput' exists")
     }
 
+    it("should emit CHIRRTL files with custom names") {
+      val targetDir = new File("test_run_dir/ChiselStageSpec/emitCHIRRTLFile")
+      val fileBaseName = "Foo"
+
+      val args: Array[String] = Array(
+        "--target-dir",
+        targetDir.toString,
+        "--chisel-output-file",
+        fileBaseName
+      )
+
+      ChiselStage
+        .emitCHIRRTLFile(
+          new ChiselStageSpec.Bar,
+          args
+        )
+        .collectFirst { case a: CircuitSerializationAnnotation =>
+          a.filename
+        }
+        .get should be(fileBaseName)
+
+      val expectedOutput = new File(targetDir, s"${fileBaseName}.fir")
+      expectedOutput should (exist)
+      info(s"'$expectedOutput' exists")
+    }
+
     it("should emit FIRRTL dialect") {
 
       ChiselStage.emitFIRRTLDialect(new ChiselStageSpec.Foo) should include(" firrtl.module")

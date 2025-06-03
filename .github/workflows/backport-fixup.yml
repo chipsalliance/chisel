@@ -21,7 +21,7 @@ permissions:
 jobs:
   resolve_prs:
     name: Resolve PRs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     # If triggering PR actually is a backport, then original_pr will be set
     outputs:
         backport_pr: ${{ steps.backport.outputs.pr }}
@@ -52,7 +52,7 @@ jobs:
 
   fixup_backport:
     name: Fixup the backport PR
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-25.04
     needs: [resolve_prs]
     if: ${{ needs.resolve_prs.outputs.original_pr }}
 

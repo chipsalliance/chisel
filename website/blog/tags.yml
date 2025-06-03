@@ -2,3 +2,6 @@ miscellaneous:
   description: "Miscellaneous posts"
 release:
   description: "Blog posts about new Chisel releases"
+talk:
+  label: "Talk/Publication"
+  description: "Blog posts referring to talks or other publications"

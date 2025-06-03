@@ -76,7 +76,9 @@ class PrintfSpec extends AnyFlatSpec with Matchers with FileCheck {
   "printf" should "support all legal format specifiers" in {
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
-      printf("%T %m %d %x %b %c %%\n", in, in, in, in)
+      layer.elideBlocks {
+        printf("%T %m %d %x %b %c %%\n", in, in, in, in)
+      }
     }
     ChiselStage
       .emitCHIRRTL(new MyModule)
@@ -87,14 +89,16 @@ class PrintfSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitSystemVerilog(new MyModule)
       .fileCheck()(
-        """CHECK: $fwrite(`PRINTF_FD_, "%0t %m %d %x %b %c %%\n", $time, in, in, in, in);"""
+        """CHECK: $fwrite(32'h80000002, "%0t %m %d %x %b %c %%\n", $time, in, in, in, in);"""
       )
   }
 
   "printf" should "support modifiers to format specifiers" in {
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
-      printf("%0d %0x %5d %13b %c %5x\n", in, in, in, in, in, in)
+      layer.elideBlocks {
+        printf("%0d %0x %5d %13b %c %5x\n", in, in, in, in, in, in)
+      }
     }
     ChiselStage
       .emitCHIRRTL(new MyModule)

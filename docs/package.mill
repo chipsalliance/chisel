@@ -12,7 +12,7 @@ import build._
 import Version.GitHubRepository
 
 /** MDoc project */
-object `package` extends RootModule with SbtModule with HasScala2Plugin with HasCommonOptions {
+object `package` extends RootModule with SbtModule with HasScalaPlugin with HasCommonOptions {
 
   override def scalaVersion = v.scalaVersion
 

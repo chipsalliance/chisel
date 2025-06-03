@@ -24,7 +24,7 @@ on:
 jobs:
   determine-branch:
     name: 'Update Staging Branch and Determine Target Branch'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Update Staging Branch
         uses: circt/update-staging-branch@c05f7e8f8357e1f05f351694593c8c13f835fe76 # v1.2.0
@@ -47,7 +47,7 @@ jobs:
     needs: [determine-branch]
     strategy:
       matrix:
-        system: ["ubuntu-22.04"]
+        system: ["ubuntu-24.04"]
         jvm: [21]
         scala: ["2.13.16"]
         espresso: ["2.4"]
@@ -70,7 +70,7 @@ jobs:
   check-tests:
     name: "check tests"
     needs: [ci]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       success: ${{ steps.setoutput.outputs.success }}
     steps:
@@ -85,7 +85,7 @@ jobs:
   # See: https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
   all_tests_passed:
     name: "all tests passed"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: always() # Always run so that we never skip this check
     needs: check-tests
       # Pass only if check-tests set its output value

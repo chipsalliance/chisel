@@ -4,20 +4,26 @@ package firrtl
 
 import firrtl.ir._
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class MPortDir extends FirrtlNode
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object MInfer extends MPortDir {
   def serialize: String = "infer"
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object MRead extends MPortDir {
   def serialize: String = "read"
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object MWrite extends MPortDir {
   def serialize: String = "write"
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object MReadWrite extends MPortDir {
   def serialize: String = "rdwr"
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class CDefMemory(
   info:           Info,
   name:           String,
@@ -39,6 +45,7 @@ case class CDefMemory(
   def foreachString(f: String => Unit):           Unit = f(name)
   def foreachInfo(f:   Info => Unit):             Unit = f(info)
 }
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class CDefMPort(info: Info, name: String, tpe: Type, mem: String, exps: Seq[Expression], direction: MPortDir)
     extends Statement
     with HasInfo

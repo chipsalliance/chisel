@@ -5,6 +5,7 @@ package circt.stage
 import chisel3.stage.{
   ChiselCircuitAnnotation,
   ChiselGeneratorAnnotation,
+  ChiselOutputFileAnnotation,
   CircuitSerializationAnnotation,
   IncludeInlineTestsForModule,
   IncludeInlineTestsWithName,
@@ -40,6 +41,7 @@ trait CLI extends BareShell { this: BareShell =>
   parser.note("Chisel options")
   Seq(
     ChiselGeneratorAnnotation,
+    ChiselOutputFileAnnotation,
     PrintFullStackTraceAnnotation,
     ThrowOnFirstErrorAnnotation,
     UseLegacyWidthBehavior,

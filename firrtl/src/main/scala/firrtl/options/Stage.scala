@@ -14,6 +14,7 @@ import logger.Logger
   * [[AnnotationSeq]] where some input annotations are processed to produce different annotations. Command line options
   * may be pulled in if available.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Stage extends Phase {
 
   /** A utility that helps convert command line options to annotations */
@@ -60,6 +61,7 @@ abstract class Stage extends Phase {
 /** Provides a main method for a [[Stage]]
   * @param stage the stage to run
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class StageMain(val stage: Stage) {
 
   /** The main function that serves as this stage's command line interface.

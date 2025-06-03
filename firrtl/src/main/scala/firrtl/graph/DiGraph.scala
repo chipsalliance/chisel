@@ -7,12 +7,15 @@ import scala.collection.mutable.{LinkedHashMap, LinkedHashSet}
 import firrtl.options.DependencyManagerUtils.{CharSet, PrettyCharSet}
 
 /** An exception that is raised when an assumed DAG has a cycle */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class CyclicException(val node: Any) extends Exception(s"No valid linearization for cyclic graph, found at $node")
 
 /** An exception that is raised when attempting to find an unreachable node */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class PathNotFoundException extends Exception("Unreachable node")
 
 /** A companion to create DiGraphs from mutable data */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object DiGraph {
 
   /** Create a DiGraph from a MutableDigraph, representing the same graph */
@@ -45,6 +48,7 @@ object DiGraph {
 }
 
 /** Represents common behavior of all directed graphs */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
 
   /** Check whether the graph contains vertex v */
@@ -433,6 +437,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
 
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 class MutableDiGraph[T] extends DiGraph[T](new LinkedHashMap[T, LinkedHashSet[T]]) {
 
   /** Add vertex v to the graph

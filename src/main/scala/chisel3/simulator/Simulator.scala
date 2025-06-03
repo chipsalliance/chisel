@@ -3,7 +3,9 @@ package chisel3.simulator
 import chisel3.{Data, RawModule}
 import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestHarness, TestParameters}
 import firrtl.options.StageUtils.dramaticMessage
-import java.nio.file.{FileSystems, PathMatcher, Paths}
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileSystems, FileVisitResult, FileVisitor, Files, Path, PathMatcher, Paths}
+import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
@@ -145,7 +147,6 @@ trait Simulator[T <: Backend] {
           args = chiselOptsModifications(chiselOpts).toSeq,
           firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
         )
-    workspace.generateAdditionalSources()
     _simulate(workspace, elaboratedModule, settings)(body)
   }
 
@@ -172,7 +173,6 @@ trait Simulator[T <: Backend] {
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
       .map { case (testWorkspace, elaboratedTest, elaboratedModule) =>
-        testWorkspace.generateAdditionalSources()
         val digest = _simulate(testWorkspace, elaboratedModule, settings)(body)
         // Try to unpack the result, otherwise figure out what went wrong.
         // TODO: push this down, i.e. all ChiselSim invocations return a SimulationOutcome
@@ -204,12 +204,36 @@ trait Simulator[T <: Backend] {
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
   ): Simulator.BackendInvocationDigest[U] = {
+    // Find all the directories that exist under another directory.
+    val primarySourcesDirectories = mutable.LinkedHashSet.empty[String]
+    class DirectoryFinder extends FileVisitor[Path] {
+
+      override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+        FileVisitResult.CONTINUE
+      }
+
+      override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+        FileVisitResult.CONTINUE
+      }
+
+      override def postVisitDirectory(dir: Path, ioe: java.io.IOException): FileVisitResult = {
+        primarySourcesDirectories += dir.toString
+        FileVisitResult.CONTINUE
+      }
+
+      override def visitFileFailed(file: Path, ioe: java.io.IOException): FileVisitResult = {
+        throw ioe
+      }
+
+    }
+    Files.walkFileTree(Paths.get(workspace.primarySourcesPath), new DirectoryFinder)
+
     val commonCompilationSettingsUpdated = commonSettingsModifications(
       commonCompilationSettings.copy(
         // Append to the include directorires based on what the
         // workspace indicates is the path for primary sources.  This
         // ensures that `` `include `` directives can be resolved.
-        includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) :+ workspace.primarySourcesPath),
+        includeDirs = Some(commonCompilationSettings.includeDirs.getOrElse(Seq.empty) ++ primarySourcesDirectories),
         verilogPreprocessorDefines =
           commonCompilationSettings.verilogPreprocessorDefines ++ settings.preprocessorDefines(elaboratedModule),
         fileFilter =
@@ -224,6 +248,8 @@ trait Simulator[T <: Backend] {
         )
       )
     )
+
+    workspace.generateAdditionalSources(timescale = commonCompilationSettingsUpdated.defaultTimescale)
 
     // Compile the design.  Early exit if the compilation fails for any reason.
     val compilationStartTime = System.nanoTime()

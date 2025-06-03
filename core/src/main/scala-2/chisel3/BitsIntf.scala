@@ -84,6 +84,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
   /** Grab the bottom n bits.  Return 0.U(0.W) if n==0. */
   final def take(n: Int): UInt = macro SourceInfoTransform.nArg
 
+  /** @group SourceInfoTransformMacro */
   final def do_take(n: Int)(implicit sourceInfo: SourceInfo): UInt = _takeImpl(n)
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
@@ -301,10 +302,19 @@ private[chisel3] trait UIntIntf { self: UInt =>
   @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   def do_unary_-%(implicit sourceInfo: SourceInfo): UInt = _impl_unary_-%
 
+  /** @group SourceInfoTransformMacro */
   override def do_+(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_+(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_-(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_-(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_/(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_/(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_%(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_%(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_*(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_*(that)
 
   /** Multiplication operator
@@ -396,6 +406,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
   final def ^(that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   //  override def abs: UInt = macro SourceInfoTransform.noArgDummy
+  /** @group SourceInfoTransformMacro */
   def do_abs(implicit sourceInfo: SourceInfo): UInt = _absImpl
 
   /** @group SourceInfoTransformMacro */
@@ -441,9 +452,16 @@ private[chisel3] trait UIntIntf { self: UInt =>
   /** @group SourceInfoTransformMacro */
   def do_xorR(implicit sourceInfo: SourceInfo): Bool = _xorRImpl
 
-  override def do_<(that:  UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<(that)
-  override def do_>(that:  UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>(that)
+  /** @group SourceInfoTransformMacro */
+  override def do_<(that: UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<(that)
+
+  /** @group SourceInfoTransformMacro */
+  override def do_>(that: UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_<=(that: UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<=(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_>=(that: UInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>=(that)
 
   /** Dynamic not equals operator
@@ -478,13 +496,25 @@ private[chisel3] trait UIntIntf { self: UInt =>
   /** @group SourceInfoTransformMacro */
   def do_unary_!(implicit sourceInfo: SourceInfo): Bool = _impl_unary_!
 
-  override def do_<<(that: Int)(implicit sourceInfo:    SourceInfo): UInt = _impl_<<(that)
-  override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo): UInt = _impl_<<(that)
-  override def do_<<(that: UInt)(implicit sourceInfo:   SourceInfo): UInt = _impl_<<(that)
+  /** @group SourceInfoTransformMacro */
+  override def do_<<(that: Int)(implicit sourceInfo: SourceInfo): UInt = _impl_<<(that)
 
-  override def do_>>(that: Int)(implicit sourceInfo:    SourceInfo): UInt = _impl_>>(that)
+  /** @group SourceInfoTransformMacro */
+  override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo): UInt = _impl_<<(that)
+
+  /** @group SourceInfoTransformMacro */
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_<<(that)
+
+  /** @group SourceInfoTransformMacro */
+
+  /** @group SourceInfoTransformMacro */
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt = _impl_>>(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt = _impl_>>(that)
-  override def do_>>(that: UInt)(implicit sourceInfo:   SourceInfo): UInt = _impl_>>(that)
+
+  /** @group SourceInfoTransformMacro */
+  override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): UInt = _impl_>>(that)
 
   /**
     * Circular shift to the left
@@ -493,6 +523,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     */
   final def rotateLeft(that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_rotateLeft(n: Int)(implicit sourceInfo: SourceInfo): UInt = _rotateLeftImpl(n)
 
   /**
@@ -502,14 +533,17 @@ private[chisel3] trait UIntIntf { self: UInt =>
     */
   final def rotateRight(that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_rotateRight(n: Int)(implicit sourceInfo: SourceInfo): UInt = _rotateRightImpl(n)
 
   final def rotateRight(that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_rotateRight(n: UInt)(implicit sourceInfo: SourceInfo): UInt = _rotateRightImpl(n)
 
   final def rotateLeft(that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_rotateLeft(n: UInt)(implicit sourceInfo: SourceInfo): UInt = _rotateLeftImpl(n)
 
   /** Conditionally set or clear a bit
@@ -536,6 +570,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
   /** @group SourceInfoTransformMacro */
   def do_zext(implicit sourceInfo: SourceInfo): SInt = _zextImpl
 
+  /** @group SourceInfoTransformMacro */
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = _asSIntImpl
 }
 
@@ -566,12 +601,20 @@ private[chisel3] trait SIntIntf { self: SInt =>
   def do_unary_-%(implicit sourceInfo: SourceInfo): SInt = _impl_unary_-%
 
   /** add (default - no growth) operator */
+  /** @group SourceInfoTransformMacro */
   override def do_+(that: SInt)(implicit sourceInfo: SourceInfo): SInt = _impl_+(that)
 
   /** subtract (default - no growth) operator */
+  /** @group SourceInfoTransformMacro */
   override def do_-(that: SInt)(implicit sourceInfo: SourceInfo): SInt = _impl_-(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_*(that: SInt)(implicit sourceInfo: SourceInfo): SInt = _impl_*(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_/(that: SInt)(implicit sourceInfo: SourceInfo): SInt = _impl_/(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_%(that: SInt)(implicit sourceInfo: SourceInfo): SInt = _impl_%(that)
 
   /** Multiplication operator
@@ -674,9 +717,16 @@ private[chisel3] trait SIntIntf { self: SInt =>
   /** @group SourceInfoTransformMacro */
   override def do_unary_~(implicit sourceInfo: SourceInfo): SInt = _impl_unary_~
 
-  override def do_<(that:  SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<(that)
-  override def do_>(that:  SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>(that)
+  /** @group SourceInfoTransformMacro */
+  override def do_<(that: SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<(that)
+
+  /** @group SourceInfoTransformMacro */
+  override def do_>(that: SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_<=(that: SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_<=(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_>=(that: SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_>=(that)
 
   /** Dynamic not equals operator
@@ -701,16 +751,28 @@ private[chisel3] trait SIntIntf { self: SInt =>
   /** @group SourceInfoTransformMacro */
   def do_===(that: SInt)(implicit sourceInfo: SourceInfo): Bool = _impl_===(that)
 
+  /** @group SourceInfoTransformMacro */
   def do_abs(implicit sourceInfo: SourceInfo): SInt = _absImpl
 
-  override def do_<<(that: Int)(implicit sourceInfo:    SourceInfo): SInt = _impl_<<(that)
+  /** @group SourceInfoTransformMacro */
+  override def do_<<(that: Int)(implicit sourceInfo: SourceInfo): SInt = _impl_<<(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_<<(that: BigInt)(implicit sourceInfo: SourceInfo): SInt = _impl_<<(that)
-  override def do_<<(that: UInt)(implicit sourceInfo:   SourceInfo): SInt = _impl_<<(that)
 
-  override def do_>>(that: Int)(implicit sourceInfo:    SourceInfo): SInt = _impl_>>(that)
+  /** @group SourceInfoTransformMacro */
+  override def do_<<(that: UInt)(implicit sourceInfo: SourceInfo): SInt = _impl_<<(that)
+
+  /** @group SourceInfoTransformMacro */
+  override def do_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt = _impl_>>(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt = _impl_>>(that)
-  override def do_>>(that: UInt)(implicit sourceInfo:   SourceInfo): SInt = _impl_>>(that)
 
+  /** @group SourceInfoTransformMacro */
+  override def do_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt = _impl_>>(that)
+
+  /** @group SourceInfoTransformMacro */
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = _asSIntImpl
 }
 
@@ -829,4 +891,14 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
 
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
+
+  /** Logical implication
+   *
+   * @param that a boolean signal
+   * @return [[!this || that]]
+   */
+  def implies(that: Bool): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_implies(that: Bool)(implicit sourceInfo: SourceInfo): Bool = (!this) | that
 }

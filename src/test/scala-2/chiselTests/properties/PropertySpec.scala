@@ -360,6 +360,42 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
     )
   }
 
+  it should "support concatenation of Property[Seq[Int]]" in {
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val seqProp1 = IO(Input(Property[Seq[Int]]()))
+        val seqProp2 = IO(Input(Property[Seq[Int]]()))
+        val seqProp3 = IO(Output(Property[Seq[Int]]()))
+        seqProp3 := seqProp1 ++ seqProp2
+      }
+    }.fileCheck()(
+      """|CHECK: input seqProp1 : List<Integer>
+         |CHECK: input seqProp2 : List<Integer>
+         |CHECK: output seqProp3 : List<Integer>
+         |CHECK: wire _seqProp3_propExpr : List<Integer>
+         |CHECK: propassign _seqProp3_propExpr, list_concat(seqProp1, seqProp2)
+         |""".stripMargin
+    )
+  }
+
+  it should "support concatenation of Property[List[Int]]" in {
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val listProp1 = IO(Input(Property[List[Int]]()))
+        val listProp2 = IO(Input(Property[List[Int]]()))
+        val listProp3 = IO(Output(Property[List[Int]]()))
+        listProp3 := listProp1 ++ listProp2
+      }
+    }.fileCheck()(
+      """|CHECK: input listProp1 : List<Integer>
+         |CHECK: input listProp2 : List<Integer>
+         |CHECK: output listProp3 : List<Integer>
+         |CHECK: wire _listProp3_propExpr : List<Integer>
+         |CHECK: propassign _listProp3_propExpr, list_concat(listProp1, listProp2)
+         |""".stripMargin
+    )
+  }
+
   it should "not support types with nested Property[_]" in {
     assertTypeError("Property[Property[Property[Int]]]()")
     assertTypeError("Property[Property[Seq[Property[Int]]]]()")

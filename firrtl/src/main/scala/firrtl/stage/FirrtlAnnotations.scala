@@ -10,14 +10,17 @@ import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 /** Indicates that this is an [[firrtl.annotations.Annotation Annotation]] directly used in the construction of a
   * [[FirrtlOptions]] view.
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 sealed trait FirrtlOption extends Unserializable { this: Annotation => }
 
 /** An explicit output file the emitter will write to
   *   - set with `-o/--output-file`
   *  @param file output filename
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class OutputFileAnnotation(file: String) extends NoTargetAnnotation with FirrtlOption
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object OutputFileAnnotation extends HasShellOptions {
 
   val options = Seq(
@@ -36,6 +39,7 @@ object OutputFileAnnotation extends HasShellOptions {
   *  - set with `--info-mode`
   * @param mode info mode name
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class InfoModeAnnotation(modeName: String = "use") extends NoTargetAnnotation with FirrtlOption {
   require(
     modeName match { case "use" | "ignore" | "gen" | "append" => true; case _ => false },
@@ -57,6 +61,7 @@ case class InfoModeAnnotation(modeName: String = "use") extends NoTargetAnnotati
   }
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object InfoModeAnnotation extends HasShellOptions {
 
   val options = Seq(
@@ -73,6 +78,7 @@ object InfoModeAnnotation extends HasShellOptions {
 /** Holds a FIRRTL [[firrtl.ir.Circuit Circuit]]
   * @param circuit a circuit
   */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class FirrtlCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with FirrtlOption {
   /* Caching the hashCode for a large circuit is necessary due to repeated queries, e.g., in
    * [[Compiler.propagateAnnotations]]. Not caching the hashCode will cause severe performance degredations for large
@@ -86,6 +92,7 @@ case class FirrtlCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation 
 
 }
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object AllowUnrecognizedAnnotations extends NoTargetAnnotation with FirrtlOption with HasShellOptions {
   val options = Seq(
     new ShellOption[Unit](

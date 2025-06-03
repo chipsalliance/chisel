@@ -44,27 +44,13 @@ private[chisel3] trait PrintfIntf { self: printf.type =>
     *   - `%c` - 8-bit Character
     *   - `%n` - Name of a signal
     *   - `%N` - Full name of a leaf signal (in an aggregate)
+    *   - `%%` - Literal percent
+    *   - `%m` - Hierarchical name of the current module
+    *   - `%T` - Simulation time
     *
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Printf =
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
     macro PrintfMacrosCompat._applyMacroWithInterpolatorCheck
-
-  /** Prints a message in simulation
-    *
-    * Prints a message every cycle. If defined within the scope of a [[when]] block, the message
-    * will only be printed on cycles that the when condition is true.
-    *
-    * Does not fire when in reset (defined as the encapsulating Module's reset). If your definition
-    * of reset is not the encapsulating Module's reset, you will need to gate this externally.
-    *
-    * May be called outside of a Module (like defined in a function), uses the current default clock
-    * and reset. These can be overriden with [[withClockAndReset]].
-    *
-    * @see [[Printable]] documentation
-    * @param pable [[Printable]] to print
-    */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
-    PrintfMacrosCompat.printfWithReset(pable)(sourceInfo)
 }
