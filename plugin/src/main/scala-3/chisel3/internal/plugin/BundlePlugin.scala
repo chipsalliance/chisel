@@ -166,17 +166,17 @@ object BundleHelpers {
   }
 }
 
-class BundleComponent extends StandardPlugin {
-  val name:                 String = "BundleComponent"
-  override val description: String = "Bundle handling"
+class ChiselBundlePlugin extends StandardPlugin {
+  val name:                 String = "ChiselBundlePlugin"
+  override val description: String = "Chisel Bundle type handling"
 
   override def init(options: List[String]): List[PluginPhase] = {
-    (new BundleComponentPhase) :: Nil
+    (new ChiselBundlePhase) :: Nil
   }
 }
 
-class BundleComponentPhase extends PluginPhase {
-  val phaseName: String = "bundleComponentPhase"
+class ChiselBundlePhase extends PluginPhase {
+  val phaseName: String = "chiselBundlePhase"
   override val runsAfter = Set(TyperPhase.name)
 
   override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
