@@ -137,7 +137,7 @@ object ChiselTypeHelpers {
     val bundleTpe = requiredClass("chisel3.Bundle")
     t.baseClasses.contains(bundleTpe)
   }
-  
+
   def isNamed(t: Type)(using Context): Boolean = {
     val dataTpe = getClassIfDefined("chisel3.Data")
     val memBaseTpe = getClassIfDefined("chisel3.MemBase")
