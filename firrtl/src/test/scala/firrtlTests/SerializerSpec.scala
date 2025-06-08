@@ -429,4 +429,8 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       Flush(NoInfo, None, Seq.empty, Reference("clock"))
     ) should include("""fflush(clock, UInt<1>(0h1))""")
   }
+
+  it should "support comments" in {
+    Serializer.serialize(Comment("hello")) should be("; hello")
+  }
 }
