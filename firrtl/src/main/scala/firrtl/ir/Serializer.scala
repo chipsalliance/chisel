@@ -366,7 +366,18 @@ object Serializer {
     case ProbeRelease(info, clock, cond, probe) =>
       b ++= "release("; s(clock); b ++= ", "; s(cond); b ++= ", "; s(probe); b += ')'; s(info)
     case IntrinsicStmt(info, intrinsic, args, params, tpe) => sIntrinsic(info, intrinsic, args, params, tpe)
-    case other                                             => b ++= other.serialize // Handle user-defined nodes
+    case Comment(text)                                     =>
+      // Because of split, iterator will always be non-empty even if text is empty
+      val it = text.split("\n").iterator
+      while ({
+        val line = it.next()
+        b ++= "; "; b ++= line
+        if (it.hasNext) {
+          newLineAndIndent()
+        }
+        it.hasNext
+      }) ()
+    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def sStmtName(lbl: String)(implicit b: StringBuilder): Unit = {
