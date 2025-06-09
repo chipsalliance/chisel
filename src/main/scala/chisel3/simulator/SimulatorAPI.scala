@@ -150,6 +150,6 @@ trait SimulatorAPI {
         chiselOpts = chiselOpts,
         firtoolOpts = firtoolOpts,
         settings = settings
-      ) { dut => InlineTestStimulus(timeout)(dut.wrapped) }
+      ) { dut => InlineTestStimulus(timeout, 1)(dut.wrapped) }
   }
 }
