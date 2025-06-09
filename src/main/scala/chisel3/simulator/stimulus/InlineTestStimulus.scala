@@ -6,7 +6,7 @@ import scala.util.control.NoStackTrace
 
 import chisel3.{Clock, Module, RawModule, Reset}
 import chisel3.simulator.{AnySimulatedModule, Exceptions}
-import chisel3.simulator.stimulus.{Stimulus, ResetProcedure}
+import chisel3.simulator.stimulus.{ResetProcedure, Stimulus}
 import chisel3.experimental.inlinetest.TestHarness
 
 import firrtl.options.StageUtils.dramaticMessage
@@ -53,6 +53,6 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
 object InlineTestStimulus {
   def apply(timeout: Int, period: Int) = new InlineTestStimulus {
     override val _timeout = timeout
-    override val _period  = period
+    override val _period = period
   }
 }
