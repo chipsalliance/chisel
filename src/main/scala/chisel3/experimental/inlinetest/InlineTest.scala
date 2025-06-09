@@ -33,7 +33,7 @@ final class TestConfiguration private (
     intf.finish := finishCondition.getOrElse(false.B)
     intf.success := successCondition.getOrElse(true.B)
     failureMessage.foreach { failureMessage =>
-      when(intf.finish && intf.success) {
+      when(intf.finish && !intf.success) {
         printf(cf"${testName} failed: ${failureMessage}")
       }
     }
