@@ -35,13 +35,13 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
         maxCycles = 1,
         inPhaseValue = 1,
         outOfPhaseValue = 0,
-        sentinel = None
+        sentinel = Some(finish, 1),
+        checkElapsedCycleCount = { cycleCount =>
+          if (cycleCount > _timeout) {
+            throw new Exceptions.Timeout(_timeout, s"Test did not assert finish before ${_timeout} timesteps")
+          }
+        }
       )
-      cycleCount += 1
-
-      if (cycleCount > _timeout) {
-        throw new Exceptions.Timeout(_timeout, s"Test did not assert finish before ${_timeout} timesteps")
-      }
     }
 
     if (success.get().asBigInt == 0) {
