@@ -872,7 +872,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
 
   /** Return a value of this type from a UInt type. Internal implementation for asTypeOf.
     *
-    * Protected so that it can be implemented by the external FixedPoint library 
+    * Protected so that it can be implemented by the external FixedPoint library
     */
   protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data
 
