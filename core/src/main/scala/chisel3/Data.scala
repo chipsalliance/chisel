@@ -7,7 +7,6 @@ import chisel3.experimental.dataview.reify
 import chisel3.experimental.{requireIsChiselType, requireIsHardware, Analog, BaseModule}
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.dataview.{reifyIdentityView, reifySingleTarget, DataViewable}
-import chisel3.experimental.hierarchy.Lookupable
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.binding._
