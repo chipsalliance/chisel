@@ -444,7 +444,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   it should "run multiple passing simulations" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Names(Seq("passing", "with_monitor")),
+      tests = TestChoice.Names("passing", "with_monitor"),
       timeout = 100
     )
     assert(results.size == 2, "Expected exactly two test results")
@@ -456,7 +456,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   it should "run one passing and one failing-with-signal simulation" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Names(Seq("passing", "failing")),
+      tests = TestChoice.Names("passing", "failing"),
       timeout = 100
     )
     assert(results.size == 2, "Expected exactly two test results")
@@ -469,7 +469,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   it should "run one failing-with-assertion and one passing simulation" in {
     val results = simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Names(Seq("assertion", "passing")),
+      tests = TestChoice.Names("assertion", "passing"),
       timeout = 100
     )
     assert(results.size == 2, "Expected exactly two test results")
@@ -480,7 +480,7 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
   }
 
   it should "run one failing-with-assertion, one passing, and one failing-with-signal simulation in any order" in {
-    Seq("passing", "failing", "assertion").permutations.foreach { testNames =>
+    Array("passing", "failing", "assertion").permutations.foreach { testNames =>
       val results = simulateTests(
         new ModuleWithTests,
         tests = TestChoice.Names(testNames),

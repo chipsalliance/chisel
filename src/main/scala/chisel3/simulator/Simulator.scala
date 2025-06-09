@@ -50,6 +50,15 @@ object Exceptions {
         )
       )
       with NoStackTrace
+
+  class TestFailed private[simulator]
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some(s"The test finished and signaled failure"),
+          body = ""
+        )
+      )
+      with NoStackTrace
 }
 
 final object Simulator {
@@ -152,7 +161,7 @@ trait Simulator[T <: Backend] {
 
   final def simulateTests[T <: RawModule with HasTests, U](
     module:           => T,
-    includeTestGlobs: Seq[String],
+    includeTestGlobs: Array[String],
     chiselOpts:       Array[String] = Array.empty,
     firtoolOpts:      Array[String] = Array.empty,
     settings:         Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]]
@@ -168,7 +177,7 @@ trait Simulator[T <: Backend] {
     workspace
       .elaborateAndMakeTestHarnessWorkspaces(
         () => module,
-        includeTestGlobs = includeTestGlobs,
+        includeTestGlobs = includeTestGlobs.toSeq,
         args = chiselOptsModifications(chiselOpts).toSeq,
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
@@ -184,7 +193,7 @@ trait Simulator[T <: Backend] {
             // Simulation ended due to an aserrtion
             case assertion: Exceptions.AssertionFailed => SimulationOutcome.Assertion(assertion.simulatorOutput)
             // Simulation ended because the testharness signaled success=0
-            case _: stimulus.InlineTestSignaledFailureException => SimulationOutcome.SignaledFailure
+            case _: Exceptions.TestFailed => SimulationOutcome.SignaledFailure
             // Simulation timed out
             case to: Exceptions.Timeout => SimulationOutcome.Timeout(to.timesteps)
             // Simulation did not run correctly

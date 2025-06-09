@@ -106,33 +106,43 @@ object TestChoice {
 
   /** A choice of what test(s) to run. */
   sealed abstract class Type {
-    private[chisel3] def globs: Seq[String]
+    private[chisel3] def globs: Array[String]
     require(globs.nonEmpty, "Must provide at least one test to run")
   }
 
   /** Run tests matching any of these globs. */
-  case class Globs(globs: Seq[String]) extends Type
+  case class Globs(globs: Array[String]) extends Type
+
+  object Globs {
+    def apply(globs: String*): Globs = new Globs(globs.toArray)
+  }
 
   object Glob {
 
     /** Run tests matching a glob. */
-    def apply(glob: String) = Globs(Seq(glob))
+    def apply(glob: String) = new Globs(Array(glob))
   }
 
   /** Run tests matching any of these names. */
-  case class Names(names: Seq[String]) extends Type {
+  case class Names(names: Array[String]) extends Type {
     override def globs = names
+  }
+
+  object Names {
+
+    /** Run tests matching this name. */
+    def apply(names: String*): Names = new Names(names.toArray)
   }
 
   object Name {
 
     /** Run tests matching this name. */
-    def apply(name: String) = Names(Seq(name))
+    def apply(name: String) = new Names(Array(name))
   }
 
   /** Run all tests. */
   case object All extends Type {
-    override def globs = Seq("*")
+    override def globs = Array("*")
   }
 }
 

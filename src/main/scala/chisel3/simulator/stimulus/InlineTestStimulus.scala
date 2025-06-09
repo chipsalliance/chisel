@@ -11,15 +11,6 @@ import chisel3.experimental.inlinetest.TestHarness
 
 import firrtl.options.StageUtils.dramaticMessage
 
-class InlineTestSignaledFailureException private[simulator]
-    extends RuntimeException(
-      dramaticMessage(
-        header = Some(s"The test finished and signaled failure"),
-        body = ""
-      )
-    )
-    with NoStackTrace
-
 trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
   protected def _timeout: Int
 
@@ -65,7 +56,7 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
     }
 
     if (success.get().asBigInt == 0) {
-      throw new InlineTestSignaledFailureException
+      throw new Exceptions.TestFailed
     }
   }
 }
