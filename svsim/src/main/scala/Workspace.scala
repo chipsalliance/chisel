@@ -366,11 +366,12 @@ final class Workspace(
       Files
         .walk(sourcePrimarySources.toPath)
         .filter(Files.isRegularFile(_))
-        .forEach { source =>
-          val relativePath = sourcePrimarySources.toPath.relativize(source)
-          val targetPath = Paths.get(newPrimarySources.getPath, relativePath.toString)
-          targetPath.getParent.toFile.mkdirs()
-          Files.createSymbolicLink(targetPath, source)
+        .forEach { target =>
+          val relativePath = sourcePrimarySources.toPath.relativize(target)
+          val sourcePath = Paths.get(newPrimarySources.getPath, relativePath.toString)
+          sourcePath.getParent.toFile.mkdirs()
+          val relativeTarget = sourcePath.getParent.relativize(target)
+          Files.createSymbolicLink(sourcePath, relativeTarget)
         }
     }
 
