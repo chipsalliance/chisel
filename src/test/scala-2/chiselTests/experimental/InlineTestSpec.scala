@@ -142,7 +142,7 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   }
 }
 
-class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
+class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim {
   private def makeArgs(moduleGlobs: Seq[String], testGlobs: Seq[String]): Array[String] =
     (
       moduleGlobs.map { glob => s"--include-tests-module=$glob" } ++
@@ -397,28 +397,13 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
     )
   }
 
-  def assertPass(result: TestResult.Type): Unit = result match {
-    case other: TestResult.Failure =>
-      fail(s"Test unexpectedly failed: ${other}")
-    case TestResult.Success => ()
-  }
-
-  def assertFail(expectedMessage: String)(result: TestResult.Type): Unit = result match {
-    case TestResult.Success =>
-      fail("Test unexpectedly passed")
-    case TestResult.Failure(actualMessage) if !actualMessage.contains(expectedMessage) =>
-      fail(s"'${actualMessage}' does not match '${expectedMessage}'")
-    case _ => ()
-  }
-
   it should "simulate and pass if finish asserted with success=1" in {
     val results = simulateTests(
       new ModuleWithTests,
       tests = TestChoice.Name("passing"),
       timeout = 100
     )
-    assert(results.size == 1, "Expected exactly one test result")
-    assertPass(results.head.result)
+    (results.map(_.result) should contain).theSameElementsInOrderAs(Seq(TestResult.Success))
   }
 
   it should "simulate and fail if finish asserted with success=0" in {
@@ -427,8 +412,10 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       tests = TestChoice.Name("failing"),
       timeout = 100
     )
-    assert(results.size == 1, "Expected exactly one test result")
-    assertFail("test signaled failure")(results.head.result)
+    results should have size 1
+    results.head.result shouldBe a[TestResult.Failure]
+    val TestResult.Failure(message) = results.head.result
+    message should include("test signaled failure")
   }
 
   it should "simulate and fail early if assertion raised" in {
@@ -437,8 +424,10 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       tests = TestChoice.Name("assertion"),
       timeout = 100
     )
-    assert(results.size == 1, "Expected exactly one test result")
-    assertFail("assertion fired")(results.head.result)
+    results should have size 1
+    results.head.result shouldBe a[TestResult.Failure]
+    val TestResult.Failure(message) = results.head.result
+    message should include("assertion fired")
   }
 
   it should "run multiple passing simulations" in {
@@ -447,9 +436,12 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       tests = TestChoice.Names("passing", "with_monitor"),
       timeout = 100
     )
-    assert(results.size == 2, "Expected exactly two test results")
-    results.foreach { simTest =>
-      assertPass(simTest.result)
+    results should have size 2
+    results.foreach { result =>
+      result.testName match {
+        case "passing"      => result.result should be(TestResult.Success)
+        case "with_monitor" => result.result should be(TestResult.Success)
+      }
     }
   }
 
@@ -459,11 +451,16 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       tests = TestChoice.Names("passing", "failing"),
       timeout = 100
     )
-    assert(results.size == 2, "Expected exactly two test results")
-    val resultPassing = results.find(_.testName == "passing").get
-    val resultFailing = results.find(_.testName == "failing").get
-    assertPass(resultPassing.result)
-    assertFail("test signaled failure")(resultFailing.result)
+    results should have size 2
+    results.foreach { result =>
+      result.testName match {
+        case "passing" => result.result should be(TestResult.Success)
+        case "failing" => {
+          val TestResult.Failure(message) = result.result
+          message should include("test signaled failure")
+        }
+      }
+    }
   }
 
   it should "run one failing-with-assertion and one passing simulation" in {
@@ -472,11 +469,16 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
       tests = TestChoice.Names("assertion", "passing"),
       timeout = 100
     )
-    assert(results.size == 2, "Expected exactly two test results")
-    val resultAssertion = results.find(_.testName == "assertion").get
-    val resultPassing = results.find(_.testName == "passing").get
-    assertFail("assertion fired")(resultAssertion.result)
-    assertPass(resultPassing.result)
+    results should have size 2
+    results.foreach { result =>
+      result.testName match {
+        case "passing" => result.result should be(TestResult.Success)
+        case "assertion" => {
+          val TestResult.Failure(message) = result.result
+          message should include("assertion fired")
+        }
+      }
+    }
   }
 
   it should "run one failing-with-assertion, one passing, and one failing-with-signal simulation in any order" in {
@@ -486,13 +488,20 @@ class InlineTestSpec extends AnyFlatSpec with FileCheck with ChiselSim {
         tests = TestChoice.Names(testNames),
         timeout = 100
       )
-      assert(results.size == 3, "Expected exactly three test results")
-      val resultAssertion = results.find(_.testName == "assertion").get
-      val resultPassing = results.find(_.testName == "passing").get
-      val resultFailing = results.find(_.testName == "failing").get
-      assertFail("assertion fired")(resultAssertion.result)
-      assertPass(resultPassing.result)
-      assertFail("test signaled failure")(resultFailing.result)
+      results should have size 3
+      results.foreach { result =>
+        result.testName match {
+          case "passing" => result.result should be(TestResult.Success)
+          case "failing" => {
+            val TestResult.Failure(message) = result.result
+            message should include("test signaled failure")
+          }
+          case "assertion" => {
+            val TestResult.Failure(message) = result.result
+            message should include("assertion fired")
+          }
+        }
+      }
     }
   }
 }
