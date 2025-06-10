@@ -59,6 +59,17 @@ object Exceptions {
         )
       )
       with NoStackTrace
+
+  class TestsFailed private[simulator] (
+    message:     String,
+    val results: Seq[chisel3.experimental.inlinetest.SimulatedTest]
+  ) extends RuntimeException(
+        dramaticMessage(
+          header = Some("One or more tests failed during simulation"),
+          body = message
+        )
+      )
+      with NoStackTrace
 }
 
 final object Simulator {
@@ -170,11 +181,11 @@ trait Simulator[T <: Backend] {
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,
     backendSettingsModifications:     svsim.BackendSettingsModifications
-  ): Seq[SimulatedTest] = {
+  ) = {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val filesystem = FileSystems.getDefault()
-    workspace
+    val results = workspace
       .elaborateAndMakeTestHarnessWorkspaces(
         () => module,
         includeTestGlobs = includeTestGlobs.toSeq,
@@ -201,6 +212,17 @@ trait Simulator[T <: Backend] {
           }
         SimulatedTest(elaboratedTest, outcome)
       }
+
+    val failures = results.filter(!_.success)
+    if (failures.nonEmpty) {
+      val failedTests = failures.size
+      val passedTests = results.size - failedTests
+      val moduleName = results.head.dutName
+      val failedTestNames = failures.map(_.testName).mkString(", ")
+      val aggregatedMessage =
+        s"${moduleName} tests: ${passedTests} succeeded, ${failedTests} failed (${failedTestNames})"
+      throw new Exceptions.TestsFailed(aggregatedMessage, results)
+    }
   }
 
   private def _simulate[T <: RawModule, U](

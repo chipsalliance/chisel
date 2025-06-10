@@ -136,7 +136,7 @@ trait SimulatorAPI {
     firtoolOptsModifications:     FirtoolOptionsModifications,
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
-  ): Seq[SimulatedTest] = {
+  ) = {
     val modifiedTestingDirectory = subdirectory match {
       case Some(subdir) => testingDirectory.withSubdirectory(subdir)
       case None         => testingDirectory

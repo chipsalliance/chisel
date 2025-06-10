@@ -398,61 +398,56 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
   }
 
   it should "simulate and pass if finish asserted with success=1" in {
-    val results = simulateTests(
+    simulateTests(
       new ModuleWithTests,
       tests = TestChoice.Name("passing"),
       timeout = 100
     )
-    (results.map(_.result) should contain).theSameElementsInOrderAs(Seq(TestResult.Success))
   }
 
   it should "simulate and fail if finish asserted with success=0" in {
-    val results = simulateTests(
-      new ModuleWithTests,
-      tests = TestChoice.Name("failing"),
-      timeout = 100
-    )
-    results should have size 1
-    results.head.result shouldBe a[TestResult.Failure]
-    val TestResult.Failure(message) = results.head.result
-    message should include("test signaled failure")
+    val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
+      simulateTests(
+        new ModuleWithTests,
+        tests = TestChoice.Name("failing"),
+        timeout = 100
+      )
+    }
+    exception.getMessage should include("ModuleWithTests tests: 0 succeeded, 1 failed (failing)")
   }
 
   it should "simulate and fail early if assertion raised" in {
-    val results = simulateTests(
-      new ModuleWithTests,
-      tests = TestChoice.Name("assertion"),
-      timeout = 100
-    )
-    results should have size 1
-    results.head.result shouldBe a[TestResult.Failure]
-    val TestResult.Failure(message) = results.head.result
-    message should include("assertion fired")
+    val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
+      simulateTests(
+        new ModuleWithTests,
+        tests = TestChoice.Name("assertion"),
+        timeout = 100
+      )
+    }
+    exception.getMessage should include("ModuleWithTests tests: 0 succeeded, 1 failed (assertion)")
   }
 
   it should "run multiple passing simulations" in {
-    val results = simulateTests(
+    simulateTests(
       new ModuleWithTests,
       tests = TestChoice.Names("passing", "with_monitor"),
       timeout = 100
     )
-    results should have size 2
-    results.foreach { result =>
-      result.testName match {
-        case "passing"      => result.result should be(TestResult.Success)
-        case "with_monitor" => result.result should be(TestResult.Success)
-      }
-    }
   }
 
   it should "run one passing and one failing-with-signal simulation" in {
-    val results = simulateTests(
-      new ModuleWithTests,
-      tests = TestChoice.Names("passing", "failing"),
-      timeout = 100
-    )
-    results should have size 2
-    results.foreach { result =>
+    val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
+      simulateTests(
+        new ModuleWithTests,
+        tests = TestChoice.Names("passing", "failing"),
+        timeout = 100
+      )
+    }
+    exception.getMessage should include("ModuleWithTests tests: 1 succeeded, 1 failed (failing)")
+
+    // Verify that granular results are available in the exception
+    exception.results should have size 2
+    exception.results.foreach { result =>
       result.testName match {
         case "passing" => result.result should be(TestResult.Success)
         case "failing" => {
@@ -464,32 +459,32 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
   }
 
   it should "run one failing-with-assertion and one passing simulation" in {
-    val results = simulateTests(
-      new ModuleWithTests,
-      tests = TestChoice.Names("assertion", "passing"),
-      timeout = 100
-    )
-    results should have size 2
-    results.foreach { result =>
-      result.testName match {
-        case "passing" => result.result should be(TestResult.Success)
-        case "assertion" => {
-          val TestResult.Failure(message) = result.result
-          message should include("assertion fired")
-        }
-      }
+    val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
+      simulateTests(
+        new ModuleWithTests,
+        tests = TestChoice.Names("assertion", "passing"),
+        timeout = 100
+      )
     }
+    exception.getMessage should include("ModuleWithTests tests: 1 succeeded, 1 failed (assertion)")
   }
 
   it should "run one failing-with-assertion, one passing, and one failing-with-signal simulation in any order" in {
     Array("passing", "failing", "assertion").permutations.foreach { testNames =>
-      val results = simulateTests(
-        new ModuleWithTests,
-        tests = TestChoice.Names(testNames),
-        timeout = 100
-      )
-      results should have size 3
-      results.foreach { result =>
+      val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
+        simulateTests(
+          new ModuleWithTests,
+          tests = TestChoice.Names(testNames),
+          timeout = 100
+        )
+      }
+      exception.getMessage should include("ModuleWithTests tests: 1 succeeded, 2 failed")
+      exception.getMessage should include("failing")
+      exception.getMessage should include("assertion")
+
+      // Verify that granular results are available in the exception
+      exception.results should have size 3
+      exception.results.foreach { result =>
         result.testName match {
           case "passing" => result.result should be(TestResult.Success)
           case "failing" => {

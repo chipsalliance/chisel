@@ -81,10 +81,6 @@ private[chisel3] class SimulatedTest private (
     case SimulationOutcome.Timeout(n)                 => TestResult.Failure(s"timeout reached after ${n} timesteps")
     case SimulationOutcome.SignaledFailure            => TestResult.Failure(s"test signaled failure")
   }
-  def requirePass() = result match {
-    case TestResult.Failure(why) => throw new RuntimeException(s"${dutName}.${testName} failed: ${why}")
-    case _                       => ()
-  }
   val success = result match {
     case TestResult.Success => true
     case _                  => false
