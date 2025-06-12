@@ -123,14 +123,14 @@ trait SimulatorAPI {
     * by default and if you set incompatible options, the simulation will fail.
     */
   def simulateTests[T <: RawModule with HasTests](
-    module:       => T,
-    tests:        TestChoice.Type,
-    timeout:      Int,
-    chiselOpts:   Array[String] = Array.empty,
-    firtoolOpts:  Array[String] = Array.empty,
-    settings:     Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]],
+    module:                => T,
+    tests:                 TestChoice.Type,
+    timeout:               Int,
+    chiselOpts:            Array[String] = Array.empty,
+    firtoolOpts:           Array[String] = Array.empty,
+    settings:              Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]],
     additionalResetCycles: Int = 0,
-    subdirectory: Option[String] = None
+    subdirectory:          Option[String] = None
   )(
     implicit hasSimulator:        HasSimulator,
     testingDirectory:             HasTestingDirectory,
