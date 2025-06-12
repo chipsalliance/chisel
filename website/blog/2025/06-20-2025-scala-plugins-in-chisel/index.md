@@ -3,7 +3,7 @@ authors:
   - adkian-sifive
 tags: [kb]
 slug: scala-plugins-in-chisel
-description: Scala compiler plugins in the Chisel programming language
+description: Scala compiler plugins for Naming in the Chisel programming language
 ---
 
 # Introduction
@@ -17,8 +17,8 @@ often an esoteric art -- plugin code has a tendency to be exceptionally
 difficult to decipher by anyone other than its author. 
 
 My goal with this article is to motivate and demystify the subtle art
-behind Chisel's compiler plugins, thereby providing a much-needed
-introductory treatment about them. Further, since the patterns
+behind Chisel's naming compiler plugin, thereby providing a much-needed
+introductory treatment about it. Further, since the patterns
 documented here have emerged as solutions to more general problems
 faced by eDSLs, it is hoped that this documentation will serve as a
 template for applying them in other DSLs and eDSLs.
@@ -27,13 +27,12 @@ No background knowledge of compiler theory or development is assumed;
 however an understanding of basic Chisel and Scala constructs will be
 helpful in motivating the examples in the article. Introduction points
 for further study about interesting topics will be provided as
-/asides/.
-
+*asides*.
 
 # Compilers
 
 It seems prudent when talking about compiler plugins to start with a
-brief description of /compilers/. The simplest and most general (and
+brief description of *compilers*. The simplest and most general (and
 indeed useless) description of a compiler -- including the Scala
 compiler -- is that it's a piece of executable software that
 transforms one representation of a piece of text to another. More
@@ -45,7 +44,7 @@ kind of human-readable program; the final representation -- the
 > executable software, mustn't it also be compiled? The answer is yes
 > -- the code of a compiler is also compiled by some other
 > compiler. Most modern compilers are in fact able to compile
-> /themselves/ -- specifically, a compiler version x will compile the
+> *themselves* -- specifically, a compiler version x will compile the
 > compiler version of x+1 (or x+0.1). See ["Wikipedia -
 > Bootstrapping"](https://en.wikipedia.org/wiki/Bootstrapping_(compilers))
 
@@ -53,9 +52,9 @@ While in theory it's certainly possible for the compiler to go from
 zero to hero in a single shot -- that is, transform straight from its
 input to the output -- the complexity of modern compilers makes
 compiler development more realistic by breaking up compilation into
-separate chunks. These chunks are /phases/, which are in turn made of up
-separate /transforms/. A phase, or a combination of phases, make up a
-/pass/ -- a top to bottom transformation of the entire input program.
+separate chunks. These chunks are *phases*, which are in turn made of up
+separate *transforms*. A phase, or a combination of phases, make up a
+*pass* -- a top to bottom transformation of the entire input program.
 
 Each transform within each phase "reads" its input program and
 rewrites it in some predetermined manner before passing it to the next
@@ -71,8 +70,8 @@ information from the AST to make progress towards the final output.
 An "embedded domain-specific language" (or eDSL) is a fairly new term
 for an old idea -- a compiler which compiles to a higher level
 language from an even higher-level, domain-specific language. The
-"domains" here range from numerical operations^1^, database
-management^2^, or even... hardware generation^3, 4^.
+"domains" here range from numerical operations<sup>1</sup>, database
+management<sup>2</sup>, or even... hardware generation<sup>3, 4</sup>.
 
 General treatment of the theory of eDSL is still fairly lacking
 compared to the theory of programming languages proper, but a
@@ -104,8 +103,8 @@ motivating the naming problem in Chisel and other eDSLs.
 
 # Compiler plugins
 
-Various languages provide varying degrees of support of /compiler
-plugins/ - a feature for DSL developers that allows adding custom passes which
+Various languages provide varying degrees of support of *compiler
+plugins* - a feature for DSL developers that allows adding custom passes which
 will be interspersed within the host language's compiler pipeline.
 
 In Scala, compiler plugin phases run between specified phases of the
@@ -130,7 +129,6 @@ like
 
 ```
 val x = func(42)
-
 ```
 
 thereby binding the name `x` to a variable in the current scope to the
@@ -163,7 +161,7 @@ Therein lies the problem.
 Predictable user-code naming is especially important in
 Chisel as it compiles down to Verilog, where engineers rely on
 predictable signal naming schemes from Chisel all the way down
-through FIRRTL^6^ and to Verilog for signal tracing, debugging and
+through FIRRTL<sup>6</sup> and to Verilog for signal tracing, debugging and
 hardware verification. 
 
 > **_Aside: Naming in Chisel_** Naming of user-defined variables has
@@ -177,7 +175,7 @@ hardware verification.
 To capture as raw of a user-code name as possible, Chisel runs a
 custom name-grabber pass right after Scala finishes constructing a
 typed AST. Just naively capturing variable names won't do, however,
-since Chisel only cares about names of /Chisel types/ which will in
+since Chisel only cares about names of *Chisel types* which will in
 turn become hardware names in the final Verilog. 
 
 To make sure the plugin only grabs the names of Chisel types, the
@@ -229,10 +227,9 @@ val definition. The above statement will hence become:
 
 ```
 val x = chisel3.withName("x")(func(42))
-
 ```
 
-The `withName` insertion into the AST node effectively /stages/ the
+The `withName` insertion into the AST node effectively *stages* the
 addition of a string name until Chisel-time, when Chisel internals
 process naming given the Chisel-time context of the variable
 definition statement. The Chisel-time name processing is its own
@@ -284,14 +281,14 @@ needed to capture user code naming.
 
 Unsurprisingly, the "purest" solution to the naming problem that
 falls naturally from the host language's metaprogramming features is
-in Lisp. This is because of Lisp's so-called /homoiconicity/ -- its
+in Lisp. This is because of Lisp's so-called *homoiconicity* -- its
 ability to treat representation of its own code as data itself. This
-means that any Lisp macro defined in the DSL implementation can /see/
-the symbol that user code references as data.^7^
+means that any Lisp macro defined in the DSL implementation can *see*
+the symbol that user code references as data.<sup>7</sup>
 
 The Clash programming language, a fellow hardware eDSL implemented in
 Haskell, has a slight advantage due to its deeper embedding. Clash has
-access to constructs within Haskell core including the OccName^8^ data
+access to constructs within Haskell core including the OccName<sup>8</sup> data
 structure that contains plaintext name and namespace information for
 every declared symbol in user code. Clash utilizes the plaintext names
 from OccName and applies similar disambiguation and sanitization as
@@ -299,30 +296,41 @@ Chisel core.
 
 Most modern Haskell eDSLs whose compilers run separately from the GHC
 tend to use Template Haskell, an experimental metaprogramming
-facility.^9^
+facility.<sup>9</sup>
 
 Interestingly enough, an older staged DSL implemented in Haskell
 called Paradise came up with a solution identical to the one currently
 implemented in Chisel where the GHC preprocessor inserts calls to an
-annotation function coincidentally also called `withName`.^10^
+annotation function coincidentally also called `withName`.<sup>10</sup>
 
 # Final Remarks
 
 Chisel naming has come a long way, and after undergoing heavy
 utilization for mission-critical applications at
-[SiFive](www.sifive.com) can safely be deemed to be stable. With the
+[SiFive](https://sifive.com) can safely be deemed to be stable. With the
 ongoing work of adding support for Scala 3 in Chisel, we're hoping to
 develop cleaner and more readable Scala compiler plugins.
 
 # References and further reading
-^1^[Typelevel - Spire ](https://typelevel.org/spire/)
-^2^[Apache Spark](https://spark.apache.org/)
-^3^[Clash Programming Language](https://clash-lang.org/)
-^4^[Spatial Programming Language](https://spatial-lang.org/)
-^5^[Folding Domain-Specific Languages: Deep and Shallow Embeddings](https://www.cs.ox.ac.uk/jeremy.gibbons/publications/embedding.pdf)
-    also see [YouTube: Tiark Rompf - DSL Embedding in Scala](https://www.youtube.com/watch?v=16A1yemmx-w)
-^6^[The FIRRTL Spec](https://github.com/chipsalliance/firrtl-spec)
-^7^[Common Lisp CookBook](https://cl-cookbook.sourceforge.net/clos-tutorial/index.html)
-^8^[OccName in Haskell](https://downloads.haskell.org/~ghc/6.10.2/docs/html/libraries/ghc/OccName.html)
-^9^[Naming with Template Haskell](https://markkarpov.com/tutorial/th?#names)
-^10^[Paradise: A two-stage DSL embedded in Haskell](https://urchin.earth.li/~ganesh/icfp08.pdf)
+<sup>1</sup>[Typelevel - Spire ](https://typelevel.org/spire/)
+
+<sup>2</sup>[Apache Spark](https://spark.apache.org/)
+
+<sup>3</sup>[Clash Programming Language](https://clash-lang.org/)
+
+<sup>4</sup>[Spatial Programming Language](https://spatial-lang.org/)
+
+<sup>5</sup>[Folding Domain-Specific Languages: Deep and Shallow Embeddings](https://www.cs.ox.ac.uk/jeremy.gibbons/publications/embedding.pdf)
+
+See also [YouTube: Tiark Rompf - DSL Embedding in Scala](https://www.youtube.com/watch?v=16A1yemmx-w)
+
+<sup>6</sup>[The FIRRTL Spec](https://github.com/chipsalliance/firrtl-spec)
+
+<sup>7</sup>[Common Lisp CookBook](https://cl-cookbook.sourceforge.net/clos-tutorial/index.html)
+
+<sup>8</sup>[OccName in 
+Haskell](https://downloads.haskell.org/~ghc/6.10.2/docs/html/libraries/ghc/OccName.html)
+
+<sup>9</sup>[Naming with Template Haskell](https://markkarpov.com/tutorial/th?#names)
+
+<sup>10</sup>[Paradise: A two-stage DSL embedded in Haskell](https://urchin.earth.li/~ganesh/icfp08.pdf)
