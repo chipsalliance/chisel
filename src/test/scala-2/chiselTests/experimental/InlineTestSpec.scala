@@ -400,7 +400,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
   it should "simulate and pass if finish asserted with success=1" in {
     simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Name("passing"),
+      tests = TestChoice.Globs("passing"),
       timeout = 100
     )
   }
@@ -409,7 +409,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
       simulateTests(
         new ModuleWithTests,
-        tests = TestChoice.Name("failing"),
+        tests = TestChoice.Globs("failing"),
         timeout = 100
       )
     }
@@ -420,7 +420,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
       simulateTests(
         new ModuleWithTests,
-        tests = TestChoice.Name("assertion"),
+        tests = TestChoice.Globs("assertion"),
         timeout = 100
       )
     }
@@ -430,7 +430,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
   it should "run multiple passing simulations" in {
     simulateTests(
       new ModuleWithTests,
-      tests = TestChoice.Names("passing", "with_monitor"),
+      tests = TestChoice.Globs("passing", "with_monitor"),
       timeout = 100
     )
   }
@@ -439,7 +439,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
       simulateTests(
         new ModuleWithTests,
-        tests = TestChoice.Names("passing", "failing"),
+        tests = TestChoice.Globs("passing", "failing"),
         timeout = 100
       )
     }
@@ -462,7 +462,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
       simulateTests(
         new ModuleWithTests,
-        tests = TestChoice.Names("assertion", "passing"),
+        tests = TestChoice.Globs("assertion", "passing"),
         timeout = 100
       )
     }
@@ -474,7 +474,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
         simulateTests(
           new ModuleWithTests,
-          tests = TestChoice.Names(testNames),
+          tests = TestChoice.Globs(testNames),
           timeout = 100
         )
       }

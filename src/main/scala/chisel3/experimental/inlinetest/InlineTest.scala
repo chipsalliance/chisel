@@ -113,29 +113,6 @@ object TestChoice {
     def apply(globs: String*): Globs = new Globs(globs.toArray)
   }
 
-  object Glob {
-
-    /** Run tests matching a glob. */
-    def apply(glob: String) = new Globs(Array(glob))
-  }
-
-  /** Run tests matching any of these names. */
-  case class Names(names: Array[String]) extends Type {
-    override def globs = names
-  }
-
-  object Names {
-
-    /** Run tests matching this name. */
-    def apply(names: String*): Names = new Names(names.toArray)
-  }
-
-  object Name {
-
-    /** Run tests matching this name. */
-    def apply(name: String) = new Names(Array(name))
-  }
-
   /** Run all tests. */
   case object All extends Type {
     override def globs = Array("*")
