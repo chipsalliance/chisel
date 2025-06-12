@@ -16,6 +16,8 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
 
   protected def _period: Int
 
+  protected def _additionalResetCycles: Int
+
   override final def apply(dut: TestHarness[_]): Unit = {
     val module = AnySimulatedModule.current
     val controller = module.controller
@@ -25,7 +27,7 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
     val finish = module.port(dut.io.finish)
     val success = module.port(dut.io.success)
 
-    ResetProcedure.module(_period)(dut)
+    ResetProcedure.module(_additionalResetCycles, _period)(dut)
 
     var cycleCount = 0
 
@@ -51,8 +53,9 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
 }
 
 object InlineTestStimulus {
-  def apply(timeout: Int, period: Int) = new InlineTestStimulus {
+  def apply(timeout: Int, additionalResetCycles: Int, period: Int) = new InlineTestStimulus {
     override val _timeout = timeout
     override val _period = period
+    override val _additionalResetCycles = additionalResetCycles
   }
 }

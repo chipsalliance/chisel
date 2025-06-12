@@ -129,6 +129,7 @@ trait SimulatorAPI {
     chiselOpts:   Array[String] = Array.empty,
     firtoolOpts:  Array[String] = Array.empty,
     settings:     Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]],
+    additionalResetCycles: Int = 0,
     subdirectory: Option[String] = None
   )(
     implicit hasSimulator:        HasSimulator,
@@ -151,6 +152,6 @@ trait SimulatorAPI {
         chiselOpts = chiselOpts,
         firtoolOpts = firtoolOpts,
         settings = settings
-      ) { dut => InlineTestStimulus(timeout, 1)(dut.wrapped) }
+      ) { dut => InlineTestStimulus(timeout, additionalResetCycles, period = 10)(dut.wrapped) }
   }
 }
