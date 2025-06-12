@@ -29,22 +29,18 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
 
     ResetProcedure.module(_additionalResetCycles, _period)(dut)
 
-    var cycleCount = 0
-
-    while (finish.get().asBigInt == 0) {
-      clock.tick(
-        timestepsPerPhase = 1,
-        maxCycles = 1,
-        inPhaseValue = 1,
-        outOfPhaseValue = 0,
-        sentinel = Some(finish, 1),
-        checkElapsedCycleCount = { cycleCount =>
-          if (cycleCount > _timeout) {
-            throw new Exceptions.Timeout(_timeout, s"Test did not assert finish before ${_timeout} timesteps")
-          }
+    clock.tick(
+      timestepsPerPhase = 1,
+      maxCycles = _timeout,
+      inPhaseValue = 1,
+      outOfPhaseValue = 0,
+      sentinel = Some(finish, 1),
+      checkElapsedCycleCount = { cycleCount =>
+        if (cycleCount > _timeout) {
+          throw new Exceptions.Timeout(_timeout, s"Test did not assert finish before ${_timeout} timesteps")
         }
-      )
-    }
+      }
+    )
 
     if (success.get().asBigInt == 0) {
       throw new Exceptions.TestFailed
