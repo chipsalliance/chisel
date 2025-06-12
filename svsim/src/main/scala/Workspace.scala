@@ -352,6 +352,32 @@ final class Workspace(
   }
   //format: on
 
+  /** Shallow copy the sources from this workspace to a new one. Primary sources are symlinked to the
+   *  new directory; nothing else is copied.
+   */
+  def shallowCopy(newPath: String, workingDirectoryPrefix: String = this.workingDirectoryPrefix): Workspace = {
+    val newWorkspace = new Workspace(newPath, workingDirectoryPrefix)
+    newWorkspace.reset()
+
+    val newPrimarySources = new File(newWorkspace.primarySourcesPath)
+
+    val sourcePrimarySources = new File(this.primarySourcesPath)
+    if (sourcePrimarySources.exists()) {
+      Files
+        .walk(sourcePrimarySources.toPath)
+        .filter(Files.isRegularFile(_))
+        .forEach { target =>
+          val relativePath = sourcePrimarySources.toPath.relativize(target)
+          val sourcePath = Paths.get(newPrimarySources.getPath, relativePath.toString)
+          sourcePath.getParent.toFile.mkdirs()
+          val relativeTarget = sourcePath.getParent.relativize(target)
+          Files.createSymbolicLink(sourcePath, relativeTarget)
+        }
+    }
+
+    newWorkspace
+  }
+
   /** Compiles the simulation using the specified backend.
     *
     * @param outputTag A string which will be used to tag the output directory. This enables compiling and simulating the same workspace with multiple backends.

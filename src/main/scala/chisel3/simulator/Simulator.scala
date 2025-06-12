@@ -1,17 +1,39 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
+import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestHarness, TestParameters, TestResult}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, FileVisitor, Files, Path, Paths}
+import java.nio.file.{FileSystems, FileVisitResult, FileVisitor, Files, Path, PathMatcher, Paths}
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NoStackTrace
 import svsim._
 
+object SimulationOutcome {
+
+  /** A test result, either success or failure. */
+  sealed trait Type
+
+  /** Test passed. */
+  case object Success extends Type
+
+  /** Test failed somehow. */
+  sealed trait Failure extends Type
+
+  /** Test timed out. */
+  case class Timeout(n: BigInt) extends Failure
+
+  /** Test failed with an assertion. */
+  case class Assertion(simulatorOutput: String) extends Failure
+
+  /** Test signaled failure. */
+  case object SignaledFailure extends Failure
+}
+
 object Exceptions {
 
-  class AssertionFailed private[simulator] (message: String)
+  class AssertionFailed private[simulator] (message: String, val simulatorOutput: String)
       extends RuntimeException(
         dramaticMessage(
           header = Some("One or more assertions failed during Chiselsim simulation"),
@@ -20,7 +42,7 @@ object Exceptions {
       )
       with NoStackTrace
 
-  class Timeout private[simulator] (timesteps: BigInt, message: String)
+  class Timeout private[simulator] (private[simulator] val timesteps: BigInt, message: String)
       extends RuntimeException(
         dramaticMessage(
           header = Some(s"A timeout occurred after $timesteps timesteps"),
@@ -29,6 +51,25 @@ object Exceptions {
       )
       with NoStackTrace
 
+  class TestFailed private[simulator]
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some(s"The test finished and signaled failure"),
+          body = ""
+        )
+      )
+      with NoStackTrace
+
+  class TestsFailed private[simulator] (
+    message:     String,
+    val results: Seq[chisel3.experimental.inlinetest.SimulatedTest]
+  ) extends RuntimeException(
+        dramaticMessage(
+          header = Some("One or more tests failed during simulation"),
+          body = message
+        )
+      )
+      with NoStackTrace
 }
 
 final object Simulator {
@@ -65,8 +106,9 @@ trait Simulator[T <: Backend] {
     *
     * @return None if no failures found or Some if they are
     */
-  private def postProcessLog: Option[Throwable] = {
-    val log = Paths.get(workspacePath, s"workdir-${tag}", "simulation-log.txt").toFile
+  private def postProcessLog(workspace: Workspace): Option[Throwable] = {
+    val log =
+      Paths.get(workspace.absolutePath, s"${workspace.workingDirectoryPrefix}-${tag}", "simulation-log.txt").toFile
     val lines = scala.io.Source
       .fromFile(log)
       .getLines()
@@ -76,6 +118,7 @@ trait Simulator[T <: Backend] {
 
     Option.when(lines.nonEmpty)(
       new Exceptions.AssertionFailed(
+        simulatorOutput = lines.map(_._1).mkString("\n"),
         message = s"""|The following assertion failures were extracted from the log file:
                       |
                       |  lineNo  line
@@ -118,12 +161,82 @@ trait Simulator[T <: Backend] {
     val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
     workspace.reset()
     val elaboratedModule =
-      workspace.elaborateGeneratedModule(
+      workspace
+        .elaborateGeneratedModule(
+          () => module,
+          args = chiselOptsModifications(chiselOpts).toSeq,
+          firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
+        )
+    _simulate(workspace, elaboratedModule, settings)(body)
+  }
+
+  final def simulateTests[T <: RawModule with HasTests, U](
+    module:           => T,
+    includeTestGlobs: Array[String],
+    chiselOpts:       Array[String] = Array.empty,
+    firtoolOpts:      Array[String] = Array.empty,
+    settings:         Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]]
+  )(body: (SimulatedModule[TestHarness[T]]) => U)(
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
+  ) = {
+    val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
+    workspace.reset()
+    val filesystem = FileSystems.getDefault()
+    val results = workspace
+      .elaborateAndMakeTestHarnessWorkspaces(
         () => module,
+        includeTestGlobs = includeTestGlobs.toSeq,
         args = chiselOptsModifications(chiselOpts).toSeq,
         firtoolArgs = firtoolOptsModifications(firtoolOpts).toSeq
       )
+      .map { case (testWorkspace, elaboratedTest, elaboratedModule) =>
+        val digest = _simulate(testWorkspace, elaboratedModule, settings)(body)
+        // Try to unpack the result, otherwise figure out what went wrong.
+        // TODO: push this down, i.e. all ChiselSim invocations return a SimulationOutcome
+        val outcome: SimulationOutcome.Type =
+          try {
+            digest.result
+            SimulationOutcome.Success
+          } catch {
+            // Simulation ended due to an aserrtion
+            case assertion: Exceptions.AssertionFailed => SimulationOutcome.Assertion(assertion.simulatorOutput)
+            // Simulation ended because the testharness signaled success=0
+            case _: Exceptions.TestFailed => SimulationOutcome.SignaledFailure
+            // Simulation timed out
+            case to: Exceptions.Timeout => SimulationOutcome.Timeout(to.timesteps)
+            // Simulation did not run correctly
+            case e: Throwable => throw e
+          }
+        SimulatedTest(elaboratedTest, outcome)
+      }
 
+    val failures = results.filter(!_.success)
+    if (failures.nonEmpty) {
+      val moduleName = results.head.dutName
+      val failedTests = failures.size
+      val passedTests = results.size - failedTests
+      val failureMessages = failures.map { test =>
+        s"  - ${test.testName}: ${test.result.asInstanceOf[TestResult.Failure].message}"
+      }
+      val aggregatedMessage =
+        s"${moduleName} tests: ${passedTests} passed, ${failedTests} failed\nfailures: \n${failureMessages.mkString("\n")}"
+      throw new Exceptions.TestsFailed(aggregatedMessage, results)
+    }
+  }
+
+  private def _simulate[T <: RawModule, U](
+    workspace:        Workspace,
+    elaboratedModule: ElaboratedModule[T],
+    settings:         Settings[T] = Settings.defaultRaw[T]
+  )(body: (SimulatedModule[T]) => U)(
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
+  ): Simulator.BackendInvocationDigest[U] = {
     // Find all the directories that exist under another directory.
     val primarySourcesDirectories = mutable.LinkedHashSet.empty[String]
     class DirectoryFinder extends FileVisitor[Path] {
@@ -217,13 +330,13 @@ trait Simulator[T <: Backend] {
       }
     }.transform(
       s /*success*/ = { case success =>
-        postProcessLog match {
+        postProcessLog(workspace) match {
           case None        => Success(success)
           case Some(error) => Failure(error)
         }
       },
       f /*failure*/ = { case originalError =>
-        postProcessLog match {
+        postProcessLog(workspace) match {
           case None           => Failure(originalError)
           case Some(newError) => Failure(newError)
         }
