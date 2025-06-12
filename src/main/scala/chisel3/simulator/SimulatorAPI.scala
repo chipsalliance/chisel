@@ -107,6 +107,7 @@ trait SimulatorAPI {
     *
     * @param module the Chisel module to generate
     * @param test the choice of which test(s) to run
+    * @param timeout number of cycles after which the test fails if unfinished
     * @param chiselOpts command line options to pass to Chisel
     * @param firtoolOpts command line options to pass to firtool
     * @param settings ChiselSim-related settings used for simulation

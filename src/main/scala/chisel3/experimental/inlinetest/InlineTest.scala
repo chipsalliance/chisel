@@ -45,10 +45,9 @@ object TestConfiguration {
     new TestConfiguration(finishCondition = None, successCondition = None, failureMessage = None)
 
   def runForCycles(nCycles: Int): TestConfiguration = {
-    val counter = Counter(nCycles)
-    counter.inc()
+    val (_, done) = Counter(true.B, nCycles)
     new TestConfiguration(
-      finishCondition = Some(counter.value === (nCycles - 1).U),
+      finishCondition = Some(done),
       successCondition = None,
       failureMessage = None
     )
@@ -81,10 +80,7 @@ private[chisel3] class SimulatedTest private (
     case SimulationOutcome.Timeout(n)                 => TestResult.Failure(s"timeout reached after ${n} timesteps")
     case SimulationOutcome.SignaledFailure            => TestResult.Failure(s"test signaled failure")
   }
-  val success = result match {
-    case TestResult.Success => true
-    case _                  => false
-  }
+  val success = result == TestResult.Success
 }
 
 object SimulatedTest {
