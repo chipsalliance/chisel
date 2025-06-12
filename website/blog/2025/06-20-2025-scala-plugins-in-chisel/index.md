@@ -78,7 +78,7 @@ General treatment of the theory of eDSL is still fairly lacking
 compared to the theory of programming languages proper, but a
 pertinent concept that's often mentioned is the "depth" of embedded of
 an eDSL^5^. Depending on how DSLs are embedded in their host
-languages, eDSLs can either be "deep" or "shallow" embeddedings. A
+languages, eDSLs can either be "deep" or "shallow" embeddings. A
 shallowly embedded language is little more than a library -- import
 constructs from the language and you're good to go. On the other hand,
 a deeply embedded language uses advanced metaprogramming or custom
@@ -109,7 +109,7 @@ plugins/ - a feature for DSL developers that allows adding custom passes which
 will be interspersed within the host language's compiler pipeline.
 
 In Scala, compiler plugin phases run between specified phases of the
-host compiler. These phases can have custom transforms that recieve
+host compiler. These phases can have custom transforms that receive
 ASTs from the previous phase, inspect and transform them, and send
 them along to the next phase. Compiler plugins are written within the
 host Scala compiler's namespace and context. While this provides them
@@ -168,7 +168,7 @@ hardware verification.
 
 > **_Aside: Naming in Chisel_** Naming of user-defined variables has
 > evolved significantly in Chisel over each major version and has
-> recently stabilized, with now multiple naming schemes avaiable based
+> recently stabilized, with now multiple naming schemes available based
 > on user requirements -- from simple name "suggestions" to the
 > compiler to more complex custom name overrides. See ["Chisel
 > Explanations -
@@ -211,7 +211,7 @@ ValDef(
 ```
 
 `ValDef`, `TypeTree`, `Apply`, `Ident` and so on are constructs from
-the Scala compiler source code which create the AST. 
+the Scala compiler source code which help construct the AST. 
 
 Once a Chisel type has been detected by the naming transformation, it
 inspects the syntax tree of each AST node to extract the variable name
