@@ -73,7 +73,7 @@ language from an even higher-level, domain-specific language. The
 "domains" here range from numerical operations<sup>1</sup>, database
 management<sup>2</sup>, or even... hardware generation<sup>3, 4</sup>.
 
-General treatment of the theory of eDSL is still fairly lacking
+General treatment of the theory of eDSLs is still fairly lacking
 compared to the theory of programming languages proper, but a
 pertinent concept that's often mentioned is the "depth" of embedded of
 an eDSL^5^. Depending on how DSLs are embedded in their host
@@ -208,8 +208,9 @@ ValDef(
 )
 ```
 
-`ValDef`, `TypeTree`, `Apply`, `Ident` and so on are constructs from
-the Scala compiler source code which help construct the AST. 
+`ValDef`, `TypeTree`, `Apply`, `Ident` and so on are internal types of
+the Scala compiler source code which can be composed to create an AST
+representation.
 
 Once a Chisel type has been detected by the naming transformation, it
 inspects the syntax tree of each AST node to extract the variable name
@@ -306,8 +307,8 @@ annotation function coincidentally also called `withName`.<sup>10</sup>
 # Final Remarks
 
 Chisel naming has come a long way, and after undergoing heavy
-utilization for mission-critical applications at
-[SiFive](https://sifive.com) can safely be deemed to be stable. With the
+utilization and customization in mission-critical applications at
+[SiFive](https://sifive.com), can safely be deemed to be stable. With the
 ongoing work of adding support for Scala 3 in Chisel, we're hoping to
 develop cleaner and more readable Scala compiler plugins.
 
