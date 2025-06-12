@@ -96,14 +96,11 @@ object BundleHelpers {
     val elemTpe = defn.TupleClass.typeRef.appliedTo(List(defn.StringType, defn.AnyType))
     val vectorModule = ref(requiredModule("scala.collection.immutable.Vector").termRef)
 
-    // Vector.apply[(String, Any)](...)
     val vec = Apply(
       TypeApply(Select(vectorModule, nme.apply), List(TypeTree(elemTpe))),
       List(SeqLiteral(values, TypeTree(elemTpe)))
     )
-
-    // .iterator
-    Select(vec, Names.termName("iterator"))
+    vec
   }
 
   /** Creates the tuple containing the given elements */
@@ -149,15 +146,15 @@ object BundleHelpers {
     val tupleTpe =
       defn.TupleClass.typeRef.appliedTo(List(defn.StringType, defn.AnyType))
 
-    val iteratorTpe =
-      requiredClassRef("scala.collection.Iterator").appliedTo(tupleTpe)
+    val iterableTpe =
+      requiredClassRef("scala.collection.Iterable").appliedTo(tupleTpe)
 
     val elementsSym: Symbol =
       newSymbol(
         bundleSym,
         Names.termName("_elementsImpl"),
         Flags.Method | Flags.Override | Flags.Protected,
-        MethodType(Nil, Nil, iteratorTpe)
+        MethodType(Nil, Nil, iterableTpe)
       )
     println(s"rhs: $rhs")
     val dd = tpd.DefDef(elementsSym.asTerm, rhs)
@@ -184,7 +181,6 @@ class ChiselBundlePhase extends PluginPhase {
       ChiselTypeHelpers.isRecord(record.tpe)
       && !record.symbol.flags.is(Flags.Abstract)
     ) {
-
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz:     tpd.This = tpd.This(record.symbol.asClass)
 
@@ -222,7 +218,7 @@ class ChiselBundlePhase extends PluginPhase {
       //     BundleHelpers.generateAutoTypename(record, thiz, conArgs.map(_.flatten))
       //   } else None
 
-      val ret = record match {
+      record match {
         case td @ TypeDef(name, tmpl: tpd.Template) => {
           val newDefs =
             elementsImplOpt.toList ++ usingPluginOpt.toList ++ cloneTypeImplOpt.toList
@@ -235,7 +231,8 @@ class ChiselBundlePhase extends PluginPhase {
         }
         case _ => super.transformTypeDef(record)
       }
-      ret
+      // println(s"ret: $ret")
+      // ret
     } else {
       super.transformTypeDef(record)
     }
