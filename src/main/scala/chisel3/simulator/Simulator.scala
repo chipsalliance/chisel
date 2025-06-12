@@ -1,7 +1,7 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestHarness, TestParameters}
+import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestHarness, TestParameters, TestResult}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileSystems, FileVisitResult, FileVisitor, Files, Path, PathMatcher, Paths}
@@ -215,12 +215,14 @@ trait Simulator[T <: Backend] {
 
     val failures = results.filter(!_.success)
     if (failures.nonEmpty) {
+      val moduleName = results.head.dutName
       val failedTests = failures.size
       val passedTests = results.size - failedTests
-      val moduleName = results.head.dutName
-      val failedTestNames = failures.map(_.testName).mkString(", ")
+      val failureMessages = failures.map { test =>
+        s"  - ${test.testName}: ${test.result.asInstanceOf[TestResult.Failure].message}"
+      }
       val aggregatedMessage =
-        s"${moduleName} tests: ${passedTests} succeeded, ${failedTests} failed (${failedTestNames})"
+        s"${moduleName} tests: ${passedTests} passed, ${failedTests} failed\nfailures: \n${failureMessages.mkString("\n")}"
       throw new Exceptions.TestsFailed(aggregatedMessage, results)
     }
   }

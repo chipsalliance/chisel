@@ -413,7 +413,9 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
         timeout = 100
       )
     }
-    exception.getMessage should include("ModuleWithTests tests: 0 succeeded, 1 failed (failing)")
+    exception.getMessage should include("ModuleWithTests tests: 0 passed, 1 failed")
+    exception.getMessage should include("failures:")
+    exception.getMessage should include("- failing: test signaled failure")
   }
 
   it should "simulate and fail early if assertion raised" in {
@@ -424,7 +426,9 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
         timeout = 100
       )
     }
-    exception.getMessage should include("ModuleWithTests tests: 0 succeeded, 1 failed (assertion)")
+    exception.getMessage should include("ModuleWithTests tests: 0 passed, 1 failed")
+    exception.getMessage should include("failures:")
+    (exception.getMessage should include).regex("- assertion: .*assertion fired")
   }
 
   it should "run multiple passing simulations" in {
@@ -443,7 +447,9 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
         timeout = 100
       )
     }
-    exception.getMessage should include("ModuleWithTests tests: 1 succeeded, 1 failed (failing)")
+    exception.getMessage should include("ModuleWithTests tests: 1 passed, 1 failed")
+    exception.getMessage should include("failures:")
+    exception.getMessage should include("- failing: test signaled failure")
 
     // Verify that granular results are available in the exception
     exception.results should have size 2
@@ -466,7 +472,9 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
         timeout = 100
       )
     }
-    exception.getMessage should include("ModuleWithTests tests: 1 succeeded, 1 failed (assertion)")
+    exception.getMessage should include("ModuleWithTests tests: 1 passed, 1 failed")
+    exception.getMessage should include("failures:")
+    (exception.getMessage should include).regex("- assertion: .*assertion fired")
   }
 
   it should "run one failing-with-assertion, one passing, and one failing-with-signal simulation in any order" in {
@@ -478,9 +486,10 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
           timeout = 100
         )
       }
-      exception.getMessage should include("ModuleWithTests tests: 1 succeeded, 2 failed")
-      exception.getMessage should include("failing")
-      exception.getMessage should include("assertion")
+      exception.getMessage should include("ModuleWithTests tests: 1 passed, 2 failed")
+      exception.getMessage should include("failures:")
+      exception.getMessage should include("- failing: test signaled failure")
+      (exception.getMessage should include).regex("- assertion: .*assertion fired")
 
       // Verify that granular results are available in the exception
       exception.results should have size 3
