@@ -32,6 +32,10 @@ object JsonProtocolTestClasses {
   }
 
   case class SimpleAnnotation(alpha: String) extends NoTargetAnnotation
+
+  case class AnnotationWithOverride(value: String) extends NoTargetAnnotation with OverrideSerializationClass {
+    def serializationClassOverride = value
+  }
 }
 
 import JsonProtocolTestClasses._
@@ -117,5 +121,17 @@ class JsonProtocolSpec extends AnyFlatSpec with Matchers {
     res should include(""""class":"firrtl.annotations.UnserializeableAnnotation",""")
     res should include(""""error":"Classes defined in method bodies are not supported.",""")
     res should include(""""content":"MyAnno(3)"""")
+  }
+
+  "OverrideSerializationClass" should "allow annotations to change the 'class' in JSON" in {
+    val anno = AnnotationWithOverride("a.b.c.d.Foo")
+    val res = JsonProtocol.serialize(Seq(anno))
+    res should include(""""class":"a.b.c.d.Foo"""")
+  }
+
+  it should "error if inconsistent overrides are used" in {
+    val annos = AnnotationWithOverride("foo") :: AnnotationWithOverride("bar") :: Nil
+    val e = the[Exception] thrownBy JsonProtocol.serialize(annos)
+    e.getMessage should include("multiple serialization class overrides: foo, bar")
   }
 }
