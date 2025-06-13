@@ -103,7 +103,7 @@ object TestChoice {
   }
 
   /** Run tests matching any of these globs. */
-  case class Globs(globs: Array[String]) extends Type
+  case class Globs(private[chisel3] val globs: Array[String]) extends Type
 
   object Globs {
     def apply(globs: String*): Globs = new Globs(globs.toArray)
