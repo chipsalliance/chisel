@@ -190,8 +190,10 @@ object JsonProtocol extends LazyLogging {
 
     for (anno <- annos) {
       addTag(anno.getClass)
-      if (anno.isInstanceOf[HasSerializationHints]) {
-        anno.typeHints.foreach(addTag(_))
+      anno match {
+        case anno: HasSerializationHints =>
+          anno.typeHints.foreach(addTag(_))
+        case _ => ()
       }
       anno match {
         case anno: OverrideSerializationClass =>
