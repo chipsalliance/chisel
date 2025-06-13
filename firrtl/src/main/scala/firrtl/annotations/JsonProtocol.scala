@@ -190,22 +190,16 @@ object JsonProtocol extends LazyLogging {
 
     for (anno <- annos) {
       addTag(anno.getClass)
-      anno match {
-        case anno: HasSerializationHints =>
-          anno.typeHints.foreach(addTag(_))
-        case _ => ()
+      if (anno.isInstanceOf[HasSerializationHints]) {
+        anno.typeHints.foreach(addTag(_))
       }
       anno match {
         case anno: OverrideSerializationClass =>
-          tagOverride.get(anno.getClass) match {
-            case Some(existing) =>
-              if (existing != anno.serializationClassOverride) {
-                throw new Exception(
-                  s"Class ${anno.getClass.getName} has multiple serialization class overrides: $existing, ${anno.serializationClassOverride}"
-                )
-              }
-            case None =>
-              tagOverride += anno.getClass -> anno.serializationClassOverride
+          val existing = tagOverride.put(anno.getClass, anno.serializationClassOverride)
+          if (existing.isDefined) {
+            throw new Exception(
+              s"Class ${anno.getClass.getName} has multiple serialization class overrides: ${existing.get}, ${anno.serializationClassOverride}"
+            )
           }
         case _ => ()
       }
