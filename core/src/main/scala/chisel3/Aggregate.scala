@@ -803,7 +803,7 @@ trait VecLike[T <: Data] extends VecLikeImpl[T] with IndexedSeq[T] with HasId {
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-abstract class Record extends Aggregate {
+abstract class Record extends Aggregate with Selectable {
 
   /** The list of parameter accessors used in the constructor of this [[chisel3.Record]].
     *
