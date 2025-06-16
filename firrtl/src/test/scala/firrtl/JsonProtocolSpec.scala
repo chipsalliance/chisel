@@ -129,6 +129,11 @@ class JsonProtocolSpec extends AnyFlatSpec with Matchers {
     res should include(""""class":"a.b.c.d.Foo"""")
   }
 
+  it should "work for the same class if it has the same override" in {
+    val annos = AnnotationWithOverride("foo") :: AnnotationWithOverride("foo") :: Nil
+    JsonProtocol.serialize(annos)
+  }
+
   it should "error if inconsistent overrides are used" in {
     val annos = AnnotationWithOverride("foo") :: AnnotationWithOverride("bar") :: Nil
     val e = the[Exception] thrownBy JsonProtocol.serialize(annos)
