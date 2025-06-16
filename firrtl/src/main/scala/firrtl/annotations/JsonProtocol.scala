@@ -198,7 +198,7 @@ object JsonProtocol extends LazyLogging {
       anno match {
         case anno: OverrideSerializationClass =>
           val existing = tagOverride.put(anno.getClass, anno.serializationClassOverride)
-          if (existing.isDefined) {
+          if (existing.isDefined && existing.get != anno.serializationClassOverride) {
             throw new Exception(
               s"Class ${anno.getClass.getName} has multiple serialization class overrides: ${existing.get}, ${anno.serializationClassOverride}"
             )
