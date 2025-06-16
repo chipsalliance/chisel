@@ -47,7 +47,7 @@ object BundleHelpers {
       val newExpr = tpd.New(record.symbol.typeRef, conArgs.flatten)
 
       val cloneTypeSym = newSymbol(
-        record.symbol.owner,
+        record.symbol,
         Names.termName("_cloneTypeImpl"),
         Flags.Method | Flags.Override | Flags.Protected,
         MethodType(Nil)(_ => Nil, _ => record.symbol.typeRef)
@@ -156,10 +156,8 @@ object BundleHelpers {
         Flags.Method | Flags.Override | Flags.Protected,
         MethodType(Nil, Nil, iterableTpe)
       )
-    println(s"rhs: $rhs")
-    val dd = tpd.DefDef(elementsSym.asTerm, rhs)
-    println(s"dd: $dd")
-    dd
+
+    tpd.DefDef(elementsSym.asTerm, rhs)
   }
 }
 
@@ -184,7 +182,6 @@ class ChiselBundlePhase extends PluginPhase {
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz:     tpd.This = tpd.This(record.symbol.asClass)
 
-      // todo: test this after genElements
       // // ==================== Generate _cloneTypeImpl ====================
       val conArgs: Option[List[List[tpd.Tree]]] =
         BundleHelpers.extractConArgs(record, thiz, isBundle)
@@ -199,9 +196,9 @@ class ChiselBundlePhase extends PluginPhase {
       val usingPluginOpt =
         if (isBundle) {
           val isPluginSym = newSymbol(
-            record.symbol.owner,
+            record.symbol,
             Names.termName("_usingPlugin"),
-            Flags.Method | Flags.Override, // | Flags.Protected,
+            Flags.Method | Flags.Override | Flags.Protected,
             defn.BooleanType
           )
           Some(
@@ -231,8 +228,6 @@ class ChiselBundlePhase extends PluginPhase {
         }
         case _ => super.transformTypeDef(record)
       }
-      // println(s"ret: $ret")
-      // ret
     } else {
       super.transformTypeDef(record)
     }
