@@ -368,7 +368,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
     }
 
     it("should emit Annotations inline in emitted CHIRRTL") {
-      val targetDir = os.pwd / "ChiselStageSpec" / "should-inline-Annotations-in-emitted-CHIRRTL"
+      val targetDir = baseDir / "ChiselStageSpec" / "should-inline-Annotations-in-emitted-CHIRRTL"
 
       val args: Array[String] = Array(
         "--target",
@@ -608,7 +608,12 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
         intercept[java.lang.Exception] {
           (new ChiselStage)
             .execute(
-              Array("--target", "chirrtl"),
+              Array(
+                "--target",
+                "chirrtl",
+                "--source-root",
+                s"${sys.env.get("MILL_WORKSPACE_ROOT").get}"
+              ),
               Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
             )
         }
@@ -624,11 +629,14 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
     }
 
     it("should NOT include source line and caret with an incorrect --source-root") {
+      val incorrectRoot = new File(s"incorrect_root")
+      incorrectRoot.mkdirs()
+
       val (stdout, stderr, _) = grabStdOutErr {
         intercept[java.lang.Exception] {
           (new ChiselStage)
             .execute(
-              Array("--target", "chirrtl", "--source-root", ".github"),
+              Array("--target", "chirrtl", "--source-root", incorrectRoot.toString),
               Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableError))
             )
         }
@@ -654,7 +662,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
                 "--source-root",
                 ".",
                 "--source-root",
-                "src/test/resources/chisel3/sourceroot1"
+                s"${sys.env.get("MILL_TEST_RESOURCE_DIR").get}/chisel3/sourceroot1"
               ),
               Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableErrorFakeSourceInfo))
             )
@@ -677,9 +685,9 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
                 "--target",
                 "chirrtl",
                 "--source-root",
-                "src/test/resources/chisel3/sourceroot2",
+                s"${sys.env.get("MILL_TEST_RESOURCE_DIR").get}/chisel3/sourceroot2",
                 "--source-root",
-                "src/test/resources/chisel3/sourceroot1"
+                s"${sys.env.get("MILL_TEST_RESOURCE_DIR").get}/chisel3/sourceroot1"
               ),
               Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.RecoverableErrorFakeSourceInfo))
             )
@@ -697,7 +705,12 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       val e = intercept[java.lang.Exception] {
         (new ChiselStage)
           .execute(
-            Array("--target", "systemverilog", "--source-root", "src/test/resources/chisel3/sourceroot1"),
+            Array(
+              "--target",
+              "systemverilog",
+              "--source-root",
+              s"${sys.env.get("MILL_TEST_RESOURCE_DIR").get}/chisel3/sourceroot1"
+            ),
             Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.ErrorCaughtByFirtool))
           )
       }
