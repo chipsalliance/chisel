@@ -45,14 +45,13 @@ object BundleHelpers {
   )(using Context): Option[tpd.DefDef] = {
     conArgsOpt.flatMap { conArgs =>
       val newExpr = tpd.New(record.symbol.typeRef, conArgs.flatten)
-
+      val recordTpe = requiredClassRef("chisel3.Record")
       val cloneTypeSym = newSymbol(
         record.symbol,
         Names.termName("_cloneTypeImpl"),
         Flags.Method | Flags.Override | Flags.Protected,
-        MethodType(Nil)(_ => Nil, _ => record.symbol.typeRef)
+        MethodType(Nil, Nil, recordTpe)
       )
-
       Some(tpd.DefDef(cloneTypeSym.asTerm, _ => newExpr))
     }
   }
@@ -62,11 +61,8 @@ object BundleHelpers {
     thiz:     tpd.This,
     isBundle: Boolean
   )(using Context): Option[List[List[tpd.Tree]]] = {
-    val body = record.rhs.asInstanceOf[tpd.Template].body
-
-    val primaryConstructorOpt = body.collectFirst {
-      case dd: tpd.DefDef if dd.symbol.isPrimaryConstructor => dd
-    }
+    val template = record.rhs.asInstanceOf[tpd.Template]
+    val primaryConstructorOpt = Option(template.constr) // ← pick the stored constructor
 
     val paramAccessors = record.symbol.primaryConstructor.paramSymss.flatten
 
@@ -82,9 +78,7 @@ object BundleHelpers {
       val p = paramLookup(vp.name.toString)
       val select = tpd.Select(thiz, p.name)
       val cloned: tpd.Tree =
-        if (ChiselTypeHelpers.isData(vp.tpt.tpe))
-          cloneTypeFull(select)
-        else select
+        if (ChiselTypeHelpers.isData(vp.tpt.tpe)) cloneTypeFull(select) else select
 
       if (vp.tpt.tpe.isRepeatedParam)
         tpd.SeqLiteral(List(cloned), cloned)
@@ -121,7 +115,7 @@ object BundleHelpers {
         .asInstance(defn.tupleType(elems.map(elem => elem.tpe.widenIfUnstable)))
   }
 
-  def generateElements(record: tpd.TypeDef, thiz: tpd.This)(using Context): tpd.DefDef = {
+  def getBundleFields(record: tpd.TypeDef)(using Context): List[Tree] = {
     val bundleSym = record.symbol.asClass
     val recordTpe = requiredClass("chisel3.Record")
     def isBundleDataField(m: Symbol): Boolean = {
@@ -139,6 +133,13 @@ object BundleHelpers {
         val sel:     tpd.Tree = tpd.Select(thisRef, m.termRef)
         tupleTree(List(tpd.Literal(Constant(name)), sel))
     }
+    currentFields
+  }
+
+  def generateElements(record: tpd.TypeDef)(using Context): tpd.DefDef = {
+    val bundleSym = record.symbol.asClass
+
+    val currentFields: List[Tree] = getBundleFields(record)
 
     val dataTpe = requiredClassRef("chisel3.Data")
     val rhs = makeArray(currentFields)
@@ -190,7 +191,7 @@ class ChiselBundlePhase extends PluginPhase {
 
       // ==================== Generate val elements (Bundles only) ====================
       val elementsImplOpt: Option[tpd.DefDef] =
-        if (isBundle) Some(BundleHelpers.generateElements(record, thiz)) else None
+        if (isBundle) Some(BundleHelpers.generateElements(record)) else None
 
       // ==================== Generate _usingPlugin ====================
       val usingPluginOpt =
