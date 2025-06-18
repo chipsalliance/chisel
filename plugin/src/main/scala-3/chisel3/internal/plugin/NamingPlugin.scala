@@ -20,15 +20,6 @@ import dotty.tools.dotc.util.SourcePosition
 
 import scala.collection.mutable
 
-class ChiselNamingPlugin extends StandardPlugin {
-  val name:                 String = "ChiselNamingPlugin"
-  override val description: String = "Chisel's type-specific naming"
-
-  override def init(options: List[String]): List[PluginPhase] = {
-    (new ChiselNamingPhase) :: Nil
-  }
-}
-
 class ChiselNamingPhase extends PluginPhase {
   val phaseName: String = "chiselNamingPhase"
   override val runsAfter = Set(TyperPhase.name)
