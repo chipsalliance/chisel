@@ -162,15 +162,6 @@ object BundleHelpers {
   }
 }
 
-class ChiselBundlePlugin extends StandardPlugin {
-  val name:                 String = "ChiselBundlePlugin"
-  override val description: String = "Chisel Bundle type handling"
-
-  override def init(options: List[String]): List[PluginPhase] = {
-    (new ChiselBundlePhase) :: Nil
-  }
-}
-
 class ChiselBundlePhase extends PluginPhase {
   val phaseName: String = "chiselBundlePhase"
   override val runsAfter = Set(TyperPhase.name)
