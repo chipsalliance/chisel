@@ -696,6 +696,15 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
              |""".stripMargin
         )
     }
+    it("(3.u): should work on ActualDirection") {
+      class Top extends Module {
+        val i = Instance(Definition(new HasPublicActualDirection))
+        i.inputDirection should be(ActualDirection.Input)
+        i.outputDirection should be(ActualDirection.Output)
+        i.bundleDirection should be(ActualDirection.Bidirectional(ActualDirection.Default))
+      }
+      ChiselStage.emitCHIRRTL(new Top)
+    }
   }
   describe("(4) toInstance") {
     it("(4.a): should work on modules") {

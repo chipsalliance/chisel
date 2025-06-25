@@ -1,5 +1,6 @@
 package chisel3.testing
 
+import svsim.Workspace.getProjectRootOrCwd
 import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
@@ -58,9 +59,10 @@ object HasTestingDirectory {
     */
   def timestamp: HasTestingDirectory = new HasTestingDirectory {
     val time = LocalDateTime.now()
-    override def getDirectory: Path = FileSystems
-      .getDefault()
-      .getPath("build", "chiselsim", time.toString.replace(':', '-'))
+    override def getDirectory: Path = getProjectRootOrCwd
+      .resolve("build")
+      .resolve("chiselsim")
+      .resolve(time.toString.replace(':', '-'))
   }
 
   /** An implementation generator of [[HasTestingDirectory]] which will use an

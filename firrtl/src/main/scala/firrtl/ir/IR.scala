@@ -552,6 +552,9 @@ case class Verification(
 case object EmptyStmt extends Statement with UseSerializer
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class Comment(text: String) extends Statement with UseSerializer
+
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 abstract class Width extends FirrtlNode {
   def +(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width + b.width)

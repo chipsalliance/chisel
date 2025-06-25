@@ -2,16 +2,15 @@
 
 package firrtlTests
 
+import scala.util.Failure
+
 import org.json4s._
 
-import firrtl.annotations.{
-  Annotation,
-  HasSerializationHints,
-  InvalidAnnotationJSONException,
-  JsonProtocol,
-  NoTargetAnnotation
-}
+import firrtl.annotations._
+import firrtl.transforms.DontTouchAnnotation
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.Inside._
+import org.scalatest.matchers.should._
 
 object JsonProtocolTestClasses {
   trait Parent
@@ -33,11 +32,15 @@ object JsonProtocolTestClasses {
   }
 
   case class SimpleAnnotation(alpha: String) extends NoTargetAnnotation
+
+  case class AnnotationWithOverride(value: String) extends NoTargetAnnotation with OverrideSerializationClass {
+    def serializationClassOverride = value
+  }
 }
 
 import JsonProtocolTestClasses._
 
-class JsonProtocolSpec extends AnyFlatSpec {
+class JsonProtocolSpec extends AnyFlatSpec with Matchers {
   def serializeAndDeserialize(anno: Annotation): Annotation = {
     val serializedAnno = JsonProtocol.serialize(Seq(anno))
     JsonProtocol.deserialize(serializedAnno).head
@@ -99,5 +102,41 @@ class JsonProtocolSpec extends AnyFlatSpec {
     val ser1 = w.value
     val ser2 = JsonProtocol.serialize(Seq(anno))
     assert(ser1 == ser2)
+  }
+
+  "Trying to serialize annotations that cannot be serialized" should "tell you why" in {
+    case class MyAnno(x: Int) extends NoTargetAnnotation
+    inside(JsonProtocol.serializeTry(MyAnno(3) :: Nil)) { case Failure(e: UnserializableAnnotationException) =>
+      e.getMessage should include("MyAnno")
+      // From json4s Exception
+      e.getMessage should include("Classes defined in method bodies are not supported")
+    }
+  }
+
+  "JsonProtocol.serializeRecover" should "emit even annotations that cannot be serialized" in {
+    case class MyAnno(x: Int) extends NoTargetAnnotation
+    val target = ModuleTarget("Foo").ref("x")
+    val annos = MyAnno(3) :: DontTouchAnnotation(target) :: Nil
+    val res = JsonProtocol.serializeRecover(annos)
+    res should include(""""class":"firrtl.annotations.UnserializeableAnnotation",""")
+    res should include(""""error":"Classes defined in method bodies are not supported.",""")
+    res should include(""""content":"MyAnno(3)"""")
+  }
+
+  "OverrideSerializationClass" should "allow annotations to change the 'class' in JSON" in {
+    val anno = AnnotationWithOverride("a.b.c.d.Foo")
+    val res = JsonProtocol.serialize(Seq(anno))
+    res should include(""""class":"a.b.c.d.Foo"""")
+  }
+
+  it should "work for the same class if it has the same override" in {
+    val annos = AnnotationWithOverride("foo") :: AnnotationWithOverride("foo") :: Nil
+    JsonProtocol.serialize(annos)
+  }
+
+  it should "error if inconsistent overrides are used" in {
+    val annos = AnnotationWithOverride("foo") :: AnnotationWithOverride("bar") :: Nil
+    val e = the[Exception] thrownBy JsonProtocol.serialize(annos)
+    e.getMessage should include("multiple serialization class overrides: foo, bar")
   }
 }

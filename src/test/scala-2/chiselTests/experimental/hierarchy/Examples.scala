@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.util.{SRAM, Valid}
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.{attach, Analog, BaseModule}
+import chisel3.reflect.DataMirror
 
 object Examples {
   import Annotations._
@@ -381,6 +382,18 @@ object Examples {
     @public val x: Unit = ()
     // Should also work in type-parameterized lookupable things
     @public val y: (Data, Unit) = (Wire(UInt(3.W)), ())
+  }
+
+  @instantiable
+  class HasPublicActualDirection extends Module {
+    val io = IO(new Bundle {
+      val input = Input(UInt(8.W))
+      val output = Output(UInt(8.W))
+    })
+
+    @public val inputDirection:  ActualDirection = DataMirror.directionOf(io.input)
+    @public val outputDirection: ActualDirection = DataMirror.directionOf(io.output)
+    @public val bundleDirection: ActualDirection = DataMirror.directionOf(io)
   }
 
   case class UserDefinedType(name: String, data: UInt, inst: Instance[AddOne])

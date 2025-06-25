@@ -19,15 +19,23 @@ trait RunUntilFinished[A] extends Stimulus.Type[A] {
   /** A function that returns the clock to tick. */
   protected def _getClock: (A) => Clock
 
+  /** The clock period in time precision units. */
+  protected def _period: Int
+
   /** Apply stimulus to the unit
     *
     * @param the unit to apply stimulus to
     */
   override final def apply(dut: A): Unit = {
+    require(
+      _period >= 2,
+      s"specified period, '${_period}', must be 2 or greater because an integer half period must be non-zero"
+    )
+
     AnySimulatedModule.current
       .port(_getClock(dut))
       .tick(
-        timestepsPerPhase = 1,
+        timestepsPerPhase = _period / 2,
         maxCycles = _maxCycles,
         inPhaseValue = 1,
         outOfPhaseValue = 0,
@@ -48,11 +56,13 @@ object RunUntilFinished {
     *
     * @param maxCycles the maximum number of cycles to run the unit for before a timeout
     */
-  def module(maxCycles: Int): RunUntilFinished[Module] = new RunUntilFinished[Module] {
+  def module(maxCycles: Int, period: Int = 10): RunUntilFinished[Module] = new RunUntilFinished[Module] {
 
     override protected final val _maxCycles = maxCycles
 
     override protected final val _getClock = _.clock
+
+    override protected final val _period = period
 
   }
 
@@ -60,18 +70,23 @@ object RunUntilFinished {
     * @param maxCycles the maximum number of cycles to run the unit for before a timeout
     * @param getClock a function to return a clock from the unit
     */
-  def any[A](maxCycles: Int, getClock: A => Clock): RunUntilFinished[A] = new RunUntilFinished[A] {
+  def any[A](maxCycles: Int, getClock: A => Clock, period: Int = 10): RunUntilFinished[A] =
+    new RunUntilFinished[A] {
 
-    override protected final val _maxCycles = maxCycles
+      override protected final val _maxCycles = maxCycles
 
-    override protected final val _getClock = getClock
+      override protected final val _getClock = getClock
 
-  }
+      override protected final val _period = period
+
+    }
 
   /** Return default stimulus.  This is the same as [[module]].
     *
     * @param maxCycles the maximum number of cycles to run the unit for before a timeout
     */
-  def apply(maxCycles: Int): RunUntilFinished[Module] = module(maxCycles)
+  def apply(maxCycles: Int, period: Int = 10): RunUntilFinished[Module] = {
+    module(maxCycles, period)
+  }
 
 }

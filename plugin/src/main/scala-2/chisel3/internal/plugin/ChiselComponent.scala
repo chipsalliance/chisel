@@ -227,7 +227,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
         }
       case dd @ ValDef(mods, name, tpt, rhs @ Match(_, _)) if okUnapply(dd) =>
         val tpe = inferType(tpt)
-        val fieldsOfInterest: List[Boolean] = tpe.typeArgs.map(shouldMatchData)
+        val fieldsOfInterest: List[Boolean] = tpe.typeArgs.map(shouldMatchNamedComp)
         // Only transform if at least one field is of interest
         if (fieldsOfInterest.reduce(_ || _)) {
           findUnapplyNames(rhs) match {

@@ -131,7 +131,10 @@ object Cli {
                 options.copy(
                   traceStyle = options.traceStyle match {
                     case None =>
-                      Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(filename = "trace.vcd"))
+                      Some(
+                        svsim.verilator.Backend.CompilationSettings
+                          .TraceStyle(svsim.verilator.Backend.CompilationSettings.TraceKind.Vcd)
+                      )
                     case alreadySet => alreadySet
                   }
                 )

@@ -272,6 +272,8 @@ private[chisel3] object Converter {
       fir.EmptyStmt // dummy until the converter removed
     case Placeholder(info, block) =>
       convert(block, ctx, typeAliases)
+    case FirrtlComment(text) =>
+      fir.Comment(text)
   }
 
   /** Convert Chisel IR Commands into FIRRTL Statements

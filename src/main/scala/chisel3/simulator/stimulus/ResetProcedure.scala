@@ -45,8 +45,16 @@ trait ResetProcedure[A] extends Stimulus.Type[A] {
   /** A function that returns the reset to use. */
   protected def _getReset: (A) => Reset
 
+  /** The clock period in time precision units. */
+  protected def _period: Int
+
   /** Apply reset procedure stimulus. */
   override final def apply(dut: A): Unit = {
+
+    require(
+      _period >= 2,
+      s"specified period, '${_period}', must be 2 or greater because an integer half period must be non-zero"
+    )
 
     val module = AnySimulatedModule.current
     val controller = module.controller
@@ -55,12 +63,12 @@ trait ResetProcedure[A] extends Stimulus.Type[A] {
     val clock = module.port(_getClock(dut))
 
     // Run the initialization procedure.
-    controller.run(1)
+    controller.run(_period)
     reset.set(0)
-    controller.run(1)
+    controller.run(_period)
     reset.set(1)
     clock.tick(
-      timestepsPerPhase = 1,
+      timestepsPerPhase = _period / 2,
       maxCycles = 1 + _additionalResetCycles,
       inPhaseValue = 0,
       outOfPhaseValue = 1,
@@ -88,7 +96,8 @@ object ResetProcedure {
   def any[A <: RawModule](
     getClock:              A => Clock,
     getReset:              A => Reset,
-    additionalResetCycles: Int = 0
+    additionalResetCycles: Int = 0,
+    period:                Int = 10
   ): ResetProcedure[A] = new ResetProcedure[A] {
 
     override protected final val _additionalResetCycles = additionalResetCycles
@@ -97,13 +106,16 @@ object ResetProcedure {
 
     override protected final val _getReset = getReset
 
+    override protected final val _period = period
+
   }
 
   /** Return reset stimulus for a [[Module]]. */
-  def module[A <: Module](additionalResetCycles: Int = 0): ResetProcedure[A] = any(
+  def module[A <: Module](additionalResetCycles: Int = 0, period: Int = 10): ResetProcedure[A] = any(
     getClock = _.clock,
     getReset = _.reset,
-    additionalResetCycles = additionalResetCycles
+    additionalResetCycles = additionalResetCycles,
+    period = period
   )
 
 }

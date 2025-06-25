@@ -5,11 +5,13 @@ package svsimTests
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import svsim._
+import svsimTests.Resources.TestWorkspace
+
 import java.io.{BufferedReader, FileReader}
 import java.nio.file.{Path, Paths}
+import scala.jdk.StreamConverters._
 import scala.util.Either
 import scala.util.matching.Regex
-import svsimTests.Resources.TestWorkspace
 
 class VCSSpec extends BackendSpec {
 
@@ -43,7 +45,7 @@ class VCSSpec extends BackendSpec {
           import Resources._
           workspace.reset()
           workspace.elaborateGCD()
-          workspace.generateAdditionalSources()
+          workspace.generateAdditionalSources(None)
           val simulation = workspace.compile(
             backend
           )(
@@ -84,7 +86,7 @@ class VCSSpec extends BackendSpec {
           import Resources._
           workspace.reset()
           workspace.elaborateGCD()
-          workspace.generateAdditionalSources()
+          workspace.generateAdditionalSources(None)
           val simulation = workspace.compile(
             backend
           )(
@@ -154,7 +156,7 @@ class VerilatorSpec extends BackendSpec {
   import verilator.Backend.CompilationSettings._
   val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
   val compilationSettings = verilator.Backend.CompilationSettings(
-    traceStyle = Some(TraceStyle.Vcd(traceUnderscore = false))
+    traceStyle = Some(TraceStyle(TraceKind.Vcd, traceUnderscore = false))
   )
   test("verilator", backend)(compilationSettings)
 
@@ -166,7 +168,7 @@ class VerilatorSpec extends BackendSpec {
       import Resources._
       workspace.reset()
       workspace.elaborateGCD()
-      workspace.generateAdditionalSources()
+      workspace.generateAdditionalSources(None)
       val simulation = workspace.compile(
         backend
       )(
@@ -186,9 +188,25 @@ class VerilatorSpec extends BackendSpec {
         }
       }.getMessage must include("Cannot enable traces as simulator was not compiled to support them")
     }
-
   }
+}
 
+class VerilatorFstTraceSpec extends BackendSpec {
+
+  override val finishRe = "^.*: Verilog \\$finish".r
+
+  import verilator.Backend.CompilationSettings._
+  val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
+  val compilationSettings = verilator.Backend.CompilationSettings(
+    traceStyle = Some(TraceStyle(TraceKind.Fst(), traceUnderscore = true))
+  )
+  test("verilator", backend)(compilationSettings)
+
+  override def checkTraceFile(workingDirectory: Path): Unit = {
+    val traceFileName = "trace.fst"
+    val traceFile = Paths.get(workingDirectory.toString, traceFileName)
+    traceFile.toFile.exists() must be(true)
+  }
 }
 
 trait BackendSpec extends AnyFunSpec with Matchers {
@@ -197,6 +215,15 @@ trait BackendSpec extends AnyFunSpec with Matchers {
     * log indicating that a Verilog `$finish` took place.
     */
   def finishRe: Regex
+
+  def checkTraceFile(workingDirectory: Path): Unit = {
+    val traceFileName = "trace.vcd"
+    val traceFile = Paths.get(workingDirectory.toString, traceFileName)
+    val traceReader = new BufferedReader(new FileReader(traceFile.toFile))
+    val lines = traceReader.lines.toScala(List)
+    lines.length must be > 1
+    lines must contain("$enddefinitions $end")
+  }
 
   def test[Backend <: svsim.Backend](
     name:    String,
@@ -227,7 +254,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         import Resources._
         workspace.reset()
         workspace.elaborateGCD()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -319,9 +346,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           assert(log.contains("Calculating GCD of 7dc0000000000000 and 0180000000000000"))
           assert(log.contains("Calculated GCD to be 00c0000000000000"))
         }
-
-        val traceReader = new BufferedReader(new FileReader(s"${simulation.workingDirectoryPath}/trace.vcd"))
-        traceReader.lines().count() must be > 1L
+        checkTraceFile(simulation.workingDirectory)
       }
 
       // Check sendBits()
@@ -329,7 +354,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
         import Resources._
         workspace.reset()
         workspace.elaborateSIntTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -416,7 +441,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
       it("handles initial statements correctly (#3962)") {
         workspace.reset()
         workspace.elaborateInitialTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -439,7 +464,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
       it("ends the simulation on '$finish' (#4700)") {
         workspace.reset()
         workspace.elaborateFinishTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(
@@ -463,7 +488,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
           )
         }
 
-        new BufferedReader(new FileReader(s"${simulation.workingDirectoryPath}/simulation-log.txt")).lines
+        new BufferedReader(new FileReader(s"${simulation.workingDirectory}/simulation-log.txt")).lines
           .filter(finishRe.matches(_))
           .toArray
           .size must be(1)
@@ -472,7 +497,7 @@ trait BackendSpec extends AnyFunSpec with Matchers {
       it("should support both $value$plusargs and $test$plusargs") {
         workspace.reset()
         workspace.elaboratePlusArgTest()
-        workspace.generateAdditionalSources()
+        workspace.generateAdditionalSources(None)
         simulation = workspace.compile(
           backend
         )(

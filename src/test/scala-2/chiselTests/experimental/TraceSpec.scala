@@ -26,7 +26,7 @@ class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory {
   def compile(testName: String, gen: () => Module)(
     implicit testingDirectory: HasTestingDirectory
   ): (os.Path, AnnotationSeq) = {
-    val testDir = os.pwd / os.RelPath(testingDirectory.getDirectory)
+    val testDir = os.FilePath(testingDirectory.getDirectory).resolveFrom(os.pwd)
     val annos = (new ChiselStage).execute(
       Array("--target-dir", s"$testDir", "--target", "systemverilog", "--split-verilog"),
       Seq(

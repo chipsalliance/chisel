@@ -25,9 +25,33 @@ trait HasSerializationHints {
   def typeHints: Seq[Class[_]]
 }
 
+/** Mix this in to override what class name is used for serialization
+  *
+  * Note that this breaks automatic deserialization.
+  */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+trait OverrideSerializationClass { self: Annotation =>
+  def serializationClassOverride: String
+}
+
 /** Wrapper [[Annotation]] for Annotations that cannot be serialized */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class UnserializeableAnnotation(error: String, content: String) extends NoTargetAnnotation
+
+/** Custom type hints for FIRRTL annotations that respect user override of the class */
+private case class FirrtlAnnotationTypeHints(hints: List[Class[_]], hintOverride: Map[Class[_], String])
+    extends TypeHints {
+  private val underlying = FullTypeHints(hints)
+  override val typeHintFieldName = "class"
+  // For some reason, json4s requires both directions to serialize
+  private val classFromHintOverride: Map[String, Class[_]] = hintOverride.map(_.swap)
+  def hintFor(clazz: Class[_]): Option[String] = {
+    hintOverride.get(clazz).orElse(underlying.hintFor(clazz))
+  }
+  def classFor(hint: String, parent: Class[_]): Option[Class[_]] = {
+    classFromHintOverride.get(hint).orElse(underlying.classFor(hint, parent))
+  }
+}
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object JsonProtocol extends LazyLogging {
@@ -129,8 +153,11 @@ object JsonProtocol extends LazyLogging {
       )
 
   /** Construct Json formatter for annotations */
-  def jsonFormat(tags: Seq[Class[_]]) = {
-    Serialization.formats(FullTypeHints(tags.toList, "class")) +
+  def jsonFormat(tags: Seq[Class[_]]): Formats = jsonFormat(tags, Map())
+
+  /** Construct Json formatter for annotations */
+  def jsonFormat(tags: Seq[Class[_]], hintOverride: Map[Class[_], String]): Formats = {
+    Serialization.formats(FirrtlAnnotationTypeHints(tags.toList, hintOverride)) +
       new NamedSerializer +
       new ModuleNameSerializer + new ComponentNameSerializer + new TargetSerializer +
       new GenericTargetSerializer + new ModuleTargetSerializer +
@@ -149,13 +176,38 @@ object JsonProtocol extends LazyLogging {
   ): Seq[(Annotation, Throwable)] =
     annos.map(a => a -> Try(write(a))).collect { case (a, Failure(e)) => (a, e) }
 
-  private def getTags(annos: Seq[Annotation]): Seq[Class[_]] =
-    annos
-      .flatMap({
-        case anno: HasSerializationHints => anno.getClass +: anno.typeHints
-        case anno => Seq(anno.getClass)
-      })
-      .distinct
+  private def getTagsAndOverrides(annos: Seq[Annotation]): (List[Class[_]], Map[Class[_], String]) = {
+    val tags = mutable.ListBuffer.empty[Class[_]]
+    val seenTags = mutable.Set.empty[Class[_]]
+    def addTag(clazz: Class[_]): Unit = {
+      if (!seenTags(clazz)) {
+        tags += clazz
+        seenTags += clazz
+      }
+    }
+
+    val tagOverride = mutable.Map.empty[Class[_], String]
+
+    for (anno <- annos) {
+      addTag(anno.getClass)
+      anno match {
+        case anno: HasSerializationHints =>
+          anno.typeHints.foreach(addTag(_))
+        case _ => ()
+      }
+      anno match {
+        case anno: OverrideSerializationClass =>
+          val existing = tagOverride.put(anno.getClass, anno.serializationClassOverride)
+          if (existing.isDefined && existing.get != anno.serializationClassOverride) {
+            throw new Exception(
+              s"Class ${anno.getClass.getName} has multiple serialization class overrides: ${existing.get}, ${anno.serializationClassOverride}"
+            )
+          }
+        case _ => ()
+      }
+    }
+    (tags.toList, tagOverride.toMap)
+  }
 
   def serializeTry(annos: Seq[Annotation]): Try[String] = serializeTry(annos, new StringWriter).map(_.toString)
 
@@ -166,9 +218,9 @@ object JsonProtocol extends LazyLogging {
     * @return
     */
   def serializeTry[W <: Writer](annos: Iterable[Annotation], out: W): Try[W] = {
-    val tags = getTags(annos.toSeq)
+    val (tags, hintOverride) = getTagsAndOverrides(annos.toSeq)
 
-    implicit val formats = jsonFormat(tags)
+    implicit val formats = jsonFormat(tags, hintOverride)
     Try(writePretty(annos, out)).recoverWith { case e: org.json4s.MappingException =>
       val badAnnos = findUnserializeableAnnos(annos.toSeq)
       Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
@@ -180,8 +232,10 @@ object JsonProtocol extends LazyLogging {
     * @note this is slower than standard serialization
     */
   def serializeRecover(annos: Seq[Annotation]): String = {
-    val tags = classOf[UnserializeableAnnotation] +: getTags(annos)
-    implicit val formats = jsonFormat(tags)
+    val (autoTags, hintOverride) = getTagsAndOverrides(annos)
+
+    val tags = classOf[UnserializeableAnnotation] +: autoTags
+    implicit val formats = jsonFormat(tags, hintOverride)
 
     val safeAnnos = annos.map { anno =>
       Try(write(anno)) match {

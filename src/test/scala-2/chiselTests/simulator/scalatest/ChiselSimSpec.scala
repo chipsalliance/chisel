@@ -4,16 +4,17 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.PeekPokeAPI.FailedExpectationException
-import chisel3.simulator.{HasSimulator, MacroText, Randomization, Settings}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilSuccess
+import chisel3.simulator.{HasSimulator, MacroText, Randomization, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
 import chisel3.util.Counter
 import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
-import java.nio.file.FileSystems
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.nio.file.FileSystems
 import scala.reflect.io.Directory
 
 class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck {
@@ -82,7 +83,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
            |CHECK:      lineNo  line
            |CHECK-NEXT: ---
-           |CHECK-NEXT:      0  [5] %Error:
+           |CHECK-NEXT:      0  [30] %Error:
            |CHECK:      For more information, see the complete log file:
            |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-a-chisel3.assert-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
@@ -107,7 +108,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
            |CHECK:      lineNo  line
            |CHECK-NEXT: ---
-           |CHECK-NEXT:      0  [5] %Error:
+           |CHECK-NEXT:      0  [30] %Error:
            |CHECK:      For more information, see the complete log file:
            |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-verilator/simulation-log.txt
            |CHECK-NEXT: ---
@@ -210,40 +211,90 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
     }
 
     // Return a Verilator `HasSimulator` that will dump waves to `trace.vcd`.
-    def verilatorWithWaves = HasSimulator.simulators
+    def verilatorWithVcd = HasSimulator.simulators
       .verilator(verilatorSettings =
         svsim.verilator.Backend.CompilationSettings(
-          traceStyle =
-            Some(svsim.verilator.Backend.CompilationSettings.TraceStyle.Vcd(traceUnderscore = true, "trace.vcd"))
+          traceStyle = Some(
+            svsim.verilator.Backend.CompilationSettings
+              .TraceStyle(
+                svsim.verilator.Backend.CompilationSettings.TraceKind.Vcd,
+                traceUnderscore = true,
+                maxArraySize = Some(1024),
+                maxWidth = Some(1024),
+                traceDepth = Some(1024)
+              )
+          )
         )
       )
 
-    it("should dump a waveform when enableWaves is used") {
+    // Return a Verilator `HasSimulator` that will dump waves to `trace.fst`.
+    def verilatorWithFst = HasSimulator.simulators
+      .verilator(verilatorSettings =
+        svsim.verilator.Backend.CompilationSettings(
+          traceStyle = Some(
+            svsim.verilator.Backend.CompilationSettings
+              .TraceStyle(
+                svsim.verilator.Backend.CompilationSettings.TraceKind.Fst(Some(2)),
+                traceUnderscore = true,
+                maxArraySize = Some(1024),
+                maxWidth = Some(1024),
+                traceDepth = Some(1024)
+              )
+          )
+        )
+      )
 
-      implicit val vaerilator = verilatorWithWaves
+    it("should dump a VCD waveform when traceStyle is Vcd and enableWaves is used") {
+
+      implicit val vaerilator = verilatorWithVcd
 
       class Foo extends Module {
         stop()
       }
 
-      val vcdFile = FileSystems
+      val waveFile = FileSystems
         .getDefault()
         .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.vcd")
         .toFile
 
-      vcdFile.delete
+      waveFile.delete
 
       simulateRaw(new Foo) { _ =>
         enableWaves()
       }
 
-      info(s"$vcdFile exists")
-      vcdFile should (exist)
+      info(s"$waveFile exists")
+      waveFile should (exist)
+      waveFile.length() should be > 1L
+    }
+
+    it("should dump a FST waveform when traceStyle is Fst and enableWaves is used") {
+
+      implicit val vaerilator = verilatorWithFst
+
+      class Foo extends Module {
+        stop()
+      }
+
+      val waveFile = FileSystems
+        .getDefault()
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.fst")
+        .toFile
+
+      waveFile.delete
+
+      simulateRaw(new Foo) { _ =>
+        enableWaves()
+      }
+
+      info(s"$waveFile exists")
+      waveFile should (exist)
+      waveFile.length() should be > 1L
     }
 
     it("should dump a waveform using ChiselSim settings") {
 
-      implicit val vaerilator = verilatorWithWaves
+      implicit val vaerilator = verilatorWithVcd
 
       class Foo extends Module {
         stop()
@@ -372,6 +423,23 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         info(s"sequential read memory index zero is 42")
         cmemValue should be(42)
       }
+
+    }
+
+    it("should allow setting the frequency to 1GHz") {
+
+      import chisel3.simulator.stimulus.RunUntilFinished
+      import svsim.{CommonCompilationSettings, CommonSettingsModifications}
+
+      class Foo extends Module {
+
+        when(Counter(true.B, 8)._2) {
+          stop()
+        }
+
+      }
+
+      simulate(new Foo)(RunUntilFinished(10, period = 10))
 
     }
 

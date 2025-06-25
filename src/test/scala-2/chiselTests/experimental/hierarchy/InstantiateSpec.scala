@@ -182,6 +182,19 @@ object InstantiateSpec {
     val bar1 = Instantiate(new Bar(1))
     val bar11 = Instantiate(new Bar(1))
   }
+
+  case class MyBundleParameters(aWidth: Int, bWidth: Int, cPresent: Boolean)
+
+  class MyBundle(params: MyBundleParameters) extends Bundle {
+    val a = UInt(params.aWidth.W)
+    val b = UInt(params.bWidth.W)
+    val c = Option.when(params.cPresent) { Bool() }
+  }
+
+  @instantiable
+  class LookupableChiselType extends Module {
+    @public val bundleType = new MyBundle(MyBundleParameters(4, 8, true))
+  }
 }
 
 class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
@@ -582,6 +595,20 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
          |CHECK: module Bar_1 :
          |CHECK: module Foo :
          |CHECK: module Top :
+         |""".stripMargin
+    )
+  }
+
+  it("Should support lookupable bare types") {
+    class MyTop extends Top {
+      val child = Instantiate(new LookupableChiselType)
+      val wire0 = Wire(child.bundleType)
+      wire0 := DontCare
+      dontTouch(wire0)
+    }
+    emitCHIRRTL(new MyTop).fileCheck()(
+      """|CHECK: module Top :
+         |CHECK:   wire wire0 : { a : UInt<4>, b : UInt<8>, c : UInt<1>}
          |""".stripMargin
     )
   }

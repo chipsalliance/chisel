@@ -5,6 +5,7 @@ package svsim
 import scala.collection.mutable.Queue
 import scala.util.{Success, Try}
 import java.io.{BufferedReader, BufferedWriter, File, InputStreamReader, OutputStreamWriter}
+import java.nio.file.{Path, Paths}
 
 final class Simulation private[svsim] (
   executableName:           String,
@@ -12,7 +13,16 @@ final class Simulation private[svsim] (
   val workingDirectoryPath: String,
   moduleInfo:               ModuleInfo
 ) {
-  private val executionScriptPath = s"$workingDirectoryPath/execution-script.txt"
+  def workingDirectory: Path = {
+    val path = Paths.get(workingDirectoryPath)
+    if (path.isAbsolute) {
+      path
+    } else {
+      Workspace.getProjectRootOrCwd.resolve(path)
+    }
+  }
+
+  private val executionScriptPath = workingDirectory.resolve("execution-script.txt").toString
 
   def run[T](body: Simulation.Controller => T): T = run()(body)
   def run[T](
@@ -22,16 +32,17 @@ final class Simulation private[svsim] (
     executionScriptLimit:          Option[Int] = None
   )(body: Simulation.Controller => T): T = {
     val cwd = settings.customWorkingDirectory match {
-      case None => workingDirectoryPath
+      case None => workingDirectory
       case Some(value) =>
-        if (value.startsWith("/"))
-          value
+        val p = Paths.get(value)
+        if (p.isAbsolute)
+          p
         else
-          s"$workingDirectoryPath/$value"
+          workingDirectory.resolve(p)
     }
-    val command = Seq(s"$workingDirectoryPath/$executableName") ++ settings.arguments
+    val command = Seq(workingDirectory.resolve(executableName).toString) ++ settings.arguments
     val processBuilder = new ProcessBuilder(command: _*)
-    processBuilder.directory(new File(cwd))
+    processBuilder.directory(cwd.toFile)
     processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
     val environment = settings.environment ++ Seq(
       Some("SVSIM_EXECUTION_SCRIPT" -> executionScriptPath),
