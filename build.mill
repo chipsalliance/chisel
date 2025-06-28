@@ -18,7 +18,7 @@ object v extends Module {
   }
 
   val firtoolVersion = {
-    val j = _root_.upickle.default.read[Map[String, String]](os.read(millSourcePath / os.up / "etc" / "circt.json"))
+    val j = _root_.upickle.default.read[Map[String, String]](os.read(moduleDir / os.up / "etc" / "circt.json"))
     j("version").stripPrefix("firtool-")
   }
   // Java 21 only works with 2.13.11+, but Project Panama uses Java 21
