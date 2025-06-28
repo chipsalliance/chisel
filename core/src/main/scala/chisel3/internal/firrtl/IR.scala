@@ -527,6 +527,11 @@ private[chisel3] object ir {
     pable:      Printable
   ) extends Definition
 
+  case class FirrtlComment(text: String) extends Command {
+    // Comments don't have source info, user can materialize it into the text if they want to.
+    override def sourceInfo: SourceInfo = UnlocatableSourceInfo
+  }
+
   abstract class Component extends Arg {
     def id:          BaseModule
     def name:        String

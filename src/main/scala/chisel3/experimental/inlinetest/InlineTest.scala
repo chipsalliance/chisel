@@ -6,15 +6,121 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.experimental.hierarchy.{Definition, Instance}
-import chisel3.simulator.{stimulus, Simulator}
+import chisel3.simulator.SimulationOutcome
+import chisel3.util.Counter
+
+import firrtl.options.StageUtils.dramaticMessage
+import chisel3.simulator.SimulationOutcome.Assertion
+
+object TestResult {
+
+  /** The result of a test; i.e. simulation outcome vs. expectation. */
+  sealed trait Type
+
+  /** Outcome matched expectation. */
+  case object Success extends Type
+
+  /** Outcome did not match expectation. */
+  case class Failure(message: String) extends Type
+}
+
+final class TestConfiguration private (
+  finishCondition:  Option[Bool],
+  successCondition: Option[Bool],
+  failureMessage:   Option[Printable]
+) {
+  private[inlinetest] def driveInterface(testName: String, intf: TestHarnessInterface) = {
+    intf.finish := finishCondition.getOrElse(false.B)
+    intf.success := successCondition.getOrElse(true.B)
+    failureMessage.foreach { failureMessage =>
+      when(intf.finish && !intf.success) {
+        printf(cf"${testName} failed: ${failureMessage}")
+      }
+    }
+  }
+}
+
+object TestConfiguration {
+  def default(): TestConfiguration =
+    new TestConfiguration(finishCondition = None, successCondition = None, failureMessage = None)
+
+  def runForCycles(nCycles: Int): TestConfiguration = {
+    val (_, done) = Counter(true.B, nCycles)
+    new TestConfiguration(
+      finishCondition = Some(done),
+      successCondition = None,
+      failureMessage = None
+    )
+  }
+
+  def apply(finish: Bool): TestConfiguration =
+    new TestConfiguration(
+      finishCondition = Some(finish),
+      successCondition = None,
+      failureMessage = None
+    )
+
+  def apply(finish: Bool, success: Bool, failureMessage: Printable): TestConfiguration =
+    new TestConfiguration(
+      finishCondition = Some(finish),
+      successCondition = Some(success),
+      failureMessage = Some(failureMessage)
+    )
+}
+
+/** A test, its expected behavior, and actual outcome. */
+private[chisel3] class SimulatedTest private (
+  val dutName:  String,
+  val testName: String,
+  outcome:      SimulationOutcome.Type
+) {
+  val result = outcome match {
+    case SimulationOutcome.Success                    => TestResult.Success
+    case SimulationOutcome.Assertion(simulatorOutput) => TestResult.Failure(simulatorOutput)
+    case SimulationOutcome.Timeout(n)                 => TestResult.Failure(s"timeout reached after ${n} timesteps")
+    case SimulationOutcome.SignaledFailure            => TestResult.Failure(s"test signaled failure")
+  }
+  val success = result == TestResult.Success
+}
+
+object SimulatedTest {
+
+  /** Construct an SimulatedTest from an ElaboratedTest by provided the outcome of the simulation. */
+  private[chisel3] def apply(elaboratedTest: ElaboratedTest[_], outcome: SimulationOutcome.Type) =
+    new SimulatedTest(
+      elaboratedTest.dutName,
+      elaboratedTest.testName,
+      outcome
+    )
+}
+
+object TestChoice {
+
+  /** A choice of what test(s) to run. */
+  sealed abstract class Type {
+    private[chisel3] def globs: Array[String]
+    require(globs.nonEmpty, "Must provide at least one test to run")
+  }
+
+  /** Run tests matching any of these globs. */
+  case class Globs(private[chisel3] val globs: Array[String]) extends Type
+
+  object Globs {
+    def apply(globs: String*): Globs = new Globs(globs.toArray)
+  }
+
+  /** Run all tests. */
+  case object All extends Type {
+    override def globs = Array("*")
+  }
+}
 
 /** Per-test parametrization needed to build a testharness that instantiates
   * the DUT and elaborates a test body.
   *
   *  @tparam M the type of the DUT module
-  *  @tparam R the type of the result returned by the test body
   */
-final class TestParameters[M <: RawModule, R] private[inlinetest] (
+final class TestParameters[M <: RawModule] private[inlinetest] (
   /** The [[name]] of the DUT module. */
   private[inlinetest] val dutName: () => String,
   /** The user-provided name of the test. */
@@ -22,10 +128,9 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
   /** A Definition of the DUT module. */
   private[inlinetest] val dutDefinition: () => Definition[M],
   /** The body for this test, returns a result. */
-  private[inlinetest] val testBody: Instance[M] => R,
+  private[inlinetest] val testBody: Instance[M] => TestConfiguration,
   /** The reset type of the DUT module. */
   private[inlinetest] val dutResetType: Option[Module.ResetType.Type]
-  /** The expected result when simulating this test. */
 ) {
 
   /** The concrete reset type of the testharness module. */
@@ -40,7 +145,7 @@ final class TestParameters[M <: RawModule, R] private[inlinetest] (
 }
 
 /** IO that reports the status of the test implemented by a testharness. */
-final class TestResultBundle extends Bundle {
+private[chisel3] class TestHarnessInterface extends Bundle {
 
   /** The test shall be considered complete on the first positive edge of
    *  [[finish]] by the simulation. The [[TestHarness]] must drive this.
@@ -55,85 +160,65 @@ final class TestResultBundle extends Bundle {
 
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
    *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
-   *  that of the DUT, or is [[Synchronous]] if it must be inferred (this can be overriden).
-   *
-   *  A [[TestHarness]] has the following ports:
-   *
-   * - [[clock]]: shall be driven at a constant frequency by the simulation.
-   * - [[reset]]: shall be asserted for one cycle from the first positive edge of [[clock]] by the simulation.
-   * - [[reset]]: shall be asserted for one cycle from the first positive edge of [[clock]] by the simulation.
-   * - [[finish]]: the test shall be considered complete on the first positive edge of [[finish]].
+   *  that of the DUT, or is [[Synchronous]] if it must be inferred.
    *
    *  @tparam M the type of the DUT module
-   *  @tparam R the type of the result returned by the test body
    */
-abstract class TestHarness[M <: RawModule, R](test: TestParameters[M, R])
-    extends FixedIOModule(new TestResultBundle)
+abstract class TestHarness[M <: RawModule](test: TestParameters[M])
+    extends FixedIOModule(new TestHarnessInterface)
     with Public {
   override final def desiredName = test.testHarnessDesiredName
   override final def resetType = test.testHarnessResetType
 
-  // Handle the base case where a test has no result. In this case, we expect
-  // the test to end the simulation and signal pass/fail.
-  io.finish := false.B
-  io.success := true.B
-
   protected final val dut = Instance(test.dutDefinition())
-  protected final val testResult = test.testBody(dut)
-}
+  private[inlinetest] final val testConfig = test.testBody(dut)
 
-/** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
-   *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
-   *  that of the DUT, or is [[Synchronous]] if it must be inferred (this can be overriden).
-   *
-   *  @tparam M the type of the DUT module
-   *  @tparam R the type of the result returned by the test body
-   */
-abstract class TestHarnessWithResult[M <: RawModule](test: TestParameters[M, TestResultBundle])
-    extends TestHarness[M, TestResultBundle](test) {
-  io.finish := testResult.finish
-  io.success := testResult.success
+  testConfig.driveInterface(test.testName, io)
 }
 
 /** A test that has been elaborated to the circuit. */
-private[chisel3] case class ElaboratedTest[M <: RawModule, R](
-  params:      TestParameters[M, R],
-  testHarness: TestHarness[M, R]
+private[chisel3] class ElaboratedTest[M <: RawModule] private (
+  val dutName:     String,
+  val testName:    String,
+  val testHarness: TestHarness[M]
 )
+
+object ElaboratedTest {
+  def apply[M <: RawModule](generator: TestHarnessGenerator[M], params: TestParameters[M]) =
+    new ElaboratedTest(
+      params.dutName(),
+      params.testName,
+      generator.generate(params)
+    )
+}
 
 /** An implementation of a testharness generator. This is a type class that defines how to
  *  generate a testharness. It is passed to each invocation of [[HasTests.test]].
   *
   *  @tparam M the type of the DUT module
-  *  @tparam R the type of the result returned by the test body
   */
-trait TestHarnessGenerator[M <: RawModule, R] {
+trait TestHarnessGenerator[M <: RawModule] {
 
   /** Generate a testharness module given the test parameters. */
-  def generate(test: TestParameters[M, R]): TestHarness[M, R]
+  def generate(test: TestParameters[M]): TestHarness[M]
 }
 
 object TestHarnessGenerator {
 
   /** Factory for a TestHarnessGenerator typeclass. */
-  def apply[M <: RawModule, R](gen: TestParameters[M, R] => TestHarness[M, R]) =
-    new TestHarnessGenerator[M, R] {
-      override def generate(test: TestParameters[M, R]) = gen(test)
+  def apply[M <: RawModule](gen: TestParameters[M] => TestHarness[M]) =
+    new TestHarnessGenerator[M] {
+      override def generate(test: TestParameters[M]) = gen(test)
     }
 
   /** Provides a default testharness for tests that return [[Unit]]. */
-  implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, Unit] = {
-    TestHarnessGenerator(new TestHarness[M, Unit](_) {})
-  }
-
-  /** Provides a default testharness for tests that return a [[TestResultBundle]] */
-  implicit def resultTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M, TestResultBundle] = {
-    TestHarnessGenerator(new TestHarnessWithResult[M](_) {})
+  implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M] = {
+    TestHarnessGenerator(new TestHarness[M](_) {})
   }
 }
 
 /** A test that was registered, but is not necessarily selected for elaboration. */
-private final class RegisteredTest[M <: RawModule, R](
+private final class RegisteredTest[M <: RawModule](
   /** The user-provided name of the test. */
   val testName: String,
   /** Whether or not this test should be elaborated. */
@@ -143,23 +228,18 @@ private final class RegisteredTest[M <: RawModule, R](
   /** The (eventually) legalized name for the DUT module */
   dutName: () => String,
   /** The body for this test, returns a result. */
-  testBody: Instance[M] => R,
+  testBody: Instance[M] => TestConfiguration,
   /** The reset type of the DUT module. */
   dutResetType: Option[Module.ResetType.Type],
   /** The testharness generator. */
-  testHarnessGenerator: TestHarnessGenerator[M, R]
+  testHarnessGenerator: TestHarnessGenerator[M]
 ) {
-  val params: TestParameters[M, R] = new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType)
-  def elaborate() = ElaboratedTest(
-    params,
-    testHarnessGenerator.generate(params)
-  )
+  val params: TestParameters[M] =
+    new TestParameters(dutName, testName, dutDefinition, testBody, dutResetType)
+  def elaborate() = ElaboratedTest(testHarnessGenerator, params)
 }
 
 /** Provides methods to build unit testharnesses inline after this module is elaborated.
-  *
-  *  @tparam TestResult the type returned from each test body generator, typically
-  *  hardware indicating completion and/or exit code to the testharness.
   */
 trait HasTests { module: RawModule =>
   private type M = module.type
@@ -178,30 +258,34 @@ trait HasTests { module: RawModule =>
   private lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]
 
   /** Generators for inline tests by name. LinkedHashMap preserves test insertion order. */
-  private val registeredTests = new mutable.LinkedHashMap[String, RegisteredTest[M, _]]
+  private val registeredTests = new mutable.LinkedHashMap[String, RegisteredTest[M]]
 
   /** Get the currently registered tests for this module and whether they are queued for elaboration. */
-  private def getRegisteredTests: Seq[RegisteredTest[M, _]] =
+  private def getRegisteredTests: Seq[RegisteredTest[M]] =
     registeredTests.values.toSeq
 
   /** Get all enabled tests for this module. */
-  def getTests: Seq[TestParameters[M, _]] =
+  def getTests: Seq[TestParameters[M]] =
     getRegisteredTests.filter(_.shouldElaborateToCircuit).map(_.params)
 
   /** Map from test name to elaborated test. */
-  private val elaboratedTests = new mutable.LinkedHashMap[String, ElaboratedTest[M, _]]
+  private val elaboratedTests = new mutable.LinkedHashMap[String, ElaboratedTest[M]]
 
   /** Get the all tests elaborated to the ciruit. */
-  private[chisel3] def getElaboratedTests: Seq[ElaboratedTest[M, _]] =
+  private[chisel3] def getElaboratedTests: Seq[ElaboratedTest[M]] =
     elaboratedTests.values.toSeq
 
   /** Elaborate a test to the circuit as a public definition. */
-  private def elaborateTestToCircuit[R](test: RegisteredTest[M, R]): Unit =
+  private def elaborateTestToCircuit[R](test: RegisteredTest[M]): Unit =
     Definition {
       val elaboratedTest = test.elaborate()
       elaboratedTests += test.params.testName -> elaboratedTest
       elaboratedTest.testHarness
     }
+
+  /** Get all tests that were elaborated. */
+  private[chisel3] def getElaboratedTestModules: Seq[ElaboratedTest[M]] =
+    elaboratedTests.values.toSeq
 
   /** Generate a public module that instantiates this module. The default
     *  testharness has clock and synchronous reset IOs and contains the test
@@ -209,9 +293,9 @@ trait HasTests { module: RawModule =>
     *
     *  @param testBody the circuit to elaborate inside the testharness
     */
-  protected final def test[R](
+  protected final def test(
     testName: String
-  )(testBody: Instance[M] => R)(implicit testHarnessGenerator: TestHarnessGenerator[M, R]): Unit = {
+  )(testBody: Instance[M] => TestConfiguration)(implicit testHarnessGenerator: TestHarnessGenerator[M]): Unit = {
     require(!registeredTests.contains(testName), s"test '${testName}' already declared")
     val dutResetType = module match {
       case module: Module => Some(module.resetType)

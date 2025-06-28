@@ -125,7 +125,7 @@ final class Workspace(
   /** Generate additional sources necessary for simulating the module.
     */
   //format: off
-  final def generateAdditionalSources() = {
+  final def generateAdditionalSources(timescale: Option[CommonCompilationSettings.Timescale]) = {
     val dut = _moduleInfo.get
     val ports = dut.ports.zipWithIndex
 
@@ -193,7 +193,7 @@ final class Workspace(
       l("  task run_simulation;")
       l("    input int timesteps;")
       l("    output int finish;")
-      l("    #timesteps;")
+      l(s"    #(timesteps*${timescale.map(_.tickPrecision).getOrElse(1)});")
       l("    finish = 0;")
       l("  endtask")
       l("  `else")
@@ -206,7 +206,11 @@ final class Workspace(
       l("  export \"DPI-C\" function simulation_initializeTrace;")
       l("  function void simulation_initializeTrace;")
       l("    input string traceFilePath;")
-      l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
+      l("    `ifdef SVSIM_ENABLE_FST_TRACING_SUPPORT")
+      l("      $dumpfile({traceFilePath,\".fst\"});")
+      l("      $dumpvars(0, ", dut.instanceName,");")
+      l("      traceSupported = 1;")
+      l("    `elsif SVSIM_ENABLE_VCD_TRACING_SUPPORT")
       l("      $dumpfile({traceFilePath,\".vcd\"});")
       l("      $dumpvars(0, ", dut.instanceName,");")
       l("      traceSupported = 1;")
@@ -219,7 +223,7 @@ final class Workspace(
       l("    `endif")
       l("    `ifdef SVSIM_ENABLE_FSDB_TRACING_SUPPORT")
       l("      $fsdbDumpfile({traceFilePath,\".fsdb\"});")
-      l("      $fsdbDumpvars(0, ", dut.instanceName,");")
+      l("      $fsdbDumpvars(0, ", dut.instanceName,", \"+all\");")
       l("      traceSupported = 1;")
       l("    `endif")
       l("  endfunction")
@@ -228,6 +232,8 @@ final class Workspace(
       l("    output int success;")
       l("    success = traceSupported;")
       l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
+      l("    $dumpon;")
+      l("    `elsif SVSIM_ENABLE_FST_TRACING_SUPPORT")
       l("    $dumpon;")
       l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpon;")
@@ -241,6 +247,8 @@ final class Workspace(
       l("    output int success;")
       l("    success = traceSupported;")
       l("    `ifdef SVSIM_ENABLE_VCD_TRACING_SUPPORT")
+      l("    $dumpoff;")
+      l("    `elsif SVSIM_ENABLE_FST_TRACING_SUPPORT")
       l("    $dumpoff;")
       l("    `elsif SVSIM_ENABLE_VPD_TRACING_SUPPORT")
       l("    $dumpoff;")
@@ -343,6 +351,32 @@ final class Workspace(
     copyResource(this.getClass, "/simulation-driver.cpp", generatedSourcesPath)
   }
   //format: on
+
+  /** Shallow copy the sources from this workspace to a new one. Primary sources are symlinked to the
+   *  new directory; nothing else is copied.
+   */
+  def shallowCopy(newPath: String, workingDirectoryPrefix: String = this.workingDirectoryPrefix): Workspace = {
+    val newWorkspace = new Workspace(newPath, workingDirectoryPrefix)
+    newWorkspace.reset()
+
+    val newPrimarySources = new File(newWorkspace.primarySourcesPath)
+
+    val sourcePrimarySources = new File(this.primarySourcesPath)
+    if (sourcePrimarySources.exists()) {
+      Files
+        .walk(sourcePrimarySources.toPath)
+        .filter(Files.isRegularFile(_))
+        .forEach { target =>
+          val relativePath = sourcePrimarySources.toPath.relativize(target)
+          val sourcePath = Paths.get(newPrimarySources.getPath, relativePath.toString)
+          sourcePath.getParent.toFile.mkdirs()
+          val relativeTarget = sourcePath.getParent.relativize(target)
+          Files.createSymbolicLink(sourcePath, relativeTarget)
+        }
+    }
+
+    newWorkspace
+  }
 
   /** Compiles the simulation using the specified backend.
     *

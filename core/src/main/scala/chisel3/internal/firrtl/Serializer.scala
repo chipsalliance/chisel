@@ -297,6 +297,17 @@ private[chisel3] object Serializer {
       serializeIntrinsic(ctx, info, None, None, intrinsic, args, params, typeAliases)
     case i @ DefIntrinsicExpr(info, intrinsic, id, args, params) =>
       serializeIntrinsic(ctx, info, Some(i.name), Some(id), intrinsic, args, params, typeAliases)
+    case FirrtlComment(text) =>
+      // Because of split, iterator will always be non-empty even if text is empty
+      val it = text.split("\n").iterator
+      while ({
+        val line = it.next()
+        b ++= "; "; b ++= line
+        if (it.hasNext) {
+          newLineAndIndent()
+        }
+        it.hasNext
+      }) ()
   }
 
   private def serializeCommand(cmd: Command, ctx: Component, typeAliases: Seq[String])(

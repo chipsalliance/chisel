@@ -503,6 +503,23 @@ class NamePluginSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage.emitCHIRRTL(new Test) should include("wire x :")
   }
 
+  "AffectsChiselName" should "work in unapply" in {
+    case class SomeClass(d: UInt) extends AffectsChiselName
+    class Test extends Module {
+      val (x, y) = {
+        val bad = SomeClass(Wire(UInt(8.W)))
+        (3, bad)
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new Test)
+      .fileCheck()(
+        """|CHECK-NOT: bad
+           |CHECK:     wire y_d :
+           |""".stripMargin
+      )
+  }
+
   "withNames" should "require the same number of names as fields" in {
     case class Foo(x: Int, y: Int, z: Int)
     an[IllegalArgumentException] should be thrownBy {

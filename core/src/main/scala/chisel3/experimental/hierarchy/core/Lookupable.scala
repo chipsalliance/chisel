@@ -221,6 +221,7 @@ object Lookupable {
     implicit sourceInfo: SourceInfo
   ): B = {
     def impl[C <: Data](d: C): C = d match {
+      case x: Data if !x.isSynthesizable                      => x.asInstanceOf[C]
       case x: Data if ioMap.nonEmpty && ioMap.get.contains(x) => ioMap.get(x).asInstanceOf[C]
       case x: Data if cache.contains(x)                       => cache(x).asInstanceOf[C]
       case _ =>
@@ -683,15 +684,16 @@ object Lookupable {
 
   implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo): Simple[B] = isLookupable[B]
 
-  implicit val lookupInt:     Simple[Int] = isLookupable[Int]
-  implicit val lookupByte:    Simple[Byte] = isLookupable[Byte]
-  implicit val lookupShort:   Simple[Short] = isLookupable[Short]
-  implicit val lookupLong:    Simple[Long] = isLookupable[Long]
-  implicit val lookupFloat:   Simple[Float] = isLookupable[Float]
-  implicit val lookupDouble:  Simple[Double] = isLookupable[Double]
-  implicit val lookupChar:    Simple[Char] = isLookupable[Char]
-  implicit val lookupString:  Simple[String] = isLookupable[String]
-  implicit val lookupBoolean: Simple[Boolean] = isLookupable[Boolean]
-  implicit val lookupBigInt:  Simple[BigInt] = isLookupable[BigInt]
-  implicit val lookupUnit:    Simple[Unit] = isLookupable[Unit]
+  implicit val lookupInt:             Simple[Int] = isLookupable[Int]
+  implicit val lookupByte:            Simple[Byte] = isLookupable[Byte]
+  implicit val lookupShort:           Simple[Short] = isLookupable[Short]
+  implicit val lookupLong:            Simple[Long] = isLookupable[Long]
+  implicit val lookupFloat:           Simple[Float] = isLookupable[Float]
+  implicit val lookupDouble:          Simple[Double] = isLookupable[Double]
+  implicit val lookupChar:            Simple[Char] = isLookupable[Char]
+  implicit val lookupString:          Simple[String] = isLookupable[String]
+  implicit val lookupBoolean:         Simple[Boolean] = isLookupable[Boolean]
+  implicit val lookupBigInt:          Simple[BigInt] = isLookupable[BigInt]
+  implicit val lookupUnit:            Simple[Unit] = isLookupable[Unit]
+  implicit val lookupActualDirection: Simple[chisel3.ActualDirection] = isLookupable[chisel3.ActualDirection]
 }

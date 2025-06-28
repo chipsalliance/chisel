@@ -335,7 +335,7 @@ final class Backend(
           },
 
           commonSettings.defaultTimescale match {
-            case Some(Timescale.FromString(value)) => Seq(s"-timescale=$value")
+            case Some(timescale) => Seq(s"-timescale=$timescale")
             case None => Seq()
           },
 

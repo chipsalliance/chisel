@@ -286,13 +286,18 @@ object PeekPokeAPI {
   implicit class TestableClock(clock: Clock) extends AnyTestableData[Clock] {
     val data = clock
 
-    def step(cycles: Int = 1): Unit = {
+    def step(cycles: Int = 1, period: Int = 0): Unit = {
+      require(
+        period >= 2,
+        s"specified period, '${period}', must be 2 or greater because an integer half period must be non-zero"
+      )
+
       simulatedModule.willEvaluate()
       if (cycles == 0) {
         simulatedModule.controller.run(0)
       } else {
         simulationPort.tick(
-          timestepsPerPhase = 1,
+          timestepsPerPhase = period / 2,
           maxCycles = cycles,
           inPhaseValue = 0,
           outOfPhaseValue = 1,
@@ -305,10 +310,15 @@ object PeekPokeAPI {
     *
     * Stops early if the `sentinelPort` is equal to the `sentinelValue`.
     */
-    def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int): Unit = {
+    def stepUntil(sentinelPort: Data, sentinelValue: BigInt, maxCycles: Int, period: Int = 10): Unit = {
+      require(
+        period >= 2,
+        s"specified period, '${period}', must be 2 or greater because an integer half period must be non-zero"
+      )
+
       simulatedModule.willEvaluate()
       simulationPort.tick(
-        timestepsPerPhase = 1,
+        timestepsPerPhase = period / 2,
         maxCycles = maxCycles,
         inPhaseValue = 0,
         outOfPhaseValue = 1,
