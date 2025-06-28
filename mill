@@ -1,20 +1,39 @@
 #!/usr/bin/env sh
 
-# This is a wrapper script, that automatically download mill from GitHub release pages
-# You can give the required mill version with --mill-version parameter
-# If no version is given, it falls back to the value of DEFAULT_MILL_VERSION
+# This is a wrapper script, that automatically selects or downloads Mill from Maven Central or GitHub release pages.
 #
-# Project page: https://github.com/lefou/millw
-# Script Version: 0.4.11
+# This script determines the Mill version to use by trying these sources
+#   - env-variable `MILL_VERSION`
+#   - local file `.mill-version`
+#   - local file `.config/mill-version`
+#   - `mill-version` from YAML fronmatter of current buildfile
+#   - if accessible, find the latest stable version available on Maven Central (https://repo1.maven.org/maven2)
+#   - env-variable `DEFAULT_MILL_VERSION`
+#
+# If a version has the suffix '-native' a native binary will be used.
+# If a version has the suffix '-jvm' an executable jar file will be used, requiring an already installed Java runtime.
+# If no such suffix is found, the script will pick a default based on version and platform.
+#
+# Once a version was determined, it tries to use either
+#    - a system-installed mill, if found and it's version matches
+#    - an already downloaded version under ~/.cache/mill/download
+#
+# If no working mill version was found on the system,
+# this script downloads a binary file from Maven Central or Github Pages (this is version dependent)
+# into a cache location (~/.cache/mill/download).
+#
+# Mill Project URL: https://github.com/com-lihaoyi/mill
+# Script Version: 1.0.0-M1-49-ac90e3
 #
 # If you want to improve this script, please also contribute your changes back!
+# This script was generated from: dist/scripts/src/mill.sh
 #
 # Licensed under the Apache License, Version 2.0
 
 set -e
 
 if [ -z "${DEFAULT_MILL_VERSION}" ] ; then
-  DEFAULT_MILL_VERSION="0.12.5"
+  DEFAULT_MILL_VERSION=0.12.14
 fi
 
 
@@ -31,16 +50,17 @@ fi
 
 # Explicit commandline argument takes precedence over all other methods
 if [ "$1" = "--mill-version" ] ; then
-  shift
-  if [ "x$1" != "x" ] ; then
-    MILL_VERSION="$1"
-    shift
-  else
-    echo "You specified --mill-version without a version." 1>&2
-    echo "Please provide a version that matches one provided on" 1>&2
-    echo "${MILL_REPO_URL}/releases" 1>&2
-    false
-  fi
+    echo "The --mill-version option is no longer supported." 1>&2
+fi
+
+MILL_BUILD_SCRIPT=""
+
+if [ -f "build.mill" ] ; then
+  MILL_BUILD_SCRIPT="build.mill"
+elif [ -f "build.mill.scala" ] ; then
+  MILL_BUILD_SCRIPT="build.mill.scala"
+elif [ -f "build.sc" ] ; then
+  MILL_BUILD_SCRIPT="build.sc"
 fi
 
 # Please note, that if a MILL_VERSION is already set in the environment,
@@ -49,9 +69,11 @@ fi
 # If not already set, read .mill-version file
 if [ -z "${MILL_VERSION}" ] ; then
   if [ -f ".mill-version" ] ; then
-    MILL_VERSION="$(head -n 1 .mill-version 2> /dev/null)"
+    MILL_VERSION="$(tr '\r' '\n' < .mill-version | head -n 1 2> /dev/null)"
   elif [ -f ".config/mill-version" ] ; then
-    MILL_VERSION="$(head -n 1 .config/mill-version 2> /dev/null)"
+    MILL_VERSION="$(tr '\r' '\n' < .config/mill-version | head -n 1 2> /dev/null)"
+  elif [ -n "${MILL_BUILD_SCRIPT}" ] ; then
+    MILL_VERSION="$(cat ${MILL_BUILD_SCRIPT} | grep '//[|]  *mill-version:  *' | sed 's;//|  *mill-version:  *;;')"
   fi
 fi
 
@@ -65,7 +87,7 @@ fi
 if [ -z "${MILL_VERSION}" ] ; then
   # TODO: try to load latest version from release page
   echo "No mill version specified." 1>&2
-  echo "You should provide a version via '.mill-version' file or --mill-version option." 1>&2
+  echo "You should provide a version via a '//| mill-version: ' comment or a '.mill-version' file." 1>&2
 
   mkdir -p "${MILL_DOWNLOAD_PATH}"
   LANG=C touch -d '1 hour ago' "${MILL_DOWNLOAD_PATH}/.expire_latest" 2>/dev/null || (
@@ -101,7 +123,60 @@ if [ -z "${MILL_VERSION}" ] ; then
   fi
 fi
 
-MILL="${MILL_DOWNLOAD_PATH}/${MILL_VERSION}"
+MILL_NATIVE_SUFFIX="-native"
+MILL_JVM_SUFFIX="-jvm"
+FULL_MILL_VERSION=$MILL_VERSION
+ARTIFACT_SUFFIX=""
+set_artifact_suffix(){
+  if [ "$(expr substr $(uname -s) 1 5 2>/dev/null)" = "Linux" ]; then
+    if [ "$(uname -m)" = "aarch64" ]; then
+      ARTIFACT_SUFFIX="-native-linux-aarch64"
+    else
+      ARTIFACT_SUFFIX="-native-linux-amd64"
+    fi
+  elif [ "$(uname)" = "Darwin" ]; then
+    if [ "$(uname -m)" = "arm64" ]; then
+      ARTIFACT_SUFFIX="-native-mac-aarch64"
+    else
+      ARTIFACT_SUFFIX="-native-mac-amd64"
+    fi
+  else
+     echo "This native mill launcher supports only Linux and macOS." 1>&2
+     exit 1
+  fi
+}
+
+case "$MILL_VERSION" in
+    *"$MILL_NATIVE_SUFFIX")
+  MILL_VERSION=${MILL_VERSION%"$MILL_NATIVE_SUFFIX"}
+  set_artifact_suffix
+  ;;
+
+    *"$MILL_JVM_SUFFIX")
+    MILL_VERSION=${MILL_VERSION%"$MILL_JVM_SUFFIX"}
+  ;;
+
+    *)
+  case "$MILL_VERSION" in
+    0.1.*) ;;
+    0.2.*) ;;
+    0.3.*) ;;
+    0.4.*) ;;
+    0.5.*) ;;
+    0.6.*) ;;
+    0.7.*) ;;
+    0.8.*) ;;
+    0.9.*) ;;
+    0.10.*) ;;
+    0.11.*) ;;
+    0.12.*) ;;
+    *)
+      set_artifact_suffix
+  esac
+  ;;
+esac
+
+MILL="${MILL_DOWNLOAD_PATH}/$MILL_VERSION$ARTIFACT_SUFFIX"
 
 try_to_use_system_mill() {
   if [ "$(uname)" != "Linux" ]; then
@@ -174,49 +249,59 @@ EOF
 try_to_use_system_mill
 
 # If not already downloaded, download it
-if [ ! -s "${MILL}" ] ; then
+if [ ! -s "${MILL}" ] || [ "$MILL_TEST_DRY_RUN_LAUNCHER_SCRIPT" = "1" ] ; then
+  case $MILL_VERSION in
+    0.0.* | 0.1.* | 0.2.* | 0.3.* | 0.4.* )
+      DOWNLOAD_SUFFIX=""
+      DOWNLOAD_FROM_MAVEN=0
+      ;;
+    0.5.* | 0.6.* | 0.7.* | 0.8.* | 0.9.* | 0.10.* | 0.11.0-M* )
+      DOWNLOAD_SUFFIX="-assembly"
+      DOWNLOAD_FROM_MAVEN=0
+      ;;
+    *)
+      DOWNLOAD_SUFFIX="-assembly"
+      DOWNLOAD_FROM_MAVEN=1
+      ;;
+  esac
+  case $MILL_VERSION in
+    0.12.0 | 0.12.1 | 0.12.2 | 0.12.3 | 0.12.4 | 0.12.5 | 0.12.6 | 0.12.7 | 0.12.8 | 0.12.9 | 0.12.10 | 0.12.11 )
+      DOWNLOAD_EXT="jar"
+      ;;
+    0.12.* )
+      DOWNLOAD_EXT="exe"
+      ;;
+    0.* )
+      DOWNLOAD_EXT="jar"
+      ;;
+    *)
+      DOWNLOAD_EXT="exe"
+      ;;
+  esac
 
-  # support old non-XDG download dir
-  MILL_OLD_DOWNLOAD_PATH="${HOME}/.mill/download"
-  OLD_MILL="${MILL_OLD_DOWNLOAD_PATH}/${MILL_VERSION}"
-  if [ -x "${OLD_MILL}" ] ; then
-    MILL="${OLD_MILL}"
+  DOWNLOAD_FILE=$(mktemp mill.XXXXXX)
+  if [ "$DOWNLOAD_FROM_MAVEN" = "1" ] ; then
+    DOWNLOAD_URL="https://repo1.maven.org/maven2/com/lihaoyi/mill-dist${ARTIFACT_SUFFIX}/${MILL_VERSION}/mill-dist${ARTIFACT_SUFFIX}-${MILL_VERSION}.${DOWNLOAD_EXT}"
   else
-    case $MILL_VERSION in
-      0.0.* | 0.1.* | 0.2.* | 0.3.* | 0.4.* )
-        DOWNLOAD_SUFFIX=""
-        DOWNLOAD_FROM_MAVEN=0
-        ;;
-      0.5.* | 0.6.* | 0.7.* | 0.8.* | 0.9.* | 0.10.* | 0.11.0-M* )
-        DOWNLOAD_SUFFIX="-assembly"
-        DOWNLOAD_FROM_MAVEN=0
-        ;;
-      *)
-        DOWNLOAD_SUFFIX="-assembly"
-        DOWNLOAD_FROM_MAVEN=1
-        ;;
-    esac
-
-    DOWNLOAD_FILE=$(mktemp mill.XXXXXX)
-
-    if [ "$DOWNLOAD_FROM_MAVEN" = "1" ] ; then
-      DOWNLOAD_URL="https://repo1.maven.org/maven2/com/lihaoyi/mill-dist/${MILL_VERSION}/mill-dist-${MILL_VERSION}.jar"
-    else
-      MILL_VERSION_TAG=$(echo "$MILL_VERSION" | sed -E 's/([^-]+)(-M[0-9]+)?(-.*)?/\1\2/')
-      DOWNLOAD_URL="${GITHUB_RELEASE_CDN}${MILL_REPO_URL}/releases/download/${MILL_VERSION_TAG}/${MILL_VERSION}${DOWNLOAD_SUFFIX}"
-      unset MILL_VERSION_TAG
-    fi
-
-    # TODO: handle command not found
-    echo "Downloading mill ${MILL_VERSION} from ${DOWNLOAD_URL} ..." 1>&2
-    ${CURL_CMD} -f -L -o "${DOWNLOAD_FILE}" "${DOWNLOAD_URL}"
-    chmod +x "${DOWNLOAD_FILE}"
-    mkdir -p "${MILL_DOWNLOAD_PATH}"
-    mv "${DOWNLOAD_FILE}" "${MILL}"
-
-    unset DOWNLOAD_FILE
-    unset DOWNLOAD_SUFFIX
+    MILL_VERSION_TAG=$(echo "$MILL_VERSION" | sed -E 's/([^-]+)(-M[0-9]+)?(-.*)?/\1\2/')
+    DOWNLOAD_URL="${GITHUB_RELEASE_CDN}${MILL_REPO_URL}/releases/download/${MILL_VERSION_TAG}/${MILL_VERSION}${DOWNLOAD_SUFFIX}"
+    unset MILL_VERSION_TAG
   fi
+
+  if [ "$MILL_TEST_DRY_RUN_LAUNCHER_SCRIPT" = "1" ] ; then
+    echo $DOWNLOAD_URL
+    echo $MILL
+    exit 0
+  fi
+  # TODO: handle command not found
+  echo "Downloading mill ${MILL_VERSION} from ${DOWNLOAD_URL} ..." 1>&2
+  ${CURL_CMD} -f -L -o "${DOWNLOAD_FILE}" "${DOWNLOAD_URL}"
+  chmod +x "${DOWNLOAD_FILE}"
+  mkdir -p "${MILL_DOWNLOAD_PATH}"
+  mv "${DOWNLOAD_FILE}" "${MILL}"
+
+  unset DOWNLOAD_FILE
+  unset DOWNLOAD_SUFFIX
 fi
 
 if [ -z "$MILL_MAIN_CLI" ] ; then
@@ -236,6 +321,7 @@ unset OLD_MILL
 unset MILL_VERSION
 unset MILL_REPO_URL
 
+# -D mill.main.cli is for compatibility with Mill 0.10.9 - 0.13.0-M2
 # We don't quote MILL_FIRST_ARG on purpose, so we can expand the empty value without quotes
 # shellcheck disable=SC2086
 exec "${MILL}" $MILL_FIRST_ARG -D "mill.main.cli=${MILL_MAIN_CLI}" "$@"

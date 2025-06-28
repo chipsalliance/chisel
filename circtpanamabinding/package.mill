@@ -26,7 +26,7 @@ trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.Chisel
 
     val firtoolVersion = {
       val j =
-        _root_.upickle.default.read[Map[String, String]](os.read(millSourcePath / os.up / os.up / "etc" / "circt.json"))
+        _root_.upickle.default.read[Map[String, String]](os.read(moduleDir / os.up / os.up / "etc" / "circt.json"))
       j("version").stripPrefix("firtool-")
     }
 
@@ -87,23 +87,23 @@ trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.Chisel
   }
 
   def includeConstants =
-    Task.Input(os.read.lines(millSourcePath / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+    Task.Input(os.read.lines(moduleDir / "includeConstants.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeFunctions =
-    Task.Input(os.read.lines(millSourcePath / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+    Task.Input(os.read.lines(moduleDir / "includeFunctions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeStructs =
-    Task.Input(os.read.lines(millSourcePath / "includeStructs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+    Task.Input(os.read.lines(moduleDir / "includeStructs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeTypedefs =
-    Task.Input(os.read.lines(millSourcePath / "includeTypedefs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+    Task.Input(os.read.lines(moduleDir / "includeTypedefs.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeUnions =
-    Task.Input(os.read.lines(millSourcePath / "includeUnions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+    Task.Input(os.read.lines(moduleDir / "includeUnions.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def includeVars =
-    Task.Input(os.read.lines(millSourcePath / "includeVars.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+    Task.Input(os.read.lines(moduleDir / "includeVars.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
   def linkLibraries =
-    Task.Input(os.read.lines(millSourcePath / "linkLibraries.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
+    Task.Input(os.read.lines(moduleDir / "linkLibraries.txt").filter(s => s.nonEmpty && !s.startsWith("#")))
 
   def target = Task("org.llvm.circt")
   def headerClassName = Task("CAPI")
-  def header = Task(PathRef(millSourcePath / "jextract-headers.h"))
+  def header = Task(PathRef(moduleDir / "jextract-headers.h"))
   def circtInstallPath = Task(utils.circtInstallDir())
   def jextractBinary = Task(utils.jextractInstallDir() / "bin" / "jextract")
   def includePaths = Task(Seq(PathRef(circtInstallPath() / "include")))

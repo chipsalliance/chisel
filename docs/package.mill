@@ -90,7 +90,11 @@ object `package` extends RootModule with SbtModule with HasScalaPlugin with HasC
 
     T.log.debug("Running mdoc with args: " + mdocArgs.mkString(" "))
 
-    Jvm.runLocal("mdoc.Main", classpath, mdocArgs)
+    Jvm.callProcess(
+      mainClass = "mdoc.Main",
+      classPath = classpath,
+      mainArgs = mdocArgs
+    )
 
     PathRef(outDir)
   }
