@@ -286,7 +286,7 @@ object PeekPokeAPI {
   implicit class TestableClock(clock: Clock) extends AnyTestableData[Clock] {
     val data = clock
 
-    def step(cycles: Int = 1, period: Int = 0): Unit = {
+    def step(cycles: Int = 1, period: Int = 10): Unit = {
       require(
         period >= 2,
         s"specified period, '${period}', must be 2 or greater because an integer half period must be non-zero"
