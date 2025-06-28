@@ -56,8 +56,8 @@ IBUFDS #(.DIFF_TERM("TRUE"), .IOSTANDARD("DEFAULT")) ibufds (
 
 ### Providing Implementations for Blackboxes
 
-Chisel provides the following ways of delivering the code underlying the blackbox.  Consider the following blackbox that
- adds two real numbers together.  The numbers are represented in chisel3 as 64-bit unsigned integers.
+Chisel provides the following ways of delivering the code underlying the blackbox. Consider the following blackbox that
+adds two real numbers together. The numbers are represented in chisel3 as 64-bit unsigned integers.
 
 ```scala mdoc:silent:reset
 import chisel3._
@@ -122,9 +122,9 @@ class BlackBoxRealAdd extends BlackBox with HasBlackBoxInline {
   })
   setInline("BlackBoxRealAdd.v",
     """module BlackBoxRealAdd(
-      |    input  [15:0] in1,
-      |    input  [15:0] in2,
-      |    output [15:0] out
+      |    input  [63:0] in1,
+      |    input  [63:0] in2,
+      |    output reg [63:0] out
       |);
       |always @* begin
       |  out <= $realtobits($bitstoreal(in1) + $bitstoreal(in2));
