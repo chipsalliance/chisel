@@ -74,7 +74,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
 
     it("reports failed expects correctly") {
       val simulator = new VerilatorSimulator("test_run_dir/simulator/GCDSimulator")
-      val thrown = the[PeekPokeAPI.FailedExpectationException[_]] thrownBy {
+      val thrown = the[FailedExpectationException[_]] thrownBy {
         simulator
           .simulate(new GCD()) { module =>
             import PeekPokeAPI._
