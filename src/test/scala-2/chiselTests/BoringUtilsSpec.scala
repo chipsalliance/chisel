@@ -689,4 +689,21 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
            |""".stripMargin
       )
   }
+  it should "fail if endIOCreation is set" in {
+
+    class Bar extends RawModule {
+      val baz = Module(new Baz)
+      BoringUtils.bore(baz.c)
+    }
+
+    class Baz extends RawModule {
+      val c = Wire(Property[Int]())
+      endIOCreation()
+    }
+
+    val e = intercept[Exception] {
+      circt.stage.ChiselStage.emitCHIRRTL(new Bar, args)
+    }
+    e.getMessage should include("Cannot bore or tap into Baz (from Bar) if IO creation is not allowed")
+  }
 }
