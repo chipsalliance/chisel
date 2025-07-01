@@ -71,7 +71,9 @@ jobs:
   publish:
     needs: [all_tests_passed]
     runs-on: ubuntu-24.04
-    if: github.event_name == 'push'
+    # Only publish on release until Mill supports publishing snapshots to Maven Central
+    # https://github.com/com-lihaoyi/mill/issues/4421
+    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Checkout
