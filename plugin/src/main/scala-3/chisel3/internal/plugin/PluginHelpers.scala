@@ -128,6 +128,16 @@ object ChiselTypeHelpers {
     rec(tpe)
   }
 
+  def isRecord(t: Type)(using Context): Boolean = {
+    val recordTpe = requiredClass("chisel3.Record")
+    t.baseClasses.contains(recordTpe)
+  }
+
+  def isBundle(t: Type)(using Context): Boolean = {
+    val bundleTpe = requiredClass("chisel3.Bundle")
+    t.baseClasses.contains(bundleTpe)
+  }
+
   def isNamed(t: Type)(using Context): Boolean = {
     val dataTpe = getClassIfDefined("chisel3.Data")
     val memBaseTpe = getClassIfDefined("chisel3.MemBase")
