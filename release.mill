@@ -14,7 +14,7 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 import build._
 
 /** Adds basic publishing information--useful for local publishing */
-trait ChiselPublishModule extends PublishModule {
+trait ChiselPublishModule extends SonatypeCentralPublishModule {
   // Publish information
   def pomSettings = PomSettings(
     description = artifactName(),
