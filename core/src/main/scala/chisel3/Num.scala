@@ -14,15 +14,12 @@ import chisel3.experimental.SourceInfo
   * @groupdesc Comparison Comparison hardware operators
   * @groupdesc Logical Logical hardware operators
   * @define coll numeric-like type
-  * @define numType hardware type
   * @define canHaveHighCost can result in significant cycle time and area costs
   * @define canGenerateA This method generates a
   * @define singleCycleMul  @note $canGenerateA fully combinational multiplier which $canHaveHighCost.
   * @define singleCycleDiv  @note $canGenerateA fully combinational divider which $canHaveHighCost.
   * @define maxWidth        @note The width of the returned $numType is `max(width of this, width of that)`.
   * @define maxWidthPlusOne @note The width of the returned $numType is `max(width of this, width of that) + 1`.
-  * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
-  * @define unchangedWidth  @note The width of the returned $numType is unchanged, i.e., the `width of this`.
   */
 trait Num[T <: Data] extends NumIntf[T] {
 

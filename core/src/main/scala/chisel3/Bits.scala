@@ -12,6 +12,15 @@ import chisel3.internal.{castToInt, Builder, Warning, WarningID}
 import chisel3.util.simpleClassName
 import scala.annotation.nowarn
 
+/** Data type for binary bit vectors
+  *
+  * The supertype for [[UInt]] and [[SInt]]. Note that the `Bits` factory method returns `UInts`.
+  *
+  * @define numType         hardware type
+  * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
+  * @define sumWidthInt     @note The width of the returned $numType is `width of this` + `value of that`.
+  * @define unchangedWidth  @note The width of the returned $numType is unchanged, i.e., the `width of this`.
+  */
 sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
 
   // TODO: perhaps make this concrete?
