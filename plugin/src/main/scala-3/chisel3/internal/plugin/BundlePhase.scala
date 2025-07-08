@@ -62,7 +62,7 @@ object BundleHelpers {
     isBundle: Boolean
   )(using Context): Option[List[List[tpd.Tree]]] = {
     val template = record.rhs.asInstanceOf[tpd.Template]
-    val primaryConstructorOpt = Option(template.constr) // ← pick the stored constructor
+    val primaryConstructorOpt = Option(template.constr)
 
     val paramAccessors = record.symbol.primaryConstructor.paramSymss.flatten
 
@@ -201,11 +201,10 @@ class ChiselBundlePhase extends PluginPhase {
 
       record match {
         case td @ TypeDef(name, tmpl: tpd.Template) => {
-          val newDefs =
-            elementsImplOpt.toList ++ usingPluginOpt.toList ++ cloneTypeImplOpt.toList
+          val newDefs = elementsImplOpt ++: usingPluginOpt ++: cloneTypeImplOpt.toList
           val newTemplate =
             if (tmpl.body.size >= 1)
-              cpy.Template(tmpl)(body = newDefs ++ tmpl.body)
+              cpy.Template(tmpl)(body = newDefs ++: tmpl.body)
             else
               cpy.Template(tmpl)(body = newDefs)
           tpd.cpy.TypeDef(td)(name, newTemplate)
