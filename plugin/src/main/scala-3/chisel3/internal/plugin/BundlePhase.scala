@@ -86,7 +86,7 @@ object BundleHelpers {
     }))
   }
 
-  private def makeArray(values: List[Tree])(using Context): Tree = {
+  private def makeVector(values: List[Tree])(using Context): Tree = {
     val elemTpe = defn.TupleClass.typeRef.appliedTo(List(defn.StringType, defn.AnyType))
     val vectorModule = ref(requiredModule("scala.collection.immutable.Vector").termRef)
 
@@ -142,7 +142,7 @@ object BundleHelpers {
     val currentFields: List[Tree] = getBundleFields(record)
 
     val dataTpe = requiredClassRef("chisel3.Data")
-    val rhs = makeArray(currentFields)
+    val rhs = makeVector(currentFields)
 
     val tupleTpe =
       defn.TupleClass.typeRef.appliedTo(List(defn.StringType, defn.AnyType))
@@ -174,38 +174,30 @@ class ChiselBundlePhase extends PluginPhase {
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz:     tpd.This = tpd.This(record.symbol.asClass)
 
-      // // ==================== Generate _cloneTypeImpl ====================
+      // =========== Generate _cloneTypeImpl ==================
       val conArgs: Option[List[List[tpd.Tree]]] =
         BundleHelpers.extractConArgs(record, thiz, isBundle)
       val cloneTypeImplOpt =
         BundleHelpers.generateAutoCloneType(record, thiz, conArgs, isBundle)
 
-      // ==================== Generate val elements (Bundles only) ====================
-      val elementsImplOpt: Option[tpd.DefDef] =
-        if (isBundle) Some(BundleHelpers.generateElements(record)) else None
+      // =========== Generate val elements (Bundles only) =====
+      val elementsImplOpt: Option[tpd.DefDef] = Option.when(isBundle) {
+        BundleHelpers.generateElements(record)
+      }
 
-      // ==================== Generate _usingPlugin ====================
-      val usingPluginOpt =
-        if (isBundle) {
-          val isPluginSym = newSymbol(
-            record.symbol,
-            Names.termName("_usingPlugin"),
-            Flags.Method | Flags.Override | Flags.Protected,
-            defn.BooleanType
-          )
-          Some(
-            tpd.DefDef(
-              isPluginSym.asTerm,
-              _ => tpd.Literal(Constant(true))
-            )
-          )
-        } else None
-
-      // TODO
-      // val autoTypenameOpt =
-      //   if (BundleHelpers.isAutoTypenamed(record.symbol)) {
-      //     BundleHelpers.generateAutoTypename(record, thiz, conArgs.map(_.flatten))
-      //   } else None
+      // =========== Generate _usingPlugin ====================
+      val usingPluginOpt: Option[tpd.DefDef] = Option.when(isBundle) {
+        val isPluginSym = newSymbol(
+          record.symbol,
+          Names.termName("_usingPlugin"),
+          Flags.Method | Flags.Override | Flags.Protected,
+          defn.BooleanType
+        )
+        tpd.DefDef(
+          isPluginSym.asTerm,
+          _ => tpd.Literal(Constant(true))
+        )
+      }
 
       record match {
         case td @ TypeDef(name, tmpl: tpd.Template) => {
