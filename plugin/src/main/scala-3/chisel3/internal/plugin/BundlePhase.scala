@@ -6,7 +6,6 @@ import dotty.tools.dotc.*
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.ast.tpd.*
-import dotty.tools.dotc.ast.Trees
 import dotty.tools.dotc.core.Contexts.*
 import dotty.tools.dotc.core.Symbols.*
 import dotty.tools.dotc.core.Names
@@ -14,11 +13,8 @@ import dotty.tools.dotc.core.StdNames.*
 import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
-import dotty.tools.dotc.transform.{Erasure, Pickler, PostTyper}
-import dotty.tools.dotc.core.Types
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Flags
-import dotty.tools.dotc.util.SourcePosition
 import dotty.tools.dotc.core.Decorators.toTermName
 import dotty.tools.dotc.core.Definitions
 
@@ -63,7 +59,6 @@ object BundleHelpers {
   )(using Context): Option[List[List[tpd.Tree]]] = {
     val template = record.rhs.asInstanceOf[tpd.Template]
     val primaryConstructorOpt = Option(template.constr)
-
     val paramAccessors = record.symbol.primaryConstructor.paramSymss.flatten
 
     if (primaryConstructorOpt.isEmpty) {
@@ -73,16 +68,22 @@ object BundleHelpers {
 
     val constructor = primaryConstructorOpt.get
     val paramLookup = paramAccessors.map(sym => sym.name.toString -> sym).toMap
-
-    Some(constructor.termParamss.map(_.map { vp =>
-      val p = paramLookup(vp.name.toString)
-      val select = tpd.Select(thiz, p.name)
-      val cloned: tpd.Tree =
-        if (ChiselTypeHelpers.isData(vp.tpt.tpe)) cloneTypeFull(select) else select
-
-      if (vp.tpt.tpe.isRepeatedParam)
-        tpd.SeqLiteral(List(cloned), cloned)
-      else cloned
+    if (constructor.symbol.is(Flags.Private)) {
+      None
+    }
+    else Some(constructor.termParamss.map(_.collect {
+      case vp
+          if record.symbol.asClass.paramAccessors
+          .find(_.name == vp.name)
+          .forall(!_.is(Flags.Private)) =>
+        val p: Symbol = paramLookup(vp.name.toString)
+        val select = tpd.Select(thiz, p.name)
+        val cloned: tpd.Tree =
+          if (ChiselTypeHelpers.isData(vp.tpt.tpe)) cloneTypeFull(select) else select
+        if (vp.tpt.tpe.isRepeatedParam)
+          tpd.SeqLiteral(List(cloned), cloned)
+        else
+          cloned
     }))
   }
 
@@ -104,9 +105,9 @@ object BundleHelpers {
     else if arity <= Definitions.MaxTupleArity then
       // TupleN[elem1Tpe, ...](elem1, ...)
       ref(defn.TupleType(arity).nn.typeSymbol.companionModule)
-        .select(nme.apply)
-        .appliedToTypes(elems.map(_.tpe.widenIfUnstable))
-        .appliedToArgs(elems)
+      .select(nme.apply)
+      .appliedToTypes(elems.map(_.tpe.widenIfUnstable))
+      .appliedToArgs(elems)
     else
       // TupleXXL.apply(elems*) // TODO add and use Tuple.apply(elems*) ?
       ref(defn.TupleXXLModule)
@@ -138,9 +139,7 @@ object BundleHelpers {
 
   def generateElements(record: tpd.TypeDef)(using Context): tpd.DefDef = {
     val bundleSym = record.symbol.asClass
-
     val currentFields: List[Tree] = getBundleFields(record)
-
     val dataTpe = requiredClassRef("chisel3.Data")
     val rhs = makeVector(currentFields)
 
@@ -169,7 +168,7 @@ class ChiselBundlePhase extends PluginPhase {
   override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
     if (
       ChiselTypeHelpers.isRecord(record.tpe)
-      && !record.symbol.flags.is(Flags.Abstract)
+        && !record.symbol.flags.is(Flags.Abstract)
     ) {
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz:     tpd.This = tpd.This(record.symbol.asClass)
