@@ -219,31 +219,15 @@ package object simulator {
             movedFiles += abs
         }
       }
-      def moveFiles(filelist: Path) =
-        // Extract all lines (files) from the filelist.
-        Files
-          .lines(filelist)
-          .map(Paths.get(_))
-          .forEach(moveFile)
 
-      // Move a file in a filelist which may not exist.  Do nothing if the
-      // filelist does not exist.
-      def maybeMoveFiles(filelist: Path): Unit = filelist match {
-        case _ if Files.exists(filelist) => moveFiles(filelist)
-        case _                           =>
-      }
-
-      // Move files indicated by 'filelist.f' (which must exist).  Move files
-      // indicated by a black box filelist (which may exist).
-      moveFiles(supportArtifactsPath.resolve("filelist.f"))
-      maybeMoveFiles(supportArtifactsPath.resolve("firrtl_black_box_resource_files.f"))
-
-      // Additionally, move other files which are not in the filelist, but are
-      // ABI-meaningful.
+      // Move all files from the build flow except for some specifically
+      // excluded files:
+      //   - Any filelist like file
+      val skip_re = "^.*\\.f$".r
       Files
         .walk(supportArtifactsPath)
         .filter(_.toFile.isFile)
-        .filter(_.getFileName.toString.startsWith("layers-"))
+        .filter(f => !skip_re.matches(f.getFileName.toString))
         .forEach(moveFile)
 
       GeneratedWorkspaceInfo(
