@@ -1,17 +1,17 @@
 package build.circtpanamabinding
 
 import mill._
+import mill.api.BuildCtx.withFilesystemCheckerDisabled
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 
 import build._
-import build_.release
 
-object `package` extends RootModule with CIRCTPanamaBinding
+object `package` extends Module with CIRCTPanamaBinding
 
 // Java Codegen for all declared functions.
 // All of these functions are not private API which is subject to change.
-trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.ChiselPublishModule {
+trait CIRCTPanamaBinding extends HasJextractGeneratedSources with ChiselPublishModule {
   override def javadocOptions = Task(super.javadocOptions() ++ Seq("--enable-preview", "--release", "21"))
 
   object utils extends Module {
@@ -24,12 +24,6 @@ trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.Chisel
     val amd64 = architecture.matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")
     val aarch64 = architecture.equals("aarch64") | architecture.startsWith("armv8")
 
-    val firtoolVersion = {
-      val j =
-        _root_.upickle.default.read[Map[String, String]](os.read(moduleDir / os.up / os.up / "etc" / "circt.json"))
-      j("version").stripPrefix("firtool-")
-    }
-
     def circt(version: String, os: String, platform: String) =
       s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
 
@@ -37,6 +31,19 @@ trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.Chisel
     // 22, 1-2, {linux-x64, macos-aarch64, macos-x64, windows-x64}
     def jextract(jdkVersion: Int, jextractVersion: String, os: String, platform: String) =
       s"https://download.java.net/java/early_access/jextract/21/1/openjdk-${jdkVersion}-jextract+${jextractVersion}_${os}-${platform}_bin.tar.gz"
+
+    // Copy-pasted from Mill 0.12.14 and updated to Mill 1.0.0 (MIT License)
+    def download(url: String, dest: os.RelPath)(implicit ctx: mill.api.TaskCtx.Dest): PathRef = {
+      val out = ctx.dest / dest
+      val website = new java.net.URI(url).toURL
+      val websiteInputStream = website.openStream
+      try {
+        java.nio.file.Files.copy(websiteInputStream, out.toNIO)
+        PathRef(out)
+      } finally {
+        websiteInputStream.close()
+      }
+    }
 
     // use Task(persistent = true) to avoid download repeatedly
     def circtInstallDir: T[os.Path] = Task(persistent = true) {
@@ -47,13 +54,13 @@ trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.Chisel
           val tarPath = Task.dest / "circt.tar.gz"
           if (!os.exists(tarPath)) {
             val url = circt(
-              firtoolVersion,
+              v.firtoolVersion,
               if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
               // circt does not yet publish for macos-aarch64, use x64 for now
               if (amd64 || mac) "x64" else throw new Exception("unsupported arch")
             )
             Task.ctx().log.info(s"Downloading circt from ${url}")
-            mill.util.Util.download(url, os.rel / "circt.tar.gz")
+            download(url, os.rel / "circt.tar.gz")
             Task.ctx().log.info(s"Download Successfully")
           }
           os.proc("tar", "xvf", tarPath, "--strip-components=1").call(Task.dest)
@@ -77,7 +84,7 @@ trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.Chisel
               if (amd64 || mac) "x64" else if (aarch64) "aarch64" else throw new Exception("unsupported arch")
             )
             Task.ctx().log.info(s"Downloading jextract from ${url}")
-            mill.util.Util.download(url, os.rel / "jextract.tar.gz")
+            download(url, os.rel / "jextract.tar.gz")
             Task.ctx().log.info(s"Download Successfully")
           }
           os.proc("tar", "xvf", tarPath, "--strip-components=1").call(Task.dest)
@@ -103,9 +110,9 @@ trait CIRCTPanamaBinding extends HasJextractGeneratedSources with release.Chisel
 
   def target = Task("org.llvm.circt")
   def headerClassName = Task("CAPI")
-  def header = Task(PathRef(moduleDir / "jextract-headers.h"))
+  def header = Task.Source(moduleDir / "jextract-headers.h")
   def circtInstallPath = Task(utils.circtInstallDir())
   def jextractBinary = Task(utils.jextractInstallDir() / "bin" / "jextract")
-  def includePaths = Task(Seq(PathRef(circtInstallPath() / "include")))
+  def includePaths = Task(withFilesystemCheckerDisabled(Seq(PathRef(circtInstallPath() / "include"))))
   def libraryPaths = Task(Seq(PathRef(circtInstallPath() / "lib")))
 }

@@ -3,16 +3,15 @@
 package build.docs
 
 import mill._
+import mill.api.{BuildCtx, Result}
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.api.Result
 import mill.util.Jvm
 
 import build._
-import Version.GitHubRepository
 
 /** MDoc project */
-object `package` extends RootModule with SbtModule with HasScalaPlugin with HasCommonOptions {
+object `package` extends SbtModule with HasScalaPlugin with HasCommonOptions {
 
   override def scalaVersion = v.scalaVersion
 
@@ -22,9 +21,9 @@ object `package` extends RootModule with SbtModule with HasScalaPlugin with HasC
   def pluginModule = plugin.cross()
 
   // Our scala sources to be used by mdoc live here
-  override def millSourcePath = super.millSourcePath / os.up / "docs-target"
+  override def moduleDir = super.moduleDir / os.up / "docs-target"
 
-  override def ivyDeps = T { Agg(v.mdoc, v.scalatest) }
+  override def mvnDeps = Task { Seq(v.mdoc, v.scalatest) }
 
   override def moduleDeps = Seq(chisel(v.scalaVersion))
 
@@ -40,63 +39,69 @@ object `package` extends RootModule with SbtModule with HasScalaPlugin with HasC
   }
 
   def websiteGenerated = Task {
-    val dir = millSourcePath / os.up / "website" / "src" / "pages" / "generated"
-    os.makeDir.all(dir)
-    PathRef(dir)
+    BuildCtx.withFilesystemCheckerDisabled {
+      val dir = moduleDir / os.up / "website" / "src" / "pages" / "generated"
+      os.makeDir.all(dir)
+      PathRef(dir)
+    }
   }
 
-  def mdocSourceDir = T { millSourcePath / os.up / "docs" / "src" }
+  def mdocSourceDir = moduleDir / os.up / "docs" / "src"
 
-  def mdocOutDir = T { millSourcePath / os.up / "docs" / "generated" }
+  def mdocOutDir = moduleDir / os.up / "docs" / "generated"
 
-  def mdocSources = T.sources { mdocSourceDir() }
+  def mdocSources = Task.Sources { mdocSourceDir }
 
-  def mdocExtraArguments = T {
+  def mdocExtraArguments = Task {
     // None of our links are hygienic because they're primarily used on the website with .html
     Seq("--cwd", "docs", "--no-link-hygiene")
   }
 
   def latestStableVersion = Task {
-    Releases.getLatest(Releases.releases(T.log)).serialize
+    getLatest(releases(Task.log)).serialize
   }
 
   def firtoolVersionsTable = Task {
-    val outputFile = Task.dest / "FirtoolVersionsTable.scala"
-    val releaseTable = FirtoolVersionsTable.generateTable(true, T.log).replaceAll("\n", "\\\\n")
-    val prereleaseTable = FirtoolVersionsTable.generateTable(false, T.log).replaceAll("\n", "\\\\n")
-    val contents =
-      s"""|object FirtoolVersionsTable {
-          |  def releaseTable = "$releaseTable"
-          |  def prereleaseTable = "$prereleaseTable"
-          |}""".stripMargin
-    os.write(outputFile, contents, createFolders = true)
-    PathRef(Task.dest)
+    BuildCtx.withFilesystemCheckerDisabled {
+      val outputFile = Task.dest / "FirtoolVersionsTable.scala"
+      val releaseTable = generateTable(true, Task.log).replaceAll("\n", "\\\\n")
+      val prereleaseTable = generateTable(false, Task.log).replaceAll("\n", "\\\\n")
+      val contents =
+        s"""|object FirtoolVersionsTable {
+            |  def releaseTable = "$releaseTable"
+            |  def prereleaseTable = "$prereleaseTable"
+            |}""".stripMargin
+      os.write(outputFile, contents, createFolders = true)
+      PathRef(Task.dest)
+    }
   }
 
   override def generatedSources = Task {
     super.generatedSources() :+ firtoolVersionsTable()
   }
 
-  def mdoc = T {
-    val classpath = runClasspath().map(_.path)
-    val outDir = mdocOutDir()
+  def mdoc = Task {
+    BuildCtx.withFilesystemCheckerDisabled {
+      val classpath = runClasspath().map(_.path)
+      val outDir = mdocOutDir
 
-    val inOutArgs =
-      mdocSources().flatMap(inDir => Seq[String]("--in", inDir.path.toString, "--out", outDir.toString))
-    val mdocArgs =
-      Seq("--classpath", classpath.mkString(":")) ++
-        Seq("--scalac-options", scalacOptions().map("\"" + _ + "\"").mkString(" ")) ++
-        inOutArgs ++ mdocExtraArguments()
+      val inOutArgs =
+        mdocSources().flatMap(inDir => Seq[String]("--in", inDir.path.toString, "--out", outDir.toString))
+      val mdocArgs =
+        Seq("--classpath", classpath.mkString(":")) ++
+          Seq("--scalac-options", scalacOptions().map("\"" + _ + "\"").mkString(" ")) ++
+          inOutArgs ++ mdocExtraArguments()
 
-    T.log.debug("Running mdoc with args: " + mdocArgs.mkString(" "))
+      Task.log.debug("Running mdoc with args: " + mdocArgs.mkString(" "))
 
-    Jvm.callProcess(
-      mainClass = "mdoc.Main",
-      classPath = classpath,
-      mainArgs = mdocArgs
-    )
+      Jvm.callProcess(
+        mainClass = "mdoc.Main",
+        classPath = classpath,
+        mainArgs = mdocArgs
+      )
 
-    PathRef(outDir)
+      PathRef(outDir)
+    }
   }
 
   def contributors = Task {
@@ -121,18 +126,22 @@ object `package` extends RootModule with SbtModule with HasScalaPlugin with HasC
   }
 
   def contributorsMarkdown = Task {
-    val output = websiteGenerated().path / "contributors.md"
-    os.write.over(output, "<!-- Automatically generated by Mill 'docs.contributorsMarkdown' task -->\n")
-    os.write.append(output, Contributors.contributorsMarkdown(contributors()))
-    PathRef(output)
+    BuildCtx.withFilesystemCheckerDisabled {
+      val output = websiteGenerated().path / "contributors.md"
+      os.write.over(output, "<!-- Automatically generated by Mill 'docs.contributorsMarkdown' task -->\n")
+      os.write.append(output, Contributors.contributorsMarkdown(contributors()))
+      PathRef(output)
+    }
   }
 
   def scaladocLinks = Task {
-    val output = websiteGenerated().path / "scaladoc_links.md"
-    val snapshot = unipublish.publishVersion()
-    val markdown = Releases.generateMarkdown(T.log)(snapshot)
-    os.write.over(output, "<!-- Automatically generated by Mill 'docs.scaladocLinks' task -->\n")
-    os.write.append(output, markdown)
-    PathRef(output)
+    BuildCtx.withFilesystemCheckerDisabled {
+      val output = websiteGenerated().path / "scaladoc_links.md"
+      val snapshot = unipublish.publishVersion()
+      val markdown = generateMarkdown(Task.log)(snapshot)
+      os.write.over(output, "<!-- Automatically generated by Mill 'docs.scaladocLinks' task -->\n")
+      os.write.append(output, markdown)
+      PathRef(output)
+    }
   }
 }

@@ -3,18 +3,18 @@ package build.lit
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
+import mill.api.Cross
 
 import build._
 import build.lit.utility
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[Lit](v.scalaCrossVersions)
 }
 
 trait Lit extends Module with Cross.Module[String] {
-  def millSourcePath = super.millSourcePath / os.up
+  def moduleDir = super.moduleDir / os.up
 
   def litConfig: T[PathRef] = Task {
     os.write(
@@ -41,6 +41,6 @@ trait Lit extends Module with Cross.Module[String] {
     utility.cross(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path)
   )
   def javaHome:     T[os.Path] = Task(os.Path(sys.props("java.home")))
-  def chiselLitDir: T[os.Path] = Task(millSourcePath)
-  def litConfigIn:  T[PathRef] = Task.Source(millSourcePath / "tests" / "lit.site.cfg.py.in")
+  def chiselLitDir: T[os.Path] = Task(moduleDir)
+  def litConfigIn:  T[PathRef] = Task.Source(moduleDir / "tests" / "lit.site.cfg.py.in")
 }

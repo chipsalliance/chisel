@@ -1,15 +1,15 @@
 package build
 
 import mill._
+import mill.api.{BuildCtx, Result}
+import mill.javalib.SonatypeCentralPublishModule
+import mill.javalib.api.JvmWorkerUtil.matchingVersions
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
-import mill.api.Result
-import mill.scalalib.api.ZincWorkerUtil.matchingVersions
 import mill.util.Jvm.createJar
 
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.1`
-import de.tobiasroeser.mill.vcs.version.VcsVersion
+//import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 import build._
 
@@ -29,13 +29,7 @@ trait ChiselPublishModule extends SonatypeCentralPublishModule {
     )
   )
 
-  override def publishVersion = VcsVersion
-    .vcsState()
-    .format(
-      countSep = "+",
-      revHashDigits = 8,
-      untaggedSuffix = "-SNAPSHOT"
-    )
+  override def publishVersion = v.version()
 }
 
 /** Aggregate project for publishing Chisel as a single artifact
@@ -49,24 +43,24 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
 
   /** Publish both this project and the plugin (for the default Scala version) */
   override def publishLocal(
-    localIvyRepo: String = null,
+    localMvnRepo: String = null,
     sources:      Boolean = true,
     doc:          Boolean = true,
     transitive:   Boolean = false
   ) = Task.Command {
     // TODO consider making this parallel and publishing all cross-versions for plugin
-    plugin.cross(v.scalaVersion).publishLocal(localIvyRepo, sources, doc, transitive)()
-    super.publishLocal(localIvyRepo, sources, doc, transitive)()
+    plugin.cross(v.scalaVersion).publishLocal(localMvnRepo, sources, doc, transitive)()
+    super.publishLocal(localMvnRepo, sources, doc, transitive)()
   }
 
   // Explicitly not using moduleDeps because that influences so many things
   def components = Seq(firrtl.cross, svsim.cross, macros.cross, core.cross, chisel).map(_(v.scalaVersion))
 
-  /** Aggregated ivy deps to include as dependencies in POM */
-  def ivyDeps = Task { Task.traverse(components)(_.ivyDeps)().flatten }
+  /** Aggregated mvn deps to include as dependencies in POM */
+  def mvnDeps = Task { Task.traverse(components)(_.mvnDeps)().flatten }
 
   /** Aggregated compile (Maven provided scope) dependencies to be included in POM */
-  def compileIvyDeps = Task { Task.traverse(components)(_.compileIvyDeps)().flatten }
+  def compileMvnDeps = Task { Task.traverse(components)(_.compileMvnDeps)().flatten }
 
   /** Aggregated local classpath to include in jar */
   override def localClasspath = Task { Task.traverse(components)(_.localClasspath)().flatten }
@@ -85,13 +79,14 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
   override def sourceJar: T[PathRef] = Task {
     // This is based on the implementation of sourceJar in PublishModule, may need to be kept in sync.
     val allDirs = aggregatedSources() ++ aggregatedResources() ++ aggregatedCompileResources()
-    createJar(allDirs.map(_.path).filter(os.exists), manifest())
+    val jar = createJar(Task.dest / "out.jar", allDirs.map(_.path).filter(os.exists), manifest())
+    Result.Success(PathRef(jar))
   }
 
   // Needed for ScalaDoc
   override def scalacOptions = v.scala2CommonOptions(Nil)
 
-  def scalaDocRootDoc = Task.Source { Task.workspace / "root-doc.txt" }
+  def scalaDocRootDoc = Task.Source { BuildCtx.workspaceRoot / "root-doc.txt" }
 
   def unidocOptions = Task {
     scalacOptions() ++ Seq[String](
@@ -110,7 +105,7 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
       "-doc-root-content",
       scalaDocRootDoc().path.toString,
       "-sourcepath",
-      Task.workspace.toString,
+      BuildCtx.workspaceRoot.toString,
       "-doc-source-url",
       unidocSourceUrl(),
       "-language:implicitConversions",
@@ -147,16 +142,17 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
       Seq("-d", javadocDir.toString) ++
       unidocSourceFiles().map(_.path.toString)
 
-    zincWorker()
+    jvmWorker()
       .worker()
       .docJar(
         scalaVersion(),
         scalaOrganization(),
         scalaDocClasspath(),
         scalacPluginClasspath(),
+        None,
         fullOptions
       ) match {
-      case true  => Result.Success(createJar(Agg(javadocDir))(Task.dest))
+      case true  => Result.Success(PathRef(createJar(Task.dest / "out.jar", Seq(javadocDir))))
       case false => Result.Failure("docJar generation failed")
     }
   }
