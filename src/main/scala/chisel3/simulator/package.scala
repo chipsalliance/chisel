@@ -222,8 +222,9 @@ package object simulator {
 
       // Move all files from the build flow except for some specifically
       // excluded files:
-      //   - Any filelist like file
-      val skip_re = "^.*\\.f$".r
+      //   - Any filelist like file (.f)
+      //   - Any FIRRTL file (.fir)
+      val skip_re = "^.*\\.(f|fir)$".r
       Files
         .walk(supportArtifactsPath)
         .filter(_.toFile.isFile)

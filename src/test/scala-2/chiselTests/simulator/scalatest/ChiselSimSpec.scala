@@ -4,7 +4,7 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
-import chisel3.simulator.stimulus.RunUntilSuccess
+import chisel3.simulator.stimulus.{RunUntilFinished, RunUntilSuccess}
 import chisel3.simulator.{FailedExpectationException, HasSimulator, MacroText, Randomization, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
@@ -427,7 +427,6 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
     it("should allow setting the frequency to 1GHz") {
 
-      import chisel3.simulator.stimulus.RunUntilFinished
       import svsim.{CommonCompilationSettings, CommonSettingsModifications}
 
       class Foo extends Module {
@@ -439,6 +438,17 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
 
       simulate(new Foo)(RunUntilFinished(10, period = 10))
+
+    }
+
+    // This is checking that `.fir` files in the output aren't included in the compile.
+    it("not fail to compile with the --dump-fir option") {
+
+      class Foo extends Module {
+        stop()
+      }
+
+      simulate(new Foo, chiselOpts=Array("--dump-fir"))(RunUntilFinished(2))
 
     }
 
