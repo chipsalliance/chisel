@@ -448,7 +448,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         stop()
       }
 
-      simulate(new Foo, chiselOpts=Array("--dump-fir"))(RunUntilFinished(2))
+      simulate(new Foo, chiselOpts = Array("--dump-fir"))(RunUntilFinished(2))
 
     }
 
