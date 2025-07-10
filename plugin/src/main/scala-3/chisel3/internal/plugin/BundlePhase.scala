@@ -70,26 +70,27 @@ object BundleHelpers {
     val paramLookup = paramAccessors.map(sym => sym.name.toString -> sym).toMap
     if (constructor.symbol.is(Flags.Private)) {
       None
-    }
-    else {
-      Some(constructor.termParamss.map(_.collect {
-        case vp =>
-          val p: Symbol = paramLookup(vp.name.toString)
-          val select =
-            if (record.symbol.asClass.paramAccessors
+    } else {
+      Some(constructor.termParamss.map(_.collect { case vp =>
+        val p: Symbol = paramLookup(vp.name.toString)
+        val select =
+          if (
+            record.symbol.asClass.paramAccessors
               .find(_.name == vp.name)
-              .forall(_.is(Flags.Private))) None
-            else Some(tpd.Select(thiz, p.name))
-          if (select.isEmpty) return None
-          else {
-            val cloned: tpd.Tree =
-              if (ChiselTypeHelpers.isData(vp.tpt.tpe))
-                cloneTypeFull(select.get) else select.get
-            if (vp.tpt.tpe.isRepeatedParam)
-              tpd.SeqLiteral(List(cloned), cloned)
-            else
-              cloned
-          }
+              .forall(_.is(Flags.Private))
+          ) None
+          else Some(tpd.Select(thiz, p.name))
+        if (select.isEmpty) return None
+        else {
+          val cloned: tpd.Tree =
+            if (ChiselTypeHelpers.isData(vp.tpt.tpe))
+              cloneTypeFull(select.get)
+            else select.get
+          if (vp.tpt.tpe.isRepeatedParam)
+            tpd.SeqLiteral(List(cloned), cloned)
+          else
+            cloned
+        }
       }))
     }
   }
@@ -112,9 +113,9 @@ object BundleHelpers {
     else if arity <= Definitions.MaxTupleArity then
       // TupleN[elem1Tpe, ...](elem1, ...)
       ref(defn.TupleType(arity).nn.typeSymbol.companionModule)
-      .select(nme.apply)
-      .appliedToTypes(elems.map(_.tpe.widenIfUnstable))
-      .appliedToArgs(elems)
+        .select(nme.apply)
+        .appliedToTypes(elems.map(_.tpe.widenIfUnstable))
+        .appliedToArgs(elems)
     else
       // TupleXXL.apply(elems*) // TODO add and use Tuple.apply(elems*) ?
       ref(defn.TupleXXLModule)
@@ -175,8 +176,8 @@ class ChiselBundlePhase extends PluginPhase {
   override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
     if (
       ChiselTypeHelpers.isRecord(record.tpe)
-        && record.isClassDef
-        && !record.symbol.flags.is(Flags.Abstract)
+      && record.isClassDef
+      && !record.symbol.flags.is(Flags.Abstract)
     ) {
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz:     tpd.This = tpd.This(record.symbol.asClass)
