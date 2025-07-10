@@ -71,20 +71,27 @@ object BundleHelpers {
     if (constructor.symbol.is(Flags.Private)) {
       None
     }
-    else Some(constructor.termParamss.map(_.collect {
-      case vp
-          if record.symbol.asClass.paramAccessors
-          .find(_.name == vp.name)
-          .forall(!_.is(Flags.Private)) =>
-        val p: Symbol = paramLookup(vp.name.toString)
-        val select = tpd.Select(thiz, p.name)
-        val cloned: tpd.Tree =
-          if (ChiselTypeHelpers.isData(vp.tpt.tpe)) cloneTypeFull(select) else select
-        if (vp.tpt.tpe.isRepeatedParam)
-          tpd.SeqLiteral(List(cloned), cloned)
-        else
-          cloned
-    }))
+    else {
+      Some(constructor.termParamss.map(_.collect {
+        case vp =>
+          val p: Symbol = paramLookup(vp.name.toString)
+          val select =
+            if (record.symbol.asClass.paramAccessors
+              .find(_.name == vp.name)
+              .forall(_.is(Flags.Private))) None
+            else Some(tpd.Select(thiz, p.name))
+          if (select.isEmpty) return None
+          else {
+            val cloned: tpd.Tree =
+              if (ChiselTypeHelpers.isData(vp.tpt.tpe))
+                cloneTypeFull(select.get) else select.get
+            if (vp.tpt.tpe.isRepeatedParam)
+              tpd.SeqLiteral(List(cloned), cloned)
+            else
+              cloned
+          }
+      }))
+    }
   }
 
   private def makeVector(values: List[Tree])(using Context): Tree = {
