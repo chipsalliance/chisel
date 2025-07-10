@@ -5,14 +5,13 @@ package chisel3.internal.plugin
 import dotty.tools.dotc.report
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.ast.tpd.TreeOps
-import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.core.Contexts.*
 import dotty.tools.dotc.core.Symbols.*
 import dotty.tools.dotc.core.Names
 import dotty.tools.dotc.core.StdNames.nme
 import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.typer.TyperPhase
-import dotty.tools.dotc.plugins.{PluginPhase, StandardPlugin}
+import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.core.Decorators.toTermName
@@ -79,6 +78,7 @@ object BundleHelpers {
       case param if symAccessors(param.name).forall(_.is(Flags.Private)) =>
         report.warning("Private Bundle constructor parameters render the constructor uncloneable")
         return None
+      case _ =>
     })
 
     Some(constructor.termParamss.map(_.collect { case vp =>
