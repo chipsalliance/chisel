@@ -47,4 +47,9 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPubli
       super.ivyDeps() ++ Agg(scala3CompilerIvy)
     }
   }
+
+  override def resources = Task {
+    if (v.isScala3(crossScalaVersion)) Seq(PathRef(millSourcePath / "src" / "main" / "resources-3"))
+    else Seq(PathRef(millSourcePath / "src" / "main" / "resources-2"))
+  }
 }
