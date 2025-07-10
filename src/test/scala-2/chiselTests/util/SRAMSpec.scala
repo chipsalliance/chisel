@@ -277,7 +277,7 @@ class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
           )
         )
 
-      os.proc("slang", "--lint-only", "-f", "firrtl_black_box_resource_files.f").call(os.pwd / resultDir)
+      os.proc("slang", "--lint-only", "sram_0R_0W_1RW_2M_32x8.sv").call(os.pwd / resultDir)
     }
     Seq.tabulate(2, 2, 2) { case (rd, wr, rw) => if (rd + rw != 0 && wr + rw != 0) test(rd, wr, rw, 32, 8, 2) }
   }
