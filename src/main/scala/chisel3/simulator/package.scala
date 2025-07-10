@@ -220,15 +220,15 @@ package object simulator {
         }
       }
 
-      // Move all files from the build flow except for some specifically
-      // excluded files:
-      //   - Any filelist like file (.f)
-      //   - Any FIRRTL file (.fir)
-      val skip_re = "^.*\\.(f|fir)$".r
+      // Move all files from the build flow that have file extensions that
+      // likley should be included:
+      //   - Verilog files: '*.v', '*.sv', or '*.vh'.
+      //   - C++ files: '.cc', '.cpp', '.h'
+      val include_re = "^.*\\.(s?v|vh?|cc|cpp|h)$".r
       Files
         .walk(supportArtifactsPath)
         .filter(_.toFile.isFile)
-        .filter(f => !skip_re.matches(f.getFileName.toString))
+        .filter(f => include_re.matches(f.getFileName.toString))
         .forEach(moveFile)
 
       GeneratedWorkspaceInfo(
