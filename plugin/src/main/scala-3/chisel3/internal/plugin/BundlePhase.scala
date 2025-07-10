@@ -175,6 +175,7 @@ class ChiselBundlePhase extends PluginPhase {
   override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
     if (
       ChiselTypeHelpers.isRecord(record.tpe)
+        && record.isClassDef
         && !record.symbol.flags.is(Flags.Abstract)
     ) {
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
