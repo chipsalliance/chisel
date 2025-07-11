@@ -3,7 +3,6 @@ package build
 import mill._
 import mill.api.{BuildCtx, Result}
 import mill.javalib.SonatypeCentralPublishModule
-import mill.javalib.api.JvmWorkerUtil.matchingVersions
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
@@ -37,6 +36,9 @@ trait ChiselPublishModule extends SonatypeCentralPublishModule {
 trait Unipublish extends ScalaModule with ChiselPublishModule {
 
   def scalaVersion = v.scalaVersion
+
+  /** Is this a SNAPSHOT release?  */
+  def isSnapshot = Task { publishVersion().endsWith("-SNAPSHOT") }
 
   // This is published as chisel
   override def artifactName = "chisel"

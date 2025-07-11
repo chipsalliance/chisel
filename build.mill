@@ -7,11 +7,8 @@ package build
 
 import mill._
 import mill.api.{BuildCtx, Result}
-import mill.javalib.SonatypeCentralPublishModule
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.scalalib.publish.{Artifact, SonatypePublisher}
-import com.lumidion.sonatype.central.client.core.{PublishingType, SonatypeCredentials}
 
 object v extends Module {
 
@@ -68,10 +65,6 @@ object v extends Module {
       )
     }
   }
-
-  // Projects that we publish to Maven
-  def publishedProjects: Seq[SonatypeCentralPublishModule] =
-    pluginScalaCrossVersions.filterNot(isScala3).map(plugin.cross(_)) ++ Seq(unipublish)
 
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
@@ -363,63 +356,3 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
 }
 
 object unipublish extends Unipublish
-
-/** Tasks for publishing to Sonatype */
-object publish extends Module {
-
-  def getEnvVar(name: String) = Task.Command {
-    Task.env.get(name) match {
-      case Some(value) => Result.Success(value)
-      case None        => Result.Failure(s"Must define environment variable $name")
-    }
-  }
-
-  def sonatypeCredentials: Task[SonatypeCredentials] = Task.Anon {
-    val username = getEnvVar("MAVEN_CENTRAL_USERNAME")()
-    val password = getEnvVar("MAVEN_CENTRAL_PASSWORD")()
-    SonatypeCredentials(username, password)
-  }
-
-  def importPgp = Task.Anon {
-    val secret = getEnvVar("PGP_SECRET")()
-    os.call(
-      ("gpg", "--import", "--no-tty", "--batch", "--yes"),
-      stdin = java.util.Base64.getDecoder.decode(secret)
-    )
-  }
-
-  // We can't directly use mill.scalalib.SonatypeCentralPublishModule.publishAll because
-  // there's no easy way to programmatically pick which Modules to publish, and
-  // we don't want to publish everything.
-  // We aren't yet publishing Scala 3 cross-builds nor the CIRCT bindings.
-  def publishAll(): Command[Unit] = Task.Command {
-    val artifacts: Seq[(Seq[(os.Path, String)], Artifact)] =
-      Task.traverse(v.publishedProjects)(_.publishArtifacts)().map { case PublishModule.PublishData(a, s) =>
-        (s.map { case (p, f) => (p.path, f) }, a)
-      }
-    // unipublish is the main Chisel artifact, use it to make bundle name
-    val PublishModule.PublishData(Artifact(group, id, version), _) = unipublish.publishArtifacts()
-    val bundleName = Some(s"$group.$id-$version")
-
-    val sonatypeCreds = sonatypeCredentials()
-    // Import GPG, this is mutating the environment
-    importPgp()
-    val pgpPass = getEnvVar("PGP_PASSPHRASE")()
-    val gpgArgs = PublishModule.defaultGpgArgsForPassphrase(Some(pgpPass))
-
-    new SonatypeCentralPublisher(
-      sonatypeCreds,
-      gpgArgs,
-      readTimeout = 10 * 60 * 1000,
-      connectTimeout = 10 * 1000,
-      Task.log,
-      BuildCtx.workspaceRoot,
-      Task.env,
-      awaitTimeout = 10 * 60 * 1000
-    ).publishAll(
-      publishingType = PublishingType.USER_MANAGED, // confirm in UI
-      singleBundleName = bundleName,
-      artifacts*
-    )
-  }
-}

@@ -71,9 +71,7 @@ jobs:
   publish:
     needs: [all_tests_passed]
     runs-on: ubuntu-24.04
-    # Only publish on release until Mill supports publishing snapshots to Maven Central
-    # https://github.com/com-lihaoyi/mill/issues/4421
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout
@@ -87,12 +85,12 @@ jobs:
         with:
           jvm: temurin:11
       - name: Publish
-        run: ./mill publish.publishAll
+        run: .github/scripts/publish.sh
         env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          MILL_PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          MILL_PGP_SECRET_BASE64: ${{ secrets.PGP_SECRET }}
+          MILL_SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MILL_SONATYPE_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
       - run: |
           VERSION=$(./mill show unipublish.publishVersion | tr -d \")
           echo "Published version: $VERSION" >> $GITHUB_STEP_SUMMARY
