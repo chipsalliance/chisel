@@ -38,6 +38,12 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
 
   def scalaVersion = v.scalaVersion
 
+  /** Should we release without user intervention?
+    *
+    * True for snapshots, false otherwise.
+    */
+  def autoRelease = Task { publishVersion().endsWith("-SNAPSHOT") }
+
   // This is published as chisel
   override def artifactName = "chisel"
 
