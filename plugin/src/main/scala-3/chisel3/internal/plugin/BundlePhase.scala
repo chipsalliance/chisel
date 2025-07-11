@@ -85,7 +85,7 @@ object BundleHelpers {
       case _ =>
     })
 
-    Some(constructor.termParamss.map(_.collect { case vp =>
+    Some(constructor.termParamss.map(_.map { case vp =>
       val p: Symbol = paramLookup(vp.name.toString)
       val select = tpd.Select(thiz, p.name)
       val cloned: tpd.Tree =
