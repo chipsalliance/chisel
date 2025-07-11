@@ -3,11 +3,11 @@ package build.lit.utility
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
+import mill.api.Cross
 
 import build._
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[LitUtility](v.scalaCrossVersions)
 }
@@ -24,7 +24,7 @@ trait LitUtility
 
   def chiselModule = chisel(crossScalaVersion)
   def pluginModule = plugin.cross(crossScalaVersion)
-  def millSourcePath = super.millSourcePath / os.up
+  def moduleDir = super.moduleDir / os.up
   def panamaConverterModule = panamaconverter.cross(crossScalaVersion)
   def panamaOMModule = panamaom.cross(crossScalaVersion)
 

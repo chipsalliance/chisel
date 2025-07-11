@@ -3,20 +3,19 @@ package build.plugin
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
+import mill.api.Cross
 
 import build._
-import build_.release
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[Plugin](v.pluginScalaCrossVersions)
 }
 
-trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPublishModule {
+trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule {
   override def artifactName = "chisel-plugin"
 
-  def millSourcePath = super.millSourcePath / os.up
+  def moduleDir = super.moduleDir / os.up
 
   // The plugin is compiled for every minor Scala version
   override def crossFullScalaVersion = true
@@ -35,21 +34,21 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with release.ChiselPubli
   // Does not use common options because -Wconf wasn't supported in early 2.13, nor was "-release:"
   override def scalacOptions = super.scalacOptions() ++ releaseArg(crossScalaVersion)
 
-  def scalaLibraryIvy = v.scalaLibrary(crossScalaVersion)
-  def scalaReflectIvy = v.scalaReflect(crossScalaVersion)
-  def scala2CompilerIvy: Dep = v.scala2Compiler(crossScalaVersion)
-  def scala3CompilerIvy: Dep = v.scala3Compiler(crossScalaVersion)
+  def scalaLibraryMvn = v.scalaLibrary(crossScalaVersion)
+  def scalaReflectMvn = v.scalaReflect(crossScalaVersion)
+  def scala2CompilerMvn: Dep = v.scala2Compiler(crossScalaVersion)
+  def scala3CompilerMvn: Dep = v.scala3Compiler(crossScalaVersion)
 
-  def ivyDeps = Task {
+  def mvnDeps = Task {
     if (!v.isScala3(crossScalaVersion)) {
-      super.ivyDeps() ++ Agg(scalaLibraryIvy, scalaReflectIvy, scala2CompilerIvy)
+      super.mvnDeps() ++ Seq(scalaLibraryMvn, scalaReflectMvn, scala2CompilerMvn)
     } else {
-      super.ivyDeps() ++ Agg(scala3CompilerIvy)
+      super.mvnDeps() ++ Seq(scala3CompilerMvn)
     }
   }
 
-  override def resources = Task {
-    if (v.isScala3(crossScalaVersion)) Seq(PathRef(millSourcePath / "src" / "main" / "resources-3"))
-    else Seq(PathRef(millSourcePath / "src" / "main" / "resources-2"))
+  override def resources = Task.Sources {
+    if (v.isScala3(crossScalaVersion)) moduleDir / "src" / "main" / "resources-3"
+    else moduleDir / "src" / "main" / "resources-2"
   }
 }

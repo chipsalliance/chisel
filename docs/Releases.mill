@@ -2,22 +2,19 @@
 
 package build.docs
 
-import $ivy.`com.47deg::github4s:0.31.1`
-
 import cats.effect.{IO, IOApp}
 import org.http4s.client.{Client, JavaNetClientBuilder}
-import github4s.{GHResponse, Github}
-import github4s.Github._
+import github4s.{GHResponse, GithubClient}
+import github4s.algebras.GithubAPIs
 import github4s.domain.{Pagination, Release}
 import coursier._
+import coursier.core.{Module, ModuleName, Organization}
 
 import cats.effect.unsafe.implicits.global
 
 import scala.util.control.NonFatal
 
 import mill.api.Logger
-
-import Version._
 
 // These are hardcoded but could be turned into parameters
 val repo = GitHubRepository("chipsalliance", "chisel")
@@ -29,9 +26,9 @@ val oldestVersion = SemanticVersion.parse(oldestRelease)
 val firstScala213 = SemanticVersion.parse("v3.5.0-RC1")
 
 // Constants for Coursier
-val chiselModule:          Module = mod"org.chipsalliance:chisel_2.13"
-val chisel3ModuleScala213: Module = mod"edu.berkeley.cs:chisel3_2.13"
-val chisel3ModuleScala212: Module = mod"edu.berkeley.cs:chisel3_2.12"
+val chiselModule:          Module = Module(Organization("org.chipsalliance"), ModuleName("chisel_2.13"), Map())
+val chisel3ModuleScala213: Module = Module(Organization("edu.berkeley.cs"), ModuleName("chisel3_2.13"), Map())
+val chisel3ModuleScala212: Module = Module(Organization("edu.berkeley.cs"), ModuleName("chisel3_2.12"), Map())
 
 val httpClient: Client[IO] = JavaNetClientBuilder[IO].create
 val token:      Option[String] = sys.env.get("GITHUB_TOKEN")
@@ -48,7 +45,7 @@ def liftToIO[A](response: GHResponse[A]): IO[A] = response.result match {
 }
 
 // The listReleases API grabs by page so we need to fetch multiple pages
-def getReleases(github: Github[IO], page: Int = 0): IO[List[String]] = for {
+def getReleases(github: GithubAPIs[IO], page: Int = 0): IO[List[String]] = for {
   response <- github.repos.listReleases(repo.owner, repo.repo, Some(Pagination(page, 40)), Map())
   fetched <- liftToIO(response).map(_.map(_.tag_name))
   fetchedMore <-
@@ -62,7 +59,7 @@ def isPublished(logger: Logger)(version: SemanticVersion): Boolean = {
     if (version.major >= 5) chiselModule
     else if (version > firstScala213) chisel3ModuleScala213
     else chisel3ModuleScala212
-  val dep = Dependency(mod, version.serialize)
+  val dep = Dependency(mod, VersionConstraint(version.serialize))
   try {
     Resolve().addDependencies(dep).run()
     true
@@ -74,7 +71,7 @@ def isPublished(logger: Logger)(version: SemanticVersion): Boolean = {
 }
 
 def releases(logger: Logger): List[SemanticVersion] =
-  getReleases(Github[IO](httpClient, token))
+  getReleases(GithubClient[IO](httpClient, token))
     .unsafeRunSync()
     .map(SemanticVersion.parse(_))
     .filter(isPublished(logger))

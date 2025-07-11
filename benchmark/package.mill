@@ -3,12 +3,11 @@ package build.benchmark
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import $ivy.`com.lihaoyi::mill-contrib-jmh:`
 import mill.contrib.jmh.JmhModule
 
 import build._
 
-object `package` extends RootModule with ScalaModule with JmhModule with ScalafmtModule {
+object `package` extends ScalaModule with JmhModule with ScalafmtModule {
   def scalaVersion = v.scalaVersion
   def jmhCoreVersion = v.jmhVersion
 

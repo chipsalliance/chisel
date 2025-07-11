@@ -1,19 +1,19 @@
 package build.svsim
 
 import mill._
+import mill.api.{BuildCtx, Cross}
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
 
 import build._
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[Svsim](v.scalaCrossVersions)
 }
 
 trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
-  def millSourcePath = super.millSourcePath / os.up
+  def moduleDir = super.moduleDir / os.up
 
   override def scalacOptions = Task {
     super.scalacOptions() ++
@@ -23,15 +23,15 @@ trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
   }
 
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
-    def ivyDeps = Agg(v.scalatest, v.scalacheck)
+    def mvnDeps = Seq(v.scalatest, v.scalacheck)
   }
 
   def clangFormatConfig = Task.Source {
-    Task.workspace / "svsim" / ".clang-format"
+    BuildCtx.workspaceRoot / "svsim" / ".clang-format"
   }
 
   def cppSources = Task.Sources {
-    Task.workspace / "svsim" / "src" / "main" / "resources" / "simulation-driver.cpp"
+    BuildCtx.workspaceRoot / "svsim" / "src" / "main" / "resources" / "simulation-driver.cpp"
   }
 
   def clangformat(args: String*) = Task.Command {

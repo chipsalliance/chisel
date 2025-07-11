@@ -3,17 +3,17 @@ package build.stdlib
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
+import mill.api.Cross
 
 import build._
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[Stdlib](v.scalaCrossVersions)
 }
 
 trait Stdlib extends CrossSbtModule with HasScalaPlugin with HasCommonOptions with ScalafmtModule {
-  def millSourcePath = super.millSourcePath / os.up
+  def moduleDir = super.moduleDir / os.up
   def chiselModule = chisel(crossScalaVersion)
   def pluginModule = plugin.cross(crossScalaVersion)
 

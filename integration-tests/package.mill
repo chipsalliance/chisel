@@ -3,25 +3,25 @@ package build.`integration-tests`
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
+import mill.api.Cross
 
 import build._
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[IntegrationTests](v.scalaCrossVersions)
 }
 
 trait IntegrationTests extends CrossSbtModule with HasScalaPlugin with HasCommonOptions with ScalafmtModule {
   def pluginModule = plugin.cross()
-  def millSourcePath = super.millSourcePath / os.up
+  def moduleDir = super.moduleDir / os.up
 
   // TODO enable
   override def xsource3 = false
 
   object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel().test
-    def ivyDeps = Agg(v.scalatest, v.scalacheck)
+    def mvnDeps = Seq(v.scalatest, v.scalacheck)
 
     override def testForkGrouping = discoveredTestClasses().grouped(8).toSeq
   }

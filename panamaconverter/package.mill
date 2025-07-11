@@ -3,12 +3,11 @@ package build.panamaconverter
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
+import mill.api.Cross
 
 import build._
-import build_.release
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[PanamaConverter](v.scalaCrossVersions)
 }
@@ -19,8 +18,8 @@ trait PanamaConverter
     with CrossModuleBase
     with HasScalaPlugin
     with ScalafmtModule
-    with release.ChiselPublishModule {
-  def millSourcePath = super.millSourcePath / os.up
+    with ChiselPublishModule {
+  def moduleDir = super.moduleDir / os.up
 
   def panamaOMModule = panamaom.cross(crossScalaVersion)
   def chiselModule = chisel(crossScalaVersion)

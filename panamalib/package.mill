@@ -3,12 +3,11 @@ package build.panamalib
 import mill._
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.define.Cross
+import mill.api.Cross
 
 import build._
-import build_.release
 
-object `package` extends RootModule {
+object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[PanamaLib](v.scalaCrossVersions)
 }
@@ -19,8 +18,8 @@ trait PanamaLib
     with HasCIRCTPanamaBindingModule
     with CrossModuleBase
     with ScalafmtModule
-    with release.ChiselPublishModule {
-  def millSourcePath = super.millSourcePath / os.up
+    with ChiselPublishModule {
+  def moduleDir = super.moduleDir / os.up
 
   def circtPanamaBindingModule = circtpanamabinding
 }

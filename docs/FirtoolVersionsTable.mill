@@ -4,8 +4,6 @@ package build.docs
 
 import mill.api.Logger
 
-import Version.SemanticVersion
-
 // Some versions predate the BuildInfo.firtoolVersion API and thus have to be hardcoded
 def knownVersions: Seq[(SemanticVersion, String)] =
   Seq(
@@ -40,9 +38,9 @@ def firtoolGithubLink(version: String): String = s"https://github.com/llvm/circt
 // release == true only includes releases
 // release == false only includes pre-releases
 def generateTable(release: Boolean, logger: Logger): String = {
-  val releases = Releases.releases(logger)
+  val allReleases = releases(logger)
 
-  val hasfirtool = releases.filter(_ >= min)
+  val hasfirtool = allReleases.filter(_ >= min)
   val unknown = {
     val isKnownVersion = knownVersions.map(_._1).toSet
     hasfirtool.filterNot(isKnownVersion)
