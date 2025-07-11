@@ -65,8 +65,11 @@ object BundleHelpers {
     }
 
     val constructor = primaryConstructorOpt.get
-    val paramLookup = paramAccessors.map(sym => sym.name.toString -> sym).toMap
-    val symAccessors = (x: Names.TermName) => record.symbol.asClass.paramAccessors.find(_.name == x)
+    val paramLookup: Map[String, Symbol] =
+      paramAccessors.map(sym => sym.name.toString -> sym).toMap
+
+    val symAccessorMap: Map[Names.Name, Symbol] =
+      record.symbol.asClass.paramAccessors.map(param => param.name -> param).toMap
 
     if (constructor.symbol.is(Flags.Private)) {
       val msg = "Private bundle constructors cannot automatically be cloned, try making it package private"
@@ -74,9 +77,10 @@ object BundleHelpers {
       return None
     }
 
-    constructor.termParamss.map(_.map {
-      case param if symAccessors(param.name).forall(_.is(Flags.Private)) =>
-        report.warning("Private Bundle constructor parameters render the constructor uncloneable")
+    constructor.termParamss.foreach(_.foreach {
+      case param if symAccessorMap(param.name).is(Flags.Private) =>
+        report
+          .warning("Private Bundle constructor parameters render the constructor uncloneable", constructor.sourcePos)
         return None
       case _ =>
     })
