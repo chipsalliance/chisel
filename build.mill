@@ -7,7 +7,8 @@ package build
 
 import mill._
 import mill.api.{BuildCtx, Result}
-import mill.javalib.SonatypeCentralPublishModule
+import mill.javalib.{MavenWorkerSupport, SonatypeCentralPublishModule}
+import mill.javalib.publish.PublishInfo
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish.{Artifact, SonatypePublisher}
@@ -391,6 +392,16 @@ object publish extends Module {
     )
   }
 
+  // It is really stupid that we have to convert Paths to infos, is there a better way?
+  def publishFileToPublishInfo(path: os.Path, filename: String): PublishInfo = {
+    // file, classifier, ext, ivyConfig, ivyType
+    if (filename.endsWith(".pom")) PublishInfo(PathRef(path), Some("pom"), "pom", "pom", "pom")
+    else if (filename.endsWith("-sources.jar")) PublishInfo(PathRef(path), Some("sources"), "jar", "compile", "src")
+    else if (filename.endsWith("-javadoc.jar")) PublishInfo(PathRef(path), Some("javadoc"), "jar", "compile", "doc")
+    else if (filename.endsWith(".jar")) PublishInfo(PathRef(path), Some("jar"), "jar", "compile", "jar")
+    else throw new Exception(s"Unimplemented artifact $filename")
+  }
+
   // We can't directly use mill.scalalib.SonatypeCentralPublishModule.publishAll because
   // there's no easy way to programmatically pick which Modules to publish, and
   // we don't want to publish everything.
@@ -410,19 +421,68 @@ object publish extends Module {
     val pgpPass = getEnvVar("PGP_PASSPHRASE")()
     val gpgArgs = PublishModule.defaultGpgArgsForPassphrase(Some(pgpPass))
 
-    new SonatypeCentralPublisher(
-      sonatypeCreds,
-      gpgArgs,
-      readTimeout = 10 * 60 * 1000,
-      connectTimeout = 10 * 1000,
-      Task.log,
-      BuildCtx.workspaceRoot,
-      Task.env,
-      awaitTimeout = 10 * 60 * 1000
-    ).publishAll(
-      publishingType = PublishingType.USER_MANAGED, // confirm in UI
-      singleBundleName = bundleName,
-      artifacts*
-    )
+    // Check version to see if we should publish a SNAPSHOT or real release
+    if (version.endsWith("-SNAPSHOT")) {
+      val uri = unipublish.sonatypeCentralSnapshotUri
+      Task.log.info(
+        s"Detected a 'SNAPSHOT' version, publishing to Sonatype Central Snapshots at '$uri'"
+      )
+      //artifacts.foreach(_._1.foreach(println(_)))
+      //val m2Artifacts = artifacts.map { case (payload, art) =>
+      //  val pomOpt = payload.collectFirst { case (path, filename) if filename.endsWith(".pom") => path }
+      //  val pom = pomOpt.getOrElse(throw new Exception("There must be a .pom"))
+      //  val publishInfos = payload.map(p => publishFileToPublishInfo(p._1, p._2))
+      //  MavenWorkerSupport.RemoteM2Publisher.asM2Artifacts(
+      //    pom,
+      //    art,
+      //    publishInfos
+      //  )
+      //}
+      //m2Artifacts.foreach(println)
+
+      //WorkerRemoteM2Publisher.publish(
+      //  uri = uri,
+      //  workspace = Task.dest / "maven",
+      //  username = sonatypeCreds.username,
+      //  password = sonatypeCreds.password,
+      //  artifacts
+      //)
+      new SonatypePublisher(
+        uri, // in theory this should be the main URI but we only publish SNAPSHOTs here
+        uri,
+        s"${sonatypeCreds.username}:${sonatypeCreds.password}",
+        signed = false, // No need to sign SNAPSHOTs
+        gpgArgs,
+        readTimeout = 10 * 60 * 1000,
+        connectTimeout = 10 * 1000,
+        Task.log,
+        Task.dest / "maven",
+        Task.env,
+        awaitTimeout = 10 * 60 * 1000,
+        stagingRelease = true,
+      ).publishAll(
+        release = false,
+        artifacts*
+      )
+    } else {
+      Task.log.info(
+        s"Publishing version '$version'"
+      )
+      new SonatypeCentralPublisher(
+        sonatypeCreds,
+        gpgArgs,
+        readTimeout = 10 * 60 * 1000,
+        connectTimeout = 10 * 1000,
+        Task.log,
+        BuildCtx.workspaceRoot,
+        Task.env,
+        awaitTimeout = 10 * 60 * 1000
+      ).publishAll(
+        publishingType = PublishingType.USER_MANAGED, // confirm in UI
+        singleBundleName = bundleName,
+        artifacts*
+      )
+    }
   }
+
 }
