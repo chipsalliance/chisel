@@ -1,4 +1,1 @@
-Manifest-Version: 1.0
-Created-By: Mill 0.12.14
-Tool: Mill-0.12.14
 
