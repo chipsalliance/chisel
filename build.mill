@@ -7,12 +7,8 @@ package build
 
 import mill._
 import mill.api.{BuildCtx, Result}
-import mill.javalib.{MavenWorkerSupport, SonatypeCentralPublishModule}
-import mill.javalib.publish.PublishInfo
 import mill.scalalib._
 import mill.scalalib.scalafmt._
-import mill.scalalib.publish.{Artifact, SonatypePublisher}
-import com.lumidion.sonatype.central.client.core.{PublishingType, SonatypeCredentials}
 
 object v extends Module {
 

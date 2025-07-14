@@ -3,7 +3,6 @@ package build
 import mill._
 import mill.api.{BuildCtx, Result}
 import mill.javalib.SonatypeCentralPublishModule
-import mill.javalib.api.JvmWorkerUtil.matchingVersions
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._

@@ -93,23 +93,18 @@ jobs:
       - name: Publish
         run: |
           VERSION=$(./mill show unipublish.publishVersion | tr -d \")
-          echo "version = $VERSION"
           SHOULD_RELEASE=$(./mill show unipublish.autoRelease)
-          echo "should release = ${SHOULD_RELEASE}"
           PLUGIN_VERSIONS=$(./mill show plugin.publishableVersions)
-          echo "plugin versions = ${PLUGIN_VERSIONS}"
           PLUGIN_MODULES=$(echo "${PLUGIN_VERSIONS}" | jq -r 'map("plugin.cross[" + . + "]") | join(",")')
-          echo "plugin modules = ${PLUGIN_MODULES}"
           ./mill mill.javalib.SonatypeCentralPublishModule/ \
             --shouldRelease "$SHOULD_RELEASE" \
             --bundleName "chisel-$VERSION" \
             --publishArtifacts "{unipublish,${PLUGIN_MODULES}}.publishArtifacts"
-        # FIXME uncomment, done for debugging PR
-        #env:
-        #  MILL_PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-        #  MILL_PGP_SECRET_BASE64: ${{ secrets.PGP_SECRET }}
-        #  MILL_SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-        #  MILL_SONATYPE_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+        env:
+          MILL_PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          MILL_PGP_SECRET_BASE64: ${{ secrets.PGP_SECRET }}
+          MILL_SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MILL_SONATYPE_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
       - run: |
           echo "Published version: $VERSION" >> $GITHUB_STEP_SUMMARY
 
