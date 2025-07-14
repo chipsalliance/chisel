@@ -101,7 +101,7 @@ jobs:
           ./mill mill.javalib.SonatypeCentralPublishModule/ \
             --shouldRelease "$SHOULD_RELEASE" \
             --bundleName "chisel-$VERSION" \
-            --publishedArtifacts "{unipublish,plugin.cross[${PLUGIN_VERSIONS}]}.publishArtifacts"
+            --publishArtifacts "{unipublish,plugin.cross[${PLUGIN_VERSIONS}]}.publishArtifacts"
         # FIXME uncomment, done for debugging PR
         #env:
         #  MILL_PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
