@@ -54,7 +54,7 @@ trait TestingDirectory extends TestSuiteMixin { self: TestSuite =>
   final implicit def implementation: HasTestingDirectory = new HasTestingDirectory {
 
     // Match non-simple characters.
-    val regex = "[^-_A-Za-z0-9]".r
+    val regex = "[^-_.A-Za-z0-9]".r
 
     /** Return the test name with overly conservative sanitization applied.
       *

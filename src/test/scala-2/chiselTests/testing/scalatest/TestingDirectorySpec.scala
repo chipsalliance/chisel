@@ -74,7 +74,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
-        "should-mangle-emojis--e-g----"
+        "should-mangle-emojis--e.g.---"
       )
     }
 
@@ -84,7 +84,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
-        "should-mangle-CJK-characters--e-g------"
+        "should-mangle-CJK-characters--e.g.-----"
       )
     }
 
