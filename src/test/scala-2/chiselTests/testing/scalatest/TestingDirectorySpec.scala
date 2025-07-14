@@ -64,27 +64,27 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
         "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
-        "should-generate-another-directory,-too"
+        "should-generate-another-directory--too"
       )
     }
 
-    it("should handle emojis, e.g., 🚀") {
+    it("should mangle emojis, e.g., 🚀") {
       checkDirectoryStructure(
         "build",
         "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
-        "should-handle-emojis,-e.g.,-🚀"
+        "should-mangle-emojis--e.g.---"
       )
     }
 
-    it("should handle CJK characters, e.g., 好猫咪") {
+    it("should mangle CJK characters, e.g., 好猫咪") {
       checkDirectoryStructure(
         "build",
         "chiselsim",
         "TestingDirectorySpec",
         "A-test-suite-mixing-in-WithTestingDirectory",
-        "should-handle-CJK-characters,-e.g.,-好猫咪"
+        "should-mangle-CJK-characters--e.g.-----"
       )
     }
 

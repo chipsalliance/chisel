@@ -53,20 +53,21 @@ trait TestingDirectory extends TestSuiteMixin { self: TestSuite =>
     */
   final implicit def implementation: HasTestingDirectory = new HasTestingDirectory {
 
-    // A sequence of regular expressions and their replacements that should be
-    // applied to the test name.
-    val res = Seq("\\s|\\(|\\)|\\$|/|\\\\".r -> "-", "\"|\'|#|:|;|<|>".r -> "")
+    // Match non-simple characters.
+    val regex = "[^-_.A-Za-z0-9]".r
 
-    /** Return the test name with minimal sanitization applied:
+    /** Return the test name with overly conservative sanitization applied.
       *
-      *   - Replace all whitespace as this is incompatible with GNU make [1]
-      *   - Replace any characters which Verilator Makefiles empirically have
-      *     problems with
+      * This should narrowly only need to replace whitespace (as this is
+      * incompatible with GNU make [1] and any character which Verilator
+      * empirically has problems with).  However, this has historically been a
+      * game of whack-a-mole and hence this replaces much more than it likely
+      * needs to.
       *
       * [1]: https://savannah.gnu.org/bugs/?712
       */
-    final def getTestName = testName.value.map { case a =>
-      res.foldLeft(a) { case (string, (regex, replacement)) => regex.replaceAllIn(string, replacement) }
+    final def getTestName = testName.value.map { case name =>
+      regex.replaceAllIn(name, _ => "-")
     }
 
     override def getDirectory: Path = FileSystems
