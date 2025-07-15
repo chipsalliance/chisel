@@ -354,9 +354,6 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
     // Workaround for https://github.com/com-lihaoyi/mill/pull/5519
     override def versionSourcesPaths = scalaVersionDirectoryNames.map(s => os.sub / "src/test" / s"scala-$s")
 
-    // TODO: enable sandbox and run tests in parallel
-    override def testSandboxWorkingDir = false
-
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
     override def scalacOptions = Task { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
