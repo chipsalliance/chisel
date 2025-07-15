@@ -579,8 +579,6 @@ class PanamaCIRCT {
   def omClassTypeGetName(tpe:          MlirType) = MlirIdentifier(CAPI.omClassTypeGetName(arena, tpe.get))
   def omTypeIsAFrozenBasePathType(tpe: MlirType): Boolean = CAPI.omTypeIsAFrozenBasePathType(tpe.get)
   def omTypeIsAFrozenPathType(tpe:     MlirType): Boolean = CAPI.omTypeIsAFrozenPathType(tpe.get)
-  def omTypeIsAMapType(tpe:            MlirType): Boolean = CAPI.omTypeIsAMapType(tpe.get)
-  def omMapTypeGetKeyType(tpe:         MlirType) = MlirType(CAPI.omMapTypeGetKeyType(arena, tpe.get))
   def omTypeIsAStringType(tpe:         MlirType): Boolean = CAPI.omTypeIsAStringType(tpe.get)
   def omEvaluatorNew(mod:              MlirModule) = OMEvaluator(CAPI.omEvaluatorNew(arena, mod.get))
   def omEvaluatorInstantiate(evaluator: OMEvaluator, className: String, actualParams: Seq[OMEvaluatorValue]) = {
@@ -623,22 +621,6 @@ class PanamaCIRCT {
   def omEvaluatorListGetElement(evaluatorValue: OMEvaluatorValue, pos: Long) = OMEvaluatorValue(
     CAPI.omEvaluatorListGetElement(arena, evaluatorValue.get, pos)
   )
-  def omEvaluatorValueIsATuple(evaluatorValue: OMEvaluatorValue): Boolean =
-    CAPI.omEvaluatorValueIsATuple(evaluatorValue.get)
-  def omEvaluatorTupleGetNumElements(evaluatorValue: OMEvaluatorValue): Long =
-    CAPI.omEvaluatorTupleGetNumElements(evaluatorValue.get)
-  def omEvaluatorTupleGetElement(evaluatorValue: OMEvaluatorValue, pos: Long) = OMEvaluatorValue(
-    CAPI.omEvaluatorTupleGetElement(arena, evaluatorValue.get, pos)
-  )
-  def omEvaluatorMapGetElement(evaluatorValue: OMEvaluatorValue, attr: MlirAttribute) = OMEvaluatorValue(
-    CAPI.omEvaluatorMapGetElement(arena, evaluatorValue.get, attr.get)
-  )
-  def omEvaluatorMapGetKeys(obj: OMEvaluatorValue) = MlirAttribute(CAPI.omEvaluatorMapGetKeys(arena, obj.get))
-  def omEvaluatorValueIsAMap(evaluatorValue: OMEvaluatorValue): Boolean =
-    CAPI.omEvaluatorValueIsAMap(evaluatorValue.get)
-  def omEvaluatorMapGetType(evaluatorValue: OMEvaluatorValue): MlirType = MlirType(
-    CAPI.omEvaluatorMapGetType(arena, evaluatorValue.get)
-  )
   def omEvaluatorValueIsABasePath(evaluatorValue: OMEvaluatorValue): Boolean =
     CAPI.omEvaluatorValueIsABasePath(evaluatorValue.get)
   def omEvaluatorBasePathGetEmpty() = OMEvaluatorValue(CAPI.omEvaluatorBasePathGetEmpty(arena, mlirCtx))
@@ -660,14 +642,6 @@ class PanamaCIRCT {
   def omListAttrGetNumElements(attr:   MlirAttribute): Long = CAPI.omListAttrGetNumElements(attr.get)
   def omListAttrGetElement(attr: MlirAttribute, pos: Long) = MlirAttribute(
     CAPI.omListAttrGetElement(arena, attr.get, pos)
-  )
-  def omAttrIsAMapAttr(attr:        MlirAttribute): Boolean = CAPI.omAttrIsAMapAttr(attr.get)
-  def omMapAttrGetNumElements(attr: MlirAttribute): Long = CAPI.omMapAttrGetNumElements(attr.get)
-  def omMapAttrGetElementKey(attr: MlirAttribute, pos: Long) = MlirIdentifier(
-    CAPI.omMapAttrGetElementKey(arena, attr.get, pos)
-  )
-  def omMapAttrGetElementValue(attr: MlirAttribute, pos: Long) = MlirAttribute(
-    CAPI.omMapAttrGetElementValue(arena, attr.get, pos)
   )
 }
 
