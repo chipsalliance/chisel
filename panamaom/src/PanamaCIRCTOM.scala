@@ -53,13 +53,6 @@ abstract class PanamaCIRCTOMEvaluatorValue {
     }
   def list: PanamaCIRCTOMEvaluatorValueList = listOpt.get
 
-  def mapOpt: Option[PanamaCIRCTOMEvaluatorValueMap] =
-    this match {
-      case map: PanamaCIRCTOMEvaluatorValueMap => Some(map)
-      case _ => None
-    }
-  def mapPath: PanamaCIRCTOMEvaluatorValueMap = mapOpt.get
-
   def pathOpt: Option[PanamaCIRCTOMEvaluatorValuePath] =
     this match {
       case path: PanamaCIRCTOMEvaluatorValuePath => Some(path)
@@ -94,13 +87,6 @@ abstract class PanamaCIRCTOMEvaluatorValue {
       case _ => None
     }
   def bool: PanamaCIRCTOMEvaluatorValuePrimitiveBool = boolOpt.get
-
-  def tupleOpt: Option[PanamaCIRCTOMEvaluatorValueTuple] =
-    this match {
-      case tuple: PanamaCIRCTOMEvaluatorValueTuple => Some(tuple)
-      case _ => None
-    }
-  def tuple: PanamaCIRCTOMEvaluatorValueTuple = tupleOpt.get
 
   // Incomplete. currently for debugging purposes only
   override def toString: String = {
