@@ -59,6 +59,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         .simulate(new GCD()) { module =>
           import PeekPokeAPI._
           val gcd = module.wrapped
+          gcd.clock.step(2)
           gcd.io.a.poke(24.U)
           gcd.io.b.poke(36.U)
           gcd.io.loadValues.poke(1.B)
@@ -79,6 +80,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           .simulate(new GCD()) { module =>
             import PeekPokeAPI._
             val gcd = module.wrapped
+            gcd.clock.step(2)
             gcd.io.a.poke(24.U)
             gcd.io.b.poke(36.U)
             gcd.io.loadValues.poke(1.B)
@@ -266,6 +268,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         .simulate(new SimpleModule) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
+          dut.viewOfClock.step(2)
           dut.io.in.poke(12.U)
           dut.viewOfClock.step(1)
           dut.io.out.peek()
