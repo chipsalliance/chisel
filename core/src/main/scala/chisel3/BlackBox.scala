@@ -29,6 +29,7 @@ package internal {
       * keyword on the `extmodule` declaration.
       */
     def knownLayers: Seq[Layer]
+    knownLayers.foreach(layer.addLayer)
   }
 }
 
