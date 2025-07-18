@@ -52,7 +52,7 @@ object layer {
 
       /** Return the macro identifier that should be defined. */
       def toMacroIdentifier(layer: Layer, circuitName: String): String = {
-        (s"layer_$circuitName" +: layer.layerSeq.map(_.name)).mkString("$")
+        ("layer" +: layer.layerSeq.map(_.name)).mkString("$")
       }
 
     }
