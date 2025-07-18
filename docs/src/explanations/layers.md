@@ -208,17 +208,17 @@ only a child layer's file will automatically include its parent layer's file.
 
 Inline layers have their layer blocks guarded with conditional compilation
 directives.  To enable an inline layer, set a preprocessor define when compiling
-your design.  The preprocessor define begins with `layer_` and then includes the
-circuit name and all layer names delimited with dollar signs (`$`).  Parent
-extract layer names appear in the macro.
+your design.  The preprocessor define begins with `layer$` and then includes the
+all layer names delimited with dollar signs (`$`).  Parent extract layer names
+appear in the macro.
 
 For example, for module `Foo` declared above, this will be sensitive to three
 macros, one for each inline layer:
 
 ```
-layer_Foo$B
-layer_Foo$C$E
-layer_Foo$C$E$F
+layer$B
+layer$C$E
+layer$C$E$F
 ```
 
 ## User-defined Layers
@@ -487,7 +487,7 @@ the bind file, `layers-Foo-A.sv`.
 
 The design below is the same as the previous example, but uses an inline layer.
 Based on the FIRRTL ABI, we can expect that the body of the layer block will be
-guarded by an `` `ifdef `` sensitive to the preprocessor macro `layer_Foo$A`.
+guarded by an `` `ifdef `` sensitive to the preprocessor macro `layer$A`.
 
 ```scala mdoc:reset:silent
 import chisel3._
@@ -593,7 +593,7 @@ following filenames.  One file is created for each extract layer:
 1. `layers_Foo_Verification_Assert.sv`
 
 Additionally, the resulting SystemVerilog will be sensitive to the preprocessor
-define `layer_Foo$Verification$Debug` due to the one inline layer we added.
+define `layer$Verification$Debug` due to the one inline layer we added.
 
 A user can then include any combination of these files in their design to
 include the optional functionality described by the `Verification` or
