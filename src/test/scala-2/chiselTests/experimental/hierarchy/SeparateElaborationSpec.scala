@@ -8,7 +8,7 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
 import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
-import chisel3.testing.HasTestingDirectory
+import chisel3.testing.{FileCheck, HasTestingDirectory}
 import chisel3.testing.scalatest.TestingDirectory
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
 import firrtl.AnnotationSeq
@@ -18,7 +18,7 @@ import org.scalatest.matchers.should.Matchers
 import scala.annotation.nowarn
 import scala.io.Source
 
-class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with TestingDirectory {
+class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with TestingDirectory with FileCheck {
   import Examples._
 
   /** Return a [[DesignAnnotation]] from a list of annotations. */
@@ -522,20 +522,23 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with T
         Seq(ChiselGeneratorAnnotation(() => new Bar))
       )
 
+      val barDef = getDesignAnnotation(annotations).design.asInstanceOf[Bar].toDefinition
+
       class Foo extends Module {
-        private val bar = Instance(getDesignAnnotation(annotations).design.asInstanceOf[Bar].toDefinition)
+        private val bar = Instance(barDef)
       }
 
       (new ChiselStage).execute(
         Array("--target-dir", s"$testDir/Foo", "--target", "chirrtl"),
         ChiselGeneratorAnnotation(() => new Foo) +: allModulesToImportedDefs(annotations)
       )
+
       Source
         .fromFile(s"$testDir/Foo/Foo.fir")
         .getLines()
         .mkString("\n")
         .fileCheck()(
-          """|CHECK: extmodule Bar knownlayer Verification.Assert, Verification :
+          """|CHECK: extmodule Bar knownlayer Verification, Verification.Assert, Verification.Assume, Verification.Cover :
              |""".stripMargin
         )
     }
