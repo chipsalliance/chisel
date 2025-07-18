@@ -82,7 +82,10 @@ package experimental {
     * }}}
     * @note The parameters API is experimental and may change
     */
-  abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param], val knownLayers: Seq[Layer] = Seq.empty[Layer]) extends BaseBlackBox {
+  abstract class ExtModule(
+    val params:      Map[String, Param] = Map.empty[String, Param],
+    val knownLayers: Seq[Layer] = Seq.empty[Layer]
+  ) extends BaseBlackBox {
     private[chisel3] override def generateComponent(): Option[Component] = {
       require(!_closed, "Can't generate module more than once")
       _closed = true
@@ -139,7 +142,10 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param], val knownLayers: Seq[Layer] = Seq.empty[Layer]) extends BaseBlackBox {
+abstract class BlackBox(
+  val params:      Map[String, Param] = Map.empty[String, Param],
+  val knownLayers: Seq[Layer] = Seq.empty[Layer]
+) extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix
   private[chisel3] lazy val _io: Option[Record] =
