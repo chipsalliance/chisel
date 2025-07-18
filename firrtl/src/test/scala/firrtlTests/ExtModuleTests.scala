@@ -10,7 +10,7 @@ class ExtModuleTests extends FirrtlFlatSpec {
     val input =
       """|FIRRTL version 5.1.0
          |circuit Top :
-         |  extmodule Top :
+         |  extmodule Top knownlayer A, B, C :
          |    input y : UInt<0>
          |    output x : UInt<1>
          |    defname = ParameterizedExtModule
@@ -35,7 +35,8 @@ class ExtModuleTests extends FirrtlFlatSpec {
             StringParam("STRING", StringLit("one")),
             DoubleParam("REAL", -1.7),
             RawStringParam("TYP", "bit")
-          )
+          ),
+          Seq("A", "B", "C")
         )
       ),
       "Top"

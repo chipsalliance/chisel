@@ -953,6 +953,8 @@ package experimental {
     localModulePrefix.foreach { prefix =>
       Builder.pushModulePrefix(prefix, localModulePrefixUseSeparator)
     }
+
+    def knownLayers: Seq[layer.Layer]
   }
 }
 

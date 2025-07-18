@@ -136,7 +136,14 @@ object Instance extends SourceInfoDoc {
         Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
       }
       val component =
-        DefBlackBox(this, importedDefinition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
+        DefBlackBox(
+          this,
+          importedDefinition.proto.name,
+          firrtlPorts,
+          SpecifiedDirection.Unspecified,
+          params,
+          importedDefinition.proto.knownLayers
+        )
       Some(component)
     }
   }
