@@ -448,13 +448,14 @@ private[chisel3] object Converter {
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases)),
         convert(block, ctx, typeAliases)
       )
-    case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
+    case ctx @ DefBlackBox(id, name, ports, topDir, params, knownLayers) =>
       fir.ExtModule(
         convert(id._getSourceLocator),
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
         id.desiredName,
-        params.keys.toList.sorted.map { name => convert(name, params(name)) }
+        params.keys.toList.sorted.map { name => convert(name, params(name)) },
+        knownLayers.map(_.fullName)
       )
     case ctx @ DefIntrinsicModule(id, name, ports, topDir, params) =>
       fir.IntModule(

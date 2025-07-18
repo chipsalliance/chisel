@@ -136,7 +136,14 @@ object Instance extends SourceInfoDoc {
         Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use
       }
       val component =
-        DefBlackBox(this, importedDefinition.proto.name, firrtlPorts, SpecifiedDirection.Unspecified, params)
+        DefBlackBox(
+          this,
+          importedDefinition.proto.name,
+          firrtlPorts,
+          SpecifiedDirection.Unspecified,
+          params,
+          importedDefinition.proto.layers
+        )
       Some(component)
     }
   }
@@ -176,6 +183,10 @@ object Instance extends SourceInfoDoc {
     val ports = experimental.CloneModuleAsRecord(definition.proto)
     val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
     clone._madeFromDefinition = true
+
+    // The definition may have known layers that are not yet known to the
+    // Builder.  Add them here.
+    definition.proto.layers.foreach(layer.addLayer)
 
     new Instance(Clone(clone))
   }

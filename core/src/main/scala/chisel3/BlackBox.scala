@@ -3,6 +3,7 @@
 package chisel3
 
 import chisel3.experimental.{BaseModule, Param}
+import chisel3.layer.Layer
 import chisel3.internal.BaseBlackBox
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
@@ -17,6 +18,18 @@ package internal {
     // is not possible to properly name EmptyExtModule created from
     // Defintions. See unit test SeparateElaborationSpec #4.a
     private[chisel3] def _isImportedDefinition: Boolean = false
+
+    /** Return the layes which are supported by this `BlackBox`.
+      *
+      * E.g., if this was a [[BlackBox]] that points at Verilog built from
+      * _another_ Chisel elaboration, then this would be the layers that were
+      * defined in that circuit.
+      *
+      * @note This will cause the emitted FIRRTL to include the `knownlayer`
+      * keyword on the `extmodule` declaration.
+      */
+    def knownLayers: Seq[Layer]
+    knownLayers.foreach(layer.addLayer)
   }
 }
 
@@ -70,9 +83,15 @@ package experimental {
     * }}}
     * @note The parameters API is experimental and may change
     */
-  abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
+  abstract class ExtModule(
+    val params:                     Map[String, Param] = Map.empty[String, Param],
+    override final val knownLayers: Seq[Layer] = Seq.empty[Layer]
+  ) extends BaseBlackBox {
     private[chisel3] override def generateComponent(): Option[Component] = {
       require(!_closed, "Can't generate module more than once")
+
+      evaluateAtModuleBodyEnd()
+
       _closed = true
 
       // Ports are named in the same way as regular Modules
@@ -81,7 +100,7 @@ package experimental {
       val firrtlPorts = getModulePorts.map { case port =>
         Port(port, port.specifiedDirection, UnlocatableSourceInfo)
       }
-      val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
+      val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params, knownLayers)
       _component = Some(component)
       _component
     }
@@ -127,7 +146,10 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
+abstract class BlackBox(
+  val params:                     Map[String, Param] = Map.empty[String, Param],
+  override final val knownLayers: Seq[Layer] = Seq.empty[Layer]
+) extends BaseBlackBox {
 
   // Find a Record port named "io" for purposes of stripping the prefix
   private[chisel3] lazy val _io: Option[Record] =
@@ -147,6 +169,9 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     require(portsSize == 1, "BlackBox must only have one IO, called `io`")
 
     require(!_closed, "Can't generate module more than once")
+
+    evaluateAtModuleBodyEnd()
+
     _closed = true
 
     val io = _io.get
@@ -166,7 +191,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     val firrtlPorts = namedPorts.map { namedPort =>
       Port(namedPort._2, namedPort._2.specifiedDirection, UnlocatableSourceInfo)
     }
-    val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
+    val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params, knownLayers)
     _component = Some(component)
     _component
   }

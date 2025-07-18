@@ -355,4 +355,45 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
       ".o(1)"
     )
   }
+
+  they should "emit FIRRTL knownlayer syntax if they have known layers" in {
+
+    object A extends layer.Layer(layer.LayerConfig.Extract())
+
+    sealed trait NoIo { this: BlackBox =>
+      final val io = IO(new Bundle {})
+    }
+
+    // No known layers
+    class Bar extends BlackBox(knownLayers = Seq.empty) with NoIo
+    // Single known layer, built-in
+    class Baz extends BlackBox(knownLayers = Seq(layers.Verification)) with NoIo
+    // Multiple known layers
+    class Qux extends BlackBox(knownLayers = Seq(layers.Verification, layers.Verification.Assert)) with NoIo
+    // Single known layer, user-defined and should be added to the circuit
+    class Quz extends BlackBox(knownLayers = Seq(A)) with NoIo
+
+    class Foo extends Module {
+      private val bar = Module(new Bar)
+      private val baz = Module(new Baz)
+      private val qux = Module(new Qux)
+      private val quz = Module(new Quz)
+    }
+
+    info("emitted CHIRRTL looks correct")
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: layer A,
+           |CHECK: extmodule Bar :
+           |CHECK: extmodule Baz knownlayer Verification :
+           |CHECK: extmodule Qux knownlayer Verification, Verification.Assert :
+           |CHECK: extmodule Quz knownlayer A :
+           |""".stripMargin
+      )
+
+    info("CIRCT compilation doesn't error")
+    ChiselStage.emitSystemVerilog(new Foo)
+  }
+
 }

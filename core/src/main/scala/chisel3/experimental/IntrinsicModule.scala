@@ -6,6 +6,7 @@ import chisel3.SpecifiedDirection
 import chisel3.experimental.{BaseModule, Param}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
+import chisel3.layer.Layer
 
 private[chisel3] abstract class BaseIntrinsicModule(intrinsicName: String) extends BaseModule {
   val intrinsic = intrinsicName

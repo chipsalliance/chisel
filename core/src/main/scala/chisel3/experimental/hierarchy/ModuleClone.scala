@@ -6,6 +6,7 @@ import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.internal.firrtl.ir.{Component, ModuleCloneIO, Ref}
 import chisel3.internal.{throwException, Namespace}
+import chisel3.layer.Layer
 import chisel3._
 
 // Private internal class to serve as a _parent for Data in cloned ports
@@ -77,4 +78,6 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
     _portsRecord.suggestName(seed)
     this
   }
+
+  override def layers: Seq[Layer] = getProto.layers
 }
