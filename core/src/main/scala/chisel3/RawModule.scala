@@ -296,6 +296,14 @@ abstract class RawModule extends BaseModule {
   protected[chisel3] override def moduleBuilt(): Unit = _afterModuleBuilt.foreach(_())
 
   private[chisel3] def initializeInParent(): Unit = {}
+
+  /** Record the layers that are known to this [[RawModule]] at the time it was
+    * created.
+    *
+    * This is needed if this [[RawModule]] is ever converted to a [[BlackBox]]
+    * or [[ExtModule]].
+    */
+  final private[chisel3] def knownLayers: Seq[layer.Layer] = Builder.layers.toSeq
 }
 
 /** Enforce that the Module.reset be Asynchronous (AsyncReset) */

@@ -777,7 +777,7 @@ case class Module(info: Info, name: String, public: Boolean, layers: Seq[String]
   * @param defname Defined name of the external module (ie. the name Firrtl will emit)
   */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
-case class ExtModule(info: Info, name: String, ports: Seq[Port], defname: String, params: Seq[Param])
+case class ExtModule(info: Info, name: String, ports: Seq[Port], defname: String, params: Seq[Param], layers: Seq[String])
     extends DefModule
     with UseSerializer
 

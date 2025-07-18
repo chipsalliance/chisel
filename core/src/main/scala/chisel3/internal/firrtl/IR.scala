@@ -555,7 +555,8 @@ private[chisel3] object ir {
     name:   String,
     ports:  Seq[Port],
     topDir: SpecifiedDirection,
-    params: Map[String, Param]
+    params: Map[String, Param],
+    knownLayers: Seq[chisel3.layer.Layer]
   ) extends Component
 
   case class DefFormalTest(
