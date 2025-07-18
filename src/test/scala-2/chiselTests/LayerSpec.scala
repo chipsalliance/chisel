@@ -298,7 +298,7 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       s"""|CHECK:      circuit Foo :
-          |CHECK-NEXT:   layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
+          |CHECK:        layer LayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir" :
           |CHECK-NEXT:     layer SublayerWithDefaultOutputDir, bind, "LayerWithDefaultOutputDir${sep}SublayerWithDefaultOutputDir" :
           |CHECK-NEXT:     layer SublayerWithCustomOutputDir, bind, "myOtherOutputDir" :
           |CHECK-NEXT:     layer SublayerWithNoOutputDir, bind :
