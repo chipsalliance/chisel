@@ -19,7 +19,7 @@ package internal {
     // Defintions. See unit test SeparateElaborationSpec #4.a
     private[chisel3] def _isImportedDefinition: Boolean = false
 
-    /** Return the layes that exist inside this `BlackBox`.
+    /** Return the layes which are supported by this `BlackBox`.
       *
       * E.g., if this was a [[BlackBox]] that points at Verilog built from
       * _another_ Chisel elaboration, then this would be the layers that were
