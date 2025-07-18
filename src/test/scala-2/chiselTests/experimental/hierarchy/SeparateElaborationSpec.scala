@@ -503,4 +503,42 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with T
       "Expected distinct overrideDef names but found duplicates for: Inst1_Prefix_AddOnePrameterized_Inst1_Suffix"
     )
   }
+
+  class Bar extends Module {
+    val a = IO(Input(Bool()))
+    layer.block(layers.Verification.Assert) {
+      chisel3.assert(a === true.B)
+    }
+  }
+
+  describe("(5): Known layers") {
+
+    it("(5.a): should be added to imported definitions") {
+
+      val testDir = implicitly[HasTestingDirectory].getDirectory.toString
+
+      val annotations = (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/Bar", "--target", "chirrtl"),
+        Seq(ChiselGeneratorAnnotation(() => new Bar))
+      )
+
+      class Foo extends Module {
+        private val bar = Instance(getDesignAnnotation(annotations).design.asInstanceOf[Bar].toDefinition)
+      }
+
+      (new ChiselStage).execute(
+        Array("--target-dir", s"$testDir/Foo", "--target", "chirrtl"),
+        ChiselGeneratorAnnotation(() => new Foo) +: allModulesToImportedDefs(annotations)
+      )
+      Source
+        .fromFile(s"$testDir/Foo/Foo.fir")
+        .getLines()
+        .mkString("\n")
+        .fileCheck()(
+          """|CHECK: extmodule Bar knownlayer Verification.Assert, Verification :
+             |""".stripMargin
+        )
+    }
+
+  }
 }

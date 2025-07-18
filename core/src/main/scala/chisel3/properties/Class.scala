@@ -10,6 +10,7 @@ import chisel3.internal.{throwException, Builder}
 import chisel3.internal.binding.{ClassBinding, OpBinding}
 import chisel3.internal.firrtl.ir.{Arg, Block, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
 import chisel3.internal.firrtl.Converter
+import chisel3.layer.Layer
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -98,6 +99,8 @@ class Class extends BaseModule {
     require(Builder.currentBlock == Some(_body), "can't add commands to blocks that aren't the body")
     _body.addCommand(c)
   }
+
+  override def knownLayers: Seq[Layer] = Seq.empty
 }
 
 /** Represent a Class type for referencing a Class in a Property[ClassType]

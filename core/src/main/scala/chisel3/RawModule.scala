@@ -297,13 +297,18 @@ abstract class RawModule extends BaseModule {
 
   private[chisel3] def initializeInParent(): Unit = {}
 
-  /** Record the layers that are known to this [[RawModule]] at the time it was
-    * created.
+  final var _knownLayers: Option[Seq[layer.Layer]] = None
+  atModuleBodyEnd {
+    _knownLayers = Some(Builder.layers.toSeq)
+  }
+
+  /** Return the layers that are known to this [[RawModule]] at the time it was
+    * _finished_ being constructed.
     *
     * This is needed if this [[RawModule]] is ever converted to a [[BlackBox]]
     * or [[ExtModule]].
     */
-  final private[chisel3] def knownLayers: Seq[layer.Layer] = Builder.layers.toSeq
+  override def knownLayers: Seq[layer.Layer] = _knownLayers.get
 }
 
 /** Enforce that the Module.reset be Asynchronous (AsyncReset) */

@@ -142,7 +142,7 @@ object Instance extends SourceInfoDoc {
           firrtlPorts,
           SpecifiedDirection.Unspecified,
           params,
-          this.knownLayers
+          importedDefinition.proto.knownLayers
         )
       Some(component)
     }
