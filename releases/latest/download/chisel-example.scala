@@ -1,8 +1,9 @@
-//> using repository "sonatype-s01:snapshots"
-//> using scala "2.13.16"
-//> using dep "org.chipsalliance::chisel:7.0.0-RC3"
-//> using plugin "org.chipsalliance:::chisel-plugin:7.0.0-RC3"
-//> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ywarn-unused", "-Ymacro-annotations"
+//> using repository https://central.sonatype.com/repository/maven-snapshots
+//> using scala 2.13.16
+//> using dep org.chipsalliance::chisel:7.0.0-RC3
+//> using plugin org.chipsalliance:::chisel-plugin:7.0.0-RC3
+//> using options -unchecked -deprecation -language:reflectiveCalls -feature -Xcheckinit
+//> using options -Xfatal-warnings -Ywarn-dead-code -Ywarn-unused -Ymacro-annotations
 
 import chisel3._
 // _root_ disambiguates from package chisel3.util.circt if user imports chisel3.util._
