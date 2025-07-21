@@ -351,9 +351,6 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
   object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
     def mvnDeps = Seq(v.scalatest, v.scalacheck)
 
-    // Workaround for https://github.com/com-lihaoyi/mill/pull/5519
-    override def versionSourcesPaths = scalaVersionDirectoryNames.map(s => os.sub / "src/test" / s"scala-$s")
-
     // TODO: enable sandbox and run tests in parallel
     override def testSandboxWorkingDir = false
 
