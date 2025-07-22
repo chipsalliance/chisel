@@ -10,6 +10,10 @@ import build._
 object `package` extends Module {
   // https://github.com/com-lihaoyi/mill/issues/3693
   object cross extends Cross[Plugin](v.pluginScalaCrossVersions)
+
+  def publishableVersions = Task {
+    v.pluginScalaCrossVersions.filter(!v.isScala3(_))
+  }
 }
 
 trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule {
