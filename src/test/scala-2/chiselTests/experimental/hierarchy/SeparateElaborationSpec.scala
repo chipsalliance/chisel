@@ -539,7 +539,9 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with T
         .getLines()
         .mkString("\n")
         .fileCheck()(
-          """|CHECK: extmodule Bar knownlayer Verification, Verification.Assert, Verification.Assume, Verification.Cover, A :
+          """|CHECK: circuit Foo :
+             |CHECK: layer A, bind
+             |CHECK: extmodule Bar knownlayer Verification, Verification.Assert, Verification.Assume, Verification.Cover, A :
              |""".stripMargin
         )
     }

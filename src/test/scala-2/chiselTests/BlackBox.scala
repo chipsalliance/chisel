@@ -396,4 +396,47 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
     ChiselStage.emitSystemVerilog(new Foo)
   }
 
+  they should "allow updates to knownLayers via adding layer-colored probe ports or via addLayer" in {
+
+    class Bar extends BlackBox {
+      final val io = IO{
+        new Bundle {
+          val a = Output(probe.Probe(Bool(), layers.Verification))
+        }
+      }
+    }
+
+    object A extends layer.Layer(layer.LayerConfig.Extract())
+
+    class Baz extends BlackBox(knownLayers = Seq(A)) {
+      final val io = IO{
+        new Bundle {
+          val a = Output(probe.Probe(Bool(), layers.Verification))
+        }
+      }
+    }
+
+    class Qux extends BlackBox {
+      final val io = IO(new Bundle{})
+      layer.addLayer(A)
+    }
+
+    class Foo extends Module {
+      private val bar = Module(new Bar)
+      private val baz = Module(new Baz)
+      private val qux = Module(new Qux)
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: layer Verification,
+           |CHECK: extmodule Bar knownlayer Verification :
+           |CHECK: extmodule Baz knownlayer A, Verification :
+           |CHECK: extmodule Qux knownlayer A :
+           |""".stripMargin
+      )
+
+  }
+
 }
