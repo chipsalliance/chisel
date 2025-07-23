@@ -520,10 +520,8 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with T
 
       val testDir = implicitly[HasTestingDirectory].getDirectory.toString
 
-      val annotations = (new ChiselStage).execute(
-        Array("--target-dir", s"$testDir/Bar", "--target", "chirrtl"),
-        Seq(ChiselGeneratorAnnotation(() => new Bar))
-      )
+      val annotations =
+        ChiselStage.emitCHIRRTLFile(new Bar, Array("--target-dir", s"$testDir/Bar", "--target", "chirrtl"))
 
       val barDef = getDesignAnnotation(annotations).design.asInstanceOf[Bar].toDefinition
 

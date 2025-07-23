@@ -1028,7 +1028,7 @@ package experimental {
       */
     private[chisel3] def layers: Seq[Layer] = {
       require(isClosed, "Can't get layers before module is closed")
-      return _layers
+      _layers
     }
 
   }
