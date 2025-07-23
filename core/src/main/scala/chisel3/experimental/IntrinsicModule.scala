@@ -17,6 +17,7 @@ abstract class IntrinsicModule(intrinsicName: String, val params: Map[String, Pa
     extends BaseIntrinsicModule(intrinsicName) {
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate intmodule more than once")
+    evaluateAtModuleBodyEnd()
     _closed = true
 
     // Ports are named in the same way as regular Modules

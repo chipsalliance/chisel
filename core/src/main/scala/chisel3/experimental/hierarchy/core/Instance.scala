@@ -131,6 +131,7 @@ object Instance extends SourceInfoDoc {
     override private[chisel3] def _isImportedDefinition = true
     override def generateComponent(): Option[Component] = {
       require(!_closed, s"Can't generate $desiredName module more than once")
+      evaluateAtModuleBodyEnd()
       _closed = true
       val firrtlPorts = importedDefinition.proto.getModulePortsAndLocators.map { case (port, sourceInfo) =>
         Port(port, port.specifiedDirection, sourceInfo): @nowarn // Deprecated code allowed for internal use

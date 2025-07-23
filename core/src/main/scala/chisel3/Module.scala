@@ -1020,7 +1020,9 @@ package experimental {
     /** Record the layers in the circuit when this module was created. */
     private var _layers: Seq[Layer] = null
 
-    atModuleBodyEnd { _layers = Builder.layers.toSeq }
+    atModuleBodyEnd {
+      _layers = Builder.layers.toSeq
+    }
 
     /** Return the layers for this module after.
       *
@@ -1028,6 +1030,11 @@ package experimental {
       */
     private[chisel3] def layers: Seq[Layer] = {
       require(isClosed, "Can't get layers before module is closed")
+      if (_layers == null) {
+        throw new InternalErrorException(
+          s"a closed BaseModule '$desiredName' has null '_layers': this should be impossible"
+        )
+      }
       _layers
     }
 

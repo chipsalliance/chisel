@@ -26,6 +26,7 @@ class Class extends BaseModule {
     // Close the Class.
     require(!_closed, "Can't generate Class more than once")
 
+    evaluateAtModuleBodyEnd()
     _closed = true
 
     // Ports are named in the same way as regular Modules

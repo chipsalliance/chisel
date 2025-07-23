@@ -27,6 +27,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
   // Don't generate a component, but point to the one for the cloned Module
   private[chisel3] def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
+    evaluateAtModuleBodyEnd()
     _closed = true
     _component = getProto._component
     None
