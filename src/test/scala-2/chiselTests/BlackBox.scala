@@ -399,7 +399,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
   they should "allow updates to knownLayers via adding layer-colored probe ports or via addLayer" in {
 
     class Bar extends BlackBox {
-      final val io = IO{
+      final val io = IO {
         new Bundle {
           val a = Output(probe.Probe(Bool(), layers.Verification))
         }
@@ -409,7 +409,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
     object A extends layer.Layer(layer.LayerConfig.Extract())
 
     class Baz extends BlackBox(knownLayers = Seq(A)) {
-      final val io = IO{
+      final val io = IO {
         new Bundle {
           val a = Output(probe.Probe(Bool(), layers.Verification))
         }
@@ -417,7 +417,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
     }
 
     class Qux extends BlackBox {
-      final val io = IO(new Bundle{})
+      final val io = IO(new Bundle {})
       layer.addLayer(A)
     }
 
