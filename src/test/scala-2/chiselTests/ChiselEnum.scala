@@ -308,6 +308,18 @@ class WidthTester extends Module {
   stop()
 }
 
+class KnownWidthTester extends Module {
+  object EnumWithKnownWidth extends ChiselEnum {
+    val Member0 = Value(0.U(1.W))
+    val Member1 = Value(1.U(2.W))
+    val Member2 = Value(2.U(3.W))
+    val Member3 = Value(3.U(4.W))
+  }
+  assert(EnumWithKnownWidth.getWidth == 4)
+  assert(EnumWithKnownWidth.all.forall(_.getWidth == 4))
+  stop()
+}
+
 class ChiselEnumFSMTester extends Module {
   import ChiselEnumFSM.State._
 
@@ -508,6 +520,10 @@ class ChiselEnumSpec extends AnyFlatSpec with Matchers with LogUtils with Chisel
 
   it should "return the correct widths for enums" in {
     simulate(new WidthTester)(RunUntilFinished(3))
+  }
+
+  it should "return the correct widths for enums with known-width values" in {
+    simulate(new KnownWidthTester)(RunUntilFinished(3))
   }
 
   it should "maintain Scala-level type-safety" in {

@@ -208,8 +208,9 @@ abstract class ChiselEnum extends ChiselEnumIntf {
     def apply(): Type = ChiselEnum.this.apply()
   }
 
-  private var id:             BigInt = 0
-  private[chisel3] var width: Width = 0.W
+  private var id:                    BigInt = 0
+  private[chisel3] var width:        Width = 0.W
+  private[chisel3] var maxUserWidth: Int = 0
 
   private case class EnumRecord(inst: Type, name: String)
   private val enumRecords = mutable.ArrayBuffer.empty[EnumRecord]
@@ -244,7 +245,7 @@ abstract class ChiselEnum extends ChiselEnumIntf {
 
     enumRecords.append(EnumRecord(result, name))
 
-    width = (1.max(id.bitLength)).W
+    width = (1.max(id.bitLength).max(maxUserWidth)).W
     id += 1
 
     result
@@ -260,6 +261,9 @@ abstract class ChiselEnum extends ChiselEnumIntf {
       throwException(s"Enums must be strictly increasing: $enumTypeName")
     }
 
+    if (id.isWidthKnown) {
+      maxUserWidth = maxUserWidth.max(id.getWidth)
+    }
     this.id = id.litValue
     do_Value(name)
   }
