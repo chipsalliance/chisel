@@ -4,6 +4,9 @@ package chisel3
 
 import chisel3.experimental.{prefix, SourceInfo}
 import chisel3.internal.throwException
+import chisel3.internal.Builder.pushOp
+import chisel3.internal.firrtl.ir.DefPrim
+import chisel3.internal.firrtl.ir.PrimOp.ConcatOp
 
 private[chisel3] object SeqUtils {
 
@@ -20,13 +23,9 @@ private[chisel3] object SeqUtils {
     } else if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
-      val lo = withName("lo")(prefix("lo") {
-        asUInt(in.slice(0, in.length / 2))
-      })
-      val hi = withName("hi")(prefix("hi") {
-        asUInt(in.slice(in.length / 2, in.length))
-      })
-      hi ## lo
+      // TODO check if we need some casts, only do so with mixed Bits
+      val w = in.map(_.width).reduce(_ + _)
+      pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, in.map(_.ref).reverse: _*))
     }
   }
 
