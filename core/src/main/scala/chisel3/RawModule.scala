@@ -22,66 +22,6 @@ import scala.collection.mutable.ArrayBuffer
   */
 abstract class RawModule extends BaseModule {
 
-  /** Hook to invoke hardware generators after the rest of the Module is constructed.
-    *
-    * This is a power-user API, and should not normally be needed.
-    *
-    * In rare cases, it is necessary to run hardware generators at a late stage, but still within the scope of the
-    * Module. In these situations, atModuleBodyEnd may be used to register such generators. For example:
-    *
-    *  {{{
-    *    class Example extends RawModule {
-    *      atModuleBodyEnd {
-    *        val extraPort0 = IO(Output(Bool()))
-    *        extraPort0 := 0.B
-    *      }
-    *    }
-    *  }}}
-    *
-    * Any generators registered with atModuleBodyEnd are the last code to execute when the Module is constructed. The
-    * execution order is:
-    *
-    *   - The constructors of any super classes or traits the Module extends
-    *   - The constructor of the Module itself
-    *   - The atModuleBodyEnd generators
-    *
-    * The atModuleBodyEnd generators execute in the lexical order they appear in the Module constructor.
-    *
-    * For example:
-    *
-    *  {{{
-    *    trait Parent {
-    *      // Executes first.
-    *      val foo = ...
-    *    }
-    *
-    *    class Example extends Parent {
-    *      // Executes second.
-    *      val bar = ...
-    *
-    *      atModuleBodyEnd {
-    *        // Executes fourth.
-    *        val qux = ...
-    *      }
-    *
-    *      atModuleBodyEnd {
-    *        // Executes fifth.
-    *        val quux = ...
-    *      }
-    *
-    *      // Executes third..
-    *      val baz = ...
-    *    }
-    *  }}}
-    *
-    * If atModuleBodyEnd is used in a Definition, any generated hardware will be included in the Definition. However, it
-    * is currently not possible to annotate any val within atModuleBodyEnd as @public.
-    */
-  protected def atModuleBodyEnd(gen: => Unit): Unit = {
-    _atModuleBodyEnd += { () => gen }
-  }
-  private val _atModuleBodyEnd = new ArrayBuffer[() => Unit]
-
   /** Hook to invoke hardware generators after a Module has been constructed and closed.
     *
     * This is useful for running hardware generators after a Module's constructor has run and its Definition is available, while still having access to arguments and definitions in the constructor. The Module itself can no longer be modified at this point.
@@ -223,9 +163,7 @@ abstract class RawModule extends BaseModule {
     }
 
     // Evaluate any atModuleBodyEnd generators.
-    _atModuleBodyEnd.foreach { gen =>
-      gen()
-    }
+    evaluateAtModuleBodyEnd()
 
     _closed = true
 

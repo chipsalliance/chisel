@@ -10,6 +10,7 @@ import chisel3.internal.{throwException, Builder}
 import chisel3.internal.binding.{ClassBinding, OpBinding}
 import chisel3.internal.firrtl.ir.{Arg, Block, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
 import chisel3.internal.firrtl.Converter
+import chisel3.layer.Layer
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -25,6 +26,7 @@ class Class extends BaseModule {
     // Close the Class.
     require(!_closed, "Can't generate Class more than once")
 
+    evaluateAtModuleBodyEnd()
     _closed = true
 
     // Ports are named in the same way as regular Modules

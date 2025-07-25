@@ -573,9 +573,13 @@ private[chisel3] object Serializer {
         }
         Iterator(start) ++ serialize(block, ctx, typeAliases)(indent + 1)
 
-      case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
+      case ctx @ DefBlackBox(id, name, ports, topDir, params, knownLayers) =>
         implicit val b = new StringBuilder
-        doIndent(0); b ++= "extmodule "; b ++= legalize(name); b ++= " :"; serialize(id._getSourceLocator)
+        doIndent(0); b ++= "extmodule "; b ++= legalize(name);
+        if (knownLayers.nonEmpty) {
+          b ++= knownLayers.map(_.fullName).mkString(" knownlayer ", ", ", "")
+        }
+        b ++= " :"; serialize(id._getSourceLocator)
         (ports ++ ctx.secretPorts).foreach { p => newLineAndIndent(1); serialize(p, typeAliases, topDir) }
         newLineAndIndent(1); b ++= "defname = "; b ++= id.desiredName
         params.keys.toList.sorted.foreach { name =>
