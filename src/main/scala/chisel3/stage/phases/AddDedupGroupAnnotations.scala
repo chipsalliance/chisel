@@ -29,10 +29,10 @@ class AddDedupGroupAnnotations extends Phase {
     val skipAnnos = annotations.collect { case x: DedupGroupAnnotation => x.target }.toSet
 
     val annos = elaboratedCircuit._circuit.components.filter {
-      case x @ DefBlackBox(id, _, _, _, _)   => !id._isImportedDefinition
-      case DefIntrinsicModule(_, _, _, _, _) => false
-      case DefClass(_, _, _, _)              => false
-      case x                                 => true
+      case x @ DefBlackBox(id, _, _, _, _, _) => !id._isImportedDefinition
+      case DefIntrinsicModule(_, _, _, _, _)  => false
+      case DefClass(_, _, _, _)               => false
+      case x                                  => true
     }.collect {
       case x if !(skipAnnos.contains(x.id.toTarget)) => DedupGroupAnnotation(x.id.toTarget, x.id._proposedName)
     }

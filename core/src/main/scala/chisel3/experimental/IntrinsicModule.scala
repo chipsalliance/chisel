@@ -6,6 +6,7 @@ import chisel3.SpecifiedDirection
 import chisel3.experimental.{BaseModule, Param}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
+import chisel3.layer.Layer
 
 private[chisel3] abstract class BaseIntrinsicModule(intrinsicName: String) extends BaseModule {
   val intrinsic = intrinsicName
@@ -16,6 +17,7 @@ abstract class IntrinsicModule(intrinsicName: String, val params: Map[String, Pa
     extends BaseIntrinsicModule(intrinsicName) {
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate intmodule more than once")
+    evaluateAtModuleBodyEnd()
     _closed = true
 
     // Ports are named in the same way as regular Modules

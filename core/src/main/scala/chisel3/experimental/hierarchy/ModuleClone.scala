@@ -6,6 +6,7 @@ import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.internal.firrtl.ir.{Component, ModuleCloneIO, Ref}
 import chisel3.internal.{throwException, Namespace}
+import chisel3.layer.Layer
 import chisel3._
 
 // Private internal class to serve as a _parent for Data in cloned ports
@@ -26,6 +27,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
   // Don't generate a component, but point to the one for the cloned Module
   private[chisel3] def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
+    evaluateAtModuleBodyEnd()
     _closed = true
     _component = getProto._component
     None
@@ -77,4 +79,6 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
     _portsRecord.suggestName(seed)
     this
   }
+
+  override def layers: Seq[Layer] = getProto.layers
 }

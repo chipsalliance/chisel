@@ -196,6 +196,12 @@ object layer {
       Builder.layers += layer
       currentLayer = parent
     }
+
+    // If this API is used in a BlackBox, then modify it's `knownLayers` member.
+    Builder.currentModule.map {
+      case module: internal.BaseBlackBox => module.addKnownLayer(layer)
+      case _ =>
+    }
   }
 
   /** A type class that describes how to post-process the return value from a layer block. */

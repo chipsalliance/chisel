@@ -5,6 +5,7 @@ package chisel3.experimental.hierarchy
 import chisel3.experimental.BaseModule
 import chisel3.internal.PseudoModule
 import chisel3.internal.firrtl.ir.{Component, Ref}
+import chisel3.layer.Layer
 
 /** Represents a module viewed from a different instance context.
   *
@@ -30,4 +31,5 @@ private[chisel3] final class InstanceClone[T <: BaseModule](val getProto: T, val
   override def instanceName = instName()
   // Module name is the same as proto's module name
   override def desiredName: String = getProto.name
+  override def layers:      Seq[Layer] = getProto.layers
 }

@@ -5,6 +5,7 @@ package chisel3.experimental.hierarchy
 import chisel3.experimental.BaseModule
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.internal.firrtl.ir.{Component, Ref}
+import chisel3.layer.Layer
 
 /** Represents a Definition root module, when accessing something from a definition
   *
@@ -25,4 +26,5 @@ private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T) extends
   private[chisel3] def initializeInParent(): Unit = ()
   // Module name is the same as proto's module name
   override def desiredName: String = getProto.name
+  override def layers:      Seq[Layer] = getProto.layers
 }

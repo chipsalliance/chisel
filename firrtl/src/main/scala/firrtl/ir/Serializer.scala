@@ -546,9 +546,13 @@ object Serializer {
         b.toString
       }
       Iterator(start) ++ sIt(body)(indent + 1)
-    case ExtModule(info, name, ports, defname, params) =>
+    case ExtModule(info, name, ports, defname, params, knownLayers) =>
       implicit val b = new StringBuilder
-      doIndent(0); b ++= "extmodule "; b ++= legalize(name); b ++= " :"; s(info)
+      doIndent(0); b ++= "extmodule "; b ++= legalize(name);
+      if (knownLayers.nonEmpty) {
+        b ++= knownLayers.mkString(" knownlayer ", ", ", "")
+      }
+      b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "defname = "; b ++= defname
       params.foreach { p => newLineAndIndent(1); b ++= "parameter "; s(p) }
