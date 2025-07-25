@@ -61,10 +61,7 @@ object v extends Module {
     } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
       Seq(
         `integration-tests`.cross(ver2).test,
-        lit.utility.cross(ver2),
-        panamaconverter.cross(ver2),
-        panamalib.cross(ver2),
-        panamaom.cross(ver2)
+        lit.utility.cross(ver2)
       )
     }
   }
@@ -282,49 +279,6 @@ trait HasJextractGeneratedSources extends JavaModule {
   }
 
   override def javacOptions = Task(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
-}
-
-trait HasCIRCTPanamaBindingModule extends JavaModule {
-  import build_.circtpanamabinding.CIRCTPanamaBinding
-  def circtPanamaBindingModule: CIRCTPanamaBinding
-
-  override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
-  //
-  override def javacOptions = Task(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
-
-  override def forkArgs: T[Seq[String]] = Task(
-    super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")
-      ++ circtPanamaBindingModule
-        .libraryPaths()
-        .map(p => s"-Djava.library.path=${p.path}")
-  )
-}
-
-trait HasPanamaLibModule extends ScalaModule with HasCIRCTPanamaBindingModule {
-  import build_.panamalib.PanamaLib
-  def panamaLibModule: PanamaLib
-
-  def circtPanamaBindingModule = panamaLibModule.circtPanamaBindingModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(panamaLibModule)
-}
-
-trait HasPanamaOMModule extends ScalaModule with HasCIRCTPanamaBindingModule {
-  import build_.panamaom.PanamaOM
-  def panamaOMModule: PanamaOM
-
-  def circtPanamaBindingModule = panamaOMModule.circtPanamaBindingModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(panamaOMModule)
-}
-
-trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingModule {
-  import build_.panamaconverter.PanamaConverter
-  def panamaConverterModule: PanamaConverter
-
-  def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
 }
 
 // TODO: move chisel src to subfolder once we have dropped sbt flow
