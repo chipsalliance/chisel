@@ -281,6 +281,14 @@ private[chisel3] object ir {
     object INFER extends MemPortDirection("infer")
   }
 
+  // PrimOp used as an expression
+  case class PrimExpr[T <: Data](op: PrimOp, args: Arg*) extends Arg {
+    def name: String = s"${op.name}(${args.map(_.name).mkString(", ")})"
+    override def contextualName(ctx: Component): String =
+      s"${op.name}(${args.map(_.contextualName(ctx)).mkString(", ")})"
+    override def localName: String = s"${op.name}(${args.map(_.localName).mkString(", ")})"
+  }
+
   abstract class Command {
     def sourceInfo: SourceInfo
   }

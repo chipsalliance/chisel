@@ -5,10 +5,15 @@ package chisel3
 import chisel3.experimental.{prefix, SourceInfo}
 import chisel3.internal.throwException
 import chisel3.internal.Builder.pushOp
-import chisel3.internal.firrtl.ir.DefPrim
-import chisel3.internal.firrtl.ir.PrimOp.ConcatOp
+import chisel3.internal.firrtl.ir.{Arg, DefPrim, PrimExpr}
+import chisel3.internal.firrtl.ir.PrimOp.{AsUIntOp, ConcatOp}
 
 private[chisel3] object SeqUtils {
+
+  private def asUIntArg(bits: Bits)(implicit sourceInfo: SourceInfo): Arg = bits match {
+    case elt: UInt => bits.ref
+    case elt: SInt => PrimExpr(AsUIntOp, bits.ref)
+  }
 
   /** Concatenates the data elements of the input sequence, in sequence order, together.
     * The first element of the sequence forms the least significant bits, while the last element
@@ -18,14 +23,29 @@ private[chisel3] object SeqUtils {
     * @note This returns a `0.U` if applied to a zero-element `Vec`.
     */
   def asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo): UInt = {
-    if (in.isEmpty) {
+    val size = in.sizeIs
+    if (size == 0) {
       0.U
-    } else if (in.tail.isEmpty) {
+    } else if (size == 1) {
       in.head.asUInt
     } else {
-      // TODO check if we need some casts, only do so with mixed Bits
-      val w = in.map(_.width).reduce(_ + _)
-      pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, in.map(_.ref).reverse: _*))
+      // Use a single traveral for various purposes
+      var hasUInt = false
+      var hasSInt = false
+      var width = 0.W
+      for (elt <- in) {
+        elt match {
+          case _: UInt => hasUInt = true
+          case _: SInt => hasSInt = true
+        }
+        width += elt.width
+      }
+      val args = if (hasUInt && hasSInt) {
+        in.view.map(asUIntArg(_))
+      } else {
+        in.view.map(_.ref)
+      }
+      pushOp(DefPrim(sourceInfo, UInt(width), ConcatOp, args.reverse.toSeq: _*))
     }
   }
 

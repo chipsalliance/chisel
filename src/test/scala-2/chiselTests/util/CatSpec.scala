@@ -79,4 +79,16 @@ class CatSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Cat.scala")
   }
 
+  it should "support mixed Bits types" in {
+    class MyModule extends RawModule {
+      val uint = IO(Input(UInt(8.W)))
+      val sint = IO(Input(SInt(8.W)))
+      val bool = IO(Input(Bool()))
+      val out = IO(Output(UInt(17.W)))
+
+      out := Cat(uint, sint, bool)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("cat(uint, asUInt(sint), bool)")
+  }
 }

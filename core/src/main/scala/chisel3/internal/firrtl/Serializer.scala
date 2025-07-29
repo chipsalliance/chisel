@@ -93,6 +93,18 @@ private[chisel3] object Serializer {
     }
   }
 
+  private def serializePrim(op: PrimOp, args: Seq[Arg], sourceInfo: SourceInfo, ctx: Component)(
+    implicit b: StringBuilder
+  ): Unit = {
+    b ++= op.name; b += '('
+    val last = args.size - 1
+    args.zipWithIndex.foreach { case (arg, idx) =>
+      serialize(arg, ctx, sourceInfo)
+      if (idx != last) { b ++= ", " }
+    }
+    b += ')'
+  }
+
   private def serialize(arg: Arg, ctx: Component, info: SourceInfo)(implicit b: StringBuilder): Unit = arg match {
     case Node(id)  => serialize(getRef(id, info), ctx, info)
     case Ref(name) => b ++= name
@@ -137,6 +149,8 @@ private[chisel3] object Serializer {
       b ++= "read("; serialize(probe, ctx, info); b += ')'
     case PropExpr(_, tpe, op, args) =>
       b ++= op.toString; b += '('; serializeArgs(args, ctx, info); b += ')'
+    case e: PrimExpr[_] =>
+      serializePrim(e.op, e.args, info, ctx)
     case other =>
       throw new InternalErrorException(s"Unexpected type in convert $other")
   }
@@ -182,13 +196,9 @@ private[chisel3] object Serializer {
     indent:     Int
   ): Unit = cmd match {
     case e: DefPrim[_] =>
-      b ++= "node "; b ++= legalize(e.name); b ++= " = "; b ++= e.op.name; b += '('
-      val last = e.args.size - 1
-      e.args.zipWithIndex.foreach { case (arg, idx) =>
-        serialize(arg, ctx, e.sourceInfo)
-        if (idx != last) { b ++= ", " }
-      }
-      b += ')'; serialize(e.sourceInfo)
+      b ++= "node "; b ++= legalize(e.name); b ++= " = ";
+      serializePrim(e.op, e.args, e.sourceInfo, ctx)
+      serialize(e.sourceInfo)
     case e @ DefWire(info, id) =>
       b ++= "wire "; b ++= legalize(e.name); b ++= " : "; serializeType(id, info, typeAliases); serialize(e.sourceInfo)
     case e @ DefReg(info, id, clock) =>
