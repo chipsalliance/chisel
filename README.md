@@ -305,7 +305,9 @@ cd chisel
 In order to run the following unit tests, you will need several tools on your `PATH`, namely
 [verilator](https://www.veripool.org/verilator/),
 [yosys](https://yosyshq.net/yosys/),
-and [espresso](https://github.com/chipsalliance/espresso).
+[espresso](https://github.com/chipsalliance/espresso),
+[slang](https://github.com/MikePopoloski/slang),
+and [filecheck](https://llvm.org/docs/CommandGuide/FileCheck.html).
 Check that each is installed on your `PATH` by running `which verilator` and so on.
 
 If the compilation succeeded and the dependencies noted above are installed, you can then run the included unit tests by invoking:
