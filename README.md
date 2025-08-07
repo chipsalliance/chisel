@@ -370,13 +370,13 @@ We encourage Chisel users (as opposed to Chisel developers), to use the latest r
 This [chisel-template](https://github.com/chipsalliance/chisel-template) repository is kept up-to-date, depending on the most recent version of Chisel.
 The recommended version is also captured near the top of this README, and in the [Github releases](https://github.com/chipsalliance/chisel/releases) section of this repo.
 If you encounter an issue with a released version of Chisel, please file an issue on GitHub mentioning the Chisel version and provide a simple test case (if possible).
-Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been addressed).
+Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been already addressed).
 
 For more information on our versioning policy and what versions of the various Chisel ecosystem projects work together, see [Chisel Project Versioning](https://www.chisel-lang.org/chisel3/docs/appendix/versioning.html).
 
 If you're developing a Chisel library (or `chisel3` itself), you'll probably want to work closer to the tip of the development trunk.
 By default, the main branch of the chisel repository is configured to build and publish its version of the code as `<version>+<n>-<commit hash>-SNAPSHOT`.
-Updated SNAPSHOTs are publised on every push to main.
+Updated SNAPSHOTs are published on every push to main.
 You are encouraged to do your development against the latest SNAPSHOT, but note that neither API nor ABI compatibility is guaranteed so your code may break at any time.
 
 ### Roadmap
