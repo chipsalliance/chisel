@@ -91,4 +91,16 @@ class CatSpec extends AnyFlatSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("cat(uint, asUInt(sint), bool)")
   }
+
+  it should "support a huge cat" in {
+    class MyModule extends RawModule {
+      val n = 100000
+      val in = IO(Input(Vec(n, UInt(8.W))))
+      val out = IO(Output(UInt((n * 8).W)))
+
+      out := Cat(in)
+    }
+    // ignore output, we're just checking that neither Chisel nor firtool barf
+    ChiselStage.emitSystemVerilog(new MyModule): Unit
+  }
 }
