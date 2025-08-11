@@ -1,5 +1,6 @@
+//| mill-version: 1.0.3
 //| mvnDeps:
-//| - com.lihaoyi::mill-contrib-jmh:1.0.0
+//| - com.lihaoyi::mill-contrib-jmh:$MILL_VERSION
 //| - com.47deg::github4s:0.33.3
 //| - com.lumidion::sonatype-central-client-requests:0.6.0
 
