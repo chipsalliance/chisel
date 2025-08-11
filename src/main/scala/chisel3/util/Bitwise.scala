@@ -52,14 +52,16 @@ object PopCount extends PopCount$Intf {
     * @return true.B when x has exactly n bits set
     */
   def equalTo(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
-    require(n>=0, "Cannot check for negative number of bits")
+    require(n >= 0, "Cannot check for negative number of bits")
     n match {
-      case h:Int if h>x.getWidth    => false.B
-      case h:Int if h<=1            => atLeast(n,x) && !greaterThan(n,x)
-      case h:Int if h>=x.getWidth-1 => equalTo(x.getWidth-h,~x) // check one bit NOT set instead of all-but-one set
-      case _                        => PopCount(x) === n.U
+      case h: Int if h > x.getWidth => false.B
+      case h: Int if h <= 1         => atLeast(n, x) && !greaterThan(n, x)
+      case h: Int if h >= x.getWidth - 1 =>
+        equalTo(x.getWidth - h, ~x) // check one bit NOT set instead of all-but-one set
+      case _ => PopCount(x) === n.U
     }
   }
+
   /** Implements PopCount(x)==n with less deep circuitry in case n=0,1,x.width-1,x.width
     * @param n Int  Static value that PopCount(x) is compared against
     * @param x Seq/Vec of Bool to PopCount
@@ -73,15 +75,17 @@ object PopCount extends PopCount$Intf {
     * @return true.B when x has more than n bits set
     */
   def greaterThan(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
-    require(n>=0, "Cannot check for negative number of bits")
+    require(n >= 0, "Cannot check for negative number of bits")
     atLeast(n + 1, x)
   }
+
   /** Implements PopCount(x)>n with less deep circuitry in case n=0,1,x.width-1
     * @param n Int  Static value that PopCount(x) is compared against
     * @param x Seq/Vec of Bool to PopCount
     * @return true.B when x has more than n bits set
     */
-  def greaterThan(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool = greaterThan(n, VecInit(x.toSeq).asUInt)
+  def greaterThan(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool =
+    greaterThan(n, VecInit(x.toSeq).asUInt)
 
   /** Implements PopCount(x)>=n with less deep circuitry in case n=0,1,2,x.width-1,x.width
     * @param n Int  Static value that PopCount(x) is compared against
@@ -89,17 +93,18 @@ object PopCount extends PopCount$Intf {
     * @return true.B when x has n or more bits set
     */
   def atLeast(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
-    require(n>=0, "Cannot check for negative number of bits")
+    require(n >= 0, "Cannot check for negative number of bits")
     n match {
-      case 0                        => true.B
-      case 1                        => x.orR
-      case 2                        => (x & (x-1.U)) > 0.U
-      case h:Int if h==x.getWidth-1 => x.andR || equalTo(1,~x)
-      case h:Int if h==x.getWidth   => x.andR
-      case h:Int if h>x.getWidth    => false.B
-      case _                        => PopCount(x) >= n.U
+      case 0 => true.B
+      case 1 => x.orR
+      case 2 => (x & (x - 1.U)) > 0.U
+      case h: Int if h == x.getWidth - 1 => x.andR || equalTo(1, ~x)
+      case h: Int if h == x.getWidth     => x.andR
+      case h: Int if h > x.getWidth      => false.B
+      case _ => PopCount(x) >= n.U
     }
   }
+
   /** Implements PopCount(x)>=n with less deep circuitry in case n=0,1,2,x.width-1,x.width
     * @param n Int  Static value that PopCount(x) is compared against
     * @param x Seq/Vec of Bool to PopCount

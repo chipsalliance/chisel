@@ -19,9 +19,18 @@ class PopCountTester(n: Int) extends Module {
   assert(result === expected)
 
   for (c <- 0 to n + 2) {
-    assert(PopCount.equalTo    (c, x) === (PopCount(x)===c.U), s"Wrong result for PopCount.equalTo    ($c,x) function, x.width=$n")
-    assert(PopCount.greaterThan(c, x) === (PopCount(x)>  c.U), s"Wrong result for PopCount.greaterThan($c,x) function, x.width=$n")
-    assert(PopCount.atLeast    (c, x) === (PopCount(x)>= c.U), s"Wrong result for PopCount.atLeast    ($c,x) function, x.width=$n")
+    assert(
+      PopCount.equalTo(c, x) === (PopCount(x) === c.U),
+      s"Wrong result for PopCount.equalTo    ($c,x) function, x.width=$n"
+    )
+    assert(
+      PopCount.greaterThan(c, x) === (PopCount(x) > c.U),
+      s"Wrong result for PopCount.greaterThan($c,x) function, x.width=$n"
+    )
+    assert(
+      PopCount.atLeast(c, x) === (PopCount(x) >= c.U),
+      s"Wrong result for PopCount.atLeast    ($c,x) function, x.width=$n"
+    )
   }
   require(result.getWidth == BigInt(n).bitLength)
 }
