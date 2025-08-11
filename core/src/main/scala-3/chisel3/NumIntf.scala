@@ -115,7 +115,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
   /** Maximum operator
     *
     * @param that a $numType
-    * @return a $numType with a value equal to the minimum value of this $coll and `that`
+    * @return a $numType with a value equal to the maximum value of this $coll and `that`
     * $maxWidth
     * @group Arithmetic
     */

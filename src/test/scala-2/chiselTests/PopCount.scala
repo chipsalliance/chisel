@@ -18,11 +18,25 @@ class PopCountTester(n: Int) extends Module {
   val expected = x.asBools.foldLeft(0.U)(_ +& _)
   assert(result === expected)
 
+  for (c <- 0 to n + 2) {
+    assert(
+      PopCount.equalTo(c, x) === (PopCount(x) === c.U),
+      s"Wrong result for PopCount.equalTo    ($c,x) function, x.width=$n"
+    )
+    assert(
+      PopCount.greaterThan(c, x) === (PopCount(x) > c.U),
+      s"Wrong result for PopCount.greaterThan($c,x) function, x.width=$n"
+    )
+    assert(
+      PopCount.atLeast(c, x) === (PopCount(x) >= c.U),
+      s"Wrong result for PopCount.atLeast    ($c,x) function, x.width=$n"
+    )
+  }
   require(result.getWidth == BigInt(n).bitLength)
 }
 
 class PopCountSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
-  property("Mul lookup table should return the correct result") {
+  property("PopCount circuitry should return the correct result") {
     forAll(smallPosInts) { (n: Int) => simulate(new PopCountTester(n))(RunUntilFinished(math.pow(2, n).toInt + 2)) }
   }
 }
