@@ -36,7 +36,9 @@ class PopCountTester(n: Int) extends Module {
 }
 
 class PopCountSpec extends AnyPropSpec with PropertyUtils with ChiselSim {
-  property("PopCount circuitry should return the correct result") {
-    forAll(smallPosInts) { (n: Int) => simulate(new PopCountTester(n))(RunUntilFinished(math.pow(2, n).toInt + 2)) }
+  for (n <- 1 until 8) {
+    property(s"PopCount circuitry should return the correct result for width = $n") {
+      simulate(new PopCountTester(n))(RunUntilFinished(math.pow(2, n).toInt + 2))
+    }
   }
 }
