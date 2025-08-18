@@ -54,6 +54,21 @@ private[chisel3] object Converter {
     case MemPortDirection.RDWR  => firrtl.MReadWrite
   }
 
+  def convertPrim(op: PrimOp, args: Seq[Arg], sourceInfo: SourceInfo, ctx: Component): fir.Expression = {
+    val consts = args.collect { case ILit(i) => i }
+    val argsx = args.flatMap {
+      case _: ILit => None
+      case other => Some(convert(other, ctx, sourceInfo))
+    }
+    op.name match {
+      case "mux" =>
+        assert(argsx.size == 3, s"Mux with unexpected args: $argsx")
+        fir.Mux(argsx(0), argsx(1), argsx(2), fir.UnknownType)
+      case _ =>
+        fir.DoPrim(convert(op), argsx, consts, fir.UnknownType)
+    }
+  }
+
   // TODO
   //   * Memoize?
   //   * Move into the Chisel IR?
@@ -99,6 +114,8 @@ private[chisel3] object Converter {
       fir.ProbeRead(convert(probe, ctx, info))
     case PropExpr(info, tpe, op, args) =>
       fir.PropExpr(convert(info), tpe, op, args.map(convert(_, ctx, info)))
+    case e: PrimExpr[_] =>
+      convertPrim(e.op, e.args, info, ctx)
     case other =>
       throw new InternalErrorException(s"Unexpected type in convert $other")
   }
@@ -106,18 +123,7 @@ private[chisel3] object Converter {
   /** Convert Commands that map 1:1 to Statements */
   def convertCommand(cmd: Command, ctx: Component, typeAliases: Seq[String]): fir.Statement = cmd match {
     case e: DefPrim[_] =>
-      val consts = e.args.collect { case ILit(i) => i }
-      val args = e.args.flatMap {
-        case _: ILit => None
-        case other => Some(convert(other, ctx, e.sourceInfo))
-      }
-      val expr = e.op.name match {
-        case "mux" =>
-          assert(args.size == 3, s"Mux with unexpected args: $args")
-          fir.Mux(args(0), args(1), args(2), fir.UnknownType)
-        case _ =>
-          fir.DoPrim(convert(e.op), args, consts, fir.UnknownType)
-      }
+      val expr = convertPrim(e.op, e.args, e.sourceInfo, ctx)
       fir.DefNode(convert(e.sourceInfo), e.name, expr)
     case e @ DefWire(info, id) =>
       fir.DefWire(convert(info), e.name, extractType(id, info, typeAliases))

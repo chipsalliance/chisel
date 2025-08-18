@@ -671,4 +671,13 @@ class UIntOpsSpec extends AnyPropSpec with Matchers with LogUtils with ShiftRigh
     chirrtl should include("connect out1, UInt<0>(0h0)")
     chirrtl should include("connect out2, UInt<0>(0h0)")
   }
+
+  property("asUInt should use a cat single expression") {
+    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+      val in = IO(Input(Vec(4, UInt(2.W))))
+      val out = IO(Output(UInt(8.W)))
+      out := in.asUInt
+    })
+    chirrtl should include("cat(in[3], in[2], in[1], in[0])")
+  }
 }

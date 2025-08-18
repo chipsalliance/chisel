@@ -45,19 +45,15 @@ class CatSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  it should "have prefixed naming" in {
+  it should "emit a single expression for the entire cat" in {
     class MyModule extends RawModule {
       val in = IO(Input(Vec(8, UInt(8.W))))
-      val out = IO(Output(UInt()))
+      val out = IO(Output(UInt(64.W)))
 
-      // noPrefix to avoid `out` as prefix
-      out := noPrefix(Cat(in))
+      out := Cat(in)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("node lo_lo = cat(in[6], in[7])")
-    chirrtl should include("node lo_hi = cat(in[4], in[5])")
-    chirrtl should include("node hi_lo = cat(in[2], in[3])")
-    chirrtl should include("node hi_hi = cat(in[0], in[1])")
+    chirrtl should include("cat(in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7])")
   }
 
   it should "have a source locator when passing a seq" in {
@@ -65,11 +61,10 @@ class CatSpec extends AnyFlatSpec with Matchers {
       val in = IO(Input(Vec(8, UInt(8.W))))
       val out = IO(Output(UInt()))
 
-      // noPrefix to avoid `out` as prefix
       out := Cat(in)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("cat(in[0], in[1])")
+    chirrtl should include("cat(in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7])")
     (chirrtl should not).include("Cat.scala")
   }
 
@@ -84,4 +79,28 @@ class CatSpec extends AnyFlatSpec with Matchers {
     (chirrtl should not).include("Cat.scala")
   }
 
+  it should "support mixed Bits types" in {
+    class MyModule extends RawModule {
+      val uint = IO(Input(UInt(8.W)))
+      val sint = IO(Input(SInt(8.W)))
+      val bool = IO(Input(Bool()))
+      val out = IO(Output(UInt(17.W)))
+
+      out := Cat(uint, sint, bool)
+    }
+    val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
+    chirrtl should include("cat(uint, asUInt(sint), bool)")
+  }
+
+  it should "support a huge cat" in {
+    class MyModule extends RawModule {
+      val n = 100000
+      val in = IO(Input(Vec(n, UInt(8.W))))
+      val out = IO(Output(UInt((n * 8).W)))
+
+      out := Cat(in)
+    }
+    // ignore output, we're just checking that neither Chisel nor firtool barf
+    ChiselStage.emitSystemVerilog(new MyModule): Unit
+  }
 }
