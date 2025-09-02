@@ -51,11 +51,10 @@ final case class Definition[+A] private[chisel3] (private[chisel3] val underlyin
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
     case value: BaseModule =>
-      val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value))(
+      val newChild = Module.do_pseudo_apply(new experimental.hierarchy.DefinitionClone(value), None)(
         chisel3.experimental.UnlocatableSourceInfo
       )
       newChild._circuit = value._circuit.orElse(Some(value))
-      newChild._parent = None
       Some(newChild)
     case value: IsInstantiable => None
   }

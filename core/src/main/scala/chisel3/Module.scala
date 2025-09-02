@@ -151,21 +151,24 @@ object Module extends Module$Intf {
   def currentModulePrefix: String = Builder.getModulePrefix
 
   private[chisel3] def do_pseudo_apply[T <: BaseModule](
-    bc: => T
+    bc:     => T,
+    parent: Option[BaseModule]
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    val parent = Builder.currentModule
-    val whenStackOpt = Option.when(Builder.hasDynamicContext)(Builder.whenStack)
-    val layerStackOpt = Option.when(Builder.hasDynamicContext)(Builder.layerStack)
-    val blockStackOpt = Option.when(Builder.hasDynamicContext)(Builder.blockStack)
-    val module: T = bc // bc is actually evaluated here
-    if (!parent.isEmpty) { Builder.currentModule = parent }
-    whenStackOpt.foreach(Builder.whenStack = _)
-    layerStackOpt.foreach(Builder.layerStack = _)
-    blockStackOpt.foreach(Builder.blockStack = _)
-
-    module
+    // If we are in a normal Chisel context, use the standard state mechanism.
+    if (Builder.inContext) {
+      val state = Builder.State.default.copy(currentModule = parent)
+      Builder.State.guard(state) {
+        bc // bc is actually evaluated here
+      }
+    } else {
+      // Otherwise, we are outside a Chisel context, so there is no context to set.
+      val module = bc
+      // However we need to make sure to set the parent.
+      module._parent = parent
+      module
+    }
   }
 
   /**  Assign directionality on any IOs that are still Unspecified/Flipped

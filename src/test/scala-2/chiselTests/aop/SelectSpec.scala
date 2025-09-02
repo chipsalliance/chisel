@@ -293,4 +293,34 @@ class SelectSpec extends AnyFlatSpec with Matchers {
 
     ChiselStage.emitCHIRRTL(new MyTopModule)
   }
+
+  "Looking up instances" should "not affect the result of currentInstancesIn" in {
+    import chisel3.experimental.hierarchy._
+
+    @instantiable
+    class Grandchild extends Module
+
+    @instantiable
+    class Child extends Module {
+      @public val g1 = Instantiate(new Grandchild)
+    }
+
+    class Parent extends Module {
+      val c1 = Instantiate(new Child)
+
+      Select.unsafe.currentInstancesIn(this) should be(Seq(c1))
+
+      c1.g1 // This does more than you think :)
+
+      Select.unsafe.currentInstancesIn(this) should be(Seq(c1))
+
+      // We can't check the exact contents because what this returns is not the same object as c1.g1
+      // TODO is it a problem that it's not the same object?
+      Select.unsafe.allCurrentInstancesIn(this).size should be(2)
+
+      Select.unsafe.currentInstancesIn(this) should be(Seq(c1))
+    }
+
+    ChiselStage.elaborate(new Parent)
+  }
 }
