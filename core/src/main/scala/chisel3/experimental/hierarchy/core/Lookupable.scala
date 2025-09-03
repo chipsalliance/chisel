@@ -359,8 +359,7 @@ object Lookupable {
     // Recursive call
     def rec[A <: BaseModule](m: A): Underlying[A] = {
       def clone(x: A, p: Option[BaseModule], name: () => String): Underlying[A] = {
-        val newChild = Module.do_pseudo_apply(new experimental.hierarchy.InstanceClone(x, name))
-        newChild._parent = p
+        val newChild = Module.do_pseudo_apply(new experimental.hierarchy.InstanceClone(x, name), p)
         Clone(newChild)
       }
       (m, context) match {
@@ -386,8 +385,7 @@ object Lookupable {
         rec(m) match {
           case Proto(mx) => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
-            newChild._parent = i._parent
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName), i._parent)
             Clone(newChild)
           case _ => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
         }
@@ -395,8 +393,7 @@ object Lookupable {
         rec(m) match {
           case Proto(mx) => Clone(mx)
           case Clone(i: InstanceClone[_]) =>
-            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName))
-            newChild._parent = i._parent
+            val newChild = Module.do_pseudo_apply(new InstanceClone(m.getProto, () => m.instanceName), i._parent)
             Clone(newChild)
           case _ => throw new InternalErrorException(s"Match error: rec(m)=${rec(m)}")
         }
