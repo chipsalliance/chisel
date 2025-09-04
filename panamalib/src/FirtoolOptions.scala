@@ -12,7 +12,6 @@ case class AddMuxPragmas(value: Boolean) extends FirtoolOption
 case class AddVivadoRAMAddressConflictSynthesisBugWorkaround(value: Boolean) extends FirtoolOption
 case class BlackBoxRootPath(value: String) extends FirtoolOption
 case class BuildMode(value: BuildModeEnum) extends FirtoolOption
-case class ChiselInterfaceOutDirectory(value: String) extends FirtoolOption
 case class CkgEnableName(value: String) extends FirtoolOption
 case class CkgInputName(value: String) extends FirtoolOption
 case class CkgModuleName(value: String) extends FirtoolOption
@@ -30,7 +29,6 @@ case class EnableAnnotationWarning(value: Boolean) extends FirtoolOption
 case class EtcDisableInstanceExtraction(value: Boolean) extends FirtoolOption
 case class EtcDisableModuleInlining(value: Boolean) extends FirtoolOption
 case class EtcDisableRegisterExtraction(value: Boolean) extends FirtoolOption
-case class ExportChiselInterface(value: Boolean) extends FirtoolOption
 case class ExportModuleHierarchy(value: Boolean) extends FirtoolOption
 case class ExtractTestCode(value: Boolean) extends FirtoolOption
 case class IgnoreReadEnableMem(value: Boolean) extends FirtoolOption
