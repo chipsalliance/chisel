@@ -316,10 +316,6 @@ class PanamaCIRCT {
     CAPI.circtFirtoolOptionsSetBuildMode(options.get, value.get)
   def circtFirtoolOptionsSetDisableOptimization(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetDisableOptimization(options.get, value)
-  def circtFirtoolOptionsSetExportChiselInterface(options: CirctFirtoolFirtoolOptions, value: Boolean) =
-    CAPI.circtFirtoolOptionsSetExportChiselInterface(options.get, value)
-  def circtFirtoolOptionsSetChiselInterfaceOutDirectory(options: CirctFirtoolFirtoolOptions, value: String) =
-    CAPI.circtFirtoolOptionsSetChiselInterfaceOutDirectory(options.get, newString(value).get)
   def circtFirtoolOptionsSetVbToBv(options: CirctFirtoolFirtoolOptions, value: Boolean) =
     CAPI.circtFirtoolOptionsSetVbToBv(options.get, value)
   def circtFirtoolOptionsSetNoDedup(options: CirctFirtoolFirtoolOptions, value: Boolean) =
