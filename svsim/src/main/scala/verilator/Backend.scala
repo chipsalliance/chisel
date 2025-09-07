@@ -186,7 +186,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
                   Seq("-O3", "-march=native", "-mtune=native")
               },
 
-              Seq("-std=c++14"),
+              Seq("-std=c++17"),
 
               additionalHeaderPaths.map { path => s"-I${path}" },
 
