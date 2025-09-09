@@ -482,6 +482,31 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
     (chirrtl should not).include("layer B")
   }
 
+  they should "include a Temporal inline layers for Assert, Assume, and Cover" in {
+    class Foo extends RawModule {
+      layer.block(layers.Verification.Assert.Temporal) {
+        val a = Wire(UInt(1.W))
+      }
+      layer.block(layers.Verification.Assume.Temporal) {
+        val a = Wire(UInt(2.W))
+      }
+      layer.block(layers.Verification.Cover.Temporal) {
+        val a = Wire(UInt(3.W))
+      }
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      s"""|CHECK:      layer Verification, {{.*}} :
+          |CHECK-NEXT:   layer Assert, {{.*}} :
+          |CHECK-NEXT:     layer Temporal, inline :
+          |CHECK-NEXT:   layer Assume, {{.*}} :
+          |CHECK-NEXT:     layer Temporal, inline :
+          |CHECK-NEXT:   layer Cover, {{.*}} :
+          |CHECK-NEXT:     layer Temporal, inline :
+          |""".stripMargin
+    }
+  }
+
   "Layers error checking" should "require that the current layer is an ancestor of the desired layer" in {
 
     class Foo extends RawModule {
