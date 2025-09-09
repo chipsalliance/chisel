@@ -7,14 +7,17 @@ import chisel3._
 import chisel3.experimental.hierarchy.core.{Definition, Instance}
 import chisel3.experimental.hierarchy.instantiable
 import chisel3.ltl.AssertProperty
+import chisel3.ltl.Sequence._
 import chisel3.probe.{define, Probe, ProbeValue}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
+import chisel3.simulator.{LayerControl, Settings}
+import chisel3.simulator.scalatest.ChiselSim
 import chisel3.testing.scalatest.FileCheck
 import java.nio.file.{FileSystems, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
+class LayerSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim {
 
   val sep: String = FileSystems.getDefault().getSeparator()
 
@@ -659,4 +662,33 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck {
           |""".stripMargin
     }
   }
+
+  "The Temporal layer" should "allow guarding s_eventually in Verilator" in {
+    class Foo extends Module {
+      val a, b = IO(Input(Bool()))
+
+      layer.block(layers.Verification.Assert.Temporal) {
+        AssertProperty(a |-> b.eventually)
+      }
+
+    }
+
+    info("Verilator errors if s_eventually is included")
+    intercept[Exception] {
+      simulate(new Foo)(_ => {})
+    }.getMessage.fileCheck() {
+      """|CHECK: %Error-UNSUPPORTED
+         |CHECK: s_eventually
+         |""".stripMargin
+    }
+
+    info("disabling the temporal layer allows compilation to complete")
+    simulate(
+      new Foo,
+      settings = Settings.default.copy(verilogLayers =
+        LayerControl.Enable(layers.Verification.Assert, layers.Verification.Assume, layers.Verification.Cover)
+      )
+    )(_ => {})
+  }
+
 }
