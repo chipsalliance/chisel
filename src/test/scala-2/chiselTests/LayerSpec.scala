@@ -476,8 +476,11 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
     chirrtl.fileCheck() {
       s"""|CHECK:      layer Verification, bind, "verification" :
           |CHECK-NEXT:   layer Assert, bind, "verification${sep}assert" :
+          |CHECK-NEXT:     layer Temporal, inline :
           |CHECK-NEXT:   layer Assume, bind, "verification${sep}assume" :
+          |CHECK-NEXT:     layer Temporal, inline :
           |CHECK-NEXT:   layer Cover, bind, "verification${sep}cover" :
+          |CHECK-NEXT:     layer Temporal, inline :
           |""".stripMargin
     }
 
