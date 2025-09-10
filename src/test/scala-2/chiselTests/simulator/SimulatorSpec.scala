@@ -303,7 +303,9 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       class Foo extends Module {
         val a = IO(Input(Bool()))
         // Verilator does not support s_eventually, which this lowers to.
-        ltl.AssertProperty(ltl.Property.eventually(a))
+        block(layers.Verification.Assert.Temporal) {
+          ltl.AssertProperty(ltl.Property.eventually(a))
+        }
       }
 
       info("illegal constructs cause compilation failure")
@@ -316,9 +318,20 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
           .result
       }.getMessage() should include("Unsupported: s_eventually")
 
-      info("disabling unsupported constracts causes compilation to succeed")
+      info("disabling unsupported constracts causes compilation to succeed using LayerControl.DisableAll")
       new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
         .simulate(new Foo, settings = Settings.default[Foo].copy(verilogLayers = LayerControl.DisableAll)) { _ => }
+        .result
+
+      info(
+        "disabling unsupported constracts causes compilation to succeed using LayerControl.Disable(layers.Verification.Assert.Temporal)"
+      )
+      new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
+        .simulate(
+          new Foo,
+          settings =
+            Settings.default[Foo].copy(verilogLayers = LayerControl.Disable(layers.Verification.Assert.Temporal))
+        ) { _ => }
         .result
 
     }
