@@ -184,6 +184,25 @@ object LayerControl {
     }
   }
 
+  /** Disables only the specified layers. */
+  final case class Disable(layers: Layer*) extends Type {
+    private val disableSet = layers.toSet
+
+    override protected def getLayerSubset(allLayers: Seq[Layer]): Seq[Layer] = {
+      val layerSet = allLayers.toSet
+      layers.foreach { layer =>
+        require(
+          layerSet.contains(layer),
+          s"""cannot disable layer '${layer.fullName}' as it is not one of the defined layers: ${allLayers.map(
+              _.fullName
+            )}"""
+        )
+      }
+      allLayers.filterNot(disableSet.contains)
+    }
+
+  }
+
   /** Disables all layers.  This is the same as `Enable()`. */
   val DisableAll = Enable()
 
