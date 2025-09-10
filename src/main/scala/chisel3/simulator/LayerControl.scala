@@ -198,7 +198,7 @@ object LayerControl {
             )}"""
         )
       }
-      allLayers.filter(!disableSet.contains(_))
+      allLayers.filterNot(disableSet.contains)
     }
 
   }
