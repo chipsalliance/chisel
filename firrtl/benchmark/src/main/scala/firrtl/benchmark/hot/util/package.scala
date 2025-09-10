@@ -1,4 +1,3 @@
-
 package firrtl.benchmark.hot
 
 import firrtl.Utils.time
