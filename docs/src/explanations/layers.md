@@ -242,27 +242,43 @@ project to see if this is the case.
 ## Built-in Layers
 
 Chisel provides several built-in layers.  These are shown below with their full
-Scala paths.  All built-in layers are extract layers:
+Scala paths.  All layers except the temporal layers are extract layers.
+Temporal layers are inline:
 
 ```
-chisel3.layers.Verification
-├── chisel3.layers.Verification.Assert
-├── chisel3.layers.Verification.Assume
-└── chisel3.layers.Verification.Cover
+chisel3.layers.Verification                          (Extract)
+├── chisel3.layers.Verification.Assert               (Extract)
+│   └── chisel3.layers.Verification.Assert.Temporal  (Inline)
+├── chisel3.layers.Verification.Assume               (Extract)
+│   └── chisel3.layers.Verification.Assume.Temporal  (Inline)
+└── chisel3.layers.Verification.Cover                (Extract)
+    └── chisel3.layers.Verification.Cover.Temporal   (Inline)
 ```
 
 These built-in layers are dual purpose.  First, these layers match the common
 use case of sequestering verification code.  The `Verification` layer is for
 common verification collateral.  The `Assert`, `Assume`, and `Cover` layers are
-for, respectively, assertions, assumptions, and cover statements.  Second, the
-Chisel standard library uses them for a number of its APIs.  _Unless otherwise
-wrapped in a different layer block, the following operations are automatically
-placed in layers_:
+for, respectively, assertions, assumptions, and cover statements.  The
+`Temporal` layers can be used to sequester _temporal_ properties as these are
+not fully supported by simulation tools.  Second, the Chisel standard library
+uses them for a number of its APIs.  _Unless otherwise wrapped in a different
+layer block, the following operations are automatically placed in layers_:
 
 * Prints are placed in the `Verification` layer
 * Assertions are placed in the `Verification.Assert` layer
 * Assumptions are placed in the `Verification.Assume` layer
 * Covers are placed in the `Verification.Cover` layer
+
+At this time, no operations are automatically placed in `Temporal` layers.  The
+`Temporal` layer is up to the user to use as needed.
+
+:::tip
+
+User-defined layers may want to define their own `Temporal` layer.  To ease
+this, Chisel provides the `chisel3.layers.HasTemporalInlineLayer` which, when
+mixed-in to a user-defined layer, will add a child inline temporal layer.
+
+:::
 
 For predictability of output, these layers will always be show up in the FIRRTL
 that Chisel emits.  To change this behavior, use `firtool` command line options
