@@ -13,8 +13,11 @@ package object layers {
   val defaultLayers: Seq[layer.Layer] = Seq(
     Verification,
     Verification.Assert,
+    Verification.Assert.Temporal,
     Verification.Assume,
-    Verification.Cover
+    Verification.Assume.Temporal,
+    Verification.Cover,
+    Verification.Cover.Temporal
   )
 
 }
