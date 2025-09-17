@@ -38,7 +38,11 @@ object Cli {
         updateChiselOptions = (value, old) => old ++ value,
         updateFirtoolOptions = (_, a) => a,
         updateCommonSettings = (_, a) => a,
-        updateBackendSettings = (_, a) => a
+        updateBackendSettings = (_, a) => a,
+        updateUnsetChiselOptions = (a: Array[String]) => a,
+        updateUnsetFirtoolOptions = (a: Array[String]) => a,
+        updateUnsetCommonSettings = (a: CommonCompilationSettings) => a,
+        updateUnsetBackendSettings = (a: svsim.Backend.Settings) => a
       )
     )
 
@@ -209,7 +213,11 @@ object Cli {
         updateChiselOptions = (_, a) => a,
         updateFirtoolOptions = (value, old) => old ++ value,
         updateCommonSettings = (_, a) => a,
-        updateBackendSettings = (_, a) => a
+        updateBackendSettings = (_, a) => a,
+        updateUnsetChiselOptions = (a: Array[String]) => a,
+        updateUnsetFirtoolOptions = (a: Array[String]) => a,
+        updateUnsetCommonSettings = (a: CommonCompilationSettings) => a,
+        updateUnsetBackendSettings = (a: svsim.Backend.Settings) => a
       )
     )
 

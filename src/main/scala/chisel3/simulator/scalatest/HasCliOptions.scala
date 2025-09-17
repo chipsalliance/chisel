@@ -45,6 +45,7 @@ object HasCliOptions {
 
   object CliOption {
 
+    @deprecated("Use newer CliOption case class apply", "Chisel 7.1.0")
     def apply[A](
       name:                  String,
       help:                  String,
@@ -68,6 +69,30 @@ object HasCliOptions {
         updateUnsetBackendSettings = identity
       )
     }
+
+    @deprecated("Use newer CliOption case class unapply", "Chisel 7.1.0")
+    def unapply[A](cliOption: CliOption[A]): Option[
+      (
+        String,
+        String,
+        (String) => A,
+        (A, Array[String]) => Array[String],
+        (A, Array[String]) => Array[String],
+        (A, CommonCompilationSettings) => CommonCompilationSettings,
+        (A, Backend.Settings) => Backend.Settings
+      )
+    ] =
+      Some(
+        (
+          cliOption.name,
+          cliOption.help,
+          cliOption.convert,
+          cliOption.updateChiselOptions,
+          cliOption.updateFirtoolOptions,
+          cliOption.updateCommonSettings,
+          cliOption.updateBackendSettings
+        )
+      )
 
     /** A simple command line option which does not affect common or backend settings.
       *
