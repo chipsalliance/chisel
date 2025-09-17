@@ -2,6 +2,7 @@
 
 package chisel3.simulator.scalatest
 
+import chisel3.layers.Verification.Assert.Temporal
 import chisel3.simulator.HasSimulator
 import chisel3.simulator.scalatest.HasCliOptions.CliOption
 import scala.util.control.NoStackTrace
@@ -10,6 +11,7 @@ import svsim.Backend.HarnessCompilationFlags.{
   enableVcdTracingSupport,
   enableVpdTracingSupport
 }
+import svsim.{CommonCompilationSettings, CommonSettingsModifications}
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 
 /** ChiselSim command line interface traits that can be added to Scalatest tests
@@ -309,8 +311,16 @@ object Cli {
         )
     }
 
+    protected def disableTemporalLayers: CommonSettingsModifications = (in: CommonCompilationSettings) =>
+      in.copy(
+        verilogPreprocessorDefines = in.verilogPreprocessorDefines.filter {
+          case VerilogPreprocessorDefine(name, None) => !name.contains("$" + Temporal.name)
+          case _                                     => true
+        }
+      )
+
     addOption(
-      CliOption.simple[Unit](
+      CliOption[String](
         name = "simulator",
         help = "sets the simulator for the test",
         convert = simulator => {
@@ -321,7 +331,20 @@ object Cli {
               s"""illegal simulator '$simulator', must be one of $legalValues"""
             )
           }
-        }
+          simulator
+        },
+        updateChiselOptions = (_, a) => a,
+        updateFirtoolOptions = (_, a) => a,
+        updateCommonSettings = (simulator, a) =>
+          simulator match {
+            case "verilator" => disableTemporalLayers(a)
+            case _           => a
+          },
+        updateBackendSettings = (_, a) => a,
+        updateUnsetChiselOptions = (a: Array[String]) => a,
+        updateUnsetFirtoolOptions = (a: Array[String]) => a,
+        updateUnsetCommonSettings = disableTemporalLayers,
+        updateUnsetBackendSettings = (a: svsim.Backend.Settings) => a
       )
     )
 
