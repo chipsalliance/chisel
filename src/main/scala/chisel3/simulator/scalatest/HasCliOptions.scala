@@ -30,16 +30,44 @@ object HasCliOptions {
     * be converted to.
     */
   case class CliOption[A](
-    name:                  String,
-    help:                  String,
-    convert:               (String) => A,
-    updateChiselOptions:   (A, Array[String]) => Array[String],
-    updateFirtoolOptions:  (A, Array[String]) => Array[String],
-    updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
-    updateBackendSettings: (A, Backend.Settings) => Backend.Settings
+    name:                       String,
+    help:                       String,
+    convert:                    (String) => A,
+    updateChiselOptions:        (A, Array[String]) => Array[String],
+    updateFirtoolOptions:       (A, Array[String]) => Array[String],
+    updateCommonSettings:       (A, CommonCompilationSettings) => CommonCompilationSettings,
+    updateBackendSettings:      (A, Backend.Settings) => Backend.Settings,
+    updateUnsetChiselOptions:   (Array[String]) => Array[String],
+    updateUnsetFirtoolOptions:  (Array[String]) => Array[String],
+    updateUnsetCommonSettings:  (CommonCompilationSettings) => CommonCompilationSettings,
+    updateUnsetBackendSettings: (Backend.Settings) => Backend.Settings
   )
 
   object CliOption {
+
+    def apply[A](
+      name:                  String,
+      help:                  String,
+      convert:               (String) => A,
+      updateChiselOptions:   (A, Array[String]) => Array[String],
+      updateFirtoolOptions:  (A, Array[String]) => Array[String],
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings
+    ): CliOption[A] = {
+      apply(
+        name = name,
+        help = help,
+        convert = convert,
+        updateChiselOptions = updateChiselOptions,
+        updateFirtoolOptions = updateFirtoolOptions,
+        updateCommonSettings = updateCommonSettings,
+        updateBackendSettings = updateBackendSettings,
+        updateUnsetChiselOptions = identity,
+        updateUnsetFirtoolOptions = identity,
+        updateUnsetCommonSettings = identity,
+        updateUnsetBackendSettings = identity
+      )
+    }
 
     /** A simple command line option which does not affect common or backend settings.
       *
@@ -58,7 +86,11 @@ object HasCliOptions {
       updateChiselOptions = (_, a) => a,
       updateFirtoolOptions = (_, a) => a,
       updateCommonSettings = (_, a) => a,
-      updateBackendSettings = (_, a) => a
+      updateBackendSettings = (_, a) => a,
+      updateUnsetChiselOptions = identity,
+      updateUnsetFirtoolOptions = identity,
+      updateUnsetCommonSettings = identity,
+      updateUnsetBackendSettings = identity
     )
 
     /** Add a double option to a test.
@@ -205,7 +237,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     illegalOptionCheck()
     options.values.foldLeft(original) { case (acc, option) =>
       configMap.getOptional[String](option.name) match {
-        case None => acc
+        case None => option.updateUnsetChiselOptions.apply(acc)
         case Some(value) =>
           option.updateChiselOptions.apply(option.convert(value), acc)
       }
@@ -216,7 +248,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     illegalOptionCheck()
     options.values.foldLeft(original) { case (acc, option) =>
       configMap.getOptional[String](option.name) match {
-        case None => acc
+        case None => option.updateUnsetFirtoolOptions.apply(acc)
         case Some(value) =>
           option.updateFirtoolOptions.apply(option.convert(value), acc)
       }
@@ -228,7 +260,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
       illegalOptionCheck()
       options.values.foldLeft(original) { case (acc, option) =>
         configMap.getOptional[String](option.name) match {
-          case None => acc
+          case None => option.updateUnsetCommonSettings.apply(acc)
           case Some(value) =>
             option.updateCommonSettings.apply(option.convert(value), acc)
         }
@@ -239,7 +271,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     illegalOptionCheck()
     options.values.foldLeft(original) { case (acc, option) =>
       configMap.getOptional[String](option.name) match {
-        case None => acc
+        case None => option.updateUnsetBackendSettings.apply(acc)
         case Some(value) =>
           option.updateBackendSettings.apply(option.convert(value), acc)
       }
