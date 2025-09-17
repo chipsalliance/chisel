@@ -162,6 +162,15 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     options += option.name -> option
   }
 
+  final def overrideOption(option: CliOption[_]): Unit = {
+    if (!options.contains(option.name))
+      throw new Exception(
+        s"unable to override existing option with name '${option.name}' because this option was not previously defined"
+      )
+
+    options += option.name -> option
+  }
+
   final def getOption[A](name: String): Option[A] = {
     val value: Option[Any] = configMap.get(name)
     value.map(_.asInstanceOf[String]).map(options(name).convert(_)).map(_.asInstanceOf[A])
