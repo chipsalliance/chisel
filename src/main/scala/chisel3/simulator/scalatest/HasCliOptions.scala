@@ -66,13 +66,13 @@ object HasCliOptions {
 
     @deprecated("avoid use of copy", "Chisel 7.1.0")
     def copy[A](
-      name:                  String = name,
-      help:                  String = help,
-      convert:               (String) => A = convert,
-      updateChiselOptions:   (A, Array[String]) => Array[String] = updateChiselOptions,
-      updateFirtoolOptions:  (A, Array[String]) => Array[String] = updateFirtoolOptions,
-      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings = updateCommonSettings,
-      updateBackendSettings: (A, Backend.Settings) => Backend.Settings = updateBackendSettings
+      name:                  String,
+      help:                  String,
+      convert:               (String) => A,
+      updateChiselOptions:   (A, Array[String]) => Array[String],
+      updateFirtoolOptions:  (A, Array[String]) => Array[String],
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings
     ): CliOption[A] = CliOption[A](
       name = name,
       help = help,
