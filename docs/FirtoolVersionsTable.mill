@@ -21,34 +21,26 @@ def knownVersions: Seq[(SemanticVersion, String)] =
 // This needs to be a def to avoid null pointer exception
 def min = SemanticVersion.parse("v3.6.0-RC1")
 
-def lookupFirtoolVersion(chiselVersion: SemanticVersion): String = {
+def lookupFirtoolVersion(chiselVersion: SemanticVersion, logger: Logger): String = {
   val version = chiselVersion.serialize
   val artifact = if (chiselVersion.major == 3) "edu.berkeley.cs::chisel3" else "org.chipsalliance::chisel"
   // echo "println(chisel3.BuildInfo.firtoolVersion.get)" | scala-cli -S 2.13 --dep org.chipsalliance::chisel:6.0.0-RC1 -
   val cmd = "println(chisel3.BuildInfo.firtoolVersion.get)"
+  logger.debug(s"Looking up firtool version for $version...")
   // --server=false makes it a little slower but avoids hangs in CI
   val proc = os
     .proc("scala-cli", "--server=false", "-S", "2.13", "--dep", s"$artifact:$version", "-")
     .call(stdin = cmd, stdout = os.Pipe, stderr = os.Pipe)
-  proc.out.trim()
+  val result = proc.out.trim()
+  logger.debug(s"Chisel $version uses firtool $result")
+  result
 }
 
 def firtoolGithubLink(version: String): String = s"https://github.com/llvm/circt/releases/tag/firtool-$version"
 
 // release == true only includes releases
 // release == false only includes pre-releases
-def generateTable(release: Boolean, logger: Logger): String = {
-  val allReleases = releases(logger)
-
-  val hasfirtool = allReleases.filter(_ >= min)
-  val unknown = {
-    val isKnownVersion = knownVersions.map(_._1).toSet
-    hasfirtool.filterNot(isKnownVersion)
-  }
-
-  val lookedUp = unknown.map(v => v -> lookupFirtoolVersion(v))
-  val allVersions = (lookedUp ++ knownVersions).sortBy(_._1).reverse // descending
-
+def generateTable(allVersions: Seq[(SemanticVersion, String)], release: Boolean, logger: Logger): String = {
   // Finally apply a filter for releases vs. pre-releases
   val result = allVersions.filter { case (v, _) => v.prerelease ^ release }
 

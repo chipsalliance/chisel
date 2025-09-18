@@ -75,6 +75,7 @@ def releases(logger: Logger): List[SemanticVersion] =
     .unsafeRunSync()
     .map(SemanticVersion.parse(_))
     .filter(isPublished(logger))
+    .distinct // Unclear why there are duplicates but remove them.
 
 /* Get latest non-milestone version
  *
