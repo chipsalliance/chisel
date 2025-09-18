@@ -57,15 +57,38 @@ object `package` extends SbtModule with HasScalaPlugin with HasCommonOptions {
     Seq("--cwd", "docs", "--no-link-hygiene")
   }
 
+  // All Chisel releases, queried from Maven Central
+  def allReleases = Task {
+    releases(Task.log)
+  }
+
+  // Mapping of Chisel version to associated firtool version
+  def chiselVersionFirtoolVersionMapping = Task {
+    // Minimum version to record in the table
+    // Earlier versions don't use firtool
+    // This needs to be a def to avoid null pointer exception
+    def min = SemanticVersion.parse("v3.6.0-RC1")
+    // Some versions predate the ability to generate this list:
+    val hasFirtool = allReleases().filter(_ >= min)
+    val needsVersionLookup = {
+      val isKnownVersion = knownVersions.map(_._1).toSet
+      hasFirtool.filterNot(isKnownVersion)
+    }
+    val lookedUpVersions = needsVersionLookup.map(v => v -> lookupFirtoolVersion(v, Task.log))
+    val allVersions = knownVersions ++ lookedUpVersions
+    allVersions.sortBy(_._1)
+  }
+
   def latestStableVersion = Task {
-    getLatest(releases(Task.log)).serialize
+    getLatest(allReleases().toList).serialize
   }
 
   def firtoolVersionsTable = Task {
     BuildCtx.withFilesystemCheckerDisabled {
       val outputFile = Task.dest / "FirtoolVersionsTable.scala"
-      val releaseTable = generateTable(true, Task.log).replaceAll("\n", "\\\\n")
-      val prereleaseTable = generateTable(false, Task.log).replaceAll("\n", "\\\\n")
+      val versionMapping = chiselVersionFirtoolVersionMapping()
+      val releaseTable = generateTable(versionMapping, true, Task.log).replaceAll("\n", "\\\\n")
+      val prereleaseTable = generateTable(versionMapping, false, Task.log).replaceAll("\n", "\\\\n")
       val contents =
         s"""|object FirtoolVersionsTable {
             |  def releaseTable = "$releaseTable"
