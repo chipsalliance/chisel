@@ -8,8 +8,8 @@
 
 
 
-<link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.03e8facf.css">
-<script src="/assets/js/runtime~main.5983ff90.js" defer="defer"></script>
+<link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.0ef9c59f.css">
+<script src="/assets/js/runtime~main.33f19d00.js" defer="defer"></script>
 <script src="/assets/js/main.fd98c52f.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -165,6 +165,10 @@ This feature is accessed via the <code>scaled</code> method that this trait prov
 <li><code>Simulator</code> adds a <code>-Dsimulator=&lt;simulator-name&gt;</code> argument.  This allows for
 test-time selection of either VCS or verilator as the simulation backend.</li>
 </ul>
+<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>warning</div><div class="admonitionContent_BuS1"><p>The <code>Simulator</code> command line will automatically disable <code>Temporal</code> layers when
+running with the Verilator backend.  When running without the <code>Simulator</code>
+command line and explicitly choosing a simulator, no layers are automatically
+disabled, even when running with Verilator.</p></div></div>
 <p>If the command line option that you want to add is not already available, you
 can add a custom option to your test using one of several methods provided in
 <code>chisel3.simulator.scalatest.HasCliOptions</code>.  The most flexible method is
