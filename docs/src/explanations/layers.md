@@ -280,11 +280,11 @@ mixed-in to a user-defined layer, will add a child inline temporal layer.
 
 :::
 
-:::warn
+:::warning
 
-Users of the ChiselSim library will likely want to disable `Temporal` layers
-when running with backends that do not support temporal properties, e.g.,
-Verilator.  If using ChiselSim's `Cli.Simulator` API to support multiple
+Users of the ChiselSim library should manually disable `Temporal` layers when
+using `Temporal` layers to describe properties that their chosen simulator
+cannot suppot.  If using ChiselSim's `Cli.Simulator` trait to support multiple
 backends, then the Verilator backend will automatically disable temporal layers.
 
 :::

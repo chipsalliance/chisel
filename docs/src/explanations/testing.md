@@ -315,7 +315,7 @@ ChiselSim.  These are available in the `chisel3.simulator.scalatest.Cli` object:
 - `Simulator` adds a `-Dsimulator=<simulator-name>` argument.  This allows for
   test-time selection of either VCS or verilator as the simulation backend.
 
-:::warn
+:::warning
 
 The `Simulator` command line will automatically disable `Temporal` layers when
 running with the Verilator backend.  When running without the `Simulator`
