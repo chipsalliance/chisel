@@ -64,12 +64,8 @@ object Cli {
       CliOption
         .flag(
           name = "emitFsdb",
-          help = "compile with FSDB waveform support and start dumping waves at time zero"
-        )
-        .copy[Unit](
-          updateChiselOptions = (_, a) => a,
-          updateFirtoolOptions = (_, a) => a,
-          updateCommonSettings = (_, options) => {
+          help = "compile with FSDB waveform support and start dumping waves at time zero",
+          updateCommonSettings = (options) => {
             options.copy(
               verilogPreprocessorDefines =
                 options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableFsdbTracingSupport),
@@ -78,7 +74,7 @@ object Cli {
               )
             )
           },
-          updateBackendSettings = (_, options) =>
+          updateBackendSettings = (options) =>
             options match {
               case options: svsim.vcs.Backend.CompilationSettings =>
                 options.copy(
@@ -114,11 +110,10 @@ object Cli {
 
     addOption(
       CliOption
-        .flag(name = "emitVcd", help = "compile with VCD waveform support and start dumping waves at time zero")
-        .copy[Unit](
-          updateChiselOptions = (_, a) => a,
-          updateFirtoolOptions = (_, a) => a,
-          updateCommonSettings = (_, options) => {
+        .flag(
+          name = "emitVcd",
+          help = "compile with VCD waveform support and start dumping waves at time zero",
+          updateCommonSettings = (options) => {
             options.copy(
               verilogPreprocessorDefines =
                 options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVcdTracingSupport),
@@ -127,7 +122,7 @@ object Cli {
               )
             )
           },
-          updateBackendSettings = (_, options) =>
+          updateBackendSettings = (options) =>
             options match {
               case options: svsim.vcs.Backend.CompilationSettings =>
                 options.copy(
@@ -166,12 +161,8 @@ object Cli {
       CliOption
         .flag(
           name = "emitVpd",
-          help = "compile with VPD waveform support and start dumping waves at time zero"
-        )
-        .copy[Unit](
-          updateChiselOptions = (_, a) => a,
-          updateFirtoolOptions = (_, a) => a,
-          updateCommonSettings = (_, options) => {
+          help = "compile with VPD waveform support and start dumping waves at time zero",
+          updateCommonSettings = (options) => {
             options.copy(
               verilogPreprocessorDefines =
                 options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVpdTracingSupport),
@@ -180,7 +171,7 @@ object Cli {
               )
             )
           },
-          updateBackendSettings = (_, options) =>
+          updateBackendSettings = (options) =>
             options match {
               case options: svsim.vcs.Backend.CompilationSettings =>
                 options.copy(

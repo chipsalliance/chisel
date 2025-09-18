@@ -41,11 +41,56 @@ object HasCliOptions {
     updateUnsetFirtoolOptions:  (Array[String]) => Array[String],
     updateUnsetCommonSettings:  (CommonCompilationSettings) => CommonCompilationSettings,
     updateUnsetBackendSettings: (Backend.Settings) => Backend.Settings
-  )
+  ) {
+    def this(
+      name:                  String,
+      help:                  String,
+      convert:               (String) => A,
+      updateChiselOptions:   (A, Array[String]) => Array[String],
+      updateFirtoolOptions:  (A, Array[String]) => Array[String],
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings
+    ) = this(
+      name,
+      help,
+      convert,
+      updateChiselOptions,
+      updateFirtoolOptions,
+      updateCommonSettings,
+      updateBackendSettings,
+      identity,
+      identity,
+      identity,
+      identity
+    )
+
+    @deprecated("avoid use of copy", "Chisel 7.1.0")
+    def copy[A](
+      name:                  String = name,
+      help:                  String = help,
+      convert:               (String) => A = convert,
+      updateChiselOptions:   (A, Array[String]) => Array[String] = updateChiselOptions,
+      updateFirtoolOptions:  (A, Array[String]) => Array[String] = updateFirtoolOptions,
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings = updateCommonSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings = updateBackendSettings
+    ): CliOption[A] = CliOption[A](
+      name = name,
+      help = help,
+      convert = convert,
+      updateChiselOptions = updateChiselOptions,
+      updateFirtoolOptions = updateFirtoolOptions,
+      updateCommonSettings = updateCommonSettings,
+      updateBackendSettings = updateBackendSettings,
+      updateUnsetChiselOptions = updateUnsetChiselOptions,
+      updateUnsetFirtoolOptions = updateUnsetFirtoolOptions,
+      updateUnsetCommonSettings = updateUnsetCommonSettings,
+      updateUnsetBackendSettings = updateUnsetBackendSettings
+    )
+  }
 
   object CliOption {
 
-    @deprecated("Use newer CliOption case class apply", "Chisel 7.1.0")
+    @deprecated("use newer CliOption case class apply", "Chisel 7.1.0")
     def apply[A](
       name:                  String,
       help:                  String,
@@ -70,7 +115,7 @@ object HasCliOptions {
       )
     }
 
-    @deprecated("Use newer CliOption case class unapply", "Chisel 7.1.0")
+    @deprecated("avoid use of unapply", "Chisel 7.1.0")
     def unapply[A](cliOption: CliOption[A]): Option[
       (
         String,
@@ -186,7 +231,18 @@ object HasCliOptions {
       * @param name the name of the option
       * @param help help text to show to tell the user how to use this option
       */
-    def flag(name: String, help: String): CliOption[Unit] = simple[Unit](
+    def flag(
+      name:                       String,
+      help:                       String,
+      updateChiselOptions:        (Array[String]) => Array[String] = identity,
+      updateFirtoolOptions:       (Array[String]) => Array[String] = identity,
+      updateCommonSettings:       (CommonCompilationSettings) => CommonCompilationSettings = identity,
+      updateBackendSettings:      (Backend.Settings) => Backend.Settings = identity,
+      updateUnsetChiselOptions:   (Array[String]) => Array[String] = identity,
+      updateUnsetFirtoolOptions:  (Array[String]) => Array[String] = identity,
+      updateUnsetCommonSettings:  (CommonCompilationSettings) => CommonCompilationSettings = identity,
+      updateUnsetBackendSettings: (Backend.Settings) => Backend.Settings = identity
+    ): CliOption[Unit] = CliOption[Unit](
       name = name,
       help = help,
       convert = value => {
@@ -198,7 +254,15 @@ object HasCliOptions {
               s"""invalid argument '$value' for option '$name', must be one of ${trueValue.mkString("[", ", ", "]")}"""
             ) with NoStackTrace
         }
-      }
+      },
+      updateChiselOptions = (_, a) => updateChiselOptions(a),
+      updateFirtoolOptions = (_, a) => updateFirtoolOptions(a),
+      updateCommonSettings = (_, a) => updateCommonSettings(a),
+      updateBackendSettings = (_, a) => updateBackendSettings(a),
+      updateUnsetChiselOptions = updateUnsetChiselOptions,
+      updateUnsetFirtoolOptions = updateUnsetFirtoolOptions,
+      updateUnsetCommonSettings = updateUnsetCommonSettings,
+      updateUnsetBackendSettings = updateUnsetBackendSettings
     )
   }
 
