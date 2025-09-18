@@ -280,6 +280,15 @@ mixed-in to a user-defined layer, will add a child inline temporal layer.
 
 :::
 
+:::warn
+
+Users of the ChiselSim library will likely want to disable `Temporal` layers
+when running with backends that do not support temporal properties, e.g.,
+Verilator.  If using ChiselSim's `Cli.Simulator` API to support multiple
+backends, then the Verilator backend will automatically disable temporal layers.
+
+:::
+
 For predictability of output, these layers will always be show up in the FIRRTL
 that Chisel emits.  To change this behavior, use `firtool` command line options
 to _specialize_ these layers (remove their optionality by making them always
