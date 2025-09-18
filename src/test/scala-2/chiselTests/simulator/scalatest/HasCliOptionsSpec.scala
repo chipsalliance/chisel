@@ -41,7 +41,7 @@ class HasCliOptionsSpecVerilatorTemporalLayers extends AnyFlatSpec with ChiselSi
       layer.block(layers.Verification.Assert.Temporal) {
         AssertProperty(a.eventually)
       }
-      when (Counter(true.B, 2)._2) {
+      when(Counter(true.B, 2)._2) {
         stop()
       }
     }
