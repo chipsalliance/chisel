@@ -2,6 +2,7 @@
 
 package chisel3.simulator.scalatest
 
+import chisel3.layers.Verification.Assert.Temporal
 import chisel3.simulator.HasSimulator
 import chisel3.simulator.scalatest.HasCliOptions.CliOption
 import scala.util.control.NoStackTrace
@@ -10,6 +11,7 @@ import svsim.Backend.HarnessCompilationFlags.{
   enableVcdTracingSupport,
   enableVpdTracingSupport
 }
+import svsim.{CommonCompilationSettings, CommonSettingsModifications}
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 
 /** ChiselSim command line interface traits that can be added to Scalatest tests
@@ -36,7 +38,11 @@ object Cli {
         updateChiselOptions = (value, old) => old ++ value,
         updateFirtoolOptions = (_, a) => a,
         updateCommonSettings = (_, a) => a,
-        updateBackendSettings = (_, a) => a
+        updateBackendSettings = (_, a) => a,
+        updateUnsetChiselOptions = (a: Array[String]) => a,
+        updateUnsetFirtoolOptions = (a: Array[String]) => a,
+        updateUnsetCommonSettings = (a: CommonCompilationSettings) => a,
+        updateUnsetBackendSettings = (a: svsim.Backend.Settings) => a
       )
     )
 
@@ -58,12 +64,8 @@ object Cli {
       CliOption
         .flag(
           name = "emitFsdb",
-          help = "compile with FSDB waveform support and start dumping waves at time zero"
-        )
-        .copy[Unit](
-          updateChiselOptions = (_, a) => a,
-          updateFirtoolOptions = (_, a) => a,
-          updateCommonSettings = (_, options) => {
+          help = "compile with FSDB waveform support and start dumping waves at time zero",
+          updateCommonSettings = (options) => {
             options.copy(
               verilogPreprocessorDefines =
                 options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableFsdbTracingSupport),
@@ -72,7 +74,7 @@ object Cli {
               )
             )
           },
-          updateBackendSettings = (_, options) =>
+          updateBackendSettings = (options) =>
             options match {
               case options: svsim.vcs.Backend.CompilationSettings =>
                 options.copy(
@@ -108,11 +110,10 @@ object Cli {
 
     addOption(
       CliOption
-        .flag(name = "emitVcd", help = "compile with VCD waveform support and start dumping waves at time zero")
-        .copy[Unit](
-          updateChiselOptions = (_, a) => a,
-          updateFirtoolOptions = (_, a) => a,
-          updateCommonSettings = (_, options) => {
+        .flag(
+          name = "emitVcd",
+          help = "compile with VCD waveform support and start dumping waves at time zero",
+          updateCommonSettings = (options) => {
             options.copy(
               verilogPreprocessorDefines =
                 options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVcdTracingSupport),
@@ -121,7 +122,7 @@ object Cli {
               )
             )
           },
-          updateBackendSettings = (_, options) =>
+          updateBackendSettings = (options) =>
             options match {
               case options: svsim.vcs.Backend.CompilationSettings =>
                 options.copy(
@@ -160,12 +161,8 @@ object Cli {
       CliOption
         .flag(
           name = "emitVpd",
-          help = "compile with VPD waveform support and start dumping waves at time zero"
-        )
-        .copy[Unit](
-          updateChiselOptions = (_, a) => a,
-          updateFirtoolOptions = (_, a) => a,
-          updateCommonSettings = (_, options) => {
+          help = "compile with VPD waveform support and start dumping waves at time zero",
+          updateCommonSettings = (options) => {
             options.copy(
               verilogPreprocessorDefines =
                 options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableVpdTracingSupport),
@@ -174,7 +171,7 @@ object Cli {
               )
             )
           },
-          updateBackendSettings = (_, options) =>
+          updateBackendSettings = (options) =>
             options match {
               case options: svsim.vcs.Backend.CompilationSettings =>
                 options.copy(
@@ -207,7 +204,11 @@ object Cli {
         updateChiselOptions = (_, a) => a,
         updateFirtoolOptions = (value, old) => old ++ value,
         updateCommonSettings = (_, a) => a,
-        updateBackendSettings = (_, a) => a
+        updateBackendSettings = (_, a) => a,
+        updateUnsetChiselOptions = (a: Array[String]) => a,
+        updateUnsetFirtoolOptions = (a: Array[String]) => a,
+        updateUnsetCommonSettings = (a: CommonCompilationSettings) => a,
+        updateUnsetBackendSettings = (a: svsim.Backend.Settings) => a
       )
     )
 
@@ -291,7 +292,7 @@ object Cli {
     * If `Some` then the provided default will be used.  If `None`, then a
     * simulator must be provided.
     */
-    protected def defaultCliSimulator: Option[HasSimulator] = Some(HasSimulator.default)
+    protected def defaultCliSimulator: Option[HasSimulator] = Some(HasSimulator.simulators.verilator())
 
     implicit def cliSimulator: HasSimulator = configMap.getOptional[String]("simulator") match {
       case None =>
@@ -309,8 +310,16 @@ object Cli {
         )
     }
 
+    protected def disableTemporalLayers: CommonSettingsModifications = (in: CommonCompilationSettings) =>
+      in.copy(
+        verilogPreprocessorDefines = in.verilogPreprocessorDefines.filter {
+          case VerilogPreprocessorDefine(name, None) => !name.contains("$" + Temporal.name)
+          case _                                     => true
+        }
+      )
+
     addOption(
-      CliOption.simple[Unit](
+      CliOption[String](
         name = "simulator",
         help = "sets the simulator for the test",
         convert = simulator => {
@@ -321,7 +330,20 @@ object Cli {
               s"""illegal simulator '$simulator', must be one of $legalValues"""
             )
           }
-        }
+          simulator
+        },
+        updateChiselOptions = (_, a) => a,
+        updateFirtoolOptions = (_, a) => a,
+        updateCommonSettings = (simulator, a) =>
+          simulator match {
+            case "verilator" => disableTemporalLayers(a)
+            case _           => a
+          },
+        updateBackendSettings = (_, a) => a,
+        updateUnsetChiselOptions = (a: Array[String]) => a,
+        updateUnsetFirtoolOptions = (a: Array[String]) => a,
+        updateUnsetCommonSettings = disableTemporalLayers,
+        updateUnsetBackendSettings = (a: svsim.Backend.Settings) => a
       )
     )
 

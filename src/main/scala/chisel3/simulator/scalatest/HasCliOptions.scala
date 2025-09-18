@@ -30,16 +30,114 @@ object HasCliOptions {
     * be converted to.
     */
   case class CliOption[A](
-    name:                  String,
-    help:                  String,
-    convert:               (String) => A,
-    updateChiselOptions:   (A, Array[String]) => Array[String],
-    updateFirtoolOptions:  (A, Array[String]) => Array[String],
-    updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
-    updateBackendSettings: (A, Backend.Settings) => Backend.Settings
-  )
+    name:                       String,
+    help:                       String,
+    convert:                    (String) => A,
+    updateChiselOptions:        (A, Array[String]) => Array[String],
+    updateFirtoolOptions:       (A, Array[String]) => Array[String],
+    updateCommonSettings:       (A, CommonCompilationSettings) => CommonCompilationSettings,
+    updateBackendSettings:      (A, Backend.Settings) => Backend.Settings,
+    updateUnsetChiselOptions:   (Array[String]) => Array[String],
+    updateUnsetFirtoolOptions:  (Array[String]) => Array[String],
+    updateUnsetCommonSettings:  (CommonCompilationSettings) => CommonCompilationSettings,
+    updateUnsetBackendSettings: (Backend.Settings) => Backend.Settings
+  ) {
+    def this(
+      name:                  String,
+      help:                  String,
+      convert:               (String) => A,
+      updateChiselOptions:   (A, Array[String]) => Array[String],
+      updateFirtoolOptions:  (A, Array[String]) => Array[String],
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings
+    ) = this(
+      name,
+      help,
+      convert,
+      updateChiselOptions,
+      updateFirtoolOptions,
+      updateCommonSettings,
+      updateBackendSettings,
+      identity,
+      identity,
+      identity,
+      identity
+    )
+
+    @deprecated("avoid use of copy", "Chisel 7.1.0")
+    def copy[A](
+      name:                  String,
+      help:                  String,
+      convert:               (String) => A,
+      updateChiselOptions:   (A, Array[String]) => Array[String],
+      updateFirtoolOptions:  (A, Array[String]) => Array[String],
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings
+    ): CliOption[A] = CliOption[A](
+      name = name,
+      help = help,
+      convert = convert,
+      updateChiselOptions = updateChiselOptions,
+      updateFirtoolOptions = updateFirtoolOptions,
+      updateCommonSettings = updateCommonSettings,
+      updateBackendSettings = updateBackendSettings,
+      updateUnsetChiselOptions = updateUnsetChiselOptions,
+      updateUnsetFirtoolOptions = updateUnsetFirtoolOptions,
+      updateUnsetCommonSettings = updateUnsetCommonSettings,
+      updateUnsetBackendSettings = updateUnsetBackendSettings
+    )
+  }
 
   object CliOption {
+
+    @deprecated("use newer CliOption case class apply", "Chisel 7.1.0")
+    def apply[A](
+      name:                  String,
+      help:                  String,
+      convert:               (String) => A,
+      updateChiselOptions:   (A, Array[String]) => Array[String],
+      updateFirtoolOptions:  (A, Array[String]) => Array[String],
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings
+    ): CliOption[A] = {
+      apply(
+        name = name,
+        help = help,
+        convert = convert,
+        updateChiselOptions = updateChiselOptions,
+        updateFirtoolOptions = updateFirtoolOptions,
+        updateCommonSettings = updateCommonSettings,
+        updateBackendSettings = updateBackendSettings,
+        updateUnsetChiselOptions = identity,
+        updateUnsetFirtoolOptions = identity,
+        updateUnsetCommonSettings = identity,
+        updateUnsetBackendSettings = identity
+      )
+    }
+
+    @deprecated("avoid use of unapply", "Chisel 7.1.0")
+    def unapply[A](cliOption: CliOption[A]): Option[
+      (
+        String,
+        String,
+        (String) => A,
+        (A, Array[String]) => Array[String],
+        (A, Array[String]) => Array[String],
+        (A, CommonCompilationSettings) => CommonCompilationSettings,
+        (A, Backend.Settings) => Backend.Settings
+      )
+    ] =
+      Some(
+        (
+          cliOption.name,
+          cliOption.help,
+          cliOption.convert,
+          cliOption.updateChiselOptions,
+          cliOption.updateFirtoolOptions,
+          cliOption.updateCommonSettings,
+          cliOption.updateBackendSettings
+        )
+      )
 
     /** A simple command line option which does not affect common or backend settings.
       *
@@ -58,7 +156,11 @@ object HasCliOptions {
       updateChiselOptions = (_, a) => a,
       updateFirtoolOptions = (_, a) => a,
       updateCommonSettings = (_, a) => a,
-      updateBackendSettings = (_, a) => a
+      updateBackendSettings = (_, a) => a,
+      updateUnsetChiselOptions = identity,
+      updateUnsetFirtoolOptions = identity,
+      updateUnsetCommonSettings = identity,
+      updateUnsetBackendSettings = identity
     )
 
     /** Add a double option to a test.
@@ -129,7 +231,18 @@ object HasCliOptions {
       * @param name the name of the option
       * @param help help text to show to tell the user how to use this option
       */
-    def flag(name: String, help: String): CliOption[Unit] = simple[Unit](
+    def flag(
+      name:                       String,
+      help:                       String,
+      updateChiselOptions:        (Array[String]) => Array[String] = identity,
+      updateFirtoolOptions:       (Array[String]) => Array[String] = identity,
+      updateCommonSettings:       (CommonCompilationSettings) => CommonCompilationSettings = identity,
+      updateBackendSettings:      (Backend.Settings) => Backend.Settings = identity,
+      updateUnsetChiselOptions:   (Array[String]) => Array[String] = identity,
+      updateUnsetFirtoolOptions:  (Array[String]) => Array[String] = identity,
+      updateUnsetCommonSettings:  (CommonCompilationSettings) => CommonCompilationSettings = identity,
+      updateUnsetBackendSettings: (Backend.Settings) => Backend.Settings = identity
+    ): CliOption[Unit] = CliOption[Unit](
       name = name,
       help = help,
       convert = value => {
@@ -141,7 +254,15 @@ object HasCliOptions {
               s"""invalid argument '$value' for option '$name', must be one of ${trueValue.mkString("[", ", ", "]")}"""
             ) with NoStackTrace
         }
-      }
+      },
+      updateChiselOptions = (_, a) => updateChiselOptions(a),
+      updateFirtoolOptions = (_, a) => updateFirtoolOptions(a),
+      updateCommonSettings = (_, a) => updateCommonSettings(a),
+      updateBackendSettings = (_, a) => updateBackendSettings(a),
+      updateUnsetChiselOptions = updateUnsetChiselOptions,
+      updateUnsetFirtoolOptions = updateUnsetFirtoolOptions,
+      updateUnsetCommonSettings = updateUnsetCommonSettings,
+      updateUnsetBackendSettings = updateUnsetBackendSettings
     )
   }
 
@@ -205,7 +326,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     illegalOptionCheck()
     options.values.foldLeft(original) { case (acc, option) =>
       configMap.getOptional[String](option.name) match {
-        case None => acc
+        case None => option.updateUnsetChiselOptions.apply(acc)
         case Some(value) =>
           option.updateChiselOptions.apply(option.convert(value), acc)
       }
@@ -216,7 +337,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     illegalOptionCheck()
     options.values.foldLeft(original) { case (acc, option) =>
       configMap.getOptional[String](option.name) match {
-        case None => acc
+        case None => option.updateUnsetFirtoolOptions.apply(acc)
         case Some(value) =>
           option.updateFirtoolOptions.apply(option.convert(value), acc)
       }
@@ -228,7 +349,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
       illegalOptionCheck()
       options.values.foldLeft(original) { case (acc, option) =>
         configMap.getOptional[String](option.name) match {
-          case None => acc
+          case None => option.updateUnsetCommonSettings.apply(acc)
           case Some(value) =>
             option.updateCommonSettings.apply(option.convert(value), acc)
         }
@@ -239,7 +360,7 @@ trait HasCliOptions extends HasConfigMap { this: TestSuite =>
     illegalOptionCheck()
     options.values.foldLeft(original) { case (acc, option) =>
       configMap.getOptional[String](option.name) match {
-        case None => acc
+        case None => option.updateUnsetBackendSettings.apply(acc)
         case Some(value) =>
           option.updateBackendSettings.apply(option.convert(value), acc)
       }
