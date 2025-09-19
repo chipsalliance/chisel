@@ -91,6 +91,23 @@ jobs:
       - name: Test
         run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[].test -oF
 
+  mima:
+    name: binary compatibility checking
+    runs-on: ${{ inputs.system }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: ${{ inputs.jvm }}
+      - name: Check Binary Compatibility with MiMa
+        run: ./mill __.mimaReportBinaryIssues
+
   mill:
     name: compile project with mill
     runs-on: ubuntu-24.04
