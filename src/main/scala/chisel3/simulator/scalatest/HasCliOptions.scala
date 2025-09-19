@@ -29,7 +29,7 @@ object HasCliOptions {
     * @tparam the internal type of the option.  This is what the `<value>` will
     * be converted to.
     */
-  case class CliOption[A](
+  case class CliOption[A] private (
     name:                       String,
     help:                       String,
     convert:                    (String) => A,
@@ -66,13 +66,40 @@ object HasCliOptions {
 
     @deprecated("avoid use of copy", "Chisel 7.1.0")
     def copy[A](
-      name:                  String,
-      help:                  String,
-      convert:               (String) => A,
-      updateChiselOptions:   (A, Array[String]) => Array[String],
-      updateFirtoolOptions:  (A, Array[String]) => Array[String],
-      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings,
-      updateBackendSettings: (A, Backend.Settings) => Backend.Settings
+      name:                  String = name,
+      help:                  String = help,
+      convert:               (String) => A = convert,
+      updateChiselOptions:   (A, Array[String]) => Array[String] = updateChiselOptions,
+      updateFirtoolOptions:  (A, Array[String]) => Array[String] = updateFirtoolOptions,
+      updateCommonSettings:  (A, CommonCompilationSettings) => CommonCompilationSettings = updateCommonSettings,
+      updateBackendSettings: (A, Backend.Settings) => Backend.Settings = updateBackendSettings
+    ): CliOption[A] = CliOption[A](
+      name = name,
+      help = help,
+      convert = convert,
+      updateChiselOptions = updateChiselOptions,
+      updateFirtoolOptions = updateFirtoolOptions,
+      updateCommonSettings = updateCommonSettings,
+      updateBackendSettings = updateBackendSettings,
+      updateUnsetChiselOptions = updateUnsetChiselOptions,
+      updateUnsetFirtoolOptions = updateUnsetFirtoolOptions,
+      updateUnsetCommonSettings = updateUnsetCommonSettings,
+      updateUnsetBackendSettings = updateUnsetBackendSettings
+    )
+
+    // Suppress generation of private copy with default arguments by Scala 3
+    private def copy[A](
+      name:                       String,
+      help:                       String,
+      convert:                    (String) => A,
+      updateChiselOptions:        (A, Array[String]) => Array[String],
+      updateFirtoolOptions:       (A, Array[String]) => Array[String],
+      updateCommonSettings:       (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings:      (A, Backend.Settings) => Backend.Settings,
+      updateUnsetChiselOptions:   (Array[String]) => Array[String],
+      updateUnsetFirtoolOptions:  (Array[String]) => Array[String],
+      updateUnsetCommonSettings:  (CommonCompilationSettings) => CommonCompilationSettings,
+      updateUnsetBackendSettings: (Backend.Settings) => Backend.Settings
     ): CliOption[A] = CliOption[A](
       name = name,
       help = help,
@@ -89,6 +116,34 @@ object HasCliOptions {
   }
 
   object CliOption {
+
+    def apply[A](
+      name:                       String,
+      help:                       String,
+      convert:                    (String) => A,
+      updateChiselOptions:        (A, Array[String]) => Array[String],
+      updateFirtoolOptions:       (A, Array[String]) => Array[String],
+      updateCommonSettings:       (A, CommonCompilationSettings) => CommonCompilationSettings,
+      updateBackendSettings:      (A, Backend.Settings) => Backend.Settings,
+      updateUnsetChiselOptions:   (Array[String]) => Array[String],
+      updateUnsetFirtoolOptions:  (Array[String]) => Array[String],
+      updateUnsetCommonSettings:  (CommonCompilationSettings) => CommonCompilationSettings,
+      updateUnsetBackendSettings: (Backend.Settings) => Backend.Settings
+    ): CliOption[A] = {
+      new CliOption[A](
+        name = name,
+        help = help,
+        convert = convert,
+        updateChiselOptions = updateChiselOptions,
+        updateFirtoolOptions = updateFirtoolOptions,
+        updateCommonSettings = updateCommonSettings,
+        updateBackendSettings = updateBackendSettings,
+        updateUnsetChiselOptions = updateUnsetChiselOptions,
+        updateUnsetFirtoolOptions = updateUnsetFirtoolOptions,
+        updateUnsetCommonSettings = updateUnsetCommonSettings,
+        updateUnsetBackendSettings = updateUnsetBackendSettings
+      )
+    }
 
     @deprecated("use newer CliOption case class apply", "Chisel 7.1.0")
     def apply[A](
@@ -215,6 +270,35 @@ object HasCliOptions {
       help = help,
       convert = identity
     )
+
+    /** Add a flag option to a test.
+      *
+      * This is an option which can only take one of two "truthy" values: `1` or
+      * `true`.  Any "falsey" values are not allowed.  This option is a stand-in
+      * for any option which is supposed to be a flag to a test which has some
+      * effect if set.
+      *
+      * This option exists because Scalatest forces options to have a value.  It
+      * is illegal to pass an option like `-Dfoo`.  This [[flag]] option exists
+      * to problem a single flag-style option as opposed to having users roll
+      * their own.
+      *
+      * @param name the name of the option
+      * @param help help text to show to tell the user how to use this option
+      */
+    def flag(name: String, help: String): CliOption[Unit] =
+      flag(
+        name = name,
+        help = help,
+        updateChiselOptions = identity,
+        updateFirtoolOptions = identity,
+        updateCommonSettings = identity,
+        updateBackendSettings = identity,
+        updateUnsetChiselOptions = identity,
+        updateUnsetFirtoolOptions = identity,
+        updateUnsetCommonSettings = identity,
+        updateUnsetBackendSettings = identity
+      )
 
     /** Add a flag option to a test.
       *
