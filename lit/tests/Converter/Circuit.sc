@@ -4,13 +4,12 @@
 import chisel3._
 import chisel3.util.circt.IsX
 
-
 // FIRRTL-LABEL: circuit FooModule :
 // FIRRTL-NEXT: extmodule FooBlackbox :
 // FIRRTL-NEXT: output o : UInt<1>
 // FIRRTL-NEXT: defname = FooBlackbox
 class FooBlackbox extends BlackBox {
-  val io = IO(new Bundle{
+  val io = IO(new Bundle {
     val o = Output(Bool())
   })
 }
