@@ -75,7 +75,7 @@ jobs:
         run: |
           VERSION=${{ needs.determine_version.outputs.version }}
           VERSION_NO_V=${VERSION#v}
-          echo $VERSION_NO_V >> project/previous-versions.txt
+          echo $VERSION_NO_V >> etc/previous-versions.txt
       - name: Open PR
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
