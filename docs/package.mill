@@ -76,7 +76,7 @@ object `package` extends SbtModule with HasScalaPlugin with HasCommonOptions {
     }
     val lookedUpVersions = needsVersionLookup.map(v => v -> lookupFirtoolVersion(v, Task.log))
     val allVersions = knownVersions ++ lookedUpVersions
-    allVersions.sortBy(_._1)
+    allVersions.sortBy(_._1).reverse
   }
 
   def latestStableVersion = Task {
