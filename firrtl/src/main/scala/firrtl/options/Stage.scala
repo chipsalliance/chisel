@@ -2,7 +2,8 @@
 
 package firrtl.options
 
-import firrtl.{seqToAnnoSeq, AnnotationSeq}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
+import firrtl.annotations.Annotation
 
 import logger.Logger
 
@@ -31,7 +32,17 @@ abstract class Stage extends Phase {
     * @return output annotations
     * @throws firrtl.options.OptionsException if command line or annotation validation fails
     */
+  @deprecated("Use the form that taks Seq[Annotation]", "Chisel 7.1.0")
   final def transform(annotations: AnnotationSeq): AnnotationSeq = {
+    seqToAnnoSeq(transform(annotations.toSeq))
+  }
+
+  /** Execute this stage on some input annotations. Annotations will be read from any input annotation files.
+    * @param annotations input annotations
+    * @return output annotations
+    * @throws firrtl.options.OptionsException if command line or annotation validation fails
+    */
+  final def transform(annotations: Seq[Annotation]): Seq[Annotation] = {
     val annotationsx =
       Seq(new phases.GetIncludes)
         .foldLeft(annotations)((a, p) => p.transform(a))
@@ -53,9 +64,18 @@ abstract class Stage extends Phase {
     * @return output annotations
     * @throws firrtl.options.OptionsException if command line or annotation validation fails
     */
+  @deprecated("Use the form that taks Seq[Annotation]", "Chisel 7.1.0")
   final def execute(args: Array[String], annotations: AnnotationSeq): AnnotationSeq =
-    transform(shell.parse(args, annotations))
+    seqToAnnoSeq(execute(args, annotations.toSeq))
 
+  /** Run this stage on on a mix of arguments and annotations
+    * @param args command line arguments
+    * @param initialAnnotations annotation
+    * @return output annotations
+    * @throws firrtl.options.OptionsException if command line or annotation validation fails
+    */
+  final def execute(args: Array[String], annotations: Seq[Annotation]): Seq[Annotation] =
+    transform(shell.parse(args, annotations))
 }
 
 /** Provides a main method for a [[Stage]]
