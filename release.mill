@@ -45,7 +45,7 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
   override def artifactName = "chisel"
 
   override def mimaPreviousVersions = Task.Input {
-    os.read(BuildCtx.workspaceRoot / "etc" / "previous-versions.txt").split("\n").toSeq
+    os.read.lines(BuildCtx.workspaceRoot / "etc" / "previous-versions.txt")
   }
 
   /** Publish both this project and the plugin (for the default Scala version) */
