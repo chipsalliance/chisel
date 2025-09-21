@@ -7,6 +7,7 @@ import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
 import mill.util.Jvm.createJar
+import com.github.lolgab.mill.mima.Mima
 
 //import de.tobiasroeser.mill.vcs.version.VcsVersion
 
@@ -33,7 +34,7 @@ trait ChiselPublishModule extends SonatypeCentralPublishModule {
 
 /** Aggregate project for publishing Chisel as a single artifact
   */
-trait Unipublish extends ScalaModule with ChiselPublishModule {
+trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
 
   def scalaVersion = v.scalaVersion
 
@@ -42,6 +43,10 @@ trait Unipublish extends ScalaModule with ChiselPublishModule {
 
   // This is published as chisel
   override def artifactName = "chisel"
+
+  override def mimaPreviousVersions = Task.Input {
+    os.read.lines(BuildCtx.workspaceRoot / "etc" / "previous-versions.txt")
+  }
 
   /** Publish both this project and the plugin (for the default Scala version) */
   override def publishLocal(
