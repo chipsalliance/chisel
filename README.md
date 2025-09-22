@@ -46,8 +46,6 @@ Chisel is [permissively licensed](LICENSE) (Apache 2.0) under the guidance of [C
 ![CI](https://github.com/chipsalliance/chisel/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/chipsalliance/chisel.svg?include_prereleases&sort=semver)](https://github.com/chipsalliance/chisel/releases/latest)
 [![Scala version support](https://index.scala-lang.org/chipsalliance/chisel/chisel/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/chipsalliance/chisel/chisel)
-[![Scala version support (chisel3)](https://index.scala-lang.org/chipsalliance/chisel/chisel3/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/chipsalliance/chisel/chisel3)
-[![Sonatype Snapshots](https://img.shields.io/nexus/s/org.chipsalliance/chisel_2.13?server=https%3A%2F%2Fs01.oss.sonatype.org)](https://s01.oss.sonatype.org/content/repositories/snapshots/org/chipsalliance/chisel_2.13)
 
 ## What does Chisel code look like?
 
@@ -227,8 +225,8 @@ If you insist on setting up your own project from scratch, your project needs to
 For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
-scalaVersion := "2.13.12"
-val chiselVersion = "6.0.0"
+scalaVersion := "2.13.16"
+val chiselVersion = "7.1.0"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
