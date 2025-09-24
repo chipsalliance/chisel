@@ -89,7 +89,7 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[].test -oF
+        run: ./mill firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[].test -oF
 
   mima:
     name: binary compatibility checking
@@ -195,7 +195,7 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: ./mill -j0 integration-tests.cross[].test -oF
+        run: ./mill integration-tests.cross[].test -oF
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
