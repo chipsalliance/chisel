@@ -50,7 +50,7 @@ case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo 
   }
 }
 
-object SourceInfo extends SourceInfo$Intf {
+object SourceInfo extends SourceInfoIntf {
 
   /** Returns the best guess at the first stack frame that belongs to user code.
     */

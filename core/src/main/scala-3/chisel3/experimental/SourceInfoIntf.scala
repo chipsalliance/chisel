@@ -14,6 +14,8 @@
 
 package chisel3.experimental
 
-private[chisel3] trait SourceInfo$Intf { self: SourceInfo.type =>
+// Technically this should be called "SourceInfo$Intf" but that causes issues for IntelliJ so we
+// omit the '$'.
+private[chisel3] trait SourceInfoIntf { self: SourceInfo.type =>
   implicit def materialize: SourceInfo = UnlocatableSourceInfo
 }
