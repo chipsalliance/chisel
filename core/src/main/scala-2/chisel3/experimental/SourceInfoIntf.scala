@@ -18,8 +18,11 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import chisel3.internal.sourceinfo.SourceInfoMacro
 
+// Kept for binary compatibility, probably could be waived instead but just in case.
+private[chisel3] trait SourceInfo$Intf
+
 // Technically this should be called "SourceInfo$Intf" but that causes issues for IntelliJ so we
 // omit the '$'.
-private[chisel3] trait SourceInfoIntf { self: SourceInfo.type =>
+private[chisel3] trait SourceInfoIntf extends SourceInfo$Intf { self: SourceInfo.type =>
   implicit def materialize: SourceInfo = macro SourceInfoMacro.generate_source_info
 }
