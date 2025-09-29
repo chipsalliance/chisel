@@ -118,6 +118,13 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
     implicit sourceInfo: SourceInfo
   ): Bool = isOneOf(u1 +: u2.toSeq)
 
+  /** Creates circuitry that outputs True iff the Enum is equal to one of the values that has `s` in its name
+    *
+    * @param s the substring to search for in the Enum value's name
+    */
+  def contains(s: String)(implicit sourceInfo: SourceInfo): Bool =
+    isOneOf(factory.allWithNames.filter(m => m._2 contains s).map(m => m._1))
+
   def next(implicit sourceInfo: SourceInfo): this.type = {
     if (litOption.isDefined) {
       val index = factory.all.indexOf(this)
