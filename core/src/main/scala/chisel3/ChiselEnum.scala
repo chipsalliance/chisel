@@ -245,6 +245,9 @@ abstract class ChiselEnum extends ChiselEnumIntf {
   /** All Enum values with their names */
   def allWithNames: Seq[(Type, String)] = all.zip(allNames)
 
+  /** All Enum values with their names, printed one per line. Compatible with gtkwave filter file */
+  override def toString(): String = allWithNames.map(e => s"${e._1.litValue} ${e._2}").mkString("", "\n", "\n")
+
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)
   }
