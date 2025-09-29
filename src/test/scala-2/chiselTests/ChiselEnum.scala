@@ -68,6 +68,16 @@ class CastFromLit(in: UInt) extends Module {
   io.valid := io.out.isValid
 }
 
+class CastFromStringLit(in: String) extends Module {
+  val io = IO(new Bundle {
+    val out = Output(EnumExample())
+    val valid = Output(Bool())
+  })
+
+  io.out := EnumExample(in)
+  io.valid := io.out.isValid
+}
+
 class CastFromNonLit extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(EnumExample.getWidth.W))
@@ -204,6 +214,11 @@ class CastFromLitTester extends Module {
     assert(mod.io.out === enumVal)
     assert(mod.io.valid === true.B)
   }
+  for ((enumVal, enumName) <- EnumExample.allWithNames) {
+    val mod = Module(new CastFromStringLit(enumName))
+    assert(mod.io.out === enumVal)
+    assert(mod.io.valid === true.B)
+  }
   stop()
 }
 
@@ -252,6 +267,10 @@ class SafeCastFromNonLitTester extends Module {
 class CastToInvalidEnumTester extends Module {
   val invalid_value: UInt = EnumExample.litValues.last + 1.U
   Module(new CastFromLit(invalid_value))
+}
+
+class CastStringToInvalidEnumTester extends Module {
+  Module(new CastFromStringLit("nonExistingEnumValue"))
 }
 
 class EnumOpsTester extends Module {
@@ -375,6 +394,22 @@ class IsOneOfTester extends Module {
   assert(!e0.isOneOf(e1))
   assert(!e2.isOneOf(e101))
 
+  // contains-a-string method
+  assert(e100 contains "10")
+  assert(e101 contains "10")
+  assert(!(e0 contains "e1"))
+  assert(!(e0 contains "noMatchAnywhere"))
+
+  // every enum value contains the empty string
+  assert(EnumExample.all.map(_ contains "").reduce(_ && _))
+  // every enum value contains its own full name
+  assert(EnumExample.allWithNames.map(m => m._1 contains m._2).reduce(_ && _))
+
+  // check enum value specified as string
+  assert(OtherEnum.otherEnum == OtherEnum("otherEnum"))
+  assert(OtherEnum.otherEnum === OtherEnum("otherEnum"))
+  assert(EnumExample.allWithNames.map(m => EnumExample(m._2) === m._1).reduce(_ && _))
+
   stop()
 }
 
@@ -467,7 +502,7 @@ class ChiselEnumSpec extends AnyFlatSpec with Matchers with LogUtils with Chisel
     verilog should include("assign out3 = 8'h81;")
   }
 
-  it should "cast literal UInts to enums correctly" in {
+  it should "cast literal UInts and Strings to enums correctly" in {
     simulate(new CastFromLitTester)(RunUntilFinished(3))
   }
 
@@ -482,6 +517,9 @@ class ChiselEnumSpec extends AnyFlatSpec with Matchers with LogUtils with Chisel
   it should "prevent illegal literal casts to enums" in {
     intercept[ChiselException] {
       ChiselStage.emitCHIRRTL(new CastToInvalidEnumTester)
+    }
+    intercept[ChiselException] {
+      ChiselStage.emitCHIRRTL(new CastStringToInvalidEnumTester)
     }
   }
 
