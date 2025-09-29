@@ -229,9 +229,14 @@ abstract class ChiselEnum extends ChiselEnumIntf {
 
   def getWidth: Int = width.get
 
+  /** All Enum values */
   def all: Seq[Type] = enumInstances
-  /* Accessor for Seq of names in enumRecords */
+
+  /** All Enum names */
   def allNames: Seq[String] = enumNames
+
+  /** All Enum values with their names */
+  def allWithNames: Seq[(Type, String)] = all.zip(allNames)
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)
