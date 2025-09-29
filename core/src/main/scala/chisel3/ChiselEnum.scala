@@ -282,6 +282,11 @@ abstract class ChiselEnum extends ChiselEnumIntf {
 
   def apply(): Type = new Type
 
+  /** Return the Enum value of which the name exactly matches the specified String. If @name does not match a valid Enum, fail */
+  def apply(name: String): Type =
+    allWithNames.collectFirst { case (enumValue, enumName) if enumName == name => enumValue }
+      .getOrElse(throwException(s"Enum value $name is not defined"))
+
   private def castImpl(
     n:    UInt,
     warn: Boolean
