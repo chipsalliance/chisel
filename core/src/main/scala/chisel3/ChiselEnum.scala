@@ -102,7 +102,10 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
   final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo): Bool = {
-    VecInit(s.map(this === _)).asUInt.orR
+    s.length match {
+      case 0 => false.B
+      case _ => VecInit(s.map(this === _)).asUInt.orR
+    }
   }
 
   /** Test if this enumeration is equal to any of the values given as arguments
