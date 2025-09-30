@@ -41,3 +41,28 @@ object Log2 {
 
   private def divideAndConquerThreshold = 4
 }
+
+/** Create a carry save adder built from full adders. If more then 3 input terms, construct a Wallace tree.
+ *
+ *  The function returns 2 output terms, which are still to be added by a carry-propagate adder.
+ *  Future improvement idea: add support for negative weights at arbitrary bit positions; required to support subtraction.
+ *  Function can return two UInt hardware terms together with a signed constant offset, computed at elaboration-time.
+ */
+
+object Csa {
+
+  /** Create a carry save adder built from full adders. If more then 3 input terms, construct a Wallace tree.
+   *  The function returns 2 output terms (unless called with less than 2 inputs, then it returns 1).
+   *  The outputs are still to be added by a carry-propagate adder.
+   */
+  def apply(x: Seq[UInt]): Seq[UInt] = {
+    x.length match {
+      case 0 => Seq(0.U(0.W))
+      case 1 => x
+      case 2 => x
+      case 3 => Seq(x(0) ^ x(1) ^ x(2), (x(0) & x(1) | x(0) & x(2) | x(1) & x(2)) << 1) // sum, carry
+      case _ =>
+        Csa(x.grouped(3).map(xyz => Csa(xyz)).reduce(_ ++ _)) // every group of 3 reduces to 2. Result to next level
+    }
+  }
+}
