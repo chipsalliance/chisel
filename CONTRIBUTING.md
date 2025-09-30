@@ -74,7 +74,7 @@ Most testing can be done on just the Chisel build unit:
 ```
 
 The `[]` exists because we are cross-compiling between Scala 2.13 and Scala 3.
-You can pick a specific version, e.g. `./mill chisel[2.13.16]`.
+You can pick a specific version, e.g. `./mill chisel[2.13.17]`.
 Using `[]` will pick the first version in the list of supported versions which one can think about as the "default" version.
 
 You can test everything with:

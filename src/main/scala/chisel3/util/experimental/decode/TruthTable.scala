@@ -5,6 +5,7 @@ package chisel3.util.experimental.decode
 import chisel3.util.BitPat
 import chisel3.internal.groupByIntoSeq
 
+import scala.annotation.nowarn
 import scala.util.hashing.MurmurHash3
 
 sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: BitPat) {
@@ -29,6 +30,10 @@ sealed class TruthTable private (val table: Seq[(BitPat, BitPat)], val default: 
     }
   }
 
+  // MurmurHash3.productHash is deprecated in case you hash a case class that could be extended.
+  // We are hashing a Tuple2 so that is no problem here. We cannot change this to caseClassHash
+  // until we can bump to a Scala 3 release that also includes the new caseClassHash.
+  @nowarn("msg=method productHash in object MurmurHash3 is deprecated")
   override lazy val hashCode: Int = MurmurHash3.productHash((table, default))
 }
 

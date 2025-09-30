@@ -117,7 +117,7 @@ current highest supported versions are:
 | 3.6.1  | 2.13.14 | 22
 | 5.3.x  | 2.13.14 | 22
 | 6.6.x  | 2.13.16 | 23
-| 7.0.0-RC1 | 2.13.16 | 23
+| 7.1.x  | 2.13.16 | 23
 
 Note that `brew` on Mac currently installs Java 23, which is not supported by Scala 2.13.14 and lower.
 
