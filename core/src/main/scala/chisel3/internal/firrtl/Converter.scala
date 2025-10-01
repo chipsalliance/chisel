@@ -397,6 +397,7 @@ private[chisel3] object Converter {
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true, typeAliases)
     }
     case t: Property[_] => t.getPropertyType
+    case t: domain.Type => fir.DomainType(t.domain.name)
   }
 
   def convert(name: String, param: Param): fir.Param = param match {

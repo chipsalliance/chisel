@@ -484,6 +484,7 @@ object Serializer {
     case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
     case AnyRefPropertyType        => b ++= "AnyRef"
     case AliasType(name)           => b ++= name
+    case DomainType(domain)        => b ++= "Domain of "; b ++= (domain);
     case UnknownType               => b += '?'
     case other                     => b ++= other.serialize // Handle user-defined nodes
   }
