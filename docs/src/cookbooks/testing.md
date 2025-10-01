@@ -33,7 +33,7 @@ class FooSpec extends FunSpec with ChiselSim {
 If using Scalatest and ChiselSim, pass the `-DemitVcd=1` argument to Scalatest, e.g.:
 
 ``` shell
-./mill 'chisel[2.13.16].test.testOnly' chiselTests.ShiftRegistersSpec -- -DemitVcd=1
+./mill 'chisel[2.13.17].test.testOnly' chiselTests.ShiftRegistersSpec -- -DemitVcd=1
 ```
 
 ## How do I see what options a ChiselSim Scalatest test supports?
@@ -41,5 +41,5 @@ If using Scalatest and ChiselSim, pass the `-DemitVcd=1` argument to Scalatest, 
 Pass `-Dhelp=1` to Scalatest, e.g.:
 
 ``` shell
-./mill 'chisel[2.13.16].test.testOnly' chiselTests.ShiftRegistersSpec -- -Dhelp=1
+./mill 'chisel[2.13.17].test.testOnly' chiselTests.ShiftRegistersSpec -- -Dhelp=1
 ```
