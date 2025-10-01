@@ -579,6 +579,16 @@ class ChiselEnumSpec extends AnyFlatSpec with Matchers with LogUtils with Chisel
     s"$EnumExample" should be("EnumExample(e0=0, e1=1, e2=2, e100=100, e101=101)")
   }
 
+  it should "dump enum mappings as machine-readable table, usable by gtkwave as plaintext filter" in {
+    EnumExample.asTable should be("""# EnumExample
+                                    |0 e0
+                                    |1 e1
+                                    |2 e2
+                                    |100 e100
+                                    |101 e101
+                                    |""".stripMargin)
+  }
+
   "ChiselEnum FSM" should "work" in {
     simulate(new ChiselEnumFSMTester)(RunUntilFinished(11))
   }

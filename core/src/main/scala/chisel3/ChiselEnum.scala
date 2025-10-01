@@ -255,6 +255,13 @@ abstract class ChiselEnum extends ChiselEnumIntf {
     getClass.getSimpleName.init +
       allWithNames.map(e => s"${e._2}=${e._1.litValue}").mkString("(", ", ", ")")
 
+  /** Return all Enum (value, name) combinations in a string, one per line.
+   *  Intended for parsing by external tools, e.g. sim environment, or as gtkwave text filter
+   */
+  def asTable: String =
+    "# " + getClass.getSimpleName.init + "\n" + // comment line, ignored by gtkwave
+      allWithNames.map(e => s"${e._1.litValue} ${e._2}").mkString("", "\n", "\n")
+
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)
   }
