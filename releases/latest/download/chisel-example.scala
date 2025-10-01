@@ -1,5 +1,5 @@
 //> using repository https://central.sonatype.com/repository/maven-snapshots
-//> using scala 2.13.16
+//> using scala 2.13.17
 //> using dep org.chipsalliance::chisel:7.1.1
 //> using plugin org.chipsalliance:::chisel-plugin:7.1.1
 //> using options -unchecked -deprecation -language:reflectiveCalls -feature -Xcheckinit
