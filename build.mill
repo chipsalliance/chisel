@@ -108,7 +108,10 @@ object v extends Module {
     "cat=deprecation&msg=Use of @instantiable on user-defined types is deprecated:s",
     // FirtoolResolver uses package shading which causes issues with metadata for inlining.
     // We don't want to inline from it anyway so just suppress the warning.
-    "msg=reading InlineInfoAttribute from firtoolresolver:s"
+    "msg=reading InlineInfoAttribute from firtoolresolver:s",
+    // Scala 2.13.17 adds warning for inferred structural types but this is not
+    // a problem because in Scala 3 we use Selectable.
+    "msg=will no longer have a structural type:s"
   )
 
   // ScalacOptions
