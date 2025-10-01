@@ -248,8 +248,12 @@ abstract class ChiselEnum extends ChiselEnumIntf {
   /** All Enum values with their names */
   def allWithNames: Seq[(Type, String)] = all.zip(allNames)
 
-  /** All Enum values with their names, printed one per line. Compatible with gtkwave filter file */
-  override def toString(): String = allWithNames.map(e => s"${e._1.litValue} ${e._2}").mkString("", "\n", "\n")
+  /** Print Enum type name, followed by with all Enum values with their names to a string like this:
+   *  `Opcodes(add=0, sub=1, mul=2, div=3)`
+   */
+  override def toString: String =
+    getClass.getSimpleName.init +
+      allWithNames.map(e => s"${e._2}=${e._1.litValue}").mkString("(", ", ", ")")
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)

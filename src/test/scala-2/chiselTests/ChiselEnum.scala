@@ -575,6 +575,10 @@ class ChiselEnumSpec extends AnyFlatSpec with Matchers with LogUtils with Chisel
     "object UnnamedEnum extends ChiselEnum { Value }" shouldNot compile
   }
 
+  it should "dump enum name=value pairs as string" in {
+    s"$EnumExample" should be("EnumExample(e0=0, e1=1, e2=2, e100=100, e101=101)")
+  }
+
   "ChiselEnum FSM" should "work" in {
     simulate(new ChiselEnumFSMTester)(RunUntilFinished(11))
   }
