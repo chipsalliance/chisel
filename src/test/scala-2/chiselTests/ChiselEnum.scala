@@ -394,16 +394,16 @@ class IsOneOfTester extends Module {
   assert(!e0.isOneOf(e1))
   assert(!e2.isOneOf(e101))
 
-  // contains-a-string method
-  assert(e100 contains "10")
-  assert(e101 contains "10")
-  assert(!(e0 contains "e1"))
-  assert(!(e0 contains "noMatchAnywhere"))
+  // enum-name-contains-a-string method
+  assert(e100 nameContains "10")
+  assert(e101 nameContains "10")
+  assert(!(e0 nameContains "e1"))
+  assert(!(e0 nameContains "noMatchAnywhere"))
 
   // every enum value contains the empty string
-  assert(EnumExample.all.map(_ contains "").reduce(_ && _))
+  assert(EnumExample.all.map(_ nameContains "").reduce(_ && _))
   // every enum value contains its own full name
-  assert(EnumExample.allWithNames.map(m => m._1 contains m._2).reduce(_ && _))
+  assert(EnumExample.allWithNames.map(m => m._1 nameContains m._2).reduce(_ && _))
 
   // check enum value specified as string
   assert(OtherEnum.otherEnum == OtherEnum("otherEnum"))

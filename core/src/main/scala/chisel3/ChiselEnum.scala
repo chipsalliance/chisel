@@ -125,7 +125,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
     *
     * @param s the substring to search for in the Enum value's name
     */
-  def contains(s: String)(implicit sourceInfo: SourceInfo): Bool =
+  def nameContains(s: String)(implicit sourceInfo: SourceInfo): Bool =
     isOneOf(factory.allWithNames.filter(m => m._2 contains s).map(m => m._1))
 
   def next(implicit sourceInfo: SourceInfo): this.type = {
