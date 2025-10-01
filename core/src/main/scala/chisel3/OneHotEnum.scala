@@ -4,18 +4,12 @@ package chisel3
 
 import chisel3.experimental.SourceInfo
 
-import scala.language.experimental.macros
-
-abstract class OneHotEnum extends ChiselEnum {
+abstract class OneHotEnum extends ChiselEnum with OneHotEnumIntf {
   private var next1Pos = 0
 
   // copied from chisel3.util
   private def isPow2(in:   BigInt): Boolean = in > 0 && ((in & (in - 1)) == 0)
   private def log2Ceil(in: BigInt): Int = (in - 1).bitLength
-
-  override def Value: Type = macro OneHotEnumMacros.ValImpl
-
-  override def Value(id: UInt): Type = macro OneHotEnumMacros.ValCustomImpl
 
   override def _valIs(v: Type, lit: Type)(implicit sourceInfo: SourceInfo): Bool = {
     require(lit.isLit, "Can only compare against literal values")

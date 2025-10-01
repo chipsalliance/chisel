@@ -3,6 +3,12 @@
 package chisel3
 
 import scala.reflect.macros.blackbox.Context
+import scala.language.experimental.macros
+
+private[chisel3] trait OneHotEnumIntf extends ChiselEnumIntf { self: OneHotEnum =>
+  override def Value:           Type = macro OneHotEnumMacros.ValImpl
+  override def Value(id: UInt): Type = macro OneHotEnumMacros.ValCustomImpl
+}
 
 private[chisel3] object OneHotEnumMacros {
   def ValImpl(c: Context): c.Tree = {
