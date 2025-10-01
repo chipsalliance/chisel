@@ -349,9 +349,6 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
   object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
     def mvnDeps = Seq(v.scalatest, v.scalacheck)
 
-    // TODO: enable sandbox and run tests in parallel
-    override def testSandboxWorkingDir = false
-
     // Suppress Scala 3 behavior requiring explicit types on implicit definitions
     // Note this must come before the -Wconf is warningSuppression
     override def scalacOptions = Task { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
