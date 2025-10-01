@@ -508,6 +508,9 @@ case class DefOption(info: Info, name: String, cases: Seq[DefOptionCase])
 case class DefOptionCase(info: Info, name: String)
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class Domain(info: Info, name: String)
+
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IntrinsicExpr(intrinsic: String, args: Seq[Expression], params: Seq[Param], tpe: Type)
     extends Expression
     with UseSerializer
@@ -708,6 +711,9 @@ case class ClassPropertyType(name: String) extends PropertyType
 case object AnyRefPropertyType extends PropertyType
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class DomainType(domain: String) extends Type with UseSerializer
+
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object UnknownType extends Type with UseSerializer
 
 /** [[Port]] Direction */
@@ -724,7 +730,7 @@ case object Output extends Direction {
 
 /** [[DefModule]] Port */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
-case class Port(info: Info, name: String, direction: Direction, tpe: Type)
+case class Port(info: Info, name: String, direction: Direction, tpe: Type, associations: Seq[String])
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer
@@ -833,7 +839,8 @@ case class Circuit(
   main:        String,
   typeAliases: Seq[DefTypeAlias] = Seq.empty,
   layers:      Seq[Layer] = Seq.empty,
-  options:     Seq[DefOption] = Seq.empty
+  options:     Seq[DefOption] = Seq.empty,
+  domains:     Seq[Domain] = Seq.empty
 ) extends FirrtlNode
     with HasInfo
     with UseSerializer

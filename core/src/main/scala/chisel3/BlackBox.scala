@@ -126,8 +126,8 @@ package experimental {
       // Ports are named in the same way as regular Modules
       namePorts()
 
-      val firrtlPorts = getModulePorts.map { case port =>
-        Port(port, port.specifiedDirection, UnlocatableSourceInfo)
+      val firrtlPorts = getModulePortsAndLocators.map { case (port, _, associations) =>
+        Port(port, port.specifiedDirection, associations, UnlocatableSourceInfo)
       }
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params, getKnownLayers)
       _component = Some(component)
@@ -217,9 +217,14 @@ abstract class BlackBox(
       port.setRef(ModuleIO(this, _namespace.name(name)), force = true)
     }
 
+    // Note: BlackBoxes, because they have a single `io` cannot currently
+    // support associations because associations require having multiple ports.
+    // If this restriction is lifted, then this code should be updated.
+    require(getAssociations.isEmpty, "BlackBoxes cannot support associations at this time, use an ExtModule")
     val firrtlPorts = namedPorts.map { namedPort =>
-      Port(namedPort._2, namedPort._2.specifiedDirection, UnlocatableSourceInfo)
+      Port(namedPort._2, namedPort._2.specifiedDirection, Seq.empty, UnlocatableSourceInfo)
     }
+
     val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params, getKnownLayers)
     _component = Some(component)
     _component
