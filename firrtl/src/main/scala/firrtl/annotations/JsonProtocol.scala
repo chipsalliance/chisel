@@ -25,12 +25,23 @@ trait HasSerializationHints {
   def typeHints: Seq[Class[_]]
 }
 
+/** Similar to [[HasSerializationHints]] but for types whose serialization classes
+  * need to be overridden
+  */
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+trait HasSerializationOverrides {
+  // For serialization of complicated constructor arguments, let the annotation
+  // writer specify additional type hints for relevant classes that might be
+  // contained within
+  def typeOverrides: Seq[(Class[_], String)]
+}
+
 /** Mix this in to override what class name is used for serialization
   *
   * Note that this breaks automatic deserialization.
   */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
-trait OverrideSerializationClass { self: Annotation =>
+trait OverrideSerializationClass {
   def serializationClassOverride: String
 }
 
@@ -193,6 +204,18 @@ object JsonProtocol extends LazyLogging {
       anno match {
         case anno: HasSerializationHints =>
           anno.typeHints.foreach(addTag(_))
+        case _ => ()
+      }
+      anno match {
+        case anno: HasSerializationOverrides =>
+          anno.typeOverrides.foreach { case (clazz, name) =>
+            val existing = tagOverride.put(clazz, name)
+            if (existing.isDefined && existing.get != name) {
+              throw new Exception(
+                s"Class $clazz has multiple serialization class overrides: ${existing.get}, $name"
+              )
+            }
+          }
         case _ => ()
       }
       anno match {
