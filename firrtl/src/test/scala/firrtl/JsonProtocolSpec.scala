@@ -36,6 +36,17 @@ object JsonProtocolTestClasses {
   case class AnnotationWithOverride(value: String) extends NoTargetAnnotation with OverrideSerializationClass {
     def serializationClassOverride = value
   }
+
+  // Test case for OverrideSerializationClass on nested types
+  case class NestedTypeWithOverride(name: String) extends OverrideSerializationClass {
+    def serializationClassOverride = "custom.nested.type"
+  }
+
+  case class AnnotationWithNestedOverride(nested: NestedTypeWithOverride)
+      extends NoTargetAnnotation
+      with HasSerializationOverrides {
+    def typeOverrides = Seq(nested.getClass -> nested.serializationClassOverride)
+  }
 }
 
 import JsonProtocolTestClasses._
@@ -138,5 +149,15 @@ class JsonProtocolSpec extends AnyFlatSpec with Matchers {
     val annos = AnnotationWithOverride("foo") :: AnnotationWithOverride("bar") :: Nil
     val e = the[Exception] thrownBy JsonProtocol.serialize(annos)
     e.getMessage should include("multiple serialization class overrides: foo, bar")
+  }
+
+  it should "work on nested types inside annotations with HasSerializationOverrides" in {
+    val nested = NestedTypeWithOverride("test")
+    val anno = AnnotationWithNestedOverride(nested)
+    val res = JsonProtocol.serialize(Seq(anno))
+    // Verify that the nested type uses the overridden class name
+    res should include(""""class":"custom.nested.type"""")
+    // Also verify that the annotation itself uses its normal class name
+    res should include(""""class":"firrtlTests.JsonProtocolTestClasses$AnnotationWithNestedOverride"""")
   }
 }
