@@ -92,47 +92,11 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
     if (litOption.isDefined) {
       true.B
     } else {
-      if (factory.isTotal) true.B else factory.all.map(this === _).reduce(_ || _)
+      if (factory.isTotal) true.B else factory._isValid(this)
     }
   }
 
-  /** Test if this enumeration is equal to any of the values in a given sequence
-    *
-    * @param s a [[scala.collection.Seq$ Seq]] of enumeration values to look for
-    * @return a hardware [[Bool]] that indicates if this value matches any of the given values
-    */
-  final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo): Bool = {
-    VecInit(s.map(this === _)).asUInt.orR
-  }
-
-  /** Test if this enumeration is equal to any of the values given as arguments
-    *
-    * @param u1 the first value to look for
-    * @param u2 zero or more additional values to look for
-    * @return a hardware [[Bool]] that indicates if this value matches any of the given values
-    */
-  final def isOneOf(
-    u1: EnumType,
-    u2: EnumType*
-  )(
-    implicit sourceInfo: SourceInfo
-  ): Bool = isOneOf(u1 +: u2.toSeq)
-
-  def next(implicit sourceInfo: SourceInfo): this.type = {
-    if (litOption.isDefined) {
-      val index = factory.all.indexOf(this)
-
-      if (index < factory.all.length - 1) {
-        factory.all(index + 1).asInstanceOf[this.type]
-      } else {
-        factory.all.head.asInstanceOf[this.type]
-      }
-    } else {
-      val enums_with_nexts = factory.all.zip(factory.all.tail :+ factory.all.head)
-      val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e, n) => (this === e, n) })
-      next_enum.asInstanceOf[this.type]
-    }
-  }
+  def next(implicit sourceInfo: SourceInfo): this.type = factory._next(this)
 
   private[chisel3] def bindToLiteral(num: BigInt, w: Width): Unit = {
     val lit = ULit(num, w)
@@ -203,7 +167,59 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
 }
 
 abstract class ChiselEnum extends ChiselEnumIntf {
-  class Type extends EnumType(this)
+  private[chisel3] protected def _valIs(v: Type, lit: Type)(implicit sourceInfo: SourceInfo): Bool = {
+    v === lit
+  }
+
+  private[chisel3] protected def _valIsOneOf(v: Type, s: Seq[Type])(implicit sourceInfo: SourceInfo): Bool =
+    VecInit(s.map(_valIs(v, _))).asUInt.orR
+
+  private[chisel3] protected def _isValid(v: EnumType)(implicit sourceInfo: SourceInfo): Bool = {
+    assert(v.isInstanceOf[Type])
+    all.map(v === _).reduce(_ || _)
+  }
+
+  private[chisel3] protected def _next(v: EnumType)(implicit sourceInfo: SourceInfo): v.type = {
+    assert(v.isInstanceOf[Type])
+
+    if (v.litOption.isDefined) {
+      val index = v.factory.all.indexOf(v)
+
+      if (index < v.factory.all.length - 1) {
+        v.factory.all(index + 1).asInstanceOf[v.type]
+      } else {
+        v.factory.all.head.asInstanceOf[v.type]
+      }
+    } else {
+      val enums_with_nexts = v.factory.all.zip(v.factory.all.tail :+ v.factory.all.head)
+      val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e, n) => (v === e, n) })
+      next_enum.asInstanceOf[v.type]
+    }
+  }
+
+  class Type extends EnumType(this) {
+
+    /** Test if this enumeration is equal to any of the values in a given sequence
+      *
+      * @param s a [[scala.collection.Seq$ Seq]] of enumeration values to look for
+      * @return a hardware [[Bool]] that indicates if this value matches any of the given values
+      */
+    final def isOneOf(s: Seq[Type])(implicit sourceInfo: SourceInfo): Bool = _valIsOneOf(this, s)
+
+    /** Test if this enumeration is equal to any of the values given as arguments
+      *
+      * @param u1 the first value to look for
+      * @param u2 zero or more additional values to look for
+      * @return a hardware [[Bool]] that indicates if this value matches any of the given values
+      */
+    final def isOneOf(
+      u1: Type,
+      u2: Type*
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Bool = isOneOf(u1 +: u2.toSeq)
+  }
+
   object Type {
     def apply(): Type = ChiselEnum.this.apply()
   }

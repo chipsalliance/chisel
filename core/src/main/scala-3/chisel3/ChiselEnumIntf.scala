@@ -17,3 +17,7 @@ private[chisel3] trait EnumTypeIntf { self: EnumType =>
 private[chisel3] trait ChiselEnumIntf { self: ChiselEnum =>
   // TODO macros
 }
+
+private[chisel3] trait OneHotEnumIntf extends ChiselEnumIntf { self: OneHotEnum =>
+  // TODO macros
+}
