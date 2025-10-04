@@ -101,128 +101,110 @@ final class Backend(executablePath: String) extends svsim.Backend {
     import Backend.CompilationSettings._
     import CommonCompilationSettings._
     //format: off
+
+    val args = mutable.ArrayBuffer.empty[String]
+    def addArg(xs: Iterable[String]): Unit = args ++= xs
+    def addArgParts(flag: String, parts: Iterable[String]): Unit = {
+      val v = parts.iterator.mkString(" ")
+      if (v.nonEmpty) addArg(Seq(flag, v))
+    }
+
+    // Base verilator invocation
+    addArg(Seq(
+      "--cc",
+      "--exe",
+      "--build",
+      "-j", "0",
+      "-o", s"../$outputBinaryName",
+      "--top-module", topModuleName,
+      "--Mdir", "verilated-sources",
+      "--assert"
+    ))
+
+    commonSettings.libraryExtensions.foreach { extensions =>
+      addArg(Seq((Seq("+libext") ++ extensions).mkString("+")))
+    }
+
+    commonSettings.libraryPaths.foreach { paths =>
+      paths.foreach(p => addArg(Seq("-y", p)))
+    }
+
+    commonSettings.includeDirs.foreach { dirs =>
+      addArg(dirs.map(dir => s"+incdir+$dir"))
+    }
+
+    commonSettings.defaultTimescale.foreach { value =>
+      addArg(Seq("--timescale", value.toString))
+    }
+
+    backendSpecificSettings.traceStyle.foreach { ts => addArg(ts.toCompileFlags) }
+
+    backendSpecificSettings.timing match {
+      case Some(Timing.TimingEnabled)  => addArg(Seq("--timing"))
+      case Some(Timing.TimingDisabled) => addArg(Seq("--no-timing"))
+      case None                        =>
+    }
+
+    if (backendSpecificSettings.disableFatalExitOnWarnings) addArg(Seq("-Wno-fatal"))
+    if (backendSpecificSettings.enableAllAssertions) addArg(Seq("--assert"))
+    addArg(backendSpecificSettings.disabledWarnings.map("-Wno-" + _))
+
+    commonSettings.optimizationStyle match {
+      case OptimizationStyle.Default =>
+      case OptimizationStyle.OptimizeForCompilationSpeed => addArg(Seq("-O1"))
+      case OptimizationStyle.OptimizeForSimulationSpeed => addArg(Seq("-O3", "--x-assign", "fast", "--x-initial", "fast"))
+    }
+
+    backendSpecificSettings.outputSplit.foreach      { n => addArg(Seq("--output-split", n.toString)) }
+    backendSpecificSettings.outputSplitCFuncs.foreach{ n => addArg(Seq("--output-split-cfuncs", n.toString)) }
+
+    val makeflagsParts: Seq[String] = commonSettings.availableParallelism match {
+      case AvailableParallelism.Default       => Seq()
+      case AvailableParallelism.UpTo(value)   => Seq("-j", value.toString)
+    }
+    addArgParts("-MAKEFLAGS", makeflagsParts)
+
+    val cflagsParts: Seq[String] = {
+      val opt = commonSettings.optimizationStyle match {
+        case OptimizationStyle.Default => Seq()
+        case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
+        case OptimizationStyle.OptimizeForSimulationSpeed   => Seq("-O3", "-march=native", "-mtune=native")
+      }
+      val std = Seq("-std=c++17")
+      val inc = additionalHeaderPaths.map(path => s"-I$path")
+      val defs = Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}") ++ (
+        backendSpecificSettings.traceStyle match {
+          case Some(_) => Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorTrace}")
+          case None    => Seq()
+        }
+      )
+      opt ++ std ++ inc ++ defs
+    }
+    addArgParts("-CFLAGS", cflagsParts)
+
+    val defineFlags: Seq[String] = {
+      val base = commonSettings.verilogPreprocessorDefines
+      val traceExtra = backendSpecificSettings.traceStyle match {
+        case None => Seq()
+        case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Vcd, _, _, _, _, _, _)) =>
+          Seq(VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport))
+        case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Fst(_), _, _, _, _, _, _)) =>
+          Seq(VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport))
+      }
+      (base ++ traceExtra).map(_.toCommandlineArgument(this))
+    }
+    addArg(defineFlags)
+
     svsim.Backend.Parameters(
       compilerPath = executablePath,
       compilerInvocation = svsim.Backend.Parameters.Invocation(
-        arguments = Seq[Seq[String]](
-          Seq(
-            "--cc", // "Create C++ output"
-            "--exe", // "Link to create executable"
-            "--build", // "Build model executable/library after Verilation"
-            "-j", "0", // Parallelism for --build-jobs/--verilate-jobs, when 0 uses all available cores
-            "-o", s"../$outputBinaryName", // "Name of final executable"
-            "--top-module", topModuleName, // "Name of top-level input module"
-            "--Mdir", "verilated-sources",  // "Name of output object directory"
-            "--assert", // Enable assertions
-          ),
-
-          commonSettings.libraryExtensions match {
-            case None => Seq()
-            case Some(extensions) => Seq((Seq("+libext") ++ extensions).mkString("+"))
-          },
-
-          commonSettings.libraryPaths match {
-            case None => Seq()
-            case Some(paths) => paths.flatMap(Seq("-y", _))
-          },
-
-          commonSettings.includeDirs match {
-            case None => Seq()
-            case Some(dirs) => dirs.map(dir => s"+incdir+$dir")
-          },
-
-          commonSettings.defaultTimescale match {
-            case Some(value) => Seq("--timescale", value.toString)
-            case None => Seq()
-          },
-
-          backendSpecificSettings.traceStyle match {
-            case Some(traceStyle) => traceStyle.toCompileFlags
-            case None => Seq()
-          },
-
-          backendSpecificSettings.timing match {
-            case Some(Timing.TimingEnabled)   => Seq("--timing")
-            case Some(Timing.TimingDisabled)  => Seq("--no-timing")
-            case None                         => Seq()
-          },
-
-          Seq(
-            ("-Wno-fatal", backendSpecificSettings.disableFatalExitOnWarnings),
-            ("--assert", backendSpecificSettings.enableAllAssertions),
-          ).collect {
-            case (flag, true) => flag
-          },
-
-          backendSpecificSettings.disabledWarnings.map("-Wno-" + _),
-
-          commonSettings.optimizationStyle match {
-            case OptimizationStyle.Default => Seq()
-            case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
-            case OptimizationStyle.OptimizeForSimulationSpeed =>
-              Seq("-O3", "--x-assign", "fast", "--x-initial", "fast")
-          },
-
-          Seq[(String, Option[String])](
-            ("--output-split", backendSpecificSettings.outputSplit.map(_.toString())), // "Split .cpp files into pieces"
-            ("--output-split-cfuncs", backendSpecificSettings.outputSplitCFuncs.map(_.toString())), // "Split model functions"
-          ).collect {
-            /// Only include flags that have a value
-            case (flag, Some(value)) => Seq(flag, value)
-          }.flatten,
-
-          Seq(
-            ("-MAKEFLAGS", Seq(
-              commonSettings.availableParallelism match {
-                case AvailableParallelism.Default => Seq()
-                case AvailableParallelism.UpTo(value) => Seq("-j", value.toString())
-              },
-            ).flatten),
-            ("-CFLAGS", Seq(
-              commonSettings.optimizationStyle match {
-                case OptimizationStyle.Default => Seq()
-                case OptimizationStyle.OptimizeForCompilationSpeed => Seq("-O1")
-                case OptimizationStyle.OptimizeForSimulationSpeed =>
-                  Seq("-O3", "-march=native", "-mtune=native")
-              },
-
-              Seq("-std=c++17"),
-
-              additionalHeaderPaths.map { path => s"-I${path}" },
-
-              Seq(
-                // Use verilator support
-                s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}",
-              ),
-
-              backendSpecificSettings.traceStyle match {
-                case Some(_) => Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorTrace}")
-                case None => Seq()
-              },
-            ).flatten)
-          ).collect {
-            /// Only include flags that have one or more values
-            case (flag, value) if !value.isEmpty => {
-              Seq(flag, value.mkString(" "))
-            }
-          }.flatten,
-
-          Seq(
-            commonSettings.verilogPreprocessorDefines,
-            backendSpecificSettings.traceStyle match {
-              case None => Seq()
-              case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Vcd, _, _, _, _, _, _) ) => Seq(
-                VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport)
-              )
-              case Some(Backend.CompilationSettings.TraceStyle(Backend.CompilationSettings.TraceKind.Fst(_), _, _, _, _, _, _)) => Seq(
-                VerilogPreprocessorDefine(svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport)
-              )
-            },
-          ).flatten.map(_.toCommandlineArgument(this)),
-        ).flatten,
+        arguments = args.toSeq,
         environment = Seq()
       ),
-      simulationInvocation = svsim.Backend.Parameters.Invocation(commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags), Seq())
+      simulationInvocation = svsim.Backend.Parameters.Invocation(
+        commonSettings.simulationSettings.plusArgs.map(_.simulatorFlags),
+        Seq()
+      )
     )
     //format: on
   }
