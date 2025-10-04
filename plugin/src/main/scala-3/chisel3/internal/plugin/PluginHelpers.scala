@@ -84,7 +84,12 @@ object ChiselTypeHelpers {
     t.baseClasses.contains(dataTpe)
   }
 
-  def isBoxedData(tpe: Type)(using Context): Boolean = {
+  def isIgnoreSeq(t: Type)(using Context): Boolean = {
+    val ignoreSeqTpe = getClassIfDefined("chisel3.IgnoreSeqInBundle")
+    t.baseClasses.contains(ignoreSeqTpe)
+  }
+
+  def isBoxedData(tpe: Type, ignoreSeq: Boolean = false)(using Context): Boolean = {
     val optionClass = getClassIfDefined("scala.Option")
     val iterableClass = getClassIfDefined("scala.collection.Iterable")
 
@@ -100,7 +105,7 @@ object ChiselTypeHelpers {
 
               (isOption, isIterable, isData(arg)) match {
                 case (true, false, true)  => true // Option
-                case (false, true, true)  => true // Iterable with Data
+                case (false, true, true)  => !ignoreSeq // Iterable with Data
                 case (false, true, false) => rec(arg) // Possibly nested iterable
                 case _                    => false
               }
@@ -111,7 +116,7 @@ object ChiselTypeHelpers {
           }
 
         case tr: TypeRef =>
-          // Follow abstract type aliases like trait Seq[A] by looking at its info
+          // Follow abstract type aliases like trait Seq[A] by looking at their info
           tr.info match {
             case TypeBounds(lo, hi) if lo != hi =>
               // Try upper bound if available
