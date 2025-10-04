@@ -481,6 +481,11 @@ private[chisel3] object ir {
     chiselLayer: layer.Layer
   )
 
+  final case class Domain(
+    sourceInfo: SourceInfo,
+    name:       String
+  )
+
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
     val region = new Block(sourceInfo)
   }
@@ -606,7 +611,8 @@ private[chisel3] object ir {
     renames:     RenameMap,
     typeAliases: Seq[DefTypeAlias],
     layers:      Seq[Layer],
-    options:     Seq[DefOption]
+    options:     Seq[DefOption],
+    domains:     Seq[Domain]
   ) {
     def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_().flatMap(_.update(renames)))
   }
