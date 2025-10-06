@@ -8,7 +8,7 @@ import _root_.circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-object Enum extends ChiselEnum {
+object EnumExample extends ChiselEnum {
   val VAL1, VAL2, VAL3 = Value
 }
 
@@ -124,8 +124,8 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert to BitPat from ChiselEnum" in {
-    val b = BitPat(Enum.VAL1)
-    val c = BitPat(Enum.VAL3)
+    val b = BitPat(EnumExample.VAL1)
+    val c = BitPat(EnumExample.VAL3)
     b should be(BitPat("b00"))
     c should be(BitPat("b10"))
   }
