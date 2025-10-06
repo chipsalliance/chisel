@@ -16,6 +16,7 @@ import dotty.tools.dotc.core.Types.*
 import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.core.Decorators.toTermName
 import dotty.tools.dotc.core.Definitions
+import dotty.tools.dotc.transform.PickleQuotes
 
 import scala.collection.mutable
 
@@ -132,11 +133,13 @@ object BundleHelpers {
   def getBundleFields(record: tpd.TypeDef)(using Context): List[tpd.Tree] = {
     val bundleSym = record.symbol.asClass
     val recordTpe = requiredClass("chisel3.Record")
+    val isIgnoreSeq = ChiselTypeHelpers.isIgnoreSeq(record.tpe)
+
     def isBundleDataField(m: Symbol): Boolean = {
       m.isPublic
       && (
         ChiselTypeHelpers.isData(m.info)
-          || ChiselTypeHelpers.isBoxedData(m.info)
+          || ChiselTypeHelpers.isBoxedData(m.info, isIgnoreSeq)
       )
     }
 
@@ -176,7 +179,7 @@ object BundleHelpers {
 
 class ChiselBundlePhase extends PluginPhase {
   val phaseName: String = "chiselBundlePhase"
-  override val runsAfter = Set(TyperPhase.name)
+  override val runsAfter = Set(PickleQuotes.name)
 
   override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
     if (
