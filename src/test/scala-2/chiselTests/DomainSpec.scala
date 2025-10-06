@@ -27,6 +27,10 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       """|CHECK:      circuit Foo :
          |CHECK:        domain ClockDomain :
          |CHECK-NEXT:   domain UserDefined :
+         |
+         |CHECK:        public module Foo :
+         |CHECK-NEXT:     input a : Domain of ClockDomain
+         |CHECK-NEXT:     input b : Domain of UserDefined
          |""".stripMargin
     }
 
