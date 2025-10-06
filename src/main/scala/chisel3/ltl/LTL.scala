@@ -5,7 +5,6 @@ package chisel3.ltl
 import chisel3._
 import chisel3.layer.{block, Layer}
 import chisel3.util.circt._
-import chisel3.experimental.hierarchy.Instance
 import chisel3.experimental.SourceInfo
 
 /** An opaque sequence returned by an intrinsic.
