@@ -6,7 +6,8 @@ import chisel3.experimental.{BaseModule, SourceInfo}
 
 trait VerifPrintMacrosDoc
 
-val emptySourceLine: VerifStmtMacrosCompat.SourceLineInfo = ("???", 0)
+private val emptySourceLine: VerifStmtMacrosCompat.SourceLineInfo =
+  ("[Source line unavailable: see https://github.com/chipsalliance/chisel/issues/5049]", 0)
 
 private[chisel3] trait Assert$Intf extends VerifPrintMacrosDoc { self: assert.type =>
 
