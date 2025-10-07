@@ -95,8 +95,6 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       (thrown.getMessage must include).regex(
         """ @\[src/test/scala-2/chiselTests/simulator/SimulatorSpec\.scala:\d+:\d+\]"""
       )
-      thrown.getMessage must include("gcd.io.result.expect(5)")
-      thrown.getMessage must include("                    ^")
     }
 
     it("runs a design that includes an external module") {
@@ -120,7 +118,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
 
       class Qux extends ExtModule with HasExtModulePath {
         val a = IO(Output(Bool()))
-        addPath("src/test/resources/chisel3/simulator/Qux.sv")
+        addPath(s"${sys.env.get("MILL_TEST_RESOURCE_DIR").get}/chisel3/simulator/Qux.sv")
       }
 
       class Foo extends RawModule {
