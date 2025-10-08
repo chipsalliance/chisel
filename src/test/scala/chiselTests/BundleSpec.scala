@@ -196,7 +196,7 @@ class BundleSpec extends AnyFlatSpec with Matchers with ChiselSim {
       ChiselStage.emitCHIRRTL(new Example, Array("--throw-on-first-error"))
     }
     val msg = x.getMessage
-    msg should include regex "Called litValue on aggregate MyBundle*"
+    (msg should include).regex("Called litValue on aggregate MyBundle*")
     msg should include(
       "(a=UInt<8>(8), b=Bool(true), c=UInt<4>(DontCare)) contains DontCare"
     )
