@@ -22,7 +22,7 @@ object Backend {
       }
 
       /** FST tracing
-        * 
+        *
         * @param traceThreads Enable FST waveform creation using `traceThreads` separate threads
         */
       case class Fst(traceThreads: Option[Int] = None) extends Type {
@@ -66,6 +66,30 @@ object Backend {
       case object TimingEnabled extends Type
       case object TimingDisabled extends Type
     }
+
+    /** Control job parallelism in verilator */
+    object Parallelism {
+      sealed trait Type {
+        def toCompileFlags: Seq[String]
+      }
+
+      /** Apply uniform parallelism to Verilation.  This maps to `-j`. */
+      case class Uniform(num: Int) extends Type {
+        override def toCompileFlags = Seq("-j", num.toString)
+      }
+
+      /** Apply non-uniform parallelism to Verilation.  This allows control of
+        * `--build-jobs` and `--verilate-jobs` separately.
+        */
+      case class Different(build: Option[Int] = None, verilate: Option[Int] = None) extends Type {
+        override def toCompileFlags: Seq[String] = {
+          val buildJobs:    Seq[String] = build.map(num => Seq("--build-jobs", num.toString)).toSeq.flatten
+          val verilateJobs: Seq[String] = verilate.map(num => Seq("--verilate-jobs", num.toString)).toSeq.flatten
+          buildJobs ++ verilateJobs
+        }
+      }
+    }
+
   }
 
   case class CompilationSettings(
@@ -75,7 +99,8 @@ object Backend {
     disabledWarnings:           Seq[String] = Seq(),
     disableFatalExitOnWarnings: Boolean = false,
     enableAllAssertions:        Boolean = false,
-    timing:                     Option[CompilationSettings.Timing.Type] = None
+    timing:                     Option[CompilationSettings.Timing.Type] = None,
+    parallelism: Option[CompilationSettings.Parallelism.Type] = Some(CompilationSettings.Parallelism.Uniform(0))
   ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
@@ -114,12 +139,16 @@ final class Backend(executablePath: String) extends svsim.Backend {
       "--cc",
       "--exe",
       "--build",
-      "-j", "0",
       "-o", s"../$outputBinaryName",
       "--top-module", topModuleName,
       "--Mdir", "verilated-sources",
       "--assert"
     ))
+
+    backendSpecificSettings.parallelism match {
+      case Some(parallelism) => addArg(parallelism.toCompileFlags)
+      case None =>
+    }
 
     commonSettings.libraryExtensions.foreach { extensions =>
       addArg(Seq((Seq("+libext") ++ extensions).mkString("+")))
