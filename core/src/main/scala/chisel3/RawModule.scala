@@ -91,7 +91,7 @@ abstract class RawModule extends BaseModule {
   private var _firrtlPorts: Option[Seq[Port]] = None
 
   private[chisel3] def checkPorts(): Unit = {
-    for ((port, source) <- getModulePortsAndLocators) {
+    for ((port, source, _) <- getModulePortsAndLocators) {
       if (port._computeName(None).isEmpty) {
         Builder.error(
           s"Unable to name port $port in $this, " +
@@ -175,8 +175,8 @@ abstract class RawModule extends BaseModule {
       nameId(id)
     }
 
-    val firrtlPorts = getModulePortsAndLocators.map { case (port, sourceInfo) =>
-      Port(port, port.specifiedDirection, sourceInfo)
+    val firrtlPorts = getModulePortsAndLocators.map { case (port, sourceInfo, associations) =>
+      Port(port, port.specifiedDirection, associations, sourceInfo)
     }
     _firrtlPorts = Some(firrtlPorts)
 

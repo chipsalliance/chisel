@@ -562,6 +562,14 @@ private[chisel3] object Serializer {
     b ++= legalize(getRef(port.id, port.sourceInfo).name)
     b ++= " : "
     val tpe = serializeType(port.id, clearDir, port.sourceInfo, true, true, typeAliases)
+    if (port.associations.nonEmpty) {
+      b ++= " domains ["
+      port.associations.zipWithIndex.foreach { case (assoc, i) =>
+        if (i > 0) b ++= ", "
+        b ++= legalize(getRef(assoc, UnlocatableSourceInfo).name)
+      }
+      b ++= "]"
+    }
     serialize(port.sourceInfo)
   }
 

@@ -730,7 +730,7 @@ case object Output extends Direction {
 
 /** [[DefModule]] Port */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
-case class Port(info: Info, name: String, direction: Direction, tpe: Type)
+case class Port(info: Info, name: String, direction: Direction, tpe: Type, associations: Seq[String])
     extends FirrtlNode
     with IsDeclaration
     with UseSerializer

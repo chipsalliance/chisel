@@ -19,18 +19,28 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     object UserDefined extends Domain
 
     class Foo extends RawModule {
-      val a = IO(Input(domain.Type(ClockDomain)))
-      val b = IO(Input(domain.Type(UserDefined)))
+      val A = IO(Input(domain.Type(ClockDomain)))
+      val B = IO(Input(domain.Type(UserDefined)))
+      val a = IO(Input(Bool()))
+      val b = IO(Input(Bool()))
+
+      associate(a, A)
+      associate(b, B)
     }
 
-    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+    val chirrtl = ChiselStage.emitCHIRRTL(new Foo, args = Array("--full-stacktrace"))
+    println(chirrtl)
+
+    chirrtl.fileCheck() {
       """|CHECK:      circuit Foo :
          |CHECK:        domain ClockDomain :
          |CHECK-NEXT:   domain UserDefined :
          |
          |CHECK:        public module Foo :
-         |CHECK-NEXT:     input a : Domain of ClockDomain
-         |CHECK-NEXT:     input b : Domain of UserDefined
+         |CHECK-NEXT:     input A : Domain of ClockDomain
+         |CHECK-NEXT:     input B : Domain of UserDefined
+         |CHECK-NEXT:     input a : UInt<1> domains [A]
+         |CHECK-NEXT:     input b : UInt<1> domains [B]
          |""".stripMargin
     }
 

@@ -496,8 +496,14 @@ object Serializer {
   }
 
   private def s(node: Port)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case Port(info, name, direction, tpe) =>
-      s(direction); b += ' '; b ++= legalize(name); b ++= " : "; s(tpe); s(info)
+    case Port(info, name, direction, tpe, associations) =>
+      s(direction); b += ' '; b ++= legalize(name);
+      if (associations.nonEmpty) {
+        b ++= " domains [";
+        associations.foreach(a => b ++= a)
+        b++= "]"
+      }
+      b ++= " : "; s(tpe); s(info)
   }
 
   private def s(node: Param)(implicit b: StringBuilder, indent: Int): Unit = node match {
