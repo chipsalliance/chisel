@@ -20,7 +20,7 @@ class AdderTreeTester(bitWidth: Int, numsToAdd: List[Int]) extends Module {
   val dut = Module(new AdderTree(genType, numsToAdd.size))
   dut.io.numIn := VecInit(numsToAdd.map(x => x.asUInt(bitWidth.W)))
   val sumCorrect = dut.io.numOut === (numsToAdd.reduce(_ + _) % (1 << bitWidth)).asUInt(bitWidth.W)
-  assert(sumCorrect)
+  chisel3.assert(sumCorrect)
   stop()
 }
 
