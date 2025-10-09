@@ -135,7 +135,7 @@ object Backend {
 
   }
 
-  case class CompilationSettings(
+  case class CompilationSettings (
     traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
@@ -183,6 +183,28 @@ object Backend {
       timing = timing,
       parallelism = this.parallelism
     )
+
+    // Suppress generation of private copy with default arguments by Scala 3
+    private def copy(
+      traceStyle:                 Option[CompilationSettings.TraceStyle],
+      outputSplit:                Option[Int],
+      outputSplitCFuncs:          Option[Int],
+      disabledWarnings:           Seq[String],
+      disableFatalExitOnWarnings: Boolean,
+      enableAllAssertions:        Boolean,
+      timing:                     Option[CompilationSettings.Timing.Type],
+      parallelism: Option[CompilationSettings.Parallelism.Type]
+    ): CompilationSettings = CompilationSettings(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = Some(CompilationSettings.Parallelism.Uniform(0))
+    )
+
 
     def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = CompilationSettings(
       traceStyle,
