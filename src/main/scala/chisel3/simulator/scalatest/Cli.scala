@@ -129,8 +129,8 @@ object Cli {
                   traceSettings = options.traceSettings.copy(enableVcd = true)
                 )
               case options: svsim.verilator.Backend.CompilationSettings =>
-                options.copy(
-                  traceStyle = options.traceStyle match {
+                options.withTraceStyle(
+                  options.traceStyle match {
                     case None =>
                       Some(
                         svsim.verilator.Backend.CompilationSettings

@@ -90,6 +90,49 @@ object Backend {
       }
     }
 
+    @deprecated("use newer CompilationSettings case class apply", "Chisel 7.1.0")
+    def apply(
+      traceStyle:                 Option[CompilationSettings.TraceStyle],
+      outputSplit:                Option[Int],
+      outputSplitCFuncs:          Option[Int],
+      disabledWarnings:           Seq[String],
+      disableFatalExitOnWarnings: Boolean,
+      enableAllAssertions:        Boolean,
+      timing:                     Option[CompilationSettings.Timing.Type]
+    ): CompilationSettings = CompilationSettings(
+      traceStyle,
+      outputSplit,
+      outputSplitCFuncs,
+      disabledWarnings,
+      disableFatalExitOnWarnings,
+      enableAllAssertions,
+      timing,
+      Some(CompilationSettings.Parallelism.Uniform(0))
+    )
+
+    @deprecated("avoid use of unapply", "Chisel 7.1.0")
+    def unapply(compilationSettings: CompilationSettings): Option[
+      (
+        Option[CompilationSettings.TraceStyle],
+        Option[Int],
+        Option[Int],
+        Seq[String],
+        Boolean,
+        Boolean,
+        Option[CompilationSettings.Timing.Type]
+      )
+    ] = Some(
+      (
+        compilationSettings.traceStyle,
+        compilationSettings.outputSplit,
+        compilationSettings.outputSplitCFuncs,
+        compilationSettings.disabledWarnings,
+        compilationSettings.disableFatalExitOnWarnings,
+        compilationSettings.enableAllAssertions,
+        compilationSettings.timing
+      )
+    )
+
   }
 
   case class CompilationSettings(
@@ -101,7 +144,134 @@ object Backend {
     enableAllAssertions:        Boolean = false,
     timing:                     Option[CompilationSettings.Timing.Type] = None,
     parallelism: Option[CompilationSettings.Parallelism.Type] = Some(CompilationSettings.Parallelism.Uniform(0))
-  ) extends svsim.Backend.Settings
+  ) extends svsim.Backend.Settings {
+    def this(
+      traceStyle:                 Option[CompilationSettings.TraceStyle],
+      outputSplit:                Option[Int],
+      outputSplitCFuncs:          Option[Int],
+      disabledWarnings:           Seq[String],
+      disableFatalExitOnWarnings: Boolean,
+      enableAllAssertions:        Boolean,
+      timing:                     Option[CompilationSettings.Timing.Type]
+    ) = this(
+      traceStyle,
+      outputSplit,
+      outputSplitCFuncs,
+      disabledWarnings,
+      disableFatalExitOnWarnings,
+      enableAllAssertions,
+      timing,
+      Some(CompilationSettings.Parallelism.Uniform(0))
+    )
+
+    @deprecated("don't use the copy method, use 'with<name>' single setters", "Chisel 7.1.0")
+    def copy(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
+      outputSplit:                Option[Int] = this.outputSplit,
+      outputSplitCFuncs:          Option[Int] = this.outputSplitCFuncs,
+      disabledWarnings:           Seq[String] = this.disabledWarnings,
+      disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
+      enableAllAssertions:        Boolean = this.enableAllAssertions,
+      timing:                     Option[CompilationSettings.Timing.Type] = this.timing
+    ): CompilationSettings = CompilationSettings(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = this.parallelism
+    )
+
+    def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = CompilationSettings(
+      traceStyle,
+      this.outputSplit,
+      this.outputSplitCFuncs,
+      this.disabledWarnings,
+      this.disableFatalExitOnWarnings,
+      this.enableAllAssertions,
+      this.timing,
+      this.parallelism
+    )
+
+    def withOutputSplit(outputSplit: Option[Int]) = CompilationSettings(
+      this.traceStyle,
+      this.outputSplit,
+      outputSplitCFuncs,
+      this.disabledWarnings,
+      this.disableFatalExitOnWarnings,
+      this.enableAllAssertions,
+      this.timing,
+      this.parallelism
+    )
+
+    def withOutputSplitCFuncs(outputSplitCFuncs: Option[Int]) = CompilationSettings(
+      this.traceStyle,
+      this.outputSplit,
+      outputSplitCFuncs,
+      this.disabledWarnings,
+      this.disableFatalExitOnWarnings,
+      this.enableAllAssertions,
+      this.timing,
+      this.parallelism
+    )
+
+    def withDisabledWarnings(disabledWarnings: Seq[String]) = CompilationSettings(
+      this.traceStyle,
+      this.outputSplit,
+      this.outputSplitCFuncs,
+      disabledWarnings,
+      this.disableFatalExitOnWarnings,
+      this.enableAllAssertions,
+      this.timing,
+      this.parallelism
+    )
+
+    def withDisableFatalExitOnWarnings(disableFatalExitOnWarnings: Boolean) = CompilationSettings(
+      this.traceStyle,
+      this.outputSplit,
+      this.outputSplitCFuncs,
+      this.disabledWarnings,
+      disableFatalExitOnWarnings,
+      this.enableAllAssertions,
+      this.timing,
+      this.parallelism
+    )
+
+    def withEnableAllAssertions(enableAllAssertions: Boolean) = CompilationSettings(
+      this.traceStyle,
+      this.outputSplit,
+      this.outputSplitCFuncs,
+      this.disabledWarnings,
+      this.disableFatalExitOnWarnings,
+      enableAllAssertions,
+      this.timing,
+      this.parallelism
+    )
+
+    def withTiming(timing: Option[CompilationSettings.Timing.Type]) = CompilationSettings(
+      this.traceStyle,
+      this.outputSplit,
+      this.outputSplitCFuncs,
+      this.disabledWarnings,
+      this.disableFatalExitOnWarnings,
+      this.enableAllAssertions,
+      timing,
+      this.parallelism
+    )
+
+    def withParallelism(parallelism: Option[CompilationSettings.Parallelism.Type]) = CompilationSettings(
+      this.traceStyle,
+      this.outputSplit,
+      this.outputSplitCFuncs,
+      this.disabledWarnings,
+      this.disableFatalExitOnWarnings,
+      this.enableAllAssertions,
+      this.timing,
+      parallelism
+    )
+  }
 
   def initializeFromProcessEnvironment() = {
     val output = mutable.ArrayBuffer.empty[String]

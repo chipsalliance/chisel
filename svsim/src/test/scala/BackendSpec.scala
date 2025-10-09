@@ -174,7 +174,7 @@ class VerilatorSpec extends BackendSpec {
       )(
         workingDirectoryTag = "verilator",
         commonSettings = CommonCompilationSettings(),
-        backendSpecificSettings = compilationSettings.copy(traceStyle = None),
+        backendSpecificSettings = compilationSettings.withTraceStyle(None),
         customSimulationWorkingDirectory = None,
         verbose = false
       )
