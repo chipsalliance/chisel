@@ -135,7 +135,7 @@ object Backend {
 
   }
 
-  case class CompilationSettings (
+  case class CompilationSettings(
     traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
@@ -193,7 +193,7 @@ object Backend {
       disableFatalExitOnWarnings: Boolean,
       enableAllAssertions:        Boolean,
       timing:                     Option[CompilationSettings.Timing.Type],
-      parallelism: Option[CompilationSettings.Parallelism.Type]
+      parallelism:                Option[CompilationSettings.Parallelism.Type]
     ): CompilationSettings = CompilationSettings(
       traceStyle = traceStyle,
       outputSplit = outputSplit,
@@ -204,7 +204,6 @@ object Backend {
       timing = timing,
       parallelism = Some(CompilationSettings.Parallelism.Uniform(0))
     )
-
 
     def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = CompilationSettings(
       traceStyle,
