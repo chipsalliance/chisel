@@ -406,6 +406,41 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
     }
 
+    it("should suppress source locators with --no-source-locators") {
+      val targetDir = baseDir / "should-suppress-source-locators"
+
+      val argsWithoutFlag: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val argsWithFlag: Array[String] = argsWithoutFlag ++ Array("--no-source-locators")
+
+      // First, generate CHIRRTL without the flag to verify source locators are present
+      (new ChiselStage)
+        .execute(
+          argsWithoutFlag,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+        )
+
+      val outputWithLocators = os.read(targetDir / "Foo.fir")
+      info("output file without --no-source-locators includes source locators")
+      outputWithLocators should include("@[")
+
+      // Now generate CHIRRTL with the flag to verify source locators are suppressed
+      (new ChiselStage)
+        .execute(
+          argsWithFlag,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+        )
+
+      val outputWithoutLocators = os.read(targetDir / "Foo.fir")
+      info("output file with --no-source-locators does not include source locators")
+      outputWithoutLocators shouldNot include("@[")
+    }
+
     it("should forward firtool-resolver logging under log-level debug") {
       val targetDir = baseDir / "should-forward-firtool-resolver-logging-under-log-level-debug"
 

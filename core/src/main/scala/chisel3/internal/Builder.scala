@@ -472,11 +472,12 @@ private[chisel3] class DynamicContext(
   val sourceRoots:         Seq[File],
   val defaultNamespace:    Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
-  val loggerOptions:      LoggerOptions,
-  val definitions:        ArrayBuffer[Definition[_]],
-  val contextCache:       BuilderContextCache,
-  val layerMap:           Map[layer.Layer, layer.Layer],
-  val inlineTestIncluder: InlineTestIncluder
+  val loggerOptions:          LoggerOptions,
+  val definitions:            ArrayBuffer[Definition[_]],
+  val contextCache:           BuilderContextCache,
+  val layerMap:               Map[layer.Layer, layer.Layer],
+  val inlineTestIncluder:     InlineTestIncluder,
+  val suppressSourceLocators: Boolean
 ) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
@@ -1122,7 +1123,8 @@ private[chisel3] object Builder extends LazyLogging {
           makeViewRenameMap(circuitName = components.last.name),
           typeAliases,
           layerAdjacencyList(layer.Layer.Root).map(foldLayers).toSeq,
-          optionDefs
+          optionDefs,
+          dynamicContext.suppressSourceLocators
         )
       (ElaboratedCircuit(circuit, dynamicContext.annotationSeq.toSeq), mod)
     }

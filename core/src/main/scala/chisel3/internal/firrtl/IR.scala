@@ -600,13 +600,14 @@ private[chisel3] object ir {
   case class DefClass(id: Class, name: String, ports: Seq[Port], block: Block) extends Component
 
   case class Circuit(
-    name:        String,
-    components:  Seq[Component],
-    annotations: Seq[() => Seq[Annotation]],
-    renames:     RenameMap,
-    typeAliases: Seq[DefTypeAlias],
-    layers:      Seq[Layer],
-    options:     Seq[DefOption]
+    name:                   String,
+    components:             Seq[Component],
+    annotations:            Seq[() => Seq[Annotation]],
+    renames:                RenameMap,
+    typeAliases:            Seq[DefTypeAlias],
+    layers:                 Seq[Layer],
+    options:                Seq[DefOption],
+    suppressSourceLocators: Boolean
   ) {
     def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_().flatMap(_.update(renames)))
   }

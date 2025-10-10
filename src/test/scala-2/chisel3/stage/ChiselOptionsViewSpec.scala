@@ -16,12 +16,13 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
   behavior.of(ChiselOptionsView.getClass.getName)
 
   it should "construct a view from an AnnotationSeq" in {
-    val bar = Circuit("bar", Seq.empty, Seq.empty, RenameMap("bar"), Seq.empty, Seq.empty, Seq.empty)
+    val bar = Circuit("bar", Seq.empty, Seq.empty, RenameMap("bar"), Seq.empty, Seq.empty, Seq.empty, false)
     val circuit = ElaboratedCircuit(bar, Seq.empty)
     val annotations = Seq(
       PrintFullStackTraceAnnotation,
       ChiselOutputFileAnnotation("foo"),
-      ChiselCircuitAnnotation(circuit)
+      ChiselCircuitAnnotation(circuit),
+      SuppressSourceLocatorsAnnotation
     )
     val out = view[ChiselOptions](annotations)
 
@@ -34,6 +35,8 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
     info("elaboratedCircuit was set to circuit 'circuit'")
     out.elaboratedCircuit should be(Some(circuit))
 
+    info("suppressSourceLocators was set to true")
+    out.suppressSourceLocators should be(true)
   }
 
 }

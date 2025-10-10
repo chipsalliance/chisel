@@ -38,6 +38,7 @@ package object stage {
             c.copy(inlineTestIncluder = c.inlineTestIncluder.includeModule(glob))
           case IncludeInlineTestsWithNameAnnotation(glob) =>
             c.copy(inlineTestIncluder = c.inlineTestIncluder.includeTest(glob))
+          case SuppressSourceLocatorsAnnotation => c.copy(suppressSourceLocators = true)
         }
       }
 
