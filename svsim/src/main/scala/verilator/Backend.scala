@@ -168,7 +168,7 @@ object Backend {
 
   }
 
-  case class CompilationSettings private (
+  case class CompilationSettings (
     traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
