@@ -14,7 +14,7 @@ class VerilatorSimulator(val workspacePath: String) extends Simulator[verilator.
   val backend = verilator.Backend.initializeFromProcessEnvironment()
   val tag = "verilator"
   val commonCompilationSettings = CommonCompilationSettings()
-  val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings()
+  val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings.default
 }
 
 class SimulatorSpec extends AnyFunSpec with Matchers {

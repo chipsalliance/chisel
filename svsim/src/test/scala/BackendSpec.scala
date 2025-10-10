@@ -155,8 +155,8 @@ class VerilatorSpec extends BackendSpec {
 
   import verilator.Backend.CompilationSettings._
   val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
-  val compilationSettings = verilator.Backend.CompilationSettings(
-    traceStyle = Some(TraceStyle(TraceKind.Vcd, traceUnderscore = false))
+  val compilationSettings = verilator.Backend.CompilationSettings.default.withTraceStyle(
+    Some(TraceStyle(TraceKind.Vcd, traceUnderscore = false))
   )
   test("verilator", backend)(compilationSettings)
 
@@ -197,8 +197,8 @@ class VerilatorFstTraceSpec extends BackendSpec {
 
   import verilator.Backend.CompilationSettings._
   val backend = CustomVerilatorBackend(verilator.Backend.initializeFromProcessEnvironment())
-  val compilationSettings = verilator.Backend.CompilationSettings(
-    traceStyle = Some(TraceStyle(TraceKind.Fst(), traceUnderscore = true))
+  val compilationSettings = verilator.Backend.CompilationSettings.default.withTraceStyle(
+    Some(TraceStyle(TraceKind.Fst(), traceUnderscore = true))
   )
   test("verilator", backend)(compilationSettings)
 

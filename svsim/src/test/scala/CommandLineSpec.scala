@@ -18,25 +18,25 @@ class CommandLineSpec extends AnyFlatSpec with Matchers {
     import svsim.verilator.Backend.CompilationSettings
     import svsim.verilator.Backend.CompilationSettings.Parallelism
     Seq(
-      OptionTest("default", CompilationSettings(), Seq("-j", "0")),
+      OptionTest("default", CompilationSettings.default, Seq("-j", "0")),
       OptionTest(
         "uniform parallelism",
-        CompilationSettings(parallelism = Some(Parallelism.Uniform.default.withNum(2))),
+        CompilationSettings.default.withParallelism(Some(Parallelism.Uniform.default.withNum(2))),
         Seq("-j", "2")
       ),
       OptionTest(
         "only build parallelism",
-        CompilationSettings(parallelism = Some(Parallelism.Different.default.withBuild(Some(4)))),
+        CompilationSettings.default.withParallelism(Some(Parallelism.Different.default.withBuild(Some(4)))),
         Seq("--build-jobs", "4")
       ),
       OptionTest(
         "only verilate parallelism",
-        CompilationSettings(parallelism = Some(Parallelism.Different.default.withVerilate(Some(8)))),
+        CompilationSettings.default.withParallelism(Some(Parallelism.Different.default.withVerilate(Some(8)))),
         Seq("--verilate-jobs", "8")
       ),
       OptionTest(
         "different build and verilate parallelism",
-        CompilationSettings(parallelism =
+        CompilationSettings.default.withParallelism(
           Some(Parallelism.Different.default.withBuild(Some(16)).withVerilate(Some(32)))
         ),
         Seq("--build-jobs", "16", "--verilate-jobs", "32")

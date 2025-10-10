@@ -28,7 +28,7 @@ class HasSimulatorSpec extends AnyFunSpec with Matchers {
             override val backend = svsim.verilator.Backend.initializeFromProcessEnvironment()
             override val tag = "still-verilator"
             override val commonCompilationSettings = svsim.CommonCompilationSettings()
-            override val backendSpecificCompilationSettings = svsim.verilator.Backend.CompilationSettings()
+            override val backendSpecificCompilationSettings = svsim.verilator.Backend.CompilationSettings.default
             override val workspacePath = ""
           }
       }

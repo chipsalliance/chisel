@@ -42,7 +42,8 @@ object HasSimulator {
     /** A [[HasSimulator]] implementation for a Verilator simulator. */
     def verilator(
       compilationSettings: svsim.CommonCompilationSettings = svsim.CommonCompilationSettings(),
-      verilatorSettings:   svsim.verilator.Backend.CompilationSettings = svsim.verilator.Backend.CompilationSettings()
+      verilatorSettings: svsim.verilator.Backend.CompilationSettings =
+        svsim.verilator.Backend.CompilationSettings.default
     ): HasSimulator = new HasSimulator {
       override def getSimulator(implicit testingDirectory: HasTestingDirectory): Simulator[svsim.verilator.Backend] =
         new Simulator[svsim.verilator.Backend] {

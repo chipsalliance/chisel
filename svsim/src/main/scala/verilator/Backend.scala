@@ -155,9 +155,20 @@ object Backend {
       )
     )
 
+    def default: CompilationSettings = new CompilationSettings(
+      traceStyle = None,
+      outputSplit = None,
+      outputSplitCFuncs = None,
+      disabledWarnings = Seq(),
+      disableFatalExitOnWarnings = false,
+      enableAllAssertions = false,
+      timing = None,
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
+    )
+
   }
 
-  case class CompilationSettings(
+  case class CompilationSettings private (
     traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
     outputSplit:                Option[Int] = None,
     outputSplitCFuncs:          Option[Int] = None,
