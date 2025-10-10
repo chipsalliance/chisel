@@ -112,7 +112,7 @@ object Backend {
       }
     }
 
-    @deprecated("use newer CompilationSettings case class apply", "Chisel 7.1.0")
+    @deprecated("use 'CompilationSettings.default' and 'with<name>' helpers", "Chisel 7.1.0")
     def apply(
       traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
       outputSplit:                Option[Int] = None,
@@ -178,14 +178,16 @@ object Backend {
     timing:                     Option[CompilationSettings.Timing.Type],
     parallelism:                Option[CompilationSettings.Parallelism.Type]
   ) extends svsim.Backend.Settings {
+
+    @deprecated("use 'CompilationSettings.default' and 'with<name>' helpers", "Chisel 7.1.0")
     def this(
-      traceStyle:                 Option[CompilationSettings.TraceStyle],
-      outputSplit:                Option[Int],
-      outputSplitCFuncs:          Option[Int],
-      disabledWarnings:           Seq[String],
-      disableFatalExitOnWarnings: Boolean,
-      enableAllAssertions:        Boolean,
-      timing:                     Option[CompilationSettings.Timing.Type]
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
+      outputSplit:                Option[Int] = None,
+      outputSplitCFuncs:          Option[Int] = None,
+      disabledWarnings:           Seq[String] = Seq(),
+      disableFatalExitOnWarnings: Boolean = false,
+      enableAllAssertions:        Boolean = false,
+      timing:                     Option[CompilationSettings.Timing.Type] = None
     ) = this(
       traceStyle,
       outputSplit,
