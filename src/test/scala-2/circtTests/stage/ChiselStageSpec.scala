@@ -406,6 +406,41 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
     }
 
+    it("should suppress source info with --no-source-info") {
+      val targetDir = baseDir / "should-suppress-source-info"
+
+      val argsWithoutFlag: Array[String] = Array(
+        "--target",
+        "chirrtl",
+        "--target-dir",
+        targetDir.toString
+      )
+
+      val argsWithFlag: Array[String] = argsWithoutFlag ++ Array("--no-source-info")
+
+      // First, generate CHIRRTL without the flag to verify source info is present
+      (new ChiselStage)
+        .execute(
+          argsWithoutFlag,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+        )
+
+      val outputWithSourceInfo = os.read(targetDir / "Foo.fir")
+      info("output file without --no-source-info includes source info")
+      outputWithSourceInfo should include("@[")
+
+      // Now generate CHIRRTL with the flag to verify source info is suppressed
+      (new ChiselStage)
+        .execute(
+          argsWithFlag,
+          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
+        )
+
+      val outputWithoutSourceInfo = os.read(targetDir / "Foo.fir")
+      info("output file with --no-source-info does not include source info")
+      outputWithoutSourceInfo shouldNot include("@[")
+    }
+
     it("should forward firtool-resolver logging under log-level debug") {
       val targetDir = baseDir / "should-forward-firtool-resolver-logging-under-log-level-debug"
 

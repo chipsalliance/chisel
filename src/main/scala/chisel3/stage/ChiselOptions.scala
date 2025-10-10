@@ -19,7 +19,8 @@ class ChiselOptions private[stage] (
   val includeUtilMetadata: Boolean = false,
   val useSRAMBlackbox:     Boolean = false,
   val elaboratedCircuit:   Option[ElaboratedCircuit] = None,
-  val inlineTestIncluder:  InlineTestIncluder = InlineTestIncluder.none
+  val inlineTestIncluder:  InlineTestIncluder = InlineTestIncluder.none,
+  val suppressSourceInfo:  Boolean = false
 ) {
 
   private[stage] def copy(
@@ -33,7 +34,8 @@ class ChiselOptions private[stage] (
     includeUtilMetadata: Boolean = includeUtilMetadata,
     useSRAMBlackbox:     Boolean = useSRAMBlackbox,
     elaboratedCircuit:   Option[ElaboratedCircuit] = elaboratedCircuit,
-    inlineTestIncluder:  InlineTestIncluder = inlineTestIncluder
+    inlineTestIncluder:  InlineTestIncluder = inlineTestIncluder,
+    suppressSourceInfo:  Boolean = suppressSourceInfo
   ): ChiselOptions = {
 
     new ChiselOptions(
@@ -47,7 +49,8 @@ class ChiselOptions private[stage] (
       includeUtilMetadata = includeUtilMetadata,
       useSRAMBlackbox = useSRAMBlackbox,
       elaboratedCircuit = elaboratedCircuit,
-      inlineTestIncluder = inlineTestIncluder
+      inlineTestIncluder = inlineTestIncluder,
+      suppressSourceInfo = suppressSourceInfo
     )
 
   }
