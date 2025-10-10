@@ -13,7 +13,7 @@ import chisel3.stage.{
   PrintFullStackTraceAnnotation,
   RemapLayer,
   SourceRootAnnotation,
-  SuppressSourceLocatorsAnnotation,
+  SuppressSourceInfoAnnotation,
   ThrowOnFirstErrorAnnotation,
   UseLegacyWidthBehavior,
   UseSRAMBlackbox,
@@ -56,7 +56,7 @@ trait CLI extends BareShell { this: BareShell =>
     UseSRAMBlackbox,
     IncludeInlineTestsForModule,
     IncludeInlineTestsWithName,
-    SuppressSourceLocatorsAnnotation
+    SuppressSourceInfoAnnotation
   ).foreach(_.addOptions(parser))
 
   parser.note("CIRCT (MLIR FIRRTL Compiler) options")

@@ -613,15 +613,15 @@ case object IncludeInlineTestsWithName extends HasShellOptions {
   )
 }
 
-/** Suppress emission of source locators in FIRRTL output.
+/** Suppress emission of source info in FIRRTL output.
   *
-  * Use as CLI option `--no-source-locators`.
+  * Use as CLI option `--no-source-info`.
   *
-  * When this option is enabled, source locators (e.g., @[MyFile.scala 42:10]) will not be
+  * When this option is enabled, source info (e.g., @[MyFile.scala 42:10]) will not be
   * emitted in the generated FIRRTL output. This can be useful for reducing output size or
   * for generating more stable output.
   */
-case object SuppressSourceLocatorsAnnotation
+case object SuppressSourceInfoAnnotation
     extends NoTargetAnnotation
     with ChiselOption
     with HasShellOptions
@@ -629,9 +629,9 @@ case object SuppressSourceLocatorsAnnotation
 
   val options = Seq(
     new ShellOption[Unit](
-      longOption = "no-source-locators",
-      toAnnotationSeq = _ => Seq(SuppressSourceLocatorsAnnotation),
-      helpText = "Suppress emission of source locators in FIRRTL output"
+      longOption = "no-source-info",
+      toAnnotationSeq = _ => Seq(SuppressSourceInfoAnnotation),
+      helpText = "Suppress emission of source info in FIRRTL output"
     )
   )
 }

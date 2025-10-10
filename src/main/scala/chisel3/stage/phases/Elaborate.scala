@@ -55,7 +55,7 @@ class Elaborate extends Phase {
             BuilderContextCache.empty,
             chiselOptions.layerMap,
             chiselOptions.inlineTestIncluder,
-            chiselOptions.suppressSourceLocators
+            chiselOptions.suppressSourceInfo
           )
         val (elaboratedCircuit, dut) = {
           Builder.build(Module(gen()), context)

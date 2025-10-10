@@ -121,7 +121,7 @@ object Definition extends SourceInfoDoc {
         context.contextCache,
         context.layerMap,
         context.inlineTestIncluder,
-        context.suppressSourceLocators
+        context.suppressSourceInfo
       )
     }
     dynamicContext.inDefinition = true

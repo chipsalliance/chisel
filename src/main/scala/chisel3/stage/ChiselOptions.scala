@@ -9,33 +9,33 @@ import chisel3.ElaboratedCircuit
 import java.io.File
 
 class ChiselOptions private[stage] (
-  val printFullStackTrace:    Boolean = false,
-  val throwOnFirstError:      Boolean = false,
-  val outputFile:             Option[String] = None,
-  val sourceRoots:            Vector[File] = Vector.empty,
-  val warningFilters:         Vector[WarningFilter] = Vector.empty,
-  val useLegacyWidth:         Boolean = false,
-  val layerMap:               Map[Layer, Layer] = Map.empty,
-  val includeUtilMetadata:    Boolean = false,
-  val useSRAMBlackbox:        Boolean = false,
-  val elaboratedCircuit:      Option[ElaboratedCircuit] = None,
-  val inlineTestIncluder:     InlineTestIncluder = InlineTestIncluder.none,
-  val suppressSourceLocators: Boolean = false
+  val printFullStackTrace: Boolean = false,
+  val throwOnFirstError:   Boolean = false,
+  val outputFile:          Option[String] = None,
+  val sourceRoots:         Vector[File] = Vector.empty,
+  val warningFilters:      Vector[WarningFilter] = Vector.empty,
+  val useLegacyWidth:      Boolean = false,
+  val layerMap:            Map[Layer, Layer] = Map.empty,
+  val includeUtilMetadata: Boolean = false,
+  val useSRAMBlackbox:     Boolean = false,
+  val elaboratedCircuit:   Option[ElaboratedCircuit] = None,
+  val inlineTestIncluder:  InlineTestIncluder = InlineTestIncluder.none,
+  val suppressSourceInfo:  Boolean = false
 ) {
 
   private[stage] def copy(
-    printFullStackTrace:    Boolean = printFullStackTrace,
-    throwOnFirstError:      Boolean = throwOnFirstError,
-    outputFile:             Option[String] = outputFile,
-    sourceRoots:            Vector[File] = sourceRoots,
-    warningFilters:         Vector[WarningFilter] = warningFilters,
-    useLegacyWidth:         Boolean = useLegacyWidth,
-    layerMap:               Map[Layer, Layer] = layerMap,
-    includeUtilMetadata:    Boolean = includeUtilMetadata,
-    useSRAMBlackbox:        Boolean = useSRAMBlackbox,
-    elaboratedCircuit:      Option[ElaboratedCircuit] = elaboratedCircuit,
-    inlineTestIncluder:     InlineTestIncluder = inlineTestIncluder,
-    suppressSourceLocators: Boolean = suppressSourceLocators
+    printFullStackTrace: Boolean = printFullStackTrace,
+    throwOnFirstError:   Boolean = throwOnFirstError,
+    outputFile:          Option[String] = outputFile,
+    sourceRoots:         Vector[File] = sourceRoots,
+    warningFilters:      Vector[WarningFilter] = warningFilters,
+    useLegacyWidth:      Boolean = useLegacyWidth,
+    layerMap:            Map[Layer, Layer] = layerMap,
+    includeUtilMetadata: Boolean = includeUtilMetadata,
+    useSRAMBlackbox:     Boolean = useSRAMBlackbox,
+    elaboratedCircuit:   Option[ElaboratedCircuit] = elaboratedCircuit,
+    inlineTestIncluder:  InlineTestIncluder = inlineTestIncluder,
+    suppressSourceInfo:  Boolean = suppressSourceInfo
   ): ChiselOptions = {
 
     new ChiselOptions(
@@ -50,7 +50,7 @@ class ChiselOptions private[stage] (
       useSRAMBlackbox = useSRAMBlackbox,
       elaboratedCircuit = elaboratedCircuit,
       inlineTestIncluder = inlineTestIncluder,
-      suppressSourceLocators = suppressSourceLocators
+      suppressSourceInfo = suppressSourceInfo
     )
 
   }

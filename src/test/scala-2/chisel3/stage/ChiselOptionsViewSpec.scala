@@ -22,7 +22,7 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
       PrintFullStackTraceAnnotation,
       ChiselOutputFileAnnotation("foo"),
       ChiselCircuitAnnotation(circuit),
-      SuppressSourceLocatorsAnnotation
+      SuppressSourceInfoAnnotation
     )
     val out = view[ChiselOptions](annotations)
 
@@ -35,8 +35,8 @@ class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
     info("elaboratedCircuit was set to circuit 'circuit'")
     out.elaboratedCircuit should be(Some(circuit))
 
-    info("suppressSourceLocators was set to true")
-    out.suppressSourceLocators should be(true)
+    info("suppressSourceInfo was set to true")
+    out.suppressSourceInfo should be(true)
   }
 
 }
