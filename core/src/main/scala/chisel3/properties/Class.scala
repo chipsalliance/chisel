@@ -63,8 +63,8 @@ class Class extends BaseModule {
     }
 
     // Create IR Ports and set the firrtlPorts variable.
-    val ports = getModulePortsAndLocators.map { case (port, sourceInfo) =>
-      Port(port, port.specifiedDirection, sourceInfo)
+    val ports = getModulePortsAndLocators.map { case (port, sourceInfo, _) =>
+      Port(port, port.specifiedDirection, Seq.empty, sourceInfo)
     }
 
     // No more commands.
