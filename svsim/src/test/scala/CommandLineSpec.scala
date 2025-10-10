@@ -21,22 +21,24 @@ class CommandLineSpec extends AnyFlatSpec with Matchers {
       OptionTest("default", CompilationSettings(), Seq("-j", "0")),
       OptionTest(
         "uniform parallelism",
-        CompilationSettings(parallelism = Some(Parallelism.Uniform(2))),
+        CompilationSettings(parallelism = Some(Parallelism.Uniform.default.withNum(2))),
         Seq("-j", "2")
       ),
       OptionTest(
         "only build parallelism",
-        CompilationSettings(parallelism = Some(Parallelism.Different(build = Some(4)))),
+        CompilationSettings(parallelism = Some(Parallelism.Different.default.withBuild(Some(4)))),
         Seq("--build-jobs", "4")
       ),
       OptionTest(
         "only verilate parallelism",
-        CompilationSettings(parallelism = Some(Parallelism.Different(verilate = Some(8)))),
+        CompilationSettings(parallelism = Some(Parallelism.Different.default.withVerilate(Some(8)))),
         Seq("--verilate-jobs", "8")
       ),
       OptionTest(
         "different build and verilate parallelism",
-        CompilationSettings(parallelism = Some(Parallelism.Different(build = Some(16), verilate = Some(32)))),
+        CompilationSettings(parallelism =
+          Some(Parallelism.Different.default.withBuild(Some(16)).withVerilate(Some(32)))
+        ),
         Seq("--build-jobs", "16", "--verilate-jobs", "32")
       )
     )

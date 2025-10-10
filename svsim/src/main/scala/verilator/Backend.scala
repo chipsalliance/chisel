@@ -74,19 +74,41 @@ object Backend {
       }
 
       /** Apply uniform parallelism to Verilation.  This maps to `-j`. */
-      case class Uniform(num: Int) extends Type {
+      class Uniform private (num: Int) extends Type {
         override def toCompileFlags = Seq("-j", num.toString)
+
+        private def copy(num: Int): Uniform = new Uniform(num = num)
+
+        def withNum(num: Int): Uniform = copy(num = num)
+      }
+
+      object Uniform {
+        def default: Uniform = new Uniform(num = 0)
       }
 
       /** Apply non-uniform parallelism to Verilation.  This allows control of
         * `--build-jobs` and `--verilate-jobs` separately.
         */
-      case class Different(build: Option[Int] = None, verilate: Option[Int] = None) extends Type {
+      class Different private (build: Option[Int], verilate: Option[Int]) extends Type {
         override def toCompileFlags: Seq[String] = {
           val buildJobs:    Seq[String] = build.map(num => Seq("--build-jobs", num.toString)).toSeq.flatten
           val verilateJobs: Seq[String] = verilate.map(num => Seq("--verilate-jobs", num.toString)).toSeq.flatten
           buildJobs ++ verilateJobs
         }
+
+        private def copy(build: Option[Int] = this.build, verilate: Option[Int] = this.verilate): Different =
+          new Different(
+            build = build,
+            verilate = verilate
+          )
+
+        def withBuild(build: Option[Int]): Different = copy(build = build)
+
+        def withVerilate(verilate: Option[Int]): Different = copy(verilate = verilate)
+      }
+
+      object Different {
+        def default = new Different(build = None, verilate = None)
       }
     }
 
@@ -107,7 +129,7 @@ object Backend {
       disableFatalExitOnWarnings,
       enableAllAssertions,
       timing,
-      Some(CompilationSettings.Parallelism.Uniform(0))
+      Some(CompilationSettings.Parallelism.Uniform.default)
     )
 
     @deprecated("avoid use of unapply", "Chisel 7.1.0")
@@ -143,7 +165,7 @@ object Backend {
     disableFatalExitOnWarnings: Boolean = false,
     enableAllAssertions:        Boolean = false,
     timing:                     Option[CompilationSettings.Timing.Type] = None,
-    parallelism: Option[CompilationSettings.Parallelism.Type] = Some(CompilationSettings.Parallelism.Uniform(0))
+    parallelism: Option[CompilationSettings.Parallelism.Type] = Some(CompilationSettings.Parallelism.Uniform.default)
   ) extends svsim.Backend.Settings {
     def this(
       traceStyle:                 Option[CompilationSettings.TraceStyle],
@@ -161,7 +183,27 @@ object Backend {
       disableFatalExitOnWarnings,
       enableAllAssertions,
       timing,
-      Some(CompilationSettings.Parallelism.Uniform(0))
+      Some(CompilationSettings.Parallelism.Uniform.default)
+    )
+
+    def _copy(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
+      outputSplit:                Option[Int] = this.outputSplit,
+      outputSplitCFuncs:          Option[Int] = this.outputSplitCFuncs,
+      disabledWarnings:           Seq[String] = this.disabledWarnings,
+      disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
+      enableAllAssertions:        Boolean = this.enableAllAssertions,
+      timing:                     Option[CompilationSettings.Timing.Type] = this.timing,
+      parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism
+    ): CompilationSettings = CompilationSettings(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = parallelism
     )
 
     @deprecated("don't use the copy method, use 'with<name>' single setters", "Chisel 7.1.0")
@@ -173,7 +215,7 @@ object Backend {
       disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
       enableAllAssertions:        Boolean = this.enableAllAssertions,
       timing:                     Option[CompilationSettings.Timing.Type] = this.timing
-    ): CompilationSettings = CompilationSettings(
+    ): CompilationSettings = _copy(
       traceStyle = traceStyle,
       outputSplit = outputSplit,
       outputSplitCFuncs = outputSplitCFuncs,
@@ -194,7 +236,7 @@ object Backend {
       enableAllAssertions:        Boolean,
       timing:                     Option[CompilationSettings.Timing.Type],
       parallelism:                Option[CompilationSettings.Parallelism.Type]
-    ): CompilationSettings = CompilationSettings(
+    ): CompilationSettings = _copy(
       traceStyle = traceStyle,
       outputSplit = outputSplit,
       outputSplitCFuncs = outputSplitCFuncs,
@@ -202,96 +244,25 @@ object Backend {
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
       timing = timing,
-      parallelism = Some(CompilationSettings.Parallelism.Uniform(0))
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
     )
 
-    def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = CompilationSettings(
-      traceStyle,
-      this.outputSplit,
-      this.outputSplitCFuncs,
-      this.disabledWarnings,
-      this.disableFatalExitOnWarnings,
-      this.enableAllAssertions,
-      this.timing,
-      this.parallelism
-    )
+    def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = _copy(traceStyle = traceStyle)
 
-    def withOutputSplit(outputSplit: Option[Int]) = CompilationSettings(
-      this.traceStyle,
-      this.outputSplit,
-      outputSplitCFuncs,
-      this.disabledWarnings,
-      this.disableFatalExitOnWarnings,
-      this.enableAllAssertions,
-      this.timing,
-      this.parallelism
-    )
+    def withOutputSplit(outputSplit: Option[Int]) = _copy(outputSplit = outputSplit)
 
-    def withOutputSplitCFuncs(outputSplitCFuncs: Option[Int]) = CompilationSettings(
-      this.traceStyle,
-      this.outputSplit,
-      outputSplitCFuncs,
-      this.disabledWarnings,
-      this.disableFatalExitOnWarnings,
-      this.enableAllAssertions,
-      this.timing,
-      this.parallelism
-    )
+    def withOutputSplitCFuncs(outputSplitCFuncs: Option[Int]) = _copy(outputSplitCFuncs = outputSplitCFuncs)
 
-    def withDisabledWarnings(disabledWarnings: Seq[String]) = CompilationSettings(
-      this.traceStyle,
-      this.outputSplit,
-      this.outputSplitCFuncs,
-      disabledWarnings,
-      this.disableFatalExitOnWarnings,
-      this.enableAllAssertions,
-      this.timing,
-      this.parallelism
-    )
+    def withDisabledWarnings(disabledWarnings: Seq[String]) = _copy(disabledWarnings = disabledWarnings)
 
-    def withDisableFatalExitOnWarnings(disableFatalExitOnWarnings: Boolean) = CompilationSettings(
-      this.traceStyle,
-      this.outputSplit,
-      this.outputSplitCFuncs,
-      this.disabledWarnings,
-      disableFatalExitOnWarnings,
-      this.enableAllAssertions,
-      this.timing,
-      this.parallelism
-    )
+    def withDisableFatalExitOnWarnings(disableFatalExitOnWarnings: Boolean) =
+      _copy(disableFatalExitOnWarnings = disableFatalExitOnWarnings)
 
-    def withEnableAllAssertions(enableAllAssertions: Boolean) = CompilationSettings(
-      this.traceStyle,
-      this.outputSplit,
-      this.outputSplitCFuncs,
-      this.disabledWarnings,
-      this.disableFatalExitOnWarnings,
-      enableAllAssertions,
-      this.timing,
-      this.parallelism
-    )
+    def withEnableAllAssertions(enableAllAssertions: Boolean) = _copy(enableAllAssertions = enableAllAssertions)
 
-    def withTiming(timing: Option[CompilationSettings.Timing.Type]) = CompilationSettings(
-      this.traceStyle,
-      this.outputSplit,
-      this.outputSplitCFuncs,
-      this.disabledWarnings,
-      this.disableFatalExitOnWarnings,
-      this.enableAllAssertions,
-      timing,
-      this.parallelism
-    )
+    def withTiming(timing: Option[CompilationSettings.Timing.Type]) = _copy(timing = timing)
 
-    def withParallelism(parallelism: Option[CompilationSettings.Parallelism.Type]) = CompilationSettings(
-      this.traceStyle,
-      this.outputSplit,
-      this.outputSplitCFuncs,
-      this.disabledWarnings,
-      this.disableFatalExitOnWarnings,
-      this.enableAllAssertions,
-      this.timing,
-      parallelism
-    )
+    def withParallelism(parallelism: Option[CompilationSettings.Parallelism.Type]) = _copy(parallelism = parallelism)
   }
 
   def initializeFromProcessEnvironment() = {
@@ -338,7 +309,7 @@ final class Backend(executablePath: String) extends svsim.Backend {
 
     backendSpecificSettings.parallelism match {
       case Some(parallelism) => addArg(parallelism.toCompileFlags)
-      case None =>
+      case None => ()
     }
 
     commonSettings.libraryExtensions.foreach { extensions =>
