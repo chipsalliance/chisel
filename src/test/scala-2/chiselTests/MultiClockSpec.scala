@@ -125,7 +125,9 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with LogUtils with Chisel
 
   it should "scope ports of memories" in {
     implicit val verilator = simulators
-      .verilator(verilatorSettings = svsim.verilator.Backend.CompilationSettings(disabledWarnings = Seq("MULTIDRIVEN")))
+      .verilator(verilatorSettings =
+        svsim.verilator.Backend.CompilationSettings.default.withDisabledWarnings(Seq("MULTIDRIVEN"))
+      )
     simulate(new MultiClockMemTest)(RunUntilFinished(21))
   }
 

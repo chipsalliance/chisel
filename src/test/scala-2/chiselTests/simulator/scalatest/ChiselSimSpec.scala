@@ -212,8 +212,8 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
     // Return a Verilator `HasSimulator` that will dump waves to `trace.vcd`.
     def verilatorWithVcd = HasSimulator.simulators
       .verilator(verilatorSettings =
-        svsim.verilator.Backend.CompilationSettings(
-          traceStyle = Some(
+        svsim.verilator.Backend.CompilationSettings.default.withTraceStyle(
+          Some(
             svsim.verilator.Backend.CompilationSettings
               .TraceStyle(
                 svsim.verilator.Backend.CompilationSettings.TraceKind.Vcd,
@@ -229,8 +229,8 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
     // Return a Verilator `HasSimulator` that will dump waves to `trace.fst`.
     def verilatorWithFst = HasSimulator.simulators
       .verilator(verilatorSettings =
-        svsim.verilator.Backend.CompilationSettings(
-          traceStyle = Some(
+        svsim.verilator.Backend.CompilationSettings.default.withTraceStyle(
+          Some(
             svsim.verilator.Backend.CompilationSettings
               .TraceStyle(
                 svsim.verilator.Backend.CompilationSettings.TraceKind.Fst(Some(2)),

@@ -22,7 +22,7 @@ object Backend {
       }
 
       /** FST tracing
-        * 
+        *
         * @param traceThreads Enable FST waveform creation using `traceThreads` separate threads
         */
       case class Fst(traceThreads: Option[Int] = None) extends Type {
@@ -66,17 +66,217 @@ object Backend {
       case object TimingEnabled extends Type
       case object TimingDisabled extends Type
     }
+
+    /** Control job parallelism in verilator */
+    object Parallelism {
+      sealed trait Type {
+        def toCompileFlags: Seq[String]
+      }
+
+      /** Apply uniform parallelism to Verilation.  This maps to `-j`. */
+      class Uniform private (num: Int) extends Type {
+        override def toCompileFlags = Seq("-j", num.toString)
+
+        private def copy(num: Int): Uniform = new Uniform(num = num)
+
+        def withNum(num: Int): Uniform = copy(num = num)
+      }
+
+      object Uniform {
+        def default: Uniform = new Uniform(num = 0)
+      }
+
+      /** Apply non-uniform parallelism to Verilation.  This allows control of
+        * `--build-jobs` and `--verilate-jobs` separately.
+        */
+      class Different private (build: Option[Int], verilate: Option[Int]) extends Type {
+        override def toCompileFlags: Seq[String] = {
+          val buildJobs:    Seq[String] = build.map(num => Seq("--build-jobs", num.toString)).toSeq.flatten
+          val verilateJobs: Seq[String] = verilate.map(num => Seq("--verilate-jobs", num.toString)).toSeq.flatten
+          buildJobs ++ verilateJobs
+        }
+
+        private def copy(build: Option[Int] = this.build, verilate: Option[Int] = this.verilate): Different =
+          new Different(
+            build = build,
+            verilate = verilate
+          )
+
+        def withBuild(build: Option[Int]): Different = copy(build = build)
+
+        def withVerilate(verilate: Option[Int]): Different = copy(verilate = verilate)
+      }
+
+      object Different {
+        def default = new Different(build = None, verilate = None)
+      }
+    }
+
+    @deprecated("use 'CompilationSettings.default' and 'with<name>' helpers", "Chisel 7.1.0")
+    def apply(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
+      outputSplit:                Option[Int] = None,
+      outputSplitCFuncs:          Option[Int] = None,
+      disabledWarnings:           Seq[String] = Seq(),
+      disableFatalExitOnWarnings: Boolean = false,
+      enableAllAssertions:        Boolean = false,
+      timing:                     Option[CompilationSettings.Timing.Type] = None
+    ): CompilationSettings = CompilationSettings(
+      traceStyle,
+      outputSplit,
+      outputSplitCFuncs,
+      disabledWarnings,
+      disableFatalExitOnWarnings,
+      enableAllAssertions,
+      timing,
+      Some(CompilationSettings.Parallelism.Uniform.default)
+    )
+
+    @deprecated("avoid use of unapply", "Chisel 7.1.0")
+    def unapply(compilationSettings: CompilationSettings): Option[
+      (
+        Option[CompilationSettings.TraceStyle],
+        Option[Int],
+        Option[Int],
+        Seq[String],
+        Boolean,
+        Boolean,
+        Option[CompilationSettings.Timing.Type]
+      )
+    ] = Some(
+      (
+        compilationSettings.traceStyle,
+        compilationSettings.outputSplit,
+        compilationSettings.outputSplitCFuncs,
+        compilationSettings.disabledWarnings,
+        compilationSettings.disableFatalExitOnWarnings,
+        compilationSettings.enableAllAssertions,
+        compilationSettings.timing
+      )
+    )
+
+    def default: CompilationSettings = new CompilationSettings(
+      traceStyle = None,
+      outputSplit = None,
+      outputSplitCFuncs = None,
+      disabledWarnings = Seq(),
+      disableFatalExitOnWarnings = false,
+      enableAllAssertions = false,
+      timing = None,
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
+    )
+
   }
 
-  case class CompilationSettings(
-    traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
-    outputSplit:                Option[Int] = None,
-    outputSplitCFuncs:          Option[Int] = None,
-    disabledWarnings:           Seq[String] = Seq(),
-    disableFatalExitOnWarnings: Boolean = false,
-    enableAllAssertions:        Boolean = false,
-    timing:                     Option[CompilationSettings.Timing.Type] = None
-  ) extends svsim.Backend.Settings
+  case class CompilationSettings private (
+    traceStyle:                 Option[CompilationSettings.TraceStyle],
+    outputSplit:                Option[Int],
+    outputSplitCFuncs:          Option[Int],
+    disabledWarnings:           Seq[String],
+    disableFatalExitOnWarnings: Boolean,
+    enableAllAssertions:        Boolean,
+    timing:                     Option[CompilationSettings.Timing.Type],
+    parallelism:                Option[CompilationSettings.Parallelism.Type]
+  ) extends svsim.Backend.Settings {
+
+    @deprecated("use 'CompilationSettings.default' and 'with<name>' helpers", "Chisel 7.1.0")
+    def this(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = None,
+      outputSplit:                Option[Int] = None,
+      outputSplitCFuncs:          Option[Int] = None,
+      disabledWarnings:           Seq[String] = Seq(),
+      disableFatalExitOnWarnings: Boolean = false,
+      enableAllAssertions:        Boolean = false,
+      timing:                     Option[CompilationSettings.Timing.Type] = None
+    ) = this(
+      traceStyle,
+      outputSplit,
+      outputSplitCFuncs,
+      disabledWarnings,
+      disableFatalExitOnWarnings,
+      enableAllAssertions,
+      timing,
+      Some(CompilationSettings.Parallelism.Uniform.default)
+    )
+
+    def _copy(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
+      outputSplit:                Option[Int] = this.outputSplit,
+      outputSplitCFuncs:          Option[Int] = this.outputSplitCFuncs,
+      disabledWarnings:           Seq[String] = this.disabledWarnings,
+      disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
+      enableAllAssertions:        Boolean = this.enableAllAssertions,
+      timing:                     Option[CompilationSettings.Timing.Type] = this.timing,
+      parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism
+    ): CompilationSettings = CompilationSettings(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = parallelism
+    )
+
+    @deprecated("don't use the copy method, use 'with<name>' single setters", "Chisel 7.1.0")
+    def copy(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
+      outputSplit:                Option[Int] = this.outputSplit,
+      outputSplitCFuncs:          Option[Int] = this.outputSplitCFuncs,
+      disabledWarnings:           Seq[String] = this.disabledWarnings,
+      disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
+      enableAllAssertions:        Boolean = this.enableAllAssertions,
+      timing:                     Option[CompilationSettings.Timing.Type] = this.timing
+    ): CompilationSettings = _copy(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = this.parallelism
+    )
+
+    // Suppress generation of private copy with default arguments by Scala 3
+    private def copy(
+      traceStyle:                 Option[CompilationSettings.TraceStyle],
+      outputSplit:                Option[Int],
+      outputSplitCFuncs:          Option[Int],
+      disabledWarnings:           Seq[String],
+      disableFatalExitOnWarnings: Boolean,
+      enableAllAssertions:        Boolean,
+      timing:                     Option[CompilationSettings.Timing.Type],
+      parallelism:                Option[CompilationSettings.Parallelism.Type]
+    ): CompilationSettings = _copy(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
+    )
+
+    def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = _copy(traceStyle = traceStyle)
+
+    def withOutputSplit(outputSplit: Option[Int]) = _copy(outputSplit = outputSplit)
+
+    def withOutputSplitCFuncs(outputSplitCFuncs: Option[Int]) = _copy(outputSplitCFuncs = outputSplitCFuncs)
+
+    def withDisabledWarnings(disabledWarnings: Seq[String]) = _copy(disabledWarnings = disabledWarnings)
+
+    def withDisableFatalExitOnWarnings(disableFatalExitOnWarnings: Boolean) =
+      _copy(disableFatalExitOnWarnings = disableFatalExitOnWarnings)
+
+    def withEnableAllAssertions(enableAllAssertions: Boolean) = _copy(enableAllAssertions = enableAllAssertions)
+
+    def withTiming(timing: Option[CompilationSettings.Timing.Type]) = _copy(timing = timing)
+
+    def withParallelism(parallelism: Option[CompilationSettings.Parallelism.Type]) = _copy(parallelism = parallelism)
+  }
 
   def initializeFromProcessEnvironment() = {
     val output = mutable.ArrayBuffer.empty[String]
@@ -114,12 +314,16 @@ final class Backend(executablePath: String) extends svsim.Backend {
       "--cc",
       "--exe",
       "--build",
-      "-j", "0",
       "-o", s"../$outputBinaryName",
       "--top-module", topModuleName,
       "--Mdir", "verilated-sources",
       "--assert"
     ))
+
+    backendSpecificSettings.parallelism match {
+      case Some(parallelism) => addArg(parallelism.toCompileFlags)
+      case None => ()
+    }
 
     commonSettings.libraryExtensions.foreach { extensions =>
       addArg(Seq((Seq("+libext") ++ extensions).mkString("+")))
