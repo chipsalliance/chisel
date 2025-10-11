@@ -1027,7 +1027,29 @@ void run_simulation(int delay, int *finish) {
   *finish = context->gotFinish();
   if (*finish)
     return;
-  context->timeInc(delay);
+
+  // If there're delayed events pending, `eval_step` should be called on the
+  // scheduled timeslot of the closest delayed events. Otherwise the Verilator
+  // will exit abnormally.
+  while (delay > 0 && testbench->eventsPending()) {
+    uint64_t stepDuration =
+      std::min(static_cast<uint64_t>(delay), testbench->nextTimeSlot() - context->time());
+    if (stepDuration <= 0) {
+      failWithError("Found event that should be sheduled ealier.");
+    }
+    context->timeInc(stepDuration);
+    delay -= stepDuration;
+    if (delay > 0) {
+      testbench->eval();
+      *finish = context->gotFinish();
+      if (*finish) {
+        return;
+      }
+    }
+  }
+  if (delay > 0) {
+    context->timeInc(delay);
+  }
 }
 
 } // extern "C"
