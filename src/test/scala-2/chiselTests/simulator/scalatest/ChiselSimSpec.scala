@@ -245,7 +245,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
     it("should dump a VCD waveform when traceStyle is Vcd and enableWaves is used") {
 
-      implicit val vaerilator = verilatorWithVcd
+      implicit val verilator = verilatorWithVcd
 
       class Foo extends Module {
         stop()
@@ -451,6 +451,94 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       simulate(new Foo, chiselOpts = Array("--dump-fir"))(RunUntilFinished(2))
 
     }
+
+    it("should handle non-zero delays in BlackBox modules with SystemVerilog sources elegantly") {
+      import chisel3.util.HasBlackBoxInline
+
+      class Delayed extends BlackBox with HasBlackBoxInline {
+        val io = IO(new Bundle {
+          val in = Input(UInt(1.W))
+          val delayedIn = Output(UInt(1.W))
+          val delayedInitial = Output(UInt(1.W))
+        })
+
+        setInline(
+          "Delayed.sv",
+          """
+            |`timescale 1 ps / 1 ps
+            |
+            |module Delayed(
+            |  input in,
+            |  output reg delayedIn,
+            |  output reg delayedInitial
+            |);
+            |
+            |  always @(in) begin
+            |    delayedIn <= #1500 in;
+            |  end
+            |
+            |  initial begin
+            |    delayedInitial = 1'b0;
+            |    #800
+            |    delayedInitial = 1'b1;
+            |    #800
+            |    delayedInitial = 1'b0;
+            |  end
+            |
+            |endmodule
+            |""".stripMargin
+        )
+      }
+
+      class Foo extends Module {
+        val io = IO(new Bundle {
+          val in = Input(UInt(1.W))
+          val delayedIn = Output(UInt(1.W))
+          val delayedInitial = Output(UInt(1.W))
+        })
+        
+        val delayed = Module(new Delayed)
+        delayed.io <> io
+
+        // Some simple logic using the clock
+        val counter = RegInit(0.U(8.W))
+        counter := counter + 1.U
+      }
+
+      // Temporarily modify backend settings for Verilator to enable `--timing`
+      implicit def backendSettingsModifications: svsim.BackendSettingsModifications = config => {
+        config match {
+          case conf: svsim.verilator.Backend.CompilationSettings =>
+            new svsim.verilator.Backend.CompilationSettings(
+              traceStyle = conf.traceStyle,
+              outputSplit = conf.outputSplit,
+              outputSplitCFuncs = conf.outputSplitCFuncs,
+              disabledWarnings = conf.disabledWarnings,
+              disableFatalExitOnWarnings = true,
+              enableAllAssertions = conf.enableAllAssertions,
+              timing = Some(svsim.verilator.Backend.CompilationSettings.Timing.TimingEnabled)
+            )
+          case conf => conf
+        }
+      }
+
+      simulate(new Foo)({ dut =>
+        dut.io.in.poke(1.U)
+        dut.io.delayedInitial.expect(0.U)
+        dut.clock.step(1, 1000)
+        
+        dut.io.delayedInitial.expect(1.U)
+        dut.clock.step(1, 1000)
+
+        dut.io.in.poke(0.U)
+        dut.io.delayedIn.expect(1.U)
+        dut.io.delayedInitial.expect(0.U)
+        dut.clock.step(2, 1000)
+        
+        dut.io.delayedIn.expect(0.U)
+      })
+    }
+
 
   }
 
