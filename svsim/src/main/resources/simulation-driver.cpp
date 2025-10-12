@@ -1018,14 +1018,21 @@ void simulation_main(int argc, char const **argv) {
 // called while ticking.  This is specific to Verilator because Verilator does
 // _not_ terminate the simulation when it hits a finish.
 void run_simulation(int delay, int *finish) {
+  if (delay < 0)
+    failWithError("Found negative delay for events.", delay)
   if (!delay) {
     testbench->eval_step();
     *finish = context->gotFinish();
     return;
   }
-  testbench->eval();
-  *finish = context->gotFinish();
-  if (*finish)
+
+  auto eval_and_check = [&]() -> bool {
+    testbench->eval();
+    *finish = context->gotFinish();
+    return *finish;
+  };
+
+  if (eval_and_check())
     return;
 
   // If there're delayed events pending, `eval_step` should be called on the
@@ -1034,22 +1041,22 @@ void run_simulation(int delay, int *finish) {
   while (delay > 0 && testbench->eventsPending()) {
     uint64_t stepDuration =
       std::min(static_cast<uint64_t>(delay), testbench->nextTimeSlot() - context->time());
-    if (stepDuration <= 0) {
-      failWithError("Found event that should be sheduled ealier.");
-    }
+    if (stepDuration <= 0)
+      failWithError("Found event that should be scheduled earlier.");
+
     context->timeInc(stepDuration);
     delay -= stepDuration;
     if (delay > 0) {
-      testbench->eval();
-      *finish = context->gotFinish();
-      if (*finish) {
+      if (eval_and_check())
         return;
-      }
     }
   }
-  if (delay > 0) {
+
+  if (delay < 0)
+    failWithError("Found event that should be scheduled later.");
+
+  if (delay > 0)
     context->timeInc(delay);
-  }
 }
 
 } // extern "C"

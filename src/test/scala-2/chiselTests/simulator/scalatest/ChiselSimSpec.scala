@@ -455,12 +455,14 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
     it("should handle non-zero delays in BlackBox modules with SystemVerilog sources elegantly") {
       import chisel3.util.HasBlackBoxInline
 
+      class DelayedIO extends Bundle {
+        val in = Input(UInt(1.W))
+        val delayedIn = Output(UInt(1.W))
+        val delayedInitial = Output(UInt(1.W))
+      }
+
       class Delayed extends BlackBox with HasBlackBoxInline {
-        val io = IO(new Bundle {
-          val in = Input(UInt(1.W))
-          val delayedIn = Output(UInt(1.W))
-          val delayedInitial = Output(UInt(1.W))
-        })
+        val io = IO(new DelayedIO)
 
         setInline(
           "Delayed.sv",
@@ -491,42 +493,34 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
 
       class Foo extends Module {
-        val io = IO(new Bundle {
-          val in = Input(UInt(1.W))
-          val delayedIn = Output(UInt(1.W))
-          val delayedInitial = Output(UInt(1.W))
-        })
-        
+        val io = IO(new DelayedIO)
+
         val delayed = Module(new Delayed)
-        delayed.io <> io
+        delayed.io.in :<= io.in
+        io.delayedIn :<= delayed.io.delayedIn
+        io.delayedInitial :<= delayed.io.delayedInitial
 
         // Some simple logic using the clock
         val counter = RegInit(0.U(8.W))
-        counter := counter + 1.U
+        counter :<= counter + 1.U
       }
 
       // Temporarily modify backend settings for Verilator to enable `--timing`
-      implicit def backendSettingsModifications: svsim.BackendSettingsModifications = config => {
-        config match {
-          case conf: svsim.verilator.Backend.CompilationSettings =>
-            new svsim.verilator.Backend.CompilationSettings(
-              traceStyle = conf.traceStyle,
-              outputSplit = conf.outputSplit,
-              outputSplitCFuncs = conf.outputSplitCFuncs,
-              disabledWarnings = conf.disabledWarnings,
-              disableFatalExitOnWarnings = true,
-              enableAllAssertions = conf.enableAllAssertions,
-              timing = Some(svsim.verilator.Backend.CompilationSettings.Timing.TimingEnabled)
-            )
-          case conf => conf
-        }
+      implicit def backendSettingsModifications: svsim.BackendSettingsModifications = {
+        case conf: svsim.verilator.Backend.CompilationSettings =>
+          svsim.verilator.Backend.CompilationSettings.default
+            .withDisableFatalExitOnWarnings(true)
+            .withTiming(Some(svsim.verilator.Backend.CompilationSettings.Timing.TimingEnabled))
+        case conf => conf
       }
 
       simulate(new Foo)({ dut =>
         dut.io.in.poke(1.U)
+        dut.io.delayedIn.expect(0.U)
         dut.io.delayedInitial.expect(0.U)
         dut.clock.step(1, 1000)
-        
+
+        dut.io.delayedIn.expect(0.U)
         dut.io.delayedInitial.expect(1.U)
         dut.clock.step(1, 1000)
 
@@ -534,11 +528,10 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         dut.io.delayedIn.expect(1.U)
         dut.io.delayedInitial.expect(0.U)
         dut.clock.step(2, 1000)
-        
+
         dut.io.delayedIn.expect(0.U)
       })
     }
-
 
   }
 
