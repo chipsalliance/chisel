@@ -496,9 +496,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         val io = IO(new DelayedIO)
 
         val delayed = Module(new Delayed)
-        delayed.io.in :<= io.in
-        io.delayedIn :<= delayed.io.delayedIn
-        io.delayedInitial :<= delayed.io.delayedInitial
+        io :<>= delayed.io
 
         // Some simple logic using the clock
         val counter = RegInit(0.U(8.W))
