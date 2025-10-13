@@ -100,6 +100,10 @@ object BitPat extends BitPat$Intf {
     val mask = (BigInt(1) << width) - 1
     new BitPat(x.litValue, mask, width)
   }
+
+  /** Allows ChiselEnum to be used where a BitPat is expected.
+    */
+  def apply(x: EnumType): BitPat = apply(x.litValue.U((x.getWidth).W))
 }
 
 package experimental {

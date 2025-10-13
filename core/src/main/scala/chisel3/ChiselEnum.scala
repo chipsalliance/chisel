@@ -102,7 +102,10 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
   final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo): Bool = {
-    VecInit(s.map(this === _)).asUInt.orR
+    s.length match {
+      case 0 => false.B
+      case _ => VecInit(s.map(this === _)).asUInt.orR
+    }
   }
 
   /** Test if this enumeration is equal to any of the values given as arguments
@@ -117,6 +120,13 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
   )(
     implicit sourceInfo: SourceInfo
   ): Bool = isOneOf(u1 +: u2.toSeq)
+
+  /** Creates circuitry that outputs True iff the Enum is equal to one of the values that has `s` in its name
+    *
+    * @param s the substring to search for in the Enum value's name
+    */
+  def nameContains(s: String)(implicit sourceInfo: SourceInfo): Bool =
+    isOneOf(factory.allWithNames.filter(m => m._2 contains s).map(m => m._1))
 
   def next(implicit sourceInfo: SourceInfo): this.type = {
     if (litOption.isDefined) {
@@ -229,9 +239,28 @@ abstract class ChiselEnum extends ChiselEnumIntf {
 
   def getWidth: Int = width.get
 
+  /** All Enum values */
   def all: Seq[Type] = enumInstances
-  /* Accessor for Seq of names in enumRecords */
+
+  /** All Enum names */
   def allNames: Seq[String] = enumNames
+
+  /** All Enum values with their names */
+  def allWithNames: Seq[(Type, String)] = all.zip(allNames)
+
+  /** Print Enum type name, followed by with all Enum values with their names to a string like this:
+   *  `Opcodes(add=0, sub=1, mul=2, div=3)`
+   */
+  override def toString: String =
+    getClass.getSimpleName.init +
+      allWithNames.map(e => s"${e._2}=${e._1.litValue}").mkString("(", ", ", ")")
+
+  /** Return all Enum (value, name) combinations in a string, one per line.
+   *  Intended for parsing by external tools, e.g. sim environment, or as gtkwave text filter
+   */
+  def asTable: String =
+    "# " + getClass.getSimpleName.init + "\n" + // comment line, ignored by gtkwave
+      allWithNames.map(e => s"${e._1.litValue} ${e._2}").mkString("", "\n", "\n")
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
     enumRecords.find(_.inst.litValue == id).map(_.name)
@@ -269,6 +298,11 @@ abstract class ChiselEnum extends ChiselEnumIntf {
   }
 
   def apply(): Type = new Type
+
+  /** Return the Enum value of which the name exactly matches the specified String. If @name does not match a valid Enum, fail */
+  def apply(name: String): Type =
+    allWithNames.collectFirst { case (enumValue, enumName) if enumName == name => enumValue }
+      .getOrElse(throwException(s"Enum value $name is not defined"))
 
   private def castImpl(
     n:    UInt,
