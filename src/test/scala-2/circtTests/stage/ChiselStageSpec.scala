@@ -4,6 +4,7 @@ package circtTests.stage
 
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.experimental.{ExtModule, SourceLine}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.HasExtModuleInline
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
@@ -172,7 +173,7 @@ class TraceSpec {
 
 }
 
-class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils {
+class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils with FileCheck {
 
   private val baseDir = os.pwd / "test_run_dir" / this.getClass.getSimpleName
 
@@ -406,41 +407,6 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       os.read(targetDir / "HasUnserializableAnnotation.fir") shouldNot include("DummyAnnotation")
     }
 
-    it("should suppress source info with --no-source-info") {
-      val targetDir = baseDir / "should-suppress-source-info"
-
-      val argsWithoutFlag: Array[String] = Array(
-        "--target",
-        "chirrtl",
-        "--target-dir",
-        targetDir.toString
-      )
-
-      val argsWithFlag: Array[String] = argsWithoutFlag ++ Array("--no-source-info")
-
-      // First, generate CHIRRTL without the flag to verify source info is present
-      (new ChiselStage)
-        .execute(
-          argsWithoutFlag,
-          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
-        )
-
-      val outputWithSourceInfo = os.read(targetDir / "Foo.fir")
-      info("output file without --no-source-info includes source info")
-      outputWithSourceInfo should include("@[")
-
-      // Now generate CHIRRTL with the flag to verify source info is suppressed
-      (new ChiselStage)
-        .execute(
-          argsWithFlag,
-          Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
-        )
-
-      val outputWithoutSourceInfo = os.read(targetDir / "Foo.fir")
-      info("output file with --no-source-info does not include source info")
-      outputWithoutSourceInfo shouldNot include("@[")
-    }
-
     it("should forward firtool-resolver logging under log-level debug") {
       val targetDir = baseDir / "should-forward-firtool-resolver-logging-under-log-level-debug"
 
@@ -652,7 +618,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 121:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 122:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -673,7 +639,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 121:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 122:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -1362,6 +1328,13 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       chirrtl should include("layerblock B")
     }
 
+    it("should suppress source info with --no-source-info") {
+      // Sanity check source locators are presetn by default
+      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo).fileCheck()("CHECK: @[")
+
+      // Check that flag suppresses source locators
+      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo, Array("--no-source-info")).fileCheck()("CHECK-NOT: @[")
+    }
   }
 
   describe("ChiselStage$ exception handling") {

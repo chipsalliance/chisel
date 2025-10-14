@@ -57,12 +57,10 @@ private[chisel3] object Serializer {
   // TODO use makeMessage to get ':' filename col separator instead of space
   // Can we optimize the escaping?
   private def serialize(info: SourceInfo)(implicit b: StringBuilder, suppressSourceInfo: Boolean): Unit =
-    if (!suppressSourceInfo) {
-      info match {
-        case _:  NoSourceInfo => ()
-        case sl: SourceLine =>
-          b ++= " @["; b ++= fir.FileInfo.fromUnescaped(sl.serialize).escaped; b ++= "]"
-      }
+    info match {
+      case sl: SourceLine if !suppressSourceInfo =>
+        b ++= " @["; b ++= fir.FileInfo.fromUnescaped(sl.serialize).escaped; b ++= "]"
+      case _ => ()
     }
 
   private def reportInternalError(msg: String): Nothing = {
