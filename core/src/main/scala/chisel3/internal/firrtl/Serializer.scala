@@ -56,11 +56,12 @@ private[chisel3] object Serializer {
 
   // TODO use makeMessage to get ':' filename col separator instead of space
   // Can we optimize the escaping?
-  private def serialize(info: SourceInfo)(implicit b: StringBuilder): Unit = info match {
-    case _:  NoSourceInfo => ()
-    case sl: SourceLine =>
-      b ++= " @["; b ++= fir.FileInfo.fromUnescaped(sl.serialize).escaped; b ++= "]"
-  }
+  private def serialize(info: SourceInfo)(implicit b: StringBuilder, suppressSourceInfo: Boolean): Unit =
+    info match {
+      case sl: SourceLine if !suppressSourceInfo =>
+        b ++= " @["; b ++= fir.FileInfo.fromUnescaped(sl.serialize).escaped; b ++= "]"
+      case _ => ()
+    }
 
   private def reportInternalError(msg: String): Nothing = {
     val link = "https://github.com/chipsalliance/chisel/issues/new"
@@ -164,7 +165,7 @@ private[chisel3] object Serializer {
     args:        Seq[Arg],
     params:      Seq[(String, Param)],
     typeAliases: Seq[String]
-  )(implicit b: StringBuilder): Unit = {
+  )(implicit b: StringBuilder, suppressSourceInfo: Boolean): Unit = {
     if (name.nonEmpty) {
       b ++= "node "; b ++= legalize(name.get); b ++= " = "
     }
@@ -192,8 +193,9 @@ private[chisel3] object Serializer {
 
   /** Serialize Commands */
   private def serializeSimpleCommand(cmd: Command, ctx: Component, typeAliases: Seq[String])(
-    implicit b: StringBuilder,
-    indent:     Int
+    implicit b:         StringBuilder,
+    indent:             Int,
+    suppressSourceInfo: Boolean
   ): Unit = cmd match {
     case e: DefPrim[_] =>
       b ++= "node "; b ++= legalize(e.name); b ++= " = ";
@@ -321,8 +323,9 @@ private[chisel3] object Serializer {
   }
 
   private def serializeCommand(cmd: Command, ctx: Component, typeAliases: Seq[String])(
-    implicit indent: Int
-  ): Iterator[String] =
+    implicit indent:    Int,
+    suppressSourceInfo: Boolean
+  ): Iterator[String] = {
     cmd match {
       case When(info, pred, ifRegion, elseRegion) =>
         val start = {
@@ -338,13 +341,15 @@ private[chisel3] object Serializer {
             newLineNoIndent()
             Iterator(b.toString)
           } else {
-            ifRegion.flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1))
+            ifRegion.flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1, suppressSourceInfo))
           }
         val end = if (elseRegion.nonEmpty) {
           implicit val b = new StringBuilder
           doIndent(); b ++= "else :"
           newLineNoIndent()
-          Iterator(b.toString) ++ elseRegion.flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1))
+          Iterator(b.toString) ++ elseRegion.flatMap(
+            serializeCommand(_, ctx, typeAliases)(indent + 1, suppressSourceInfo)
+          )
         } else Iterator.empty
         start ++ middle ++ end
       case LayerBlock(info, layer, region) =>
@@ -354,7 +359,7 @@ private[chisel3] object Serializer {
           newLineNoIndent()
           Iterator(b.toString)
         }
-        start ++ region.iterator.flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1))
+        start ++ region.iterator.flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1, suppressSourceInfo))
       case Placeholder(_, block) =>
         if (block.isEmpty) {
           implicit val b = new StringBuilder
@@ -362,7 +367,7 @@ private[chisel3] object Serializer {
           newLineNoIndent()
           Iterator(b.toString)
         } else {
-          block.iterator.flatMap(serializeCommand(_, ctx, typeAliases))
+          block.iterator.flatMap(serializeCommand(_, ctx, typeAliases)(indent, suppressSourceInfo))
         }
       case cmd @ DefContract(info, names, exprs) =>
         val start = {
@@ -382,7 +387,9 @@ private[chisel3] object Serializer {
           newLineNoIndent()
           Iterator(b.toString)
         }
-        start ++ cmd.region.getAllCommands().flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1))
+        start ++ cmd.region
+          .getAllCommands()
+          .flatMap(serializeCommand(_, ctx, typeAliases)(indent + 1, suppressSourceInfo))
       // TODO can we avoid checking 4 less common Commands every single time?
       case simple =>
         // TODO avoid Iterator boxing for every simple command
@@ -392,6 +399,7 @@ private[chisel3] object Serializer {
         newLineNoIndent()
         Iterator(b.toString)
     }
+  }
 
   /** Serialize Chisel IR Block into FIRRTL Statements
     *
@@ -403,7 +411,8 @@ private[chisel3] object Serializer {
     * @return Iterator[String] of the equivalent FIRRTL text
     */
   private def serialize(block: Block, ctx: Component, typeAliases: Seq[String])(
-    implicit indent: Int
+    implicit indent:    Int,
+    suppressSourceInfo: Boolean
   ): Iterator[String] = {
     val commands = block.getCommands()
     val secretCommands = block.getSecretCommands()
@@ -414,7 +423,7 @@ private[chisel3] object Serializer {
       return Iterator(b.toString)
     } else {
       Iterator.empty[String] ++ (commands.iterator ++ secretCommands).flatMap(c =>
-        serializeCommand(c, ctx, typeAliases)
+        serializeCommand(c, ctx, typeAliases)(indent, suppressSourceInfo)
       )
     }
   }
@@ -547,7 +556,7 @@ private[chisel3] object Serializer {
     port:        Port,
     typeAliases: Seq[String],
     topDir:      SpecifiedDirection = SpecifiedDirection.Unspecified
-  )(implicit b: StringBuilder, indent: Int): Unit = {
+  )(implicit b: StringBuilder, indent: Int, suppressSourceInfo: Boolean): Unit = {
     val resolvedDir = SpecifiedDirection.fromParent(topDir, firrtlUserDirOf(port.id))
     val dir = resolvedDir match {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => "output"
@@ -565,7 +574,10 @@ private[chisel3] object Serializer {
   }
 
   // TODO what is typeAliases for? Should it be a Set?
-  private def serialize(component: Component, typeAliases: Seq[String])(implicit indent: Int): Iterator[String] =
+  private def serialize(component: Component, typeAliases: Seq[String])(
+    implicit indent:    Int,
+    suppressSourceInfo: Boolean
+  ): Iterator[String] = {
     component match {
       case ctx @ DefModule(id, name, public, layers, ports, block) =>
         val start = {
@@ -581,7 +593,7 @@ private[chisel3] object Serializer {
           newLineNoIndent() // newline for body, serialize(body) will indent
           b.toString
         }
-        Iterator(start) ++ serialize(block, ctx, typeAliases)(indent + 1)
+        Iterator(start) ++ serialize(block, ctx, typeAliases)(indent + 1, suppressSourceInfo)
 
       case ctx @ DefBlackBox(id, name, ports, topDir, params, knownLayers) =>
         implicit val b = new StringBuilder
@@ -616,7 +628,7 @@ private[chisel3] object Serializer {
           newLineNoIndent() // newline for body, serialize(body) will indent
           b.toString
         }
-        Iterator(start) ++ serialize(block, ctx, typeAliases)(indent + 1)
+        Iterator(start) ++ serialize(block, ctx, typeAliases)(indent + 1, suppressSourceInfo)
 
       case ctx @ DefFormalTest(name, module, params, sourceInfo) =>
         implicit val b = new StringBuilder
@@ -627,8 +639,9 @@ private[chisel3] object Serializer {
         }
         Iterator(b.toString)
     }
+  }
 
-  private def serialize(layer: Layer)(implicit b: StringBuilder, indent: Int): Unit = {
+  private def serialize(layer: Layer)(implicit b: StringBuilder, indent: Int, suppressSourceInfo: Boolean): Unit = {
     newLineAndIndent()
     b ++= "layer "
     b ++= layer.name
@@ -647,13 +660,13 @@ private[chisel3] object Serializer {
     }
     b ++= " :"
     serialize(layer.sourceInfo)
-    layer.children.foreach(serialize(_)(b, indent + 1))
+    layer.children.foreach(serialize(_)(b, indent + 1, suppressSourceInfo))
   }
 
-  private def serialize(layers: Seq[Layer])(implicit indent: Int): Iterator[String] = {
+  private def serialize(layers: Seq[Layer])(implicit indent: Int, suppressSourceInfo: Boolean): Iterator[String] = {
     if (layers.nonEmpty) {
       implicit val b = new StringBuilder
-      layers.foreach(serialize)
+      layers.foreach(serialize(_)(b, indent, suppressSourceInfo))
       newLineNoIndent()
       Iterator(b.toString)
     } else Iterator.empty
@@ -667,7 +680,8 @@ private[chisel3] object Serializer {
 
   // TODO make Annotation serialization lazy
   private def serialize(circuit: Circuit, annotations: Seq[Annotation]): Iterator[String] = {
-    implicit val indent: Int = 0
+    implicit val indent:             Int = 0
+    implicit val suppressSourceInfo: Boolean = circuit.suppressSourceInfo
     val prelude = {
       implicit val b = new StringBuilder
       b ++= s"FIRRTL version $version\n"
@@ -698,7 +712,7 @@ private[chisel3] object Serializer {
       b += NewLine
       Iterator(b.toString)
     } else Iterator.empty
-    val layers = serialize(circuit.layers)(indent + 1)
+    val layers = serialize(circuit.layers)(indent + 1, suppressSourceInfo)
     // TODO what is typeAliases for? Should it be a Set?
     val typeAliasesSeq: Seq[String] = circuit.typeAliases.map(_.name)
     prelude ++
@@ -707,7 +721,7 @@ private[chisel3] object Serializer {
       layers ++
       circuit.components.iterator.zipWithIndex.flatMap { case (m, i) =>
         val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")
-        newline ++ serialize(m, typeAliasesSeq)(indent + 1)
+        newline ++ serialize(m, typeAliasesSeq)(indent + 1, suppressSourceInfo)
       } ++
       Iterator(s"$NewLine")
   }

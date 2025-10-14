@@ -4,6 +4,7 @@ package circtTests.stage
 
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
 import chisel3.experimental.{ExtModule, SourceLine}
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.HasExtModuleInline
 
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
@@ -172,7 +173,7 @@ class TraceSpec {
 
 }
 
-class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils {
+class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils with FileCheck {
 
   private val baseDir = os.pwd / "test_run_dir" / this.getClass.getSimpleName
 
@@ -617,7 +618,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 121:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 122:9: Negative shift amounts are illegal (got -1)"
       )
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
@@ -638,7 +639,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 121:9: Negative shift amounts are illegal (got -1)"
+        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 122:9: Negative shift amounts are illegal (got -1)"
       )
       (lines(1) should not).include("3.U >> -1")
     }
@@ -1327,6 +1328,13 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       chirrtl should include("layerblock B")
     }
 
+    it("should suppress source info with --no-source-info") {
+      // Sanity check source locators are presetn by default
+      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo).fileCheck()("CHECK: @[")
+
+      // Check that flag suppresses source locators
+      ChiselStage.emitCHIRRTL(new ChiselStageSpec.Foo, Array("--no-source-info")).fileCheck()("CHECK-NOT: @[")
+    }
   }
 
   describe("ChiselStage$ exception handling") {

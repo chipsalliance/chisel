@@ -7,7 +7,7 @@ import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
 import mill.util.Jvm.createJar
-import com.github.lolgab.mill.mima.Mima
+import com.github.lolgab.mill.mima._
 
 //import de.tobiasroeser.mill.vcs.version.VcsVersion
 
@@ -47,6 +47,12 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
   override def mimaPreviousVersions = Task.Input {
     os.read.lines(BuildCtx.workspaceRoot / "etc" / "previous-versions.txt")
   }
+
+  override def mimaBinaryIssueFilters = super.mimaBinaryIssueFilters() ++ Seq(
+    // chisel3.internal.firrtl.ir is package private
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.internal.firrtl.ir*"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.internal.firrtl.ir*")
+  )
 
   /** Publish both this project and the plugin (for the default Scala version) */
   override def publishLocal(
