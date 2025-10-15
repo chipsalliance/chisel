@@ -322,6 +322,12 @@ private[chisel3] object Serializer {
         }
         it.hasNext
       }) ()
+    case e @ DomainDefine(info, sink, source) =>
+      b ++= "domain_define "
+      serialize(sink, ctx, info)
+      b ++= " = "
+      serialize(source, ctx, info);
+      serialize(info)
   }
 
   private def serializeCommand(cmd: Command, ctx: Component, typeAliases: Seq[String])(

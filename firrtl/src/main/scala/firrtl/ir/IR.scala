@@ -714,6 +714,9 @@ case object AnyRefPropertyType extends PropertyType
 case class DomainType(domain: String) extends Type with UseSerializer
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class DomainDefine(info: Info, sink: Expression, source: Expression) extends Statement with UseSerializer
+
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object UnknownType extends Type with UseSerializer
 
 /** [[Port]] Direction */

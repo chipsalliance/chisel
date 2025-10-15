@@ -264,6 +264,11 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(probeRelease) should be("release(clock, cond, outProbe)")
   }
 
+  it should "support emitting domain defines" in {
+    val define = DomainDefine(NoInfo, Reference("foo"), Reference("bar"))
+    Serializer.serialize(define) should be("domain_define foo = bar")
+  }
+
   it should "support emitting intrinsic expressions and statements" in {
     val intrinsicNode =
       DefNode(NoInfo, "foo", IntrinsicExpr("test", Seq(Reference("arg")), Seq(), UIntType(IntWidth(1))))

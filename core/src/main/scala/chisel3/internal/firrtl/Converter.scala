@@ -280,6 +280,8 @@ private[chisel3] object Converter {
       convert(block, ctx, typeAliases)
     case FirrtlComment(text) =>
       fir.Comment(text)
+    case DomainDefine(info, sink, source) =>
+      fir.DomainDefine(convert(info), convert(sink, ctx, info), convert(source, ctx, info))
   }
 
   /** Convert Chisel IR Commands into FIRRTL Statements
