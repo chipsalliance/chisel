@@ -377,6 +377,8 @@ object Serializer {
         }
         it.hasNext
       }) ()
+    case DomainDefine(info, sink, source) =>
+      b ++= "domain_define "; s(sink); b ++= " = "; s(source); s(info)
     case other => b ++= other.serialize // Handle user-defined nodes
   }
 

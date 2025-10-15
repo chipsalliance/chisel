@@ -100,4 +100,21 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
+  they should "be capable of being forwarded with the domain define operation" in {
+
+    class Foo extends RawModule {
+      val a = IO(Input(domain.Type(ClockDomain)))
+      val b = IO(Output(domain.Type(ClockDomain)))
+
+      domain.define(b, a)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   domain_define b = a
+         |""".stripMargin
+    }
+
+  }
+
 }

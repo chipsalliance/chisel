@@ -526,6 +526,8 @@ private[chisel3] object ir {
   case class ProbeForce(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg, value: Arg) extends Command
   case class ProbeRelease(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg) extends Command
 
+  case class DomainDefine(sourceInfo: SourceInfo, sink: Arg, source: Arg) extends Command
+
   object Formal extends Enumeration {
     val Assert = Value("assert")
     val Assume = Value("assume")
