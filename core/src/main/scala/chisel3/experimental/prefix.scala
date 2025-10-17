@@ -20,8 +20,9 @@ import chisel3.internal.{Builder, HasId}
   */
 object prefix {
 
-  /** Use to add a prefix to any components generated in the provided scope
-    * The prefix is the name of the provided which, which may not be known yet.
+  /** Use to add a prefix to any components generated in the provided scope.
+    *
+    * The prefix is the name of the provided `HasId`, which may not be known yet.
     *
     * @param name The signal/instance whose name will be the prefix
     * @param f a function for which any generated components are given the prefix
@@ -37,10 +38,11 @@ object prefix {
     ret
   }
 
-  /** Use to add a prefix to any components generated in the provided scope
+  /** Use to add a prefix to any components generated in the provided scope.
+    *
     * The prefix is a string, which must be known when this function is used.
     *
-    * @param name The name which will be the prefix
+    * @param name The name which will be the prefix (and empty name is ignored)
     * @param f a function for which any generated components are given the prefix
     * @tparam T The return type of the provided function
     * @return The return value of the provided function
@@ -60,12 +62,7 @@ object prefix {
   // TODO(adkian-sifive) This is factored out because the Scala 3
   // compiler fails to diambiguate the apply overloads using the type
   // parameter
-  private[chisel3] def applyString[T](name: String)(f: => T): T = {
-    Builder.pushPrefix(name)
-    val ret = f
-    if (Builder.getPrefix.nonEmpty) Builder.popPrefix()
-    ret
-  }
+  private[chisel3] def applyString[T](name: String)(f: => T): T = apply(name)(f)
 }
 
 /** Use to eliminate any existing prefixes within the provided scope.
