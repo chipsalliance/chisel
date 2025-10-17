@@ -44,8 +44,11 @@ package object internal {
         builder.append('_')
       }
       prefix.foreach { p =>
-        builder.append(p)
-        builder.append('_')
+        // Don't append _ if the prefix is empty
+        if (p.nonEmpty) {
+          builder.append(p)
+          builder.append('_')
+        }
       }
       if (temp) {
         // We've moved the leading _ to the front, drop it here
