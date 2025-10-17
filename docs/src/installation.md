@@ -107,9 +107,10 @@ Windows users may also prefer using an [installer](https://adoptium.net/temurin/
 
 #### Java Versions
 
-Different JVM versions need diffrent Scala versions. And the highest Scala version is set by the compiler plugin for a Chisel version.
+Different JVM versions require a [minimum Scala version](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html).
+Similarly, different Scala versions have a minimum Chisel version.
 
-current highest supported versions are:
+Scala/Java compatibility table (maximum version supported):
 
 | Chisel | Scala   | Java
 |--------|---------|------
@@ -118,8 +119,10 @@ current highest supported versions are:
 | 5.3.x  | 2.13.14 | 22
 | 6.6.x  | 2.13.16 | 23
 | 7.1.x  | 2.13.16 | 23
+| 7.2.x  | 2.13.17 | 25
 
-Note that `brew` on Mac currently installs Java 23, which is not supported by Scala 2.13.14 and lower.
+Note that, by default, `brew` on Mac installs the newest version of Java which often is not LTS and not yet supported by the maximum version of Scala supported by Chisel.
+Stick to LTS and you should have no issues (e.g. `brew install openjdk@17`)
 
 ### Build Tools
 
@@ -210,7 +213,7 @@ scoop install sbt
 
 ### Firtool
 
-Beginning with version 6.0, Chisel will manage the version of firtool on most systems.
+Beginning with version 6.0, Chisel manages the version of firtool on most systems.
 However, some systems (e.g. NixOS or older Linux distributions like CentOS 6) may need to build firtool from source.
 If you need to build firtool from source, please see the [Github repository](https://github.com/llvm/circt).
 
@@ -221,7 +224,7 @@ You can also query this information programmatically in Scala via [`chisel3.Buil
 For example, you can use Scala CLI to compile a tiny program on the command-line to print out this value:
 
 ```bash
-scala-cli -S 2.13 -e 'println(chisel3.BuildInfo.firtoolVersion)' --dep org.chipsalliance::chisel:6.0.0
+scala-cli -S 2.13 -e 'println(chisel3.BuildInfo.firtoolVersion)' --dep org.chipsalliance::chisel:7.2.0
 ```
 
 ### Verilog Simulation
