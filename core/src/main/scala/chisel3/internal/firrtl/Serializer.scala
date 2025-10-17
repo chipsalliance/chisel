@@ -29,10 +29,12 @@ private[chisel3] object Serializer {
     }
 
   /** Generate a legal FIRRTL name. */
-  private def legalize(name: String): String = name match {
-    // If the name starts with a digit, then escape it with backticks.
-    case _ if name.head.isDigit => s"`$name`"
-    case _                      => name
+  private def legalize(name: String): String = {
+    name match {
+      // If the name starts with a digit, then escape it with backticks.
+      case _ if name.head.isDigit => s"`$name`"
+      case _                      => name
+    }
   }
 
   /** create a new line with the appropriate indent */
@@ -516,6 +518,7 @@ private[chisel3] object Serializer {
     case t: Property[_] =>
       // TODO can we not use FIRRTL types here?
       b ++= fir.Serializer.serialize(t.getPropertyType)
+    case t: domain.Type => b ++= "Domain of "; b ++= t.domain.name;
   }
 
   private def serialize(name: String, param: Param)(implicit b: StringBuilder): Unit = param match {
@@ -570,6 +573,14 @@ private[chisel3] object Serializer {
     b ++= legalize(getRef(port.id, port.sourceInfo).name)
     b ++= " : "
     val tpe = serializeType(port.id, clearDir, port.sourceInfo, true, true, typeAliases)
+    if (port.associations.nonEmpty) {
+      b ++= " domains ["
+      port.associations.zipWithIndex.foreach { case (assoc, i) =>
+        if (i > 0) b ++= ", "
+        b ++= legalize(getRef(assoc, UnlocatableSourceInfo).name)
+      }
+      b ++= "]"
+    }
     serialize(port.sourceInfo)
   }
 
@@ -678,6 +689,40 @@ private[chisel3] object Serializer {
     // serialize(ta.sourceInfo) TODO: Uncomment once firtool accepts infos for type aliases
   }
 
+  private def serialize(fieldType: domain.Field.Type)(implicit b: StringBuilder, indent: Int): Unit = {
+    b ++= {
+      fieldType match {
+        case domain.Field.Boolean => "Bool"
+        case domain.Field.Integer => "Integer"
+        case domain.Field.String  => "String"
+      }
+    }
+  }
+
+  private def serialize(domain: Domain)(implicit b: StringBuilder, indent: Int): Unit = {
+    newLineAndIndent()
+    b ++= "domain "
+    b ++= domain.name
+    b ++= " :"
+    domain.fields.map { case (name, tpe) =>
+      newLineAndIndent(1)
+      b ++= name
+      b ++= " : "
+      serialize(tpe)
+    }
+    newLineNoIndent()
+  }
+
+  private def serializeDomains(domains: Seq[Domain])(implicit indent: Int): Iterator[String] = {
+    if (domains.isEmpty)
+      return Iterator.empty
+
+    implicit val b = new StringBuilder
+    domains.foreach(serialize)
+    newLineNoIndent()
+    Iterator(b.toString)
+  }
+
   // TODO make Annotation serialization lazy
   private def serialize(circuit: Circuit, annotations: Seq[Annotation]): Iterator[String] = {
     implicit val indent:             Int = 0
@@ -713,12 +758,14 @@ private[chisel3] object Serializer {
       Iterator(b.toString)
     } else Iterator.empty
     val layers = serialize(circuit.layers)(indent + 1, suppressSourceInfo)
+    val domains = serializeDomains(circuit.domains)(indent + 1)
     // TODO what is typeAliases for? Should it be a Set?
     val typeAliasesSeq: Seq[String] = circuit.typeAliases.map(_.name)
     prelude ++
       options ++
       typeAliases ++
       layers ++
+      domains ++
       circuit.components.iterator.zipWithIndex.flatMap { case (m, i) =>
         val newline = Iterator(if (i == 0) s"$NewLine" else s"${NewLine}${NewLine}")
         newline ++ serialize(m, typeAliasesSeq)(indent + 1, suppressSourceInfo)

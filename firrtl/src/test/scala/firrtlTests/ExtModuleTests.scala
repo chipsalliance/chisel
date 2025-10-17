@@ -27,7 +27,10 @@ class ExtModuleTests extends FirrtlFlatSpec {
         ExtModule(
           NoInfo,
           "Top",
-          Seq(Port(NoInfo, "y", Input, UIntType(IntWidth(0))), Port(NoInfo, "x", Output, UIntType(IntWidth(1)))),
+          Seq(
+            Port(NoInfo, "y", Input, UIntType(IntWidth(0)), Seq.empty),
+            Port(NoInfo, "x", Output, UIntType(IntWidth(1)), Seq.empty)
+          ),
           "ParameterizedExtModule",
           Seq(
             IntParam("VALUE", 1),
