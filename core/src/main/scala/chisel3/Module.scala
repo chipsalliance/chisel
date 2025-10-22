@@ -616,18 +616,18 @@ package experimental {
     protected def portsSize: Int = _ports.size
 
     /* Associate a port of this module with one or more domains. */
-    final def associate(port: Data, domain: Data, domains: Data*)(implicit si: SourceInfo): Unit = {
-      val allDomains = Seq(domain) ++ domains
+    final def associate(port: Data, domains: Data*)(implicit si: SourceInfo): Unit = {
+      require(domains.nonEmpty, "cannot associate a port with zero domains")
       if (!portsContains(port)) {
-        val domainsString = allDomains.mkString(", ")
+        val domainsString = domains.mkString(", ")
         Builder.error(
           s"""Unable to associate port '$port' to domains '$domainsString' because the port does not exist in this module"""
         )(si)
         return
       }
       _associations.updateWith(port) {
-        case Some(acc) => Some(acc ++= allDomains)
-        case None      => Some(LinkedHashSet.empty[Data] ++= allDomains)
+        case Some(acc) => Some(acc ++= domains)
+        case None      => Some(LinkedHashSet.empty[Data] ++= domains)
       }
     }
 

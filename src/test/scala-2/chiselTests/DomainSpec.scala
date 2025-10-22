@@ -117,4 +117,19 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
+  behavior of "The associate method"
+
+  it should "error if given zero arguments" in {
+
+    class Foo extends RawModule {
+      val a = IO(Input(Bool()))
+      associate(a)
+    }
+
+    intercept[IllegalArgumentException] {
+      ChiselStage.elaborate(new Foo)
+    }.getMessage should include("cannot associate a port with zero domains")
+
+  }
+
 }
