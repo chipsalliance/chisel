@@ -622,7 +622,6 @@ package experimental {
         Builder.error(s"""Unable to associate port '$port' to domains '${allDomains.mkString(
             ", "
           )}' because the port does not exist in this module""")(si)
-        println(getModulePorts)
         return
       }
       _associations.updateWith(port) {
