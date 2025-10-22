@@ -29,12 +29,10 @@ private[chisel3] object Serializer {
     }
 
   /** Generate a legal FIRRTL name. */
-  private def legalize(name: String): String = {
-    name match {
-      // If the name starts with a digit, then escape it with backticks.
-      case _ if name.head.isDigit => s"`$name`"
-      case _                      => name
-    }
+  private def legalize(name: String): String = name match {
+    // If the name starts with a digit, then escape it with backticks.
+    case _ if name.head.isDigit => s"`$name`"
+    case _                      => name
   }
 
   /** create a new line with the appropriate indent */
