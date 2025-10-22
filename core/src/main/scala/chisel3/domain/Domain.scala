@@ -72,4 +72,18 @@ abstract class Domain()(implicit val sourceInfo: SourceInfo) { self: Singleton =
     */
   def fields: Seq[(String, Field.Type)] = Seq.empty
 
+  /** Construct a type of this domain kind.
+    *
+    * For a given domain, this is used to create a Chisel type which can be used
+    * in a port.  This is typically used to create domain type ports.
+    *
+    * E.g., to create a [[chisel3.domains.ClockDomain]] port, use:
+    * {{{
+    * import chisel3.domains.ClockDomain
+    *
+    * val A = IO(Input(ClockDomain.Type()))
+    * }}}
+    */
+  final def Type() = new chisel3.domain.Type(this)
+
 }

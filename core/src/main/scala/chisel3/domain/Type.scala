@@ -9,7 +9,7 @@ import chisel3.internal.{throwException, Builder}
 /** A [[Data]] that is used to communicate information of a specific domain
   * kind.
   */
-final class Type private (val domain: Domain) extends Element { self =>
+final class Type private[domain] (val domain: Domain) extends Element { self =>
 
   private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): chisel3.UInt = {
     Builder.error(s"${this._localErrorContext} does not support .asUInt.")
@@ -28,16 +28,5 @@ final class Type private (val domain: Domain) extends Element { self =>
   private[chisel3] def width: Width = UnknownWidth
 
   addDomain(domain)
-
-}
-
-/** Utility for creating domain types. */
-object Type {
-
-  /** Create a new domain type with a specific domain kind.
-    *
-    * @param domain the kind of [[Domain]]
-    */
-  def apply(domain: Domain) = new Type(domain)
 
 }

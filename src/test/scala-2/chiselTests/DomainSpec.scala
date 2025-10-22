@@ -28,8 +28,8 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
 
     class Foo extends RawModule {
-      val A = IO(Input(domain.Type(ClockDomain)))
-      val B = IO(Input(domain.Type(PowerDomain)))
+      val A = IO(Input(ClockDomain.Type()))
+      val B = IO(Input(PowerDomain.Type()))
       val a = IO(Input(Bool()))
       val b = IO(Input(Bool()))
 
@@ -62,7 +62,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     class Bar extends BlackBox {
       val io = IO {
         new Bundle {
-          val A = Input(domain.Type(ClockDomain))
+          val A = Input(ClockDomain.Type())
           val a = Input(UInt(1.W))
         }
       }
@@ -82,7 +82,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
   they should "work for extmodules" in {
 
     class Bar extends ExtModule {
-      val A = IO(Input(domain.Type(ClockDomain)))
+      val A = IO(Input(ClockDomain.Type()))
       val a = IO(Input(UInt(1.W)))
       associate(a, A)
     }
@@ -103,8 +103,8 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
   they should "be capable of being forwarded with the domain define operation" in {
 
     class Foo extends RawModule {
-      val a = IO(Input(domain.Type(ClockDomain)))
-      val b = IO(Output(domain.Type(ClockDomain)))
+      val a = IO(Input(ClockDomain.Type()))
+      val b = IO(Output(ClockDomain.Type()))
 
       domain.define(b, a)
     }
