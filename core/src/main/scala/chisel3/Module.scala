@@ -578,8 +578,8 @@ package experimental {
 
     private val _associations = new HashMap[Data, LinkedHashSet[domain.Type]]()
 
-    protected[chisel3] def getAssociations: Map[Data, Set[domain.Type]] =
-      _associations.view.mapValues(_.toSet).toMap
+    /** Return true if this module has any port associations. */
+    private[chisel3] def hasAsssociations: Boolean = _associations.nonEmpty
 
     // getPorts unfortunately already used for tester compatibility
     protected[chisel3] def getModulePorts: Seq[Data] = {

@@ -220,7 +220,7 @@ abstract class BlackBox(
     // Note: BlackBoxes, because they have a single `io` cannot currently
     // support associations because associations require having multiple ports.
     // If this restriction is lifted, then this code should be updated.
-    require(getAssociations.isEmpty, "BlackBoxes cannot support associations at this time, use an ExtModule")
+    require(!hasAsssociations, "BlackBoxes cannot support associations at this time, use an ExtModule")
     val firrtlPorts = namedPorts.map { namedPort =>
       Port(namedPort._2, namedPort._2.specifiedDirection, Seq.empty, UnlocatableSourceInfo)
     }
