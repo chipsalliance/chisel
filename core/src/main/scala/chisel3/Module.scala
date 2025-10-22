@@ -619,9 +619,10 @@ package experimental {
     final def associate(port: Data, domain: Data, domains: Data*)(implicit si: SourceInfo): Unit = {
       val allDomains = Seq(domain) ++ domains
       if (!portsContains(port)) {
-        Builder.error(s"""Unable to associate port '$port' to domains '${allDomains.mkString(
-            ", "
-          )}' because the port does not exist in this module""")(si)
+        val domainsString = allDomains.mkString(", ")
+        Builder.error(
+          s"""Unable to associate port '$port' to domains '$domainsString' because the port does not exist in this module"""
+        )(si)
         return
       }
       _associations.updateWith(port) {
