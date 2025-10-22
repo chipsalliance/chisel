@@ -576,9 +576,9 @@ package experimental {
 
     private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
 
-    private val _associations = new HashMap[Data, LinkedHashSet[Data]]()
+    private val _associations = new HashMap[Data, LinkedHashSet[domain.Type]]()
 
-    protected[chisel3] def getAssociations: scala.collection.immutable.Map[Data, LinkedHashSet[Data]] =
+    protected[chisel3] def getAssociations: scala.collection.immutable.Map[Data, LinkedHashSet[domain.Type]] =
       _associations.toMap
 
     // getPorts unfortunately already used for tester compatibility
@@ -588,10 +588,10 @@ package experimental {
     }
 
     // gets Ports along with there source locators
-    private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo, Seq[Data])] = {
+    private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo, Seq[domain.Type])] = {
       require(_closed, "Can't get ports before module close")
       _ports.toSeq.map { case (port, info) =>
-        (port, info, _associations.get(port).fold(Seq.empty[Data])(_.toSeq))
+        (port, info, _associations.get(port).fold(Seq.empty[domain.Type])(_.toSeq))
       }
     }
 
@@ -616,7 +616,7 @@ package experimental {
     protected def portsSize: Int = _ports.size
 
     /* Associate a port of this module with one or more domains. */
-    final def associate(port: Data, domains: Data*)(implicit si: SourceInfo): Unit = {
+    final def associate(port: Data, domains: domain.Type*)(implicit si: SourceInfo): Unit = {
       require(domains.nonEmpty, "cannot associate a port with zero domains")
       if (!portsContains(port)) {
         val domainsString = domains.mkString(", ")
@@ -627,7 +627,7 @@ package experimental {
       }
       _associations.updateWith(port) {
         case Some(acc) => Some(acc ++= domains)
-        case None      => Some(LinkedHashSet.empty[Data] ++= domains)
+        case None      => Some(LinkedHashSet.empty[domain.Type] ++= domains)
       }
     }
 

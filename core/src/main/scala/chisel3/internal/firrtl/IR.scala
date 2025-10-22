@@ -504,7 +504,7 @@ private[chisel3] object ir {
   case class DefOption(sourceInfo: SourceInfo, name: String, cases: Seq[DefOptionCase])
   case class DefOptionCase(sourceInfo: SourceInfo, name: String)
 
-  case class Port(id: Data, dir: SpecifiedDirection, associations: Seq[Data], sourceInfo: SourceInfo)
+  case class Port(id: Data, dir: SpecifiedDirection, associations: Seq[domain.Type], sourceInfo: SourceInfo)
 
   case class Printf(
     id:         printf.Printf,
