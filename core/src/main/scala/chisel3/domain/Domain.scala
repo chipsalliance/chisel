@@ -48,7 +48,7 @@ object Field {
 abstract class Domain()(implicit val sourceInfo: SourceInfo) { self: Singleton =>
 
   // The name that will be used when generating FIRRTL.
-  private[chisel3] def name: String = simpleClassName(this.getClass())
+  private[chisel3] def name: String = simpleClassName(this.getClass)
 
   /** A sequence of name--type pairs that define the schema for this domain.
     *
