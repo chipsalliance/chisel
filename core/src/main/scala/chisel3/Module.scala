@@ -591,7 +591,7 @@ package experimental {
     private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo, Seq[Data])] = {
       require(_closed, "Can't get ports before module close")
       _ports.toSeq.map { case (port, info) =>
-        (port, info, _associations.get(port).map(_.toSeq).getOrElse(Seq.empty[Data]))
+        (port, info, _associations.get(port).fold(Seq.empty[Data])(_.toSeq))
       }
     }
 
