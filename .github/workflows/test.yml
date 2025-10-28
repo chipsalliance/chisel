@@ -255,9 +255,9 @@ jobs:
         with:
           jvm: adoptium:17
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
       - name: Install CIRCT
         id: install-circt
         if: ${{ inputs.circt }}
