@@ -111,9 +111,16 @@ serve: build
 	cd $(this_dir)/build && python3 -m http.server ${PORT}
 
 clean:
-	rm -rf $(this_dir)/docs $(this_dir)/build $(this_dir)/src/pages/generated $(chisel_dir)/docs/generated $(latest_chisel_download) $(snapshot_chisel_download)
+	rm -rf $(this_dir)/docs \
+		$(this_dir)/build \
+		$(this_dir)/src/pages/generated \
+		$(chisel_dir)/docs/generated \
+		$(latest_chisel_download) \
+		$(snapshot_chisel_download)
 
 mrproper: clean
-	rm -rf $(this_dir)/node_modules $(this_dir)/package-lock.json
+	rm -rf $(this_dir)/node_modules \
+		$(this_dir)/package-lock.json \
+		$(chisel_dir)/out
 
 .PHONY: clean mrproper serve install build
