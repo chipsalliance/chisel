@@ -13,16 +13,16 @@
         <link href="https://www.chisel-lang.org/blog/latch-up-2025"/>
         <updated>2025-05-05T00:00:00.000Z</updated>
         <summary type="html"><![CDATA[Chisel update talk at Latch Up 2025]]></summary>
-        <content type="html"><![CDATA[<p>Latch-Up is a conference dedicated to open-source silicon organized by the <a href="https://fossi-foundation.org/" target="_blank" rel="noopener noreferrer">FOSSi Foundation</a>.
+        <content type="html"><![CDATA[<p>Latch-Up is a conference dedicated to open-source silicon organized by the <a href="https://fossi-foundation.org/" target="_blank" rel="noopener noreferrer" class="">FOSSi Foundation</a>.
 At Latch-Up 2025 in Santa Barbara, CA,
-I presented a <a href="https://www.youtube.com/watch?v=zbQGQR4MLds" target="_blank" rel="noopener noreferrer">Chisel Update</a>, primarily focused on the recent <a href="https://github.com/chipsalliance/chisel/releases/tag/v7.0.0-RC1" target="_blank" rel="noopener noreferrer">v7.0.0-RC1 release</a>.
-There were lots of other interesting talks, check out the full schedule which includes links to the recordings and slides for each talk: <a href="https://fossi-foundation.org/latch-up/2025" target="_blank" rel="noopener noreferrer">https://fossi-foundation.org/latch-up/2025</a>.</p>
+I presented a <a href="https://www.youtube.com/watch?v=zbQGQR4MLds" target="_blank" rel="noopener noreferrer" class="">Chisel Update</a>, primarily focused on the recent <a href="https://github.com/chipsalliance/chisel/releases/tag/v7.0.0-RC1" target="_blank" rel="noopener noreferrer" class="">v7.0.0-RC1 release</a>.
+There were lots of other interesting talks, check out the full schedule which includes links to the recordings and slides for each talk: <a href="https://fossi-foundation.org/latch-up/2025" target="_blank" rel="noopener noreferrer" class="">https://fossi-foundation.org/latch-up/2025</a>.</p>
 <p>Two talks in particular that I think might interest the Chisel community:</p>
 <ul>
-<li>Rachit Nigram's talk <a href="https://www.youtube.com/watch?v=dzk_4rz23tE" target="_blank" rel="noopener noreferrer">High-Performance Hardware Design with Hardcaml</a>--In this talk Rachit does a great job of helping explain the intuition of how one might build an eDSL (embedded domain specific language) like Chisel.</li>
-<li>Xiaoke Su's talk <a href="https://www.youtube.com/watch?v=b-LbD8Vq16k" target="_blank" rel="noopener noreferrer">"One Student One Chip" Initiative: Learn to Build RISC-V Chips from Scratch with MOOC</a>--This talk is about thousands of students learning hardware design; apparently over half of the students choose to use Chisel which is pretty cool.</li>
+<li class="">Rachit Nigram's talk <a href="https://www.youtube.com/watch?v=dzk_4rz23tE" target="_blank" rel="noopener noreferrer" class="">High-Performance Hardware Design with Hardcaml</a>--In this talk Rachit does a great job of helping explain the intuition of how one might build an eDSL (embedded domain specific language) like Chisel.</li>
+<li class="">Xiaoke Su's talk <a href="https://www.youtube.com/watch?v=b-LbD8Vq16k" target="_blank" rel="noopener noreferrer" class="">"One Student One Chip" Initiative: Learn to Build RISC-V Chips from Scratch with MOOC</a>--This talk is about thousands of students learning hardware design; apparently over half of the students choose to use Chisel which is pretty cool.</li>
 </ul>
-<p>Feel free to <a href="https://github.com/chipsalliance/chisel/discussions" target="_blank" rel="noopener noreferrer">start a discussion</a> on Github or <a href="https://matrix.to/#/#chisel:matrix.org" target="_blank" rel="noopener noreferrer">chat with us</a> on Matrix if you have any questions or thoughts about the talk.</p>]]></content>
+<p>Feel free to <a href="https://github.com/chipsalliance/chisel/discussions" target="_blank" rel="noopener noreferrer" class="">start a discussion</a> on Github or <a href="https://matrix.to/#/#chisel:matrix.org" target="_blank" rel="noopener noreferrer" class="">chat with us</a> on Matrix if you have any questions or thoughts about the talk.</p>]]></content>
         <author>
             <name>Jack Koenig</name>
         </author>
