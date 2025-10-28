@@ -120,7 +120,7 @@ def generateMarkdown(logger: Logger)(snapshot: String): String = {
     // pathname is needed by Docusaurus to correctly handle internal links in the static folder,
     // see https://docusaurus.io/docs/advanced/routing#escaping-from-spa-redirects
     s"- [Latest (${latest.serialize})](pathname:///api/latest/index.html)",
-    s"- [Snapshot](${sonatype(snapshot)})"
+    s"- [Snapshot (${snapshot})](pathname:///api/snapshot/index.html)"
   ) ++ major.reverse.map { v =>
     s"- [${v.serialize}](${javadocIO(v)})"
   }).mkString("\n")
