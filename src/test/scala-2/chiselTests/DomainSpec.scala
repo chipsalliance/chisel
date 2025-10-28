@@ -31,10 +31,12 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       val A = IO(Input(ClockDomain.Type()))
       val B = IO(Input(PowerDomain.Type()))
       val a = IO(Input(Bool()))
-      val b = IO(Input(Bool()))
+      val b = IO(Output(Bool()))
 
       associate(a, A)
       associate(b, B)
+
+      b :<= domain.unsafe_cast(a, B)
     }
 
     ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
@@ -51,7 +53,10 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
          |CHECK-NEXT:     input A : Domain of ClockDomain
          |CHECK-NEXT:     input B : Domain of PowerDomain
          |CHECK-NEXT:     input a : UInt<1> domains [A]
-         |CHECK-NEXT:     input b : UInt<1> domains [B]
+         |CHECK-NEXT:     output b : UInt<1> domains [B]
+         |
+         |CHECK:          node [[cast:.*]] = unsafe_domain_cast(a, B)
+         |CHECK-NEXT:     connect b, [[cast]]
          |""".stripMargin
     }
 
@@ -129,6 +134,36 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     intercept[IllegalArgumentException] {
       ChiselStage.elaborate(new Foo)
     }.getMessage should include("cannot associate a port with zero domains")
+
+  }
+
+  behavior of "unsafe_domain_cast"
+
+  it should "work for zero, one, and two casts" in {
+
+    object DomainA extends Domain
+    object DomainB extends Domain
+
+    class Foo extends RawModule {
+      val A = IO(Input(DomainA.Type()))
+      val B = IO(Input(DomainB.Type()))
+      val in = IO(Input(Bool()))
+
+      val out = IO(Output(Bool()))
+
+      out :<= domain.unsafe_cast(in)
+      out :<= domain.unsafe_cast(in, A)
+      out :<= domain.unsafe_cast(in, B)
+      out :<= domain.unsafe_cast(in, A, B)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: unsafe_domain_cast(in)
+         |CHECK: unsafe_domain_cast(in, A)
+         |CHECK: unsafe_domain_cast(in, B)
+         |CHECK: unsafe_domain_cast(in, A, B)
+         |""".stripMargin
+    }
 
   }
 
