@@ -28,7 +28,7 @@ jobs:
         original_pr: ${{ steps.original.outputs.pr }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Figure out backport PR number
         id: backport
         run: |
@@ -57,7 +57,7 @@ jobs:
     if: ${{ needs.resolve_prs.outputs.original_pr }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Copy over labels
         env:
           GH_TOKEN: ${{ github.token }}

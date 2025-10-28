@@ -37,7 +37,7 @@ jobs:
       branches: ${{ steps.determine-branches.outputs.branches }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Check Valid
@@ -70,7 +70,7 @@ jobs:
         branch: ${{ fromJson(needs.determine_branches.outputs.branches) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Create file
         run: |
           VERSION=${{ needs.determine_version.outputs.version }}

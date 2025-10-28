@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - id: cache-filecheck
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: FileCheck
         key: filecheck-${{ runner.os }}-${{ inputs.version }}
