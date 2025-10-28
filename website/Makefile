@@ -94,7 +94,7 @@ $(scaladoc_links): $(chisel-non-website) | $(generated_dir)
 	cd $(chisel_dir) && ./mill docs.scaladocLinks
 
 $(install_timestamp): $(this_dir)/package.json
-	cd $(this_dir) && npm install
+	cd $(this_dir) && npm ci
 	touch $@
 
 install: $(install_timestamp)
@@ -120,7 +120,6 @@ clean:
 
 mrproper: clean
 	rm -rf $(this_dir)/node_modules \
-		$(this_dir)/package-lock.json \
 		$(chisel_dir)/out
 
 .PHONY: clean mrproper serve install build
