@@ -174,11 +174,16 @@ object PrimOps extends LazyLogging {
     override def toString = "asAsyncReset"
   }
 
+  /** Cast to a different domain */
+  case object UnsafeDomainCast extends PrimOp {
+    override def toString = "unsafe_domain_cast"
+  }
+
   // format: off
   private[firrtl] lazy val builtinPrimOps: Seq[PrimOp] = Seq(
     Add, Sub, Mul, Div, Rem, Lt, Leq, Gt, Geq, Eq, Neq, Pad, AsUInt, AsSInt, AsClock,
     AsAsyncReset, Shl, Shr, Dshl, Dshr, Neg, Cvt, Not, And, Or, Xor, Andr, Orr, Xorr, Cat, Bits,
-    Head, Tail
+    Head, Tail, UnsafeDomainCast
   )
   // format: on
   private lazy val strToPrimOp: Map[String, PrimOp] = {
