@@ -11,6 +11,7 @@
 /docs
 generated
 /static/api/latest
+/static/api/snapshot
 /static/releases
 
 # Misc
