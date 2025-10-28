@@ -12,8 +12,6 @@
 generated
 /static/api/latest
 /static/releases
-# Debatable if this should be included or not
-package-lock.json
 
 # Misc
 .DS_Store
