@@ -226,7 +226,7 @@ For example, in SBT this could be expressed as:
 ```scala
 // build.sbt
 scalaVersion := "2.13.16"
-val chiselVersion = "7.1.0"
+val chiselVersion = "7.2.0"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```
@@ -318,7 +318,7 @@ If the compilation succeeded and the dependencies noted above are installed, you
 
 To use the development version of Chisel (`main` branch), you will need to build from source and publish locally.
 The repository version can be found by running `./mill show unipublish.publishVersion`.
-As of the time of writing it was: `7.0.0-M2+431-4798bea7-SNAPSHOT`
+As of the time of writing it was: `7.1.1+16-767b9eb3-SNAPSHOT`
 
 To publish your version of Chisel to the local Ivy repository, run:
 
@@ -332,7 +332,7 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to use the current version, for example:
 
 ```scala
-val chiselVersion = "7.0.0-M2+431-4798bea7-SNAPSHOT"
+val chiselVersion = "7.1.1+16-767b9eb3-SNAPSHOT"
 addCompilerPlugin("org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full)
 libraryDependencies += "org.chipsalliance" %% "chisel" % chiselVersion
 ```

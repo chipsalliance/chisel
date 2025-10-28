@@ -377,6 +377,8 @@ object Serializer {
         }
         it.hasNext
       }) ()
+    case DomainDefine(info, sink, source) =>
+      b ++= "domain_define "; s(sink); b ++= " = "; s(source); s(info)
     case other => b ++= other.serialize // Handle user-defined nodes
   }
 
@@ -484,6 +486,7 @@ object Serializer {
     case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
     case AnyRefPropertyType        => b ++= "AnyRef"
     case AliasType(name)           => b ++= name
+    case DomainType(domain)        => b ++= "Domain of "; b ++= (domain);
     case UnknownType               => b += '?'
     case other                     => b ++= other.serialize // Handle user-defined nodes
   }
@@ -495,8 +498,18 @@ object Serializer {
   }
 
   private def s(node: Port)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case Port(info, name, direction, tpe) =>
-      s(direction); b += ' '; b ++= legalize(name); b ++= " : "; s(tpe); s(info)
+    case Port(info, name, direction, tpe, associations) =>
+      s(direction); b += ' '; b ++= legalize(name);
+      b ++= " : "; s(tpe);
+      if (associations.nonEmpty) {
+        b ++= " domains [";
+        associations.zipWithIndex.foreach { case (assoc, i) =>
+          if (i > 0) b ++= ", "
+          b ++= assoc
+        }
+        b ++= "]"
+      }
+      s(info)
   }
 
   private def s(node: Param)(implicit b: StringBuilder, indent: Int): Unit = node match {

@@ -594,4 +594,46 @@ class PrefixSpec extends AnyPropSpec with Matchers with FileCheck {
     }
     ChiselStage.emitCHIRRTL(new Test) should include("wire prefixed_wire :")
   }
+
+  property("Empty prefixes should be a no-op") {
+    class MyModule extends Module {
+      prefix("") {
+        val w = Wire(UInt(3.W))
+      }
+      val x = prefix("") {
+        val y = Wire(UInt(3.W))
+        val z = Wire(UInt(3.W))
+        y
+      }
+    }
+    println(ChiselStage.emitCHIRRTL(new MyModule))
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """|CHECK: wire w :
+           |CHECK: wire x :
+           |CHECK: wire x_z :
+           |""".stripMargin
+      )
+  }
+
+  property("skipPrefix should apply to empty prefixes") {
+    class MyModule extends Module {
+      // skipPrefix should remove the empty prefix, not x_
+      val x = prefix("") {
+        skipPrefix {
+          val y = Wire(UInt(3.W))
+          val z = Wire(UInt(3.W))
+          y
+        }
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new MyModule)
+      .fileCheck()(
+        """|CHECK: wire x :
+           |CHECK: wire x_z :
+           |""".stripMargin
+      )
+  }
 }

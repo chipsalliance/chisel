@@ -1019,7 +1019,7 @@ void simulation_main(int argc, char const **argv) {
 // _not_ terminate the simulation when it hits a finish.
 void run_simulation(int delay, int *finish) {
   if (delay < 0)
-    failWithError("Found negative delay for events.", delay)
+    failWithError("Found negative delay ('%d') for events.", delay);
   if (!delay) {
     testbench->eval_step();
     *finish = context->gotFinish();

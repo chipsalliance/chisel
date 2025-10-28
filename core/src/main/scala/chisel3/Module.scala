@@ -576,6 +576,11 @@ package experimental {
 
     private val _ports = new ArrayBuffer[(Data, SourceInfo)]()
 
+    private val _associations = new HashMap[Data, LinkedHashSet[domain.Type]]()
+
+    /** Return true if this module has any port associations. */
+    private[chisel3] def hasAsssociations: Boolean = _associations.nonEmpty
+
     // getPorts unfortunately already used for tester compatibility
     protected[chisel3] def getModulePorts: Seq[Data] = {
       require(_closed, "Can't get ports before module close")
@@ -583,9 +588,11 @@ package experimental {
     }
 
     // gets Ports along with there source locators
-    private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo)] = {
+    private[chisel3] def getModulePortsAndLocators: Seq[(Data, SourceInfo, Seq[domain.Type])] = {
       require(_closed, "Can't get ports before module close")
-      _ports.toSeq
+      _ports.toSeq.map { case (port, info) =>
+        (port, info, _associations.get(port).fold(Seq.empty[domain.Type])(_.toSeq))
+      }
     }
 
     /** Get IOs that are currently bound to this module.
@@ -608,6 +615,22 @@ package experimental {
 
     protected def portsSize: Int = _ports.size
 
+    /* Associate a port of this module with one or more domains. */
+    final def associate(port: Data, domains: domain.Type*)(implicit si: SourceInfo): Unit = {
+      require(domains.nonEmpty, "cannot associate a port with zero domains")
+      if (!portsContains(port)) {
+        val domainsString = domains.mkString(", ")
+        Builder.error(
+          s"""Unable to associate port '$port' to domains '$domainsString' because the port does not exist in this module"""
+        )(si)
+        return
+      }
+      _associations.updateWith(port) {
+        case Some(acc) => Some(acc ++= domains)
+        case None      => Some(LinkedHashSet.empty[domain.Type] ++= domains)
+      }
+    }
+
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
       * Also closes the module so no more construction can happen inside.
       */
@@ -618,7 +641,7 @@ package experimental {
     private[chisel3] def initializeInParent(): Unit
 
     private[chisel3] def namePorts(): Unit = {
-      for ((port, source) <- getModulePortsAndLocators) {
+      for ((port, source, _) <- getModulePortsAndLocators) {
         port._computeName(None) match {
           case Some(name) =>
             if (_namespace.contains(name)) {
@@ -882,7 +905,7 @@ package experimental {
     private[chisel3] def addSecretIO[A <: Data](iodef: A)(implicit sourceInfo: SourceInfo): A = {
       val name = iodef._computeName(None).getOrElse("secret")
       iodef.setRef(ModuleIO(this, _namespace.name(name)))
-      val newPort = new Port(iodef, iodef.specifiedDirection, sourceInfo)
+      val newPort = new Port(iodef, iodef.specifiedDirection, Seq.empty, sourceInfo)
       if (_closed) {
         _component.get.secretPorts += newPort
       } else secretPorts += newPort
@@ -905,7 +928,9 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+    protected def IO[T <: Data](iodef: => T)(
+      implicit sourceInfo: SourceInfo
+    ): T = {
       chisel3.IO.apply(iodef)
     }
 

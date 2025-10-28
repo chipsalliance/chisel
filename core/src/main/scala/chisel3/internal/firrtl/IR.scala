@@ -481,6 +481,12 @@ private[chisel3] object ir {
     chiselLayer: layer.Layer
   )
 
+  final case class Domain(
+    sourceInfo: SourceInfo,
+    name:       String,
+    fields:     Seq[(String, domain.Field.Type)]
+  )
+
   class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
     val region = new Block(sourceInfo)
   }
@@ -498,7 +504,7 @@ private[chisel3] object ir {
   case class DefOption(sourceInfo: SourceInfo, name: String, cases: Seq[DefOptionCase])
   case class DefOptionCase(sourceInfo: SourceInfo, name: String)
 
-  case class Port(id: Data, dir: SpecifiedDirection, sourceInfo: SourceInfo)
+  case class Port(id: Data, dir: SpecifiedDirection, associations: Seq[domain.Type], sourceInfo: SourceInfo)
 
   case class Printf(
     id:         printf.Printf,
@@ -519,6 +525,8 @@ private[chisel3] object ir {
   case class ProbeReleaseInitial(sourceInfo: SourceInfo, probe: Arg) extends Command
   case class ProbeForce(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg, value: Arg) extends Command
   case class ProbeRelease(sourceInfo: SourceInfo, clock: Arg, cond: Arg, probe: Arg) extends Command
+
+  case class DomainDefine(sourceInfo: SourceInfo, sink: Arg, source: Arg) extends Command
 
   object Formal extends Enumeration {
     val Assert = Value("assert")
@@ -607,7 +615,8 @@ private[chisel3] object ir {
     typeAliases:        Seq[DefTypeAlias],
     layers:             Seq[Layer],
     options:            Seq[DefOption],
-    suppressSourceInfo: Boolean
+    suppressSourceInfo: Boolean,
+    domains:            Seq[Domain]
   ) {
     def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_().flatMap(_.update(renames)))
   }

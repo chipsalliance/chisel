@@ -280,6 +280,8 @@ private[chisel3] object Converter {
       convert(block, ctx, typeAliases)
     case FirrtlComment(text) =>
       fir.Comment(text)
+    case DomainDefine(info, sink, source) =>
+      fir.DomainDefine(convert(info), convert(sink, ctx, info), convert(source, ctx, info))
   }
 
   /** Convert Chisel IR Commands into FIRRTL Statements
@@ -397,6 +399,7 @@ private[chisel3] object Converter {
         extractType(t._elements.head._2, childClearDir, info, checkProbe, true, typeAliases)
     }
     case t: Property[_] => t.getPropertyType
+    case t: domain.Type => fir.DomainType(t.domain.name)
   }
 
   def convert(name: String, param: Param): fir.Param = param match {
@@ -441,7 +444,13 @@ private[chisel3] object Converter {
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
     val tpe = extractType(port.id, clearDir, port.sourceInfo, true, true, typeAliases)
-    fir.Port(convert(port.sourceInfo), getRef(port.id, port.sourceInfo).name, dir, tpe)
+    fir.Port(
+      convert(port.sourceInfo),
+      getRef(port.id, port.sourceInfo).name,
+      dir,
+      tpe,
+      port.associations.map(getRef(_, UnlocatableSourceInfo).name)
+    )
   }
 
   def convert(component: Component, typeAliases: Seq[String]): fir.DefModule = component match {

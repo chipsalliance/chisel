@@ -31,7 +31,7 @@ object SerializerSpec {
   val testModule: String =
     """module test :
       |  input in : UInt<8>
-      |  output out : UInt<8>
+      |  output out : UInt<8> domains [ClockDomain, ResetDomain]
       |
       |  inst c of child
       |  connect c.in, in
@@ -45,7 +45,10 @@ object SerializerSpec {
       "test",
       false,
       Seq.empty,
-      Seq(Port(NoInfo, "in", Input, UIntType(IntWidth(8))), Port(NoInfo, "out", Output, UIntType(IntWidth(8)))),
+      Seq(
+        Port(NoInfo, "in", Input, UIntType(IntWidth(8)), Seq.empty),
+        Port(NoInfo, "out", Output, UIntType(IntWidth(8)), Seq("ClockDomain", "ResetDomain"))
+      ),
       Block(
         Seq(
           DefInstance("c", "child"),
@@ -66,7 +69,10 @@ object SerializerSpec {
   val childModuleIR: ExtModule = ExtModule(
     NoInfo,
     "child",
-    Seq(Port(NoInfo, "in", Input, UIntType(IntWidth(8))), Port(NoInfo, "out", Output, UIntType(IntWidth(8)))),
+    Seq(
+      Port(NoInfo, "in", Input, UIntType(IntWidth(8)), Seq.empty),
+      Port(NoInfo, "out", Output, UIntType(IntWidth(8)), Seq.empty)
+    ),
     "child",
     Seq.empty,
     Seq.empty
@@ -177,7 +183,7 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     val constAsyncReset = DefWire(NoInfo, "constAsyncReset", ConstType(AsyncResetType))
     Serializer.serialize(constAsyncReset) should be("wire constAsyncReset : const AsyncReset")
 
-    val constInput = Port(NoInfo, "in", Input, ConstType(SIntType(IntWidth(8))))
+    val constInput = Port(NoInfo, "in", Input, ConstType(SIntType(IntWidth(8))), Seq.empty)
     Serializer.serialize(constInput) should be("input in : const SInt<8>")
 
     val constBundle = DefWire(
@@ -222,7 +228,8 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       NoInfo,
       "foo",
       Output,
-      RWProbeType(BundleType(Seq(Field("bar", Default, UIntType(IntWidth(32))))))
+      RWProbeType(BundleType(Seq(Field("bar", Default, UIntType(IntWidth(32)))))),
+      Seq.empty
     )
     Serializer.serialize(rwProbeBundle) should be("output foo : RWProbe<{ bar : UInt<32>}>")
 
@@ -230,7 +237,8 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       NoInfo,
       "foo",
       Output,
-      RWProbeType(VectorType(UIntType(IntWidth(32)), 4))
+      RWProbeType(VectorType(UIntType(IntWidth(32)), 4)),
+      Seq.empty
     )
     Serializer.serialize(probeVec) should be("output foo : RWProbe<UInt<32>[4]>")
 
@@ -254,6 +262,11 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
 
     val probeRelease = ProbeRelease(NoInfo, Reference("clock"), Reference("cond"), Reference("outProbe"))
     Serializer.serialize(probeRelease) should be("release(clock, cond, outProbe)")
+  }
+
+  it should "support emitting domain defines" in {
+    val define = DomainDefine(NoInfo, Reference("foo"), Reference("bar"))
+    Serializer.serialize(define) should be("domain_define foo = bar")
   }
 
   it should "support emitting intrinsic expressions and statements" in {
@@ -323,7 +336,9 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     )
 
     info("ports okay!")
-    Serializer.serialize(Port(NoInfo, "42_port", Input, UIntType(IntWidth(1)))) should include("input `42_port`")
+    Serializer.serialize(Port(NoInfo, "42_port", Input, UIntType(IntWidth(1)), Seq.empty)) should include(
+      "input `42_port`"
+    )
 
     info("types okay!")
     Serializer.serialize(BundleType(Seq(Field("42_field", Default, UIntType(IntWidth(1)))))) should include(
