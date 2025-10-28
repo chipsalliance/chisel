@@ -36,7 +36,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       associate(a, A)
       associate(b, B)
 
-      b :<= domain.unsafe_cast(a, B)
+      b :<= domain.unsafeCast(a, B)
     }
 
     ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
@@ -151,10 +151,10 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
       val out = IO(Output(Bool()))
 
-      out :<= domain.unsafe_cast(in)
-      out :<= domain.unsafe_cast(in, A)
-      out :<= domain.unsafe_cast(in, B)
-      out :<= domain.unsafe_cast(in, A, B)
+      out :<= domain.unsafeCast(in)
+      out :<= domain.unsafeCast(in, A)
+      out :<= domain.unsafeCast(in, B)
+      out :<= domain.unsafeCast(in, A, B)
     }
 
     ChiselStage.emitCHIRRTL(new Foo).fileCheck() {

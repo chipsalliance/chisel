@@ -26,7 +26,7 @@ package object domain {
     Builder.pushCommand(ir.DomainDefine(sourceInfo, sink.lref, source.ref))
   }
 
-  def unsafe_cast[A <: Data, B <: domain.Type](source: A, domains: B*)(implicit sourceInfo: SourceInfo): A = {
+  def unsafeCast[A <: Data, B <: domain.Type](source: A, domains: B*)(implicit sourceInfo: SourceInfo): A = {
     Builder.pushOp(
       ir.DefPrim(sourceInfo, source.cloneType, ir.PrimOp.UnsafeDomainCast, source.ref +: domains.map(_.ref): _*)
     )
