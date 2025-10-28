@@ -75,13 +75,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Cache Scala
-        uses: coursier/cache-action@142d2738bd29f0eb9d44610828acb3a19809feab # v6.4.6
+        uses: coursier/cache-action@bebeeb0e6f48ebad66d3783946588ecf43114433 # v7.0.0
       - name: Setup Scala
-        uses: VirtusLab/scala-cli-setup@28971dc5a5d4e155d2e410220ab21948383baaf9 # v1.7.0
+        uses: VirtusLab/scala-cli-setup@77834b5926f3eb70869d8009530c65585f7a039b # v1.9.1
         with:
           jvm: temurin:11
       - name: Publish
@@ -106,7 +106,7 @@ jobs:
     if: (github.event_name == 'push') && (github.ref_name == 'main')
     steps:
       - name: Download built website
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: website
       - name: Untar built website
