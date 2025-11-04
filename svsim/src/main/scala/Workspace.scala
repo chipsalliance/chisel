@@ -448,6 +448,15 @@ final class Workspace(
       "SVSIM_SIMULATION_TRACE" -> traceFileStem
     ) ++ parameters.simulationInvocation.environment
 
+    val sourceFilesFilelistWriter = new LineWriter(s"$workingDirectoryPath/sourceFiles.F")
+    try {
+      val l = sourceFilesFilelistWriter
+      sourceFiles.foreach(l(_))
+      l()
+    } finally {
+      sourceFilesFilelistWriter.close()
+    }
+
     // Emit Makefile for debugging (will be emitted even if compile fails)
     val makefileWriter = new LineWriter(s"$workingDirectoryPath/Makefile")
     try {
@@ -469,7 +478,7 @@ final class Workspace(
         l("\tfor /f \"delims=\" %i in ('dir /b /a-d ^| findstr /v Makefile ^| findstr /v execution-script.txt') do del \"%i\"")
         l("\tfor /d %i in (*) do rmdir /s /q \"%i\"")
       } else {
-        l("\tls . | grep -v Makefile | grep -v execution-script.txt | xargs rm -rf")
+        l("\tls . | grep -v Makefile | grep -v execution-script.txt | grep -v sourceFiles.F | xargs rm -rf")
       }
       l()
       l("simulation: clean")
@@ -482,7 +491,8 @@ final class Workspace(
           .replace(workingDirectoryPath, "$(shell pwd)")
       l("\t\t'", sanitizedArugment, "' \\")
       }
-      l("\t\t$(sourcefiles)")
+      l("'-F' \\")
+      l(s"\t\t'${sourceFilesFilelistWriter.path}'")
       l()
       l("replay: simulation")
       val executionScriptPath = "$(shell pwd)/execution-script.txt"
@@ -499,11 +509,6 @@ final class Workspace(
       l("\t\t$(simulationEnvironment) $(shell pwd)/simulation \\")
       for (argument <- parameters.simulationInvocation.arguments) {
       l("\t\t\t'", argument.replace("$", "$$"), "' \\")
-      }
-      l()
-      l("sourcefiles = \\")
-      for ((sourceFile, index) <- sourceFiles.zipWithIndex) {
-      l("\t'", sourceFile, "'", if (index != sourceFiles.length - 1) " \\" else "")
       }
       l()
       l("compilerEnvironment = \\")
@@ -575,7 +580,7 @@ final class Workspace(
 
 /** A micro-DSL for writing files.
   */
-private class LineWriter(path: String) {
+private class LineWriter(val path: String) {
   private val wrapped = new BufferedWriter(new FileWriter(path, false))
   def apply(components: String*) = {
     components.foreach(wrapped.write)
