@@ -120,6 +120,49 @@ class VCSSpec extends BackendSpec {
         }
 
       }
+
+      describe("VCS FSDB support") {
+
+        it("should work for the version of VCS available on the PATH") {
+          val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}/FSDB")
+
+          import Resources._
+          workspace.reset()
+          workspace.elaborateGCD()
+          workspace.generateAdditionalSources(None)
+          val simulation = workspace.compile(
+            backend
+          )(
+            workingDirectoryTag = "vcs",
+            commonSettings = CommonCompilationSettings(),
+            backendSpecificSettings = compilationSettings.copy(traceSettings =
+              TraceSettings(fsdbSettings =
+                Some(
+                  TraceSettings.FsdbSettings(
+                    sys.env.getOrElse(
+                      "VERDI_HOME",
+                      throw new RuntimeException(
+                        "Cannot enable FSDB support as the environment variable 'VERDI_HOME' was not set."
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            customSimulationWorkingDirectory = None,
+            verbose = false
+          )
+
+          simulation.run(
+            executionScriptLimit = None,
+            traceEnabled = true
+          ) { _ => }
+
+          info("an FSDB file was created")
+          Paths.get(workspace.absolutePath, "workdir-vcs", "trace.fsdb").toFile must (exist)
+        }
+
+      }
   }
 }
 

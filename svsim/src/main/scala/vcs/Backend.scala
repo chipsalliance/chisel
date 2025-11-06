@@ -62,15 +62,12 @@ object Backend {
         case None    => false
       }
       private[vcs] def compileFlags = Seq(
-        if (enableVpd || fsdbEnabled) Seq("-debug_acc+pp+dmptf") else Seq(),
+        if (enableVpd || fsdbEnabled) Seq("-debug_access+pp+dmptf") else Seq(),
         fsdbSettings match {
           case None => Seq()
-          case Some(TraceSettings.FsdbSettings(verdiHome)) =>
+          case Some(_) =>
             Seq(
-              "-kdb",
-              "-P",
-              s"$verdiHome/share/PLI/VCS/LINUX64/novas.tab",
-              s"$verdiHome/share/PLI/VCS/LINUX64/pli.a"
+              "-kdb"
             )
         }
       ).flatten
