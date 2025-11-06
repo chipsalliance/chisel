@@ -307,8 +307,8 @@ ChiselSim.  These are available in the `chisel3.simulator.scalatest.Cli` object:
 
 - `EmitFsdb` adds an `-DemitFsdb=1` option which will cause the simulator, if it
   supports it, to generate an FSDB waveform.
-- `EmitVpd` adds an `-DemitFsdb=1` option which will cause the simulator, if it
-  supports it, to generate an FSDB waveform.
+- `EmitVpd` adds an `-DemitVpd=1` option which will cause the simulator, if it
+  supports it, to generate an VPD waveform.
 - `Scale` adds a `-Dscale=<float>` option.  This provides a way for a user to
   "scale" a test up or down at test-tiem, e.g., to make the test run longer.
   This feature is accessed via the `scaled` method that this trait provides.
