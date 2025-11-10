@@ -290,11 +290,11 @@ private[chisel3] object ir {
     override def localName: String = s"${op.name}(${args.map(_.localName).mkString(", ")})"
   }
 
-  abstract class Command {
+  sealed abstract class Command {
     def sourceInfo: SourceInfo
   }
 
-  abstract class Definition extends Command {
+  sealed abstract class Definition extends Command {
     def id:   HasId
     def name: String = id.getRef.name
   }

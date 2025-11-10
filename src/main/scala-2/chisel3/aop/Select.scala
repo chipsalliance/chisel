@@ -13,6 +13,7 @@ import firrtl.annotations.ReferenceTarget
 
 import scala.reflect.runtime.universe.TypeTag
 import scala.collection.mutable
+import scala.util.hashing.MurmurHash3
 
 /** Use to select Chisel components in a module, after that module has been constructed. */
 object Select {

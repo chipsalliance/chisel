@@ -282,6 +282,9 @@ private[chisel3] object Converter {
       fir.Comment(text)
     case DomainDefine(info, sink, source) =>
       fir.DomainDefine(convert(info), convert(sink, ctx, info), convert(source, ctx, info))
+    case l: LayerBlock => throw new InternalErrorException(s"Match error: l=$l")
+    case l: Placeholder => throw new InternalErrorException(s"Match error: l=$l")
+    case l: When => throw new InternalErrorException(s"Match error: l=$l")
   }
 
   /** Convert Chisel IR Commands into FIRRTL Statements
