@@ -155,7 +155,13 @@ object Select {
             p.bind(internal.binding.PortBinding(hier.proto))
             buildAllNameIndex(p)
           }
-          updateHash("firrtlmem", buildNameIndex(f.id.getRef.fullName(ctx)), f.t.typeName, f.size, readPortIndexes, writePortIndexes, f.readwritePortNames.map(x => getNameIndex(x)))
+          val readwritePortIndexes = f.readwritePortNames.map{ r =>
+            val p = new FirrtlMemoryReadwriter(new MemoryReadWritePort(f.t, addrWidth, f.t.isInstanceOf[chisel3.Vec[_]]))
+            p.setRef(Ref(f.id.getRef.localName + s".$r"))
+            p.bind(internal.binding.PortBinding(hier.proto))
+            buildAllNameIndex(p)
+          }
+          updateHash("firrtlmem", buildNameIndex(f.id.getRef.fullName(ctx)), f.t.typeName, f.size, f.readPortNames.length, f.writePortNames.length, f.readwritePortNames.length)
         case r: DefMemPort[_]   => updateHash("memp", buildAllNameIndex(r.id), r.dir.toString, getNameIndex(r.source.fullName(ctx)), getNameIndex(r.index.fullName(ctx)), getNameIndex(r.clock.fullName(ctx)))
         case v: Verification[_] => updateHash("verif", v.op.toString, getNameIndex(v.clock.fullName(ctx)), getNameIndex(v.predicate.fullName(ctx)), v.pable.unpack._1, v.pable.unpack._2.map(x => getNameIndex(x.getRef.fullName(ctx))))
         case p: DefPrim[_]   => updateHash("prim", p.op.name, buildNameIndex(p.id.ref.fullName(ctx)), p.args.map(x => getNameIndex(x.fullName(ctx))))

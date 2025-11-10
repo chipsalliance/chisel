@@ -755,7 +755,6 @@ class SelectSpec extends AnyFlatSpec with Matchers {
 
     val dutA = ChiselGeneratorAnnotation(() => new MemoryModuleA).elaborate(1).asInstanceOf[DesignAnnotation[MemoryModuleA]].design
     val dutB = ChiselGeneratorAnnotation(() => new MemoryModuleB).elaborate(1).asInstanceOf[DesignAnnotation[MemoryModuleB]].design
-    println(circt.stage.ChiselStage.emitCHIRRTL(new MemoryModuleA))
 
     // These should have identical hashes despite potentially different internal port names
     Select.dedupHash(dutA.toDefinition) should be(Select.dedupHash(dutB.toDefinition))
