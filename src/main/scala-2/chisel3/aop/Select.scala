@@ -52,6 +52,173 @@ object Select {
     }
   }
 
+  def dedupHash[T <: BaseModule](hier: Definition[T]): Int = {
+    var moduleNames = Map.empty[String, Int]
+    def buildAllNameIndex(d: Definition[BaseModule]): Int = {
+      definitionsIn(d).map(buildAllNameIndex)
+      val hash = dedupHash(d, moduleNames)
+      moduleNames = moduleNames + (d.name -> hash)
+      hash
+    }
+    buildAllNameIndex(hier)
+  }
+
+  private def dedupHash[T <: BaseModule](hier: Definition[T], moduleNames: Map[String, Int]): Int = {
+    var counter = 0
+    var names = Map.empty[String, Int]
+    var hash = 0
+    val ctx = hier.proto._component.get
+    def updateHash(a: Any*): Unit = {
+      a.foreach { x =>
+        hash = MurmurHash3.arrayHash(Array(hash, x.hashCode))
+      }
+    }
+    def buildAllNameIndex(d: Data): Unit = {
+      reflect.DataMirror.collectAllMembers(d).map { m =>
+        buildNameIndex(m.ref.fullName(ctx))
+      }
+    }
+    def isLit(name: String): Boolean = {
+      name.startsWith("UInt") || name.startsWith("SInt") || name.startsWith("FixedPoint")
+    }
+    def getNameIndex(name: String): Int = {
+      if (isLit(name)) buildLitIndex(name) // Build index if it is a literal, otherwise error because something is wrong
+      else if ("\\d+".r.matches(name)) buildNameIndex(name)
+      else if (name.contains("[")) buildNameIndex(fixDynamicAccess(name))
+      else try names(name) catch {
+        case x: Throwable => 
+          println(names.mkString(","))
+          throw x
+      }
+    }
+    def buildLitIndex(name: String): Int = {
+      if (!names.contains(name)) {
+        names += name -> name.hashCode()
+      }
+      names(name)
+    }
+    def buildNameIndex(name: String): Int = {
+      if (!names.contains(name)) {
+        names += name -> counter
+        counter += 1
+      }
+      names(name)
+    }
+    def fixDynamicAccess(name: String): String = {
+      if (name.contains("[")) {
+        val splitBracket = name.split("\\[")
+        val prefix = splitBracket(0)
+        val postfix = splitBracket(1)
+        val splitEndBracket = postfix.split("\\]")
+        val index = getNameIndex(splitEndBracket(0))
+        val rest = splitEndBracket.tail.mkString
+        s"$prefix[$index]${fixDynamicAccess(rest)}"
+      } else {
+        name
+      }
+    }
+    import experimental._
+    def serializeParam(p: Param): String = {
+      p match {
+        case IntParam(value)    => value.toString
+        case DoubleParam(value) => value.toString
+        case StringParam(value) => value
+        case PrintableParam(value, id) => {
+          val ctx = id._component.get
+          val (fmt, _) = chisel3.internal.firrtl.Converter.unpack(value, ctx, UnlocatableSourceInfo)
+          fmt
+        }
+        case RawParam(value) => value
+      }
+    }
+    def processCommands(cmds: Seq[Command]): Unit = {
+      cmds.foreach { (_: Command) match {
+        case r: DefReg       => updateHash("reg", buildAllNameIndex(r.id), r.id.typeName, getNameIndex(r.clock.fullName(ctx)))
+        case r: DefRegInit   => updateHash("reginit", buildAllNameIndex(r.id), r.id.typeName, getNameIndex(r.clock.fullName(ctx)), getNameIndex(r.reset.fullName(ctx)), r.init.fullName(ctx))
+        case r: DefWire      => updateHash("wire", buildAllNameIndex(r.id), r.id.typeName)
+        case r: DefMemory    => updateHash("mem", buildNameIndex(r.id.getRef.fullName(ctx)), r.t.typeName, r.size)
+        case r: DefSeqMemory  => updateHash("smem", buildNameIndex(r.id.getRef.fullName(ctx)), r.t.typeName, r.size)
+        // Memory needs to correctly add branch/leaf references to the memory
+        case f: FirrtlMemory =>
+          // We need to build the name index for the ports of the memory
+          import chisel3.util._
+          val addrWidth = log2Up(f.size)
+          val readPortIndexes = f.readPortNames.map{ r =>
+            val p = new FirrtlMemoryReader(new MemoryReadPort(f.t, addrWidth))
+            p.setRef(Ref(f.id.getRef.localName + s".$r"))
+            p.bind(internal.binding.PortBinding(hier.proto))
+            buildAllNameIndex(p)
+          }
+          val writePortIndexes = f.writePortNames.map{ r =>
+            val p = new FirrtlMemoryWriter(new MemoryWritePort(f.t, addrWidth, f.t.isInstanceOf[chisel3.Vec[_]]))
+            p.setRef(Ref(f.id.getRef.localName + s".$r"))
+            p.bind(internal.binding.PortBinding(hier.proto))
+            buildAllNameIndex(p)
+          }
+          updateHash("firrtlmem", buildNameIndex(f.id.getRef.fullName(ctx)), f.t.typeName, f.size, readPortIndexes, writePortIndexes, f.readwritePortNames.map(x => getNameIndex(x)))
+        case r: DefMemPort[_]   => updateHash("memp", buildAllNameIndex(r.id), r.dir.toString, getNameIndex(r.source.fullName(ctx)), getNameIndex(r.index.fullName(ctx)), getNameIndex(r.clock.fullName(ctx)))
+        case v: Verification[_] => updateHash("verif", v.op.toString, getNameIndex(v.clock.fullName(ctx)), getNameIndex(v.predicate.fullName(ctx)), v.pable.unpack._1, v.pable.unpack._2.map(x => getNameIndex(x.getRef.fullName(ctx))))
+        case p: DefPrim[_]   => updateHash("prim", p.op.name, buildNameIndex(p.id.ref.fullName(ctx)), p.args.map(x => getNameIndex(x.fullName(ctx))))
+        case p: ProbeDefine => updateHash("probe", getNameIndex(p.sink.fullName(ctx)), getNameIndex(p.probe.fullName(ctx)))
+        case c: Connect => updateHash("connect", getNameIndex(c.loc.fullName(hier.proto._component.get)), getNameIndex(c.exp.fullName(ctx)))
+        case p: PropAssign => updateHash("propassign", getNameIndex(p.loc.fullName(ctx)), getNameIndex(p.exp.fullName(ctx)))
+        case a: Attach => updateHash("attach", a.locs.map(x => getNameIndex(x.fullName(ctx))))
+        case s: internal.firrtl.ir.Stop => updateHash("stop", buildNameIndex(s.id.getRef.fullName(ctx)), getNameIndex(s.clock.fullName(ctx)), s.ret)
+        case p: internal.firrtl.ir.Printf => updateHash("printf", getNameIndex(p.clock.fullName(ctx)), p.pable.unpack._1, p.pable.unpack._2.map(x => getNameIndex(x.getRef.fullName(ctx))), p.filename.map(_.unpack._1), p.filename.map(_.unpack._2.map(x => getNameIndex(x.getRef.fullName(ctx)))))
+        case f: Flush => updateHash("flush", getNameIndex(f.clock.fullName(ctx)), f.filename.map(_.unpack._1), f.filename.map(_.unpack._2.map(x => getNameIndex(x.getRef.fullName(ctx)))))
+        case l: LayerBlock => updateHash("layerblock", l.layer.fullName); processCommands(l.region.getAllCommands())
+        case d: DomainDefine => updateHash("domaindefine", getNameIndex(d.sink.fullName(ctx)), getNameIndex(d.source.fullName(ctx)))
+        case d: DefContract => updateHash("contract", d.ids.map(x => getNameIndex(x.getRef.fullName(ctx))), d.exprs.map(x => getNameIndex(x.fullName(ctx))))
+        case DefObject(sourceInfo, obj, name) =>  {} // Ignore for dedup purposes
+        case d: DefIntrinsic => updateHash("intrinsic", d.intrinsic, d.args.map(x => getNameIndex(x.fullName(ctx))), d.params.map(x => serializeParam(x._2)))
+        case d: DefIntrinsicExpr[_] => updateHash("intrinsicexpr", d.intrinsic, getNameIndex(d.id.getRef.fullName(ctx)), d.args.map(x => getNameIndex(x.fullName(ctx))), d.params.map(x => getNameIndex(serializeParam(x._2))))
+        case d: DefInstance => {
+          buildAllNameIndex{
+            // This is a bit of a hack, but we need to build the name index for the ports of the default instance
+            // To do it, we create a dummy record with the same ports and build the name index for it
+            val r = new Record {
+              val elements = collection.immutable.SeqMap(d.id.getChiselPorts.map { case (name, data) => name -> data.cloneTypeFull }:_*)
+            }
+            r.setRef(Ref(d.id.instanceName))
+            r.bind(internal.binding.PortBinding(hier.proto))
+            r
+          }
+          updateHash("instance", getNameIndex(d.id.instanceName), moduleNames(d.id.name))
+        }
+        case d: DefInstanceChoice => {
+          buildAllNameIndex{
+            // This is a bit of a hack, but we need to build the name index for the ports of the default instance
+            // To do it, we create a dummy record with the same ports and build the name index for it
+            val r = new Record {
+              val elements = collection.immutable.SeqMap(d.default.getChiselPorts.map { case (name, data) => name -> data.cloneTypeFull }:_*)
+            }
+            r.setRef(Ref(d.id.instanceName))
+            r.bind(internal.binding.PortBinding(hier.proto))
+            r
+          }
+          updateHash("instancechoice", getNameIndex(d.id.instanceName), moduleNames(d.default.name), d.choices.map { case (name, module) => (name, moduleNames(module.name)) })
+        }
+        case p: ProbeRelease => updateHash("proberelease", getNameIndex(p.clock.fullName(ctx)), getNameIndex(p.cond.fullName(ctx)), getNameIndex(p.probe.fullName(ctx)))
+        case p: ProbeReleaseInitial => updateHash("probereleaseinitial", getNameIndex(p.probe.fullName(ctx)))
+        case w: chisel3.internal.firrtl.ir.When => updateHash("when", getNameIndex(w.pred.fullName(ctx))); processCommands(w.ifRegion.getAllCommands()); processCommands(w.elseRegion.getAllCommands())
+        case d: DefInvalid => updateHash("definvalid", getNameIndex(d.arg.fullName(ctx)))
+        case f: FirrtlComment => updateHash("firrtlcomment", f.text)
+        case p: chisel3.internal.firrtl.ir.Placeholder => 
+          val chisel3.internal.firrtl.ir.Placeholder(_, commands) = p
+          processCommands(commands)
+        case p: ProbeForce => updateHash("probeforce", getNameIndex(p.clock.fullName(ctx)), getNameIndex(p.cond.fullName(ctx)), getNameIndex(p.probe.fullName(ctx)), getNameIndex(p.value.fullName(ctx)))
+        case p: ProbeForceInitial => updateHash("probeforceinitial", getNameIndex(p.probe.fullName(ctx)), getNameIndex(p.value.fullName(ctx)))
+      }}
+    }
+    hier.proto._component.get match {
+      case d: DefModule => 
+        d.ports.map { p => buildAllNameIndex(p.id) }
+        processCommands(d.block.getCommands())
+      case o => throw new InternalErrorException(s"Match error: o=$o")
+    }
+    hash
+  }
+
   /** Selects all instances/modules directly instantiated within given definition
     *
     * @param parent
