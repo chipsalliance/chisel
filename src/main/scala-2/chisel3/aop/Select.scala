@@ -138,9 +138,7 @@ object Select {
         case r: DefWire      => updateHash("wire", buildAllNameIndex(r.id), r.id.typeName)
         case r: DefMemory    => updateHash("mem", buildNameIndex(r.id.getRef.fullName(ctx)), r.t.typeName, r.size)
         case r: DefSeqMemory  => updateHash("smem", buildNameIndex(r.id.getRef.fullName(ctx)), r.t.typeName, r.size)
-        // Memory needs to correctly add branch/leaf references to the memory
         case f: FirrtlMemory =>
-          // We need to build the name index for the ports of the memory
           import chisel3.util._
           val addrWidth = log2Up(f.size)
           val readPortIndexes = f.readPortNames.map{ r =>
