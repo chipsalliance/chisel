@@ -19,7 +19,7 @@ class BlackBoxInverter extends BlackBox with HasBlackBoxResource {
     val out = Output(Bool())
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxInverter.v")
 }
 
 // Due to the removal of "val io", this technically works
@@ -31,7 +31,7 @@ class BlackBoxInverterSuggestName extends BlackBox with HasBlackBoxResource {
     val out = Output(Bool())
   }).suggestName("io")
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxInverter.v")
 }
 
 class BlackBoxPassthrough extends BlackBox with HasBlackBoxResource {
@@ -40,7 +40,7 @@ class BlackBoxPassthrough extends BlackBox with HasBlackBoxResource {
     val out = Output(Bool())
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxPassthrough.v")
 }
 
 // Test Flip on top-level IO
@@ -50,7 +50,7 @@ class BlackBoxPassthrough2 extends BlackBox with HasBlackBoxResource {
     val out = Input(Bool())
   }))
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxPassthrough2.v")
 }
 
 class BlackBoxRegister extends BlackBox with HasBlackBoxResource {
@@ -60,7 +60,7 @@ class BlackBoxRegister extends BlackBox with HasBlackBoxResource {
     val out = Output(Bool())
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxRegister.v")
 }
 
 class BlackBoxTester extends Module {
@@ -143,7 +143,7 @@ class BlackBoxConstant(value: Int)
     val out = Output(UInt(log2Ceil(value + 1).W))
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxConstant.v")
 }
 
 class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) with HasBlackBoxResource {
@@ -151,7 +151,7 @@ class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) wi
     val out = UInt(32.W)
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxStringParam.v")
 }
 
 class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) with HasBlackBoxResource {
@@ -159,7 +159,7 @@ class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) with H
     val out = UInt(64.W)
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxRealParam.v")
 }
 
 class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw))) with HasBlackBoxResource {
@@ -167,7 +167,7 @@ class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawPara
     val out = UInt(w.W)
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxTypeParam.v")
 }
 
 class BlackBoxNoIO extends BlackBox with HasBlackBoxResource {
@@ -176,13 +176,13 @@ class BlackBoxNoIO extends BlackBox with HasBlackBoxResource {
     val out = Output(UInt(8.W))
   })
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxNoIO.v")
 }
 
 class BlackBoxUIntIO extends BlackBox with HasBlackBoxResource {
   val io = IO(Output(UInt(8.W)))
 
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxUIntIO.v")
 }
 
 class SimplerBlackBoxWithParamsTester extends Module {
