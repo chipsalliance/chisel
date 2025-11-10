@@ -54,7 +54,7 @@ class ExtModuleMinus extends ExtModule with HasExtModuleResource {
     val in2 = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxMinus.v")
 }
 
 class ExtModuleMinusPath extends ExtModule with HasExtModulePath {
@@ -64,7 +64,7 @@ class ExtModuleMinusPath extends ExtModule with HasExtModulePath {
     val out = Output(UInt(16.W))
   })
   addPath(
-    new File("src/test/resources/chisel3/BlackBoxTest.v").getCanonicalPath
+    new File("src/test/resources/chisel3/BlackBoxMinus.v").getCanonicalPath
   )
 }
 
@@ -132,7 +132,7 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       )
       (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
-      val verilogOutput = new File(targetDir, "BlackBoxTest.v")
+      val verilogOutput = new File(targetDir, "BlackBoxMinus.v")
       verilogOutput should exist
       verilogOutput.delete()
     }
@@ -148,7 +148,7 @@ class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
       )
       (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
-      val verilogOutput = new File(targetDir, "BlackBoxTest.v")
+      val verilogOutput = new File(targetDir, "BlackBoxMinus.v")
       verilogOutput should exist
       verilogOutput.delete()
     }

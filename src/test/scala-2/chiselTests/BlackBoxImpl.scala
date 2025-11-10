@@ -50,7 +50,7 @@ class BlackBoxMinus extends HasBlackBoxResource {
     val in2 = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
-  addResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxMinus.v")
 }
 
 class BlackBoxMinusPath extends HasBlackBoxPath {
@@ -59,7 +59,7 @@ class BlackBoxMinusPath extends HasBlackBoxPath {
     val in2 = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
-  addPath(new File("src/test/resources/chisel3/BlackBoxTest.v").getCanonicalPath)
+  addPath(new File("src/test/resources/chisel3/BlackBoxMinus.v").getCanonicalPath)
 }
 
 class UsesBlackBoxMinusViaResource extends Module {
@@ -123,7 +123,7 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
       )
       (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
-      val verilogOutput = new File(targetDir, "BlackBoxTest.v")
+      val verilogOutput = new File(targetDir, "BlackBoxMinus.v")
       verilogOutput.exists() should be(true)
       verilogOutput.delete()
     }
@@ -138,7 +138,7 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
       )
       (new ChiselStage).execute(Array("--target", "systemverilog", "--split-verilog"), annotations)
 
-      val verilogOutput = new File(targetDir, "BlackBoxTest.v")
+      val verilogOutput = new File(targetDir, "BlackBoxMinus.v")
       verilogOutput.exists() should be(true)
       verilogOutput.delete()
       Succeeded

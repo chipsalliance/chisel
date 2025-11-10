@@ -20,14 +20,14 @@ package extmoduletests {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
 
-    addResource("/chisel3/BlackBoxTest.v")
+    addResource("/chisel3/BlackBoxInverter.v")
   }
 
   class BlackBoxPassthrough extends ExtModule with HasExtModuleResource {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
 
-    addResource("/chisel3/BlackBoxTest.v")
+    addResource("/chisel3/BlackBoxPassthrough.v")
   }
 }
 
