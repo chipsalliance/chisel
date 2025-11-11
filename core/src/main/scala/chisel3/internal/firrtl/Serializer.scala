@@ -327,9 +327,9 @@ private[chisel3] object Serializer {
       serialize(source, ctx, info);
       serialize(info)
     case d: DefContract => throw new InternalErrorException(s"Match error: d=$d")
-    case d: LayerBlock => throw new InternalErrorException(s"Match error: d=$d")
+    case d: LayerBlock  => throw new InternalErrorException(s"Match error: d=$d")
     case d: Placeholder => throw new InternalErrorException(s"Match error: d=$d")
-    case d: When => throw new InternalErrorException(s"Match error: d=$d")
+    case d: When        => throw new InternalErrorException(s"Match error: d=$d")
   }
 
   private def serializeCommand(cmd: Command, ctx: Component, typeAliases: Seq[String])(
