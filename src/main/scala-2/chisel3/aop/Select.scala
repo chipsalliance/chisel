@@ -311,12 +311,13 @@ object Select {
               d.params.map(x => serializeParam(x._2))
             )
           case d: DefIntrinsicExpr[_] =>
+            buildAllNameIndex(d.id)
             updateHash(
               "intrinsicexpr",
               d.intrinsic,
               getNameIndex(d.id.getRef.fullName(ctx)),
               d.args.map(x => getNameIndex(x.fullName(ctx))),
-              d.params.map(x => getNameIndex(serializeParam(x._2)))
+              d.params.map(x => serializeParam(x._2))
             )
           case d: DefInstance => {
             buildAllNameIndex {

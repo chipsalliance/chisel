@@ -1248,4 +1248,105 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     // unreliableDedupHash should produce different hashes (showing it's unreliable for this case)
     Select.unreliableDedupHash(dutA.toDefinition) should not be (Select.unreliableDedupHash(dutB.toDefinition))
   }
+
+  // Test 27: DefObject instances should be ignored for deduplication (demonstrating unreliability)
+  it should "produce identical hashes for modules with different DefObject instances" in {
+    import chisel3.properties.{Class, DynamicObject, Property}
+
+    class TestClassA extends Class {
+      override def desiredName = "TestClassA"
+      val in = IO(Input(Property[Int]()))
+      val out = IO(Output(Property[Int]()))
+      out := in
+    }
+
+    class TestClassB extends Class {
+      override def desiredName = "TestClassB"
+      val data = IO(Input(Property[Int]()))
+      val result = IO(Output(Property[Int]()))
+      result := data
+    }
+
+    class ModuleWithObjectA extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      val reg = Reg(UInt(8.W))
+      reg := io.in
+      io.out := reg
+
+      // Create a DefObject of TestClassA
+      val objA = DynamicObject(new TestClassA)
+    }
+
+    class ModuleWithObjectB extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      val reg = Reg(UInt(8.W))
+      reg := io.in
+      io.out := reg
+
+      // Create a DefObject of TestClassB (different class)
+      val objB = DynamicObject(new TestClassB)
+    }
+
+    val dutA = ChiselGeneratorAnnotation(() => new ModuleWithObjectA)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithObjectA]]
+      .design
+
+    val dutB = ChiselGeneratorAnnotation(() => new ModuleWithObjectB)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithObjectB]]
+      .design
+
+    // These modules have identical hardware logic but different DefObject instances
+    // unreliableDedupHash should produce identical hashes because DefObject is ignored
+    // This demonstrates a false positive - modules that shouldn't be deduplicated have the same hash
+    Select.unreliableDedupHash(dutA.toDefinition) should be(Select.unreliableDedupHash(dutB.toDefinition))
+  }
+
+  // Test 28: Modules with different intrinsic expressions should have different hashes
+  it should "produce different hashes for modules with different intrinsic expressions" in {
+    class ModuleWithIntrinsicA extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(32.W))
+      })
+      val reg = Reg(UInt(32.W))
+
+      // IntrinsicExpr with parameter "TEST_PARAM" -> "FOO"
+      val intrinsicResult = IntrinsicExpr("test_intrinsic", UInt(32.W), "TEST_PARAM" -> "FOO")(io.in)
+      io.out := intrinsicResult + reg
+    }
+
+    class ModuleWithIntrinsicB extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(32.W))
+      })
+      val reg = Reg(UInt(32.W))
+
+      // IntrinsicExpr with different parameter "TEST_PARAM" -> "BAR"
+      val intrinsicResult = IntrinsicExpr("test_intrinsic", UInt(32.W), "TEST_PARAM" -> "BAR")(io.in)
+      io.out := intrinsicResult + reg
+    }
+
+    val dutA = ChiselGeneratorAnnotation(() => new ModuleWithIntrinsicA)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithIntrinsicA]]
+      .design
+
+    val dutB = ChiselGeneratorAnnotation(() => new ModuleWithIntrinsicB)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithIntrinsicB]]
+      .design
+
+    // These modules have identical structure but different intrinsic expression parameters
+    // unreliableDedupHash should produce different hashes because DefIntrinsicExpr includes parameters
+    Select.unreliableDedupHash(dutA.toDefinition) should not be (Select.unreliableDedupHash(dutB.toDefinition))
+  }
 }
