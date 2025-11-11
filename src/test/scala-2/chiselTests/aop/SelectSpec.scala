@@ -5,7 +5,7 @@ package chiselTests.aop
 import chisel3._
 import chisel3.aop.Select
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
-import chisel3.experimental.{ExtModule, IntrinsicModule}
+import chisel3.experimental._
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import chisel3.util.{Cat, MuxLookup}
 import circt.stage.ChiselStage
@@ -1348,5 +1348,51 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     // These modules have identical structure but different intrinsic expression parameters
     // unreliableDedupHash should produce different hashes because DefIntrinsicExpr includes parameters
     Select.unreliableDedupHash(dutA.toDefinition) should not be (Select.unreliableDedupHash(dutB.toDefinition))
+  }
+
+  // Test 29: Modules with different SInt literals should have different hashes
+  it should "produce different hashes for modules with different SInt literals" in {
+    class ModuleWithSIntLiteralsA extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(SInt(16.W))
+      })
+      val reg = Reg(SInt(16.W))
+
+      // Use specific SInt literals
+      val literal1 = (-42).S(16.W)
+      val literal2 = 123.S(16.W)
+
+      reg := literal1 + literal2 + io.in.asSInt
+      io.out := reg
+    }
+
+    class ModuleWithSIntLiteralsB extends Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(SInt(16.W))
+      })
+      val reg = Reg(SInt(16.W))
+
+      // Use different SInt literals
+      val literal1 = (-100).S(16.W)
+      val literal2 = 200.S(16.W)
+
+      reg := literal1 + literal2 + io.in.asSInt
+      io.out := reg
+    }
+
+    val dutSIntA = ChiselGeneratorAnnotation(() => new ModuleWithSIntLiteralsA)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithSIntLiteralsA]]
+      .design
+
+    val dutSIntB = ChiselGeneratorAnnotation(() => new ModuleWithSIntLiteralsB)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithSIntLiteralsB]]
+      .design
+
+    // Modules with different SInt literals should have different hashes
+    Select.unreliableDedupHash(dutSIntA.toDefinition) should not be (Select.unreliableDedupHash(dutSIntB.toDefinition))
   }
 }

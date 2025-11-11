@@ -129,7 +129,7 @@ object Select {
     def getNameIndex(name: String): Int = {
       // Check if a name is a literal
       def isLit(name: String): Boolean =
-        name.startsWith("UInt") || name.startsWith("SInt") || name.startsWith("FixedPoint")
+        name.startsWith("UInt") || name.startsWith("asSInt(UInt")
       // Fix dynamic accesses by replacing the dynamic index expression with its unique index
       def fixDynamicAccess(name: String): String = {
         if (name.contains("[")) {
