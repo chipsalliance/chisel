@@ -1395,4 +1395,100 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     // Modules with different SInt literals should have different hashes
     Select.unreliableDedupHash(dutSIntA.toDefinition) should not be (Select.unreliableDedupHash(dutSIntB.toDefinition))
   }
+
+  // Test 30: Modules with different Mux conditions should have different hashes
+  it should "produce different hashes for modules with different Mux conditions" in {
+    class ModuleWithMuxA extends Module {
+      val io = IO(new Bundle {
+        val sel = Input(Bool())
+        val a = Input(UInt(8.W))
+        val b = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+
+      // Use Mux with specific condition
+      io.out := Mux(io.sel, io.a, io.b)
+    }
+
+    class ModuleWithMuxB extends Module {
+      val io = IO(new Bundle {
+        val sel = Input(Bool())
+        val a = Input(UInt(8.W))
+        val b = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+
+      // Use Mux with inverted condition
+      io.out := Mux(!io.sel, io.a, io.b)
+    }
+
+    class ModuleWithMuxC extends Module {
+      val io = IO(new Bundle {
+        val sel = Input(Bool())
+        val a = Input(UInt(8.W))
+        val b = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+
+      // Use Mux with swapped inputs
+      io.out := Mux(io.sel, io.b, io.a)
+    }
+
+    val dutMuxA = ChiselGeneratorAnnotation(() => new ModuleWithMuxA)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithMuxA]]
+      .design
+
+    val dutMuxB = ChiselGeneratorAnnotation(() => new ModuleWithMuxB)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithMuxB]]
+      .design
+
+    val dutMuxC = ChiselGeneratorAnnotation(() => new ModuleWithMuxC)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithMuxC]]
+      .design
+
+    // Modules with different Mux conditions should have different hashes
+    Select.unreliableDedupHash(dutMuxA.toDefinition) should not be (Select.unreliableDedupHash(dutMuxB.toDefinition))
+
+    // Modules with swapped Mux inputs should have different hashes
+    Select.unreliableDedupHash(dutMuxA.toDefinition) should not be (Select.unreliableDedupHash(dutMuxC.toDefinition))
+
+    // All three should be different
+    Select.unreliableDedupHash(dutMuxB.toDefinition) should not be (Select.unreliableDedupHash(dutMuxC.toDefinition))
+  }
+
+  // Test 31: Modules with Mux operations on Bundles should not fail
+  it should "produce identical hashes for modules with Mux operations on Bundles" in {
+    class DataBundle extends Bundle {
+      val data = UInt(8.W)
+      val valid = Bool()
+    }
+
+    class ModuleWithBundleMux extends Module {
+      val io = IO(new Bundle {
+        val sel = Input(Bool())
+        val a = Input(new DataBundle)
+        val b = Input(new DataBundle)
+        val out = Output(UInt(8.W))
+      })
+
+      // Mux entire bundles
+      io.out := Mux(io.sel, io.a, io.b).data
+    }
+
+    val dutBundleMuxA = ChiselGeneratorAnnotation(() => new ModuleWithBundleMux)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithBundleMux]]
+      .design
+
+    val dutBundleMuxB = ChiselGeneratorAnnotation(() => new ModuleWithBundleMux)
+      .elaborate(1)
+      .asInstanceOf[DesignAnnotation[ModuleWithBundleMux]]
+      .design
+
+    // Bundle mux vs individual field mux should produce different hashes (different IR structure)
+    Select.unreliableDedupHash(dutBundleMuxA.toDefinition) should be (Select.unreliableDedupHash(dutBundleMuxB.toDefinition))
+  }
 }
