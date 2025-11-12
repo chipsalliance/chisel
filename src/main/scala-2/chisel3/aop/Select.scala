@@ -152,7 +152,7 @@ object Select {
       else
         names.get(name) match {
           case Some(i) => i
-          case None    => throwInternalError(sourceInfo.makeMessage(x => s"$x: Name \"$name\" not found when building dedup hash for ${hier.name} (${hier.proto._getSourceLocator.makeMessage(x => x)})."))
+          case None    => throwInternalError(sourceInfo.makeMessage(x => s"$x: Name \"$name\" not found when building dedup hash for ${hier.name} (${hier.proto._getSourceLocator.makeMessage(x => x)}):\n${hier.chirrtlString}"))
         }
     }
 

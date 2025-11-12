@@ -90,5 +90,12 @@ object Hierarchy {
       case _ => throw new InternalErrorException(s"Match error: toAbsoluteTarget i=$i")
     }
 
+    def chirrtlString: String = {
+      val component = i.proto._component.get
+      ElaboratedCircuit(
+        chisel3.internal.firrtl.ir.Circuit(component.name, Seq(component), Nil, firrtl.RenameMap(component.name), Nil, Nil, Nil, false, Nil),
+        Nil
+      ).serialize(Nil)
+    }
   }
 }
