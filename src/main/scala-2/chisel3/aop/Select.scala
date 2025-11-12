@@ -261,10 +261,11 @@ object Select {
               v.pable.unpack._2.map(x => getNameIndex(x.getRef.fullName(ctx)))
             )
           case p: DefPrim[_] =>
+            buildAllNameIndex(p.id)
             updateHash(
               "prim",
               p.op.name,
-              buildNameIndex(p.id.ref.fullName(ctx)),
+              getNameIndex(p.id.ref.fullName(ctx)),
               p.args.map(x => getNameIndex(x.fullName(ctx)))
             )
           case p: ProbeDefine =>
