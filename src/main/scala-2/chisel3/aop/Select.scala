@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.internal.{HasId, PseudoModule}
 import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.ir.{Definition => DefinitionIR, When => FWhen, _}
+import chisel3.experimental.SourceInfo
 import chisel3.experimental.hierarchy.core._
 import chisel3.experimental.hierarchy.ModuleClone
 import chisel3.reflect.DataMirror
@@ -126,7 +127,7 @@ object Select {
       *  - a constant argument
       * It will also fix dynamic accesses by replacing the dynamic index expression with its unique index
       */
-    def getNameIndex(name: String): Int = {
+    def getNameIndex(name: String)(implicit sourceInfo: SourceInfo): Int = {
       // Check if a name is a literal
       def isLit(name: String): Boolean =
         name.startsWith("UInt") || name.startsWith("asSInt(UInt")
@@ -151,7 +152,7 @@ object Select {
       else
         names.get(name) match {
           case Some(i) => i
-          case None    => throwInternalError(s"Name $name not found in map $names")
+          case None    => throwInternalError(sourceInfo.makeMessage(x => s"$x: Name \"$name\" not found when building dedup hash for ${hier.name} (${hier.proto._getSourceLocator.makeMessage(x => x)})."))
         }
     }
 
@@ -192,8 +193,9 @@ object Select {
       * @param cmds
       */
     def processCommands(cmds: Seq[Command]): Unit = {
-      cmds.foreach {
-        (_: Command) match {
+      cmds.foreach { cmd: Command =>
+        implicit val sourceInfo = cmd.sourceInfo
+        cmd match {
           case r: DefReg =>
             updateHash("reg", buildAllNameIndex(r.id), r.id.typeName, getNameIndex(r.clock.fullName(ctx)))
           case r: DefRegInit =>
