@@ -91,9 +91,15 @@ object Hierarchy {
     }
 
     def chirrtlString: String = {
+      require(
+        i.proto._component.isDefined,
+        "Cannot get chirrtlString when the underlying module does not have a component"
+      )
+      require(i.proto.isClosed, "Cannot get chirrtlString when the underlying module is not closed")
       val component = i.proto._component.get
       ElaboratedCircuit(
-        chisel3.internal.firrtl.ir.Circuit(component.name, Seq(component), Nil, firrtl.RenameMap(component.name), Nil, Nil, Nil, false, Nil),
+        chisel3.internal.firrtl.ir
+          .Circuit(component.name, Seq(component), Nil, firrtl.RenameMap(component.name), Nil, Nil, Nil, false, Nil),
         Nil
       ).serialize(Nil)
     }
