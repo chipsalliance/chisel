@@ -130,7 +130,7 @@ object Select {
     def getNameIndex(name: String)(implicit sourceInfo: SourceInfo): Int = {
       // Check if a name is a literal
       def isLit(name: String): Boolean =
-        name.startsWith("UInt") || name.startsWith("asSInt(UInt")
+        name.startsWith("UInt") || name.startsWith("asSInt(UInt") || name.startsWith("PropertyLit(")
       // Fix dynamic accesses by replacing the dynamic index expression with its unique index
       def fixDynamicAccess(name: String): String = {
         if (name.contains("[")) {
