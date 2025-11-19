@@ -900,5 +900,5 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
   def implies(that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_implies(that: Bool)(implicit sourceInfo: SourceInfo): Bool = (!this) | that
+  def do_implies(that: Bool)(implicit sourceInfo: SourceInfo): Bool = _impl_implies(that)
 }
