@@ -202,13 +202,13 @@ class SIntOpsSpec extends AnyPropSpec with Matchers with ShiftRightWidthBehavior
   }
 
   property("Static right-shift should have a minimum width of 1") {
-    testShiftRightWidthBehavior(SInt)(chiselMinWidth = 1, firrtlMinWidth = 1)
+    testSIntShiftRightWidthBehavior(chiselMinWidth = 1, firrtlMinWidth = 1)
   }
 
   property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-width") {
     val args = Array("--use-legacy-width")
 
-    testShiftRightWidthBehavior(SInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
+    testSIntShiftRightWidthBehavior(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
 
     // Focused test to show the mismatch
     class TestModule extends Module {
