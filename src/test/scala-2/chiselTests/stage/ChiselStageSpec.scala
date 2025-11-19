@@ -123,12 +123,12 @@ object ChiselStageSpec {
   }
 
   class RecoverableErrorFakeSourceInfo extends RawModule {
-    implicit val info = SourceLine("Foo", 3, 10)
+    implicit val info: SourceLine = SourceLine("Foo", 3, 10)
     3.U >> -1
   }
 
   class ErrorCaughtByFirtool extends RawModule {
-    implicit val info = SourceLine("Foo", 3, 10)
+    implicit val info: SourceLine = SourceLine("Foo", 3, 10)
     val w = Wire(UInt(8.W))
   }
 
