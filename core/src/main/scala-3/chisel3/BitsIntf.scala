@@ -603,5 +603,5 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
     * @param that a boolean signal
     * @return [[!this || that]]
     */
-  def implies(that: Bool): Bool = (!this) | that
+  def implies(that: Bool)(using SourceInfo): Bool = _impl_implies(that)
 }
