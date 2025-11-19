@@ -691,6 +691,8 @@ sealed class Bool() extends UInt(1.W) with BoolIntf with Reset {
   protected def _asAsyncResetImpl(implicit sourceInfo: SourceInfo): AsyncReset =
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
 
+  protected def _impl_implies(that: Bool)(implicit sourceInfo: SourceInfo): Bool = (!this) | that
+
   override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): this.type = {
     _resizeToWidth(that, this.widthOption, true)(identity).asBool.asInstanceOf[this.type]
   }

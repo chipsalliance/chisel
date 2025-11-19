@@ -597,4 +597,11 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
   def asClock(using SourceInfo): Clock = _asClockImpl
 
   def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
+
+  /** Logical implication
+    *
+    * @param that a boolean signal
+    * @return [[!this || that]]
+    */
+  def implies(that: Bool)(using SourceInfo): Bool = _impl_implies(that)
 }
