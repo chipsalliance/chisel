@@ -214,62 +214,100 @@ class UIntLitZeroWidthTester extends Module {
 }
 
 trait ShiftRightWidthBehavior extends WidthHelpers {
-  // The UInt and SInt objects don't share a type, so make one up that they can conform to structurally
-  type BitsFactory[T <: Bits] = {
-    def apply():         T
-    def apply(w: Width): T
-  }
-
-  def testShiftRightWidthBehavior[T <: Bits](
-    factory: BitsFactory[T]
-  )(chiselMinWidth: Int, firrtlMinWidth: Int, args: Iterable[String] = Nil): Unit = {
+  def testSIntShiftRightWidthBehavior(chiselMinWidth: Int, firrtlMinWidth: Int, args: Iterable[String] = Nil): Unit = {
     assertKnownWidth(4, args) {
-      val in = IO(Input(factory(8.W)))
+      val in = IO(Input(SInt(8.W)))
       in >> 4
     }
     assertKnownWidth(chiselMinWidth, args) {
-      val in = IO(Input(factory(8.W)))
+      val in = IO(Input(SInt(8.W)))
       in >> 8
     }
     assertKnownWidth(chiselMinWidth, args) {
-      val in = IO(Input(factory(8.W)))
+      val in = IO(Input(SInt(8.W)))
       in >> 16
     }
     assertKnownWidth(chiselMinWidth, args) {
-      val in = IO(Input(factory(0.W)))
+      val in = IO(Input(SInt(0.W)))
       in >> 8
     }
     assertKnownWidth(chiselMinWidth, args) {
-      val in = IO(Input(factory(0.W)))
+      val in = IO(Input(SInt(0.W)))
       in >> 0
     }
     assertInferredWidth(4, args) {
-      val in = IO(Input(factory(8.W)))
-      val w = WireInit(factory(), in)
+      val in = IO(Input(SInt(8.W)))
+      val w = WireInit(SInt(), in)
       w >> 4
     }
     assertInferredWidth(firrtlMinWidth, args) {
-      val in = IO(Input(factory(8.W)))
-      val w = WireInit(factory(), in)
+      val in = IO(Input(SInt(8.W)))
+      val w = WireInit(SInt(), in)
       w >> 8
     }
     assertInferredWidth(firrtlMinWidth, args) {
-      val in = IO(Input(factory(8.W)))
-      val w = WireInit(factory(), in)
+      val in = IO(Input(SInt(8.W)))
+      val w = WireInit(SInt(), in)
       w >> 16
     }
     assertInferredWidth(firrtlMinWidth, args) {
-      val in = IO(Input(factory(0.W)))
-      val w = WireInit(factory(), in)
+      val in = IO(Input(SInt(0.W)))
+      val w = WireInit(SInt(), in)
       w >> 8
     }
     assertInferredWidth(firrtlMinWidth, args) {
-      val in = IO(Input(factory(0.W)))
-      val w = WireInit(factory(), in)
+      val in = IO(Input(SInt(0.W)))
+      val w = WireInit(SInt(), in)
       w >> 0
     }
   }
-
+  def testUIntShiftRightWidthBehavior(chiselMinWidth: Int, firrtlMinWidth: Int, args: Iterable[String] = Nil): Unit = {
+    assertKnownWidth(4, args) {
+      val in = IO(Input(UInt(8.W)))
+      in >> 4
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(UInt(8.W)))
+      in >> 8
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(UInt(8.W)))
+      in >> 16
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(UInt(0.W)))
+      in >> 8
+    }
+    assertKnownWidth(chiselMinWidth, args) {
+      val in = IO(Input(UInt(0.W)))
+      in >> 0
+    }
+    assertInferredWidth(4, args) {
+      val in = IO(Input(UInt(8.W)))
+      val w = WireInit(UInt(), in)
+      w >> 4
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(UInt(8.W)))
+      val w = WireInit(UInt(), in)
+      w >> 8
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(UInt(8.W)))
+      val w = WireInit(UInt(), in)
+      w >> 16
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(UInt(0.W)))
+      val w = WireInit(UInt(), in)
+      w >> 8
+    }
+    assertInferredWidth(firrtlMinWidth, args) {
+      val in = IO(Input(UInt(0.W)))
+      val w = WireInit(UInt(), in)
+      w >> 0
+    }
+  }
 }
 
 class UIntOpsSpec extends AnyPropSpec with Matchers with LogUtils with ShiftRightWidthBehavior with ChiselSim {
@@ -551,13 +589,13 @@ class UIntOpsSpec extends AnyPropSpec with Matchers with LogUtils with ShiftRigh
   }
 
   property("Static right-shift should have a minimum width of 0") {
-    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 0)
+    testUIntShiftRightWidthBehavior(chiselMinWidth = 0, firrtlMinWidth = 0)
   }
 
   property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-width") {
     val args = Array("--use-legacy-width")
 
-    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
+    testUIntShiftRightWidthBehavior(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
 
     // Focused test to show the mismatch
     class TestModule extends Module {
