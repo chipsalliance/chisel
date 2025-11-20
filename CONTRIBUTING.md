@@ -70,7 +70,7 @@ work-in-progress addition of Scala 3 support.
 
 Most testing can be done on just the Chisel build unit:
 ```sh
-./mill chisel[].test.test
+./mill chisel[].test
 ```
 
 The `[]` exists because we are cross-compiling between Scala 2.13 and Scala 3.

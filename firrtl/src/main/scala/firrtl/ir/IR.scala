@@ -826,10 +826,22 @@ case class ArrayTestParam(value: Seq[TestParam]) extends TestParam with UseSeria
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class MapTestParam(value: Map[String, TestParam]) extends TestParam with UseSerializer
 
-/** Formal Test
+object TestMarker {
+  sealed trait Kind {
+    def toString: String
+  }
+  case object Formal extends Kind {
+    override def toString = "formal"
+  }
+  case object Simulation extends Kind {
+    override def toString = "simulation"
+  }
+}
+
+/** Formal or Simulation Test
   */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
-case class FormalTest(info: Info, name: String, moduleName: String, params: MapTestParam)
+case class TestMarker(kind: TestMarker.Kind, info: Info, name: String, moduleName: String, params: MapTestParam)
     extends DefModule
     with UseSerializer {
   val ports: Seq[Port] = Seq.empty
