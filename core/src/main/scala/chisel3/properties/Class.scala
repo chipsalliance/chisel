@@ -118,7 +118,7 @@ case class ClassType private[chisel3] (name: String) { self =>
     */
   sealed trait Type
 
-  private object Type {
+  object Type {
     implicit val classTypeProvider: ClassTypeProvider[Type] = ClassTypeProvider(name)
     implicit val propertyType: ClassTypePropertyType.Aux[Property[ClassType] with self.Type, Arg] =
       new ClassTypePropertyType[Property[ClassType] with self.Type](classTypeProvider.classType) {
