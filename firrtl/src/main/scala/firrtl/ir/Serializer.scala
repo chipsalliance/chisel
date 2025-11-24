@@ -494,7 +494,6 @@ object Serializer {
   private def s(node: Direction)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case Input  => b ++= "input"
     case Output => b ++= "output"
-    case other  => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Port)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -519,7 +518,6 @@ object Serializer {
     case RawStringParam(name, value) =>
       b ++= name; b ++= " = "
       b += '\''; b ++= value.replace("'", "\\'"); b += '\''
-    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: TestParam)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -540,7 +538,6 @@ object Serializer {
         b ++= name; b ++= " = "; s(value(name))
       }
       b ++= "}"
-    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def sIt(node: DefModule)(implicit indent: Int): Iterator[String] = node match {

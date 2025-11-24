@@ -489,7 +489,7 @@ final class Workspace(
           .replace("$", "$$")
           .replace("'", "'\\''")
           .replace(workingDirectoryPath, "$(shell pwd)")
-      l("\t\t'", sanitizedArugment, "' \\")
+        l("\t\t'", sanitizedArugment, "' \\")
       }
       l("'-F' \\")
       l(s"\t\t'${sourceFilesFilelistWriter.path}'")
@@ -519,7 +519,7 @@ final class Workspace(
       l("simulationEnvironment = \\")
       for (((name, value), index) <- simulationEnvironment.zipWithIndex) {
         val sanitizedValue = value.replace(workingDirectoryPath, "$(shell pwd)")
-      l("\t", name, "=", sanitizedValue, if (index != simulationEnvironment.length - 1) " \\" else "")
+        l("\t", name, "=", sanitizedValue, if (index != simulationEnvironment.length - 1) " \\" else "")
       }
       l()
       //format: on

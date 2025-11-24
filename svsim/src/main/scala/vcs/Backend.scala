@@ -49,7 +49,7 @@ object Backend {
       case object TMerge extends XProp
     }
 
-    final object TraceSettings {
+    object TraceSettings {
       final case class FsdbSettings(verdiHome: String)
     }
     final case class TraceSettings(
