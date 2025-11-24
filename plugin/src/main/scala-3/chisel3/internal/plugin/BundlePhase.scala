@@ -86,7 +86,9 @@ object BundleHelpers {
       case _ =>
     })
 
-    Some(constructor.termParamss.map(_.map { case vp =>
+    def isImplicit(x: tpd.ValDef): Boolean = x.symbol.flags.is(Flags.Implicit)
+
+    Some(constructor.termParamss.map(_.filterNot(isImplicit(_)).map { case vp =>
       val p: Symbol = paramLookup(vp.name.toString)
       val select = tpd.Select(thiz, p.name)
       val cloned: tpd.Tree =
