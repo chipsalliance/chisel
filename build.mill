@@ -32,7 +32,7 @@ object v extends Module {
   // Only publish plugin for 2.13.11+ when using Java > 11, but still
   // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
-    val latest213 = 17
+    val latest213 = 18
     val java21Min213 = 11
     val minVersion = if (javaVersion > 11) java21Min213 else 0
     val versions = minVersion to latest213
@@ -41,7 +41,7 @@ object v extends Module {
   }
 
   val scalaCrossVersions = Seq(
-    "2.13.17",
+    "2.13.18",
     "3.3.4"
   )
 
