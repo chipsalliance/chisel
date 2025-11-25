@@ -2,8 +2,16 @@
 
 package chisel3
 
-/** Does nothing in Scala 2; this stub trait is for maintaining
-  * compatibility with Scala 3's selectable, required to support
-  * structurally-typed Bundles in Scala 3.
+/** Shim for Scala 3's `scala.reflect.Selectable`
+  *
+  * Allows Chisel to cross-compile Scala 2 and Scala 3
+  * while enabling structural typing in Scala 3.
+  */
+trait ReflectSelectable
+
+/** Shim for Scala 3's `scala.Selectable`
+  *
+  * Allows Chisel to cross-compile Scala 2 and Scala 3
+  * while enabling structural typing in Scala 3.
   */
 trait Selectable
