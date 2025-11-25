@@ -126,12 +126,19 @@ class AutoNestedCloneSpec extends AnyFlatSpec with Matchers {
         val foo = new Bundle {
           val x = Input(Vec(n, gen))
         }
-        val bar = Output(Option(new { def mkBundle = new Bundle { val x = Vec(n, gen) } }).get.mkBundle)
+        trait HasMkBundle { def mkBundle: Bundle }
+
+        val mk: HasMkBundle =
+          new HasMkBundle {
+            def mkBundle: Bundle = new Bundle { val x = Vec(n, gen) }
+          }
+        val bar = Output(mk.mkBundle)
       }
       val io = IO(new MyBundle(4, UInt(8.W)))
       val myWire = WireInit(io.foo)
       val myWire2 = WireInit(io.bar)
       io.bar.x := io.foo.x
+
     })
   }
 }

@@ -3,7 +3,6 @@
 package chiselTests.naming
 
 import chisel3._
-import chisel3.aop.Select
 import chisel3.experimental.{noPrefix, prefix, skipPrefix, AffectsChiselPrefix}
 import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage

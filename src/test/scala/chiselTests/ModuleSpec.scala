@@ -9,9 +9,11 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage, FirtoolOption}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{TargetDirAnnotation, Unserializable}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 import scala.io.Source
+import scala.reflect.Selectable.reflectiveSelectable
 
 class SimpleIO extends Bundle {
   val in = Input(UInt(32.W))

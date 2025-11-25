@@ -11,6 +11,7 @@ import chisel3.util.HasExtModuleResource
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.reflect.Selectable.reflectiveSelectable
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
