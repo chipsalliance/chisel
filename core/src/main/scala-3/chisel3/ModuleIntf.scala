@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.experimental.{BaseModule, SourceInfo}
 
-transparent private[chisel3] trait Module$Intf extends SourceInfoDoc { self: Module.type =>
+private[chisel3] trait Module$Intf extends SourceInfoDoc { self: Module.type =>
 
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
@@ -15,5 +15,5 @@ transparent private[chisel3] trait Module$Intf extends SourceInfoDoc { self: Mod
     */
   // TODO(adkian-sifive) the callsite here explicitly passes
   // sourceInfo so it cannot be a contextual parameter
-  transparent inline def apply[T <: BaseModule](inline bc: => T): T = _applyImpl(bc)
+  def apply[T <: BaseModule](bc: => T): T = _applyImpl(bc)
 }
