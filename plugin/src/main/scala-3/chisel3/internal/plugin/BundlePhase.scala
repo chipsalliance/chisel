@@ -38,7 +38,16 @@ object BundleHelpers {
     thiz:    tpd.This,
     conArgs: List[List[tpd.Tree]]
   )(using Context): tpd.DefDef = {
-    val newExpr = tpd.New(record.symbol.typeRef, conArgs.flatten)
+    val newExpr: tpd.Tree = conArgs match {
+      case Nil         => tpd.New(record.symbol.typeRef, Nil)
+      case head :: Nil => tpd.New(record.symbol.typeRef, head)
+      case head :: tail => {
+        val headApp = tpd.New(record.symbol.typeRef, head)
+        tail.foldLeft(headApp: tpd.Tree) { (fun, args) =>
+          if args.isEmpty then fun else tpd.Apply(fun, args)
+        }
+      }
+    }
     val recordTpe = requiredClassRef("chisel3.Record")
     val cloneTypeSym = newSymbol(
       record.symbol,
