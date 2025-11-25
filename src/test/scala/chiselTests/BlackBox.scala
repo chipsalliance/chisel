@@ -361,7 +361,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
     object A extends layer.Layer(layer.LayerConfig.Extract())
 
     sealed trait NoIo { this: BlackBox =>
-      final val io = IO(new Bundle {})
+      final val io = chisel3.IO(new Bundle {})
     }
 
     // No known layers
