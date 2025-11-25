@@ -9,6 +9,7 @@ import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.reflect.Selectable.reflectiveSelectable
 
 object Platform extends Group {
   object FPGA extends Case
@@ -34,8 +35,8 @@ class ModuleWithChoice[T <: Data](
   default: => FixedIOBaseModule[T]
 )(alternateImpls: Seq[(Case, () => FixedIOBaseModule[T])])
     extends Module {
-  val inst = ModuleChoice(default)(alternateImpls)
-  val io = IO(inst.cloneType)
+  val inst: T = ModuleChoice[T](default, alternateImpls)
+  val io: T = IO(chiselTypeOf(inst))
   io <> inst
 }
 

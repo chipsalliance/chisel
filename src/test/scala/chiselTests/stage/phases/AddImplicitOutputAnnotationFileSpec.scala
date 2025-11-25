@@ -6,7 +6,7 @@ import chisel3.RawModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{AddImplicitOutputAnnotationFile, Elaborate}
 
-import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
+import firrtl.{annoSeqToSeq, AnnotationSeq, seqToAnnoSeq}
 import firrtl.options.{OutputAnnotationFileAnnotation, Phase}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
