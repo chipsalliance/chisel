@@ -484,7 +484,7 @@ sealed abstract class LayerConfig
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 object LayerConfig {
   final case class Extract(outputDir: Option[String]) extends LayerConfig
-  final case object Inline extends LayerConfig
+  case object Inline extends LayerConfig
 }
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")

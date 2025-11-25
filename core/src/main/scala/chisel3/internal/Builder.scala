@@ -930,11 +930,6 @@ private[chisel3] object Builder extends LazyLogging {
     throwException(m)
   }
 
-  def getScalaMajorVersion: Int = {
-    val "2" :: major :: _ :: Nil = chisel3.BuildInfo.scalaVersion.split("\\.").toList
-    major.toInt
-  }
-
   def useLegacyWidth: Boolean = dynamicContextVar.value.map(_.useLegacyWidth).getOrElse(false)
 
   def includeUtilMetadata: Boolean = dynamicContextVar.value.map(_.includeUtilMetadata).getOrElse(false)
@@ -1067,9 +1062,8 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint(logger)
       logger.info("Done elaborating.")
 
-      val typeAliases = aliasMap.flatMap {
-        case (name, (underlying: fir.Type, info: SourceInfo)) => Some(DefTypeAlias(info, underlying, name))
-        case _                                                => None
+      val typeAliases = aliasMap.flatMap { case (name, (underlying: fir.Type, info: SourceInfo)) =>
+        Some(DefTypeAlias(info, underlying, name))
       }.toSeq
 
       /** Stores an adjacency list representation of layers.  Connections indicating children. */

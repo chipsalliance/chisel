@@ -471,7 +471,7 @@ private[chisel3] object ir {
   sealed abstract class LayerConfig
   object LayerConfig {
     final case class Extract(outputDir: Option[String]) extends LayerConfig
-    final case object Inline extends LayerConfig
+    case object Inline extends LayerConfig
   }
 
   final case class Layer(
