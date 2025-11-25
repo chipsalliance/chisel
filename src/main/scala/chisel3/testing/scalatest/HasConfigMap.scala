@@ -12,7 +12,7 @@ import scala.util.DynamicVariable
   *
   * For example, you can invoke Scalatest passing the `foo=bar` option like so:
   * {{{
-  * ./mill 'chisel[2.13.17].test.testOnly' fooTest -Dfoo=bar
+  * ./mill 'chisel[].test.testOnly' fooTest -Dfoo=bar
   * }}}
   *
   * Inside your test, if the `configMap` member function is accessed this will
