@@ -2,8 +2,9 @@
 
 package chisel3
 
-import scala.language.experimental.macros
+import chisel3.experimental.SourceInfo
 
 private[chisel3] trait PrintfIntf { self: printf.type =>
-  // TODO add printf with format String macro
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
+    Printf.apply(Printable.pack(fmt, data: _*))
 }
