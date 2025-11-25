@@ -9,7 +9,6 @@ import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Platform extends Group {
   object FPGA extends Case
