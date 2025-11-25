@@ -12,7 +12,6 @@ import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.reflect.Selectable.reflectiveSelectable
 
 class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim {
   // Strip SourceInfos and split into lines

@@ -326,8 +326,6 @@ class VecSpec extends AnyPropSpec with Matchers with LogUtils with FileCheck {
       }
       require(bundleWithZeroEntryVec.getWidth == 1)
 
-      import scala.reflect.Selectable.reflectiveSelectable
-
       val m = Module(new Module {
         val io = IO(Output(bundleWithZeroEntryVec))
         val zero = WireInit(0.U.asTypeOf(bundleWithZeroEntryVec))

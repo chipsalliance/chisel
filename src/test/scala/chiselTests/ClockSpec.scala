@@ -8,7 +8,6 @@ import chisel3.simulator.stimulus.RunUntilFinished
 import circt.stage.ChiselStage
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
-import scala.reflect.Selectable.reflectiveSelectable
 
 class ClockAsUIntTester extends Module {
   assert(true.B.asClock.asUInt === 1.U)

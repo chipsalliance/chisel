@@ -5,7 +5,6 @@ import chisel3.util.Decoupled
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import scala.reflect.Selectable.reflectiveSelectable
 
 class BulkConnectSpec extends AnyPropSpec with Matchers {
   property("Chisel connects should emit FIRRTL bulk connects when possible") {
