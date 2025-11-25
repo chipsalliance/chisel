@@ -2,13 +2,16 @@
 
 package chisel3
 
-/** These traits do nothing in Scala 2 other than maintaining
-  * compatibility with Scala 3's Selectable and
-  * scala.reflect.Selectable, required to support structural selection
-  * in Scala 3.
+/** Shim for Scala 3's `scala.reflect.Selectable`
   *
-  * SelectableCompat => scala.reflect.Selectable
-  * Selectable => scala.Selectable
+  * Allows Chisel to cross-compile Scala 2 and Scala 3
+  * while enabling structural typing in Scala 3.
   */
-trait SelectableCompat
+trait ReflectSelectable
+
+/** Shim for Scala 3's `scala.Selectable`
+  *
+  * Allows Chisel to cross-compile Scala 2 and Scala 3
+  * while enabling structural typing in Scala 3.
+  */
 trait Selectable

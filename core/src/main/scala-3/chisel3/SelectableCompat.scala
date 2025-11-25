@@ -2,4 +2,4 @@
 
 package chisel3
 
-trait SelectableCompat extends scala.reflect.Selectable
+type ReflectSelectable = scala.reflect.Selectable

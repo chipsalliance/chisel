@@ -413,7 +413,7 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  abstract class BaseModule extends HasId with IsInstantiable with SelectableCompat {
+  abstract class BaseModule extends HasId with IsInstantiable with ReflectSelectable {
     _parent.foreach(_.addId(this))
 
     // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
