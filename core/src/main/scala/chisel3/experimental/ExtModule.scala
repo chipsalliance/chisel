@@ -1,6 +1,6 @@
 package chisel3.experimental
 
-import chisel3._
+import chisel3.SpecifiedDirection
 import chisel3.layer.Layer
 import chisel3.internal.BaseBlackBox
 import chisel3.internal.firrtl.ir.{Component, DefBlackBox, Port}

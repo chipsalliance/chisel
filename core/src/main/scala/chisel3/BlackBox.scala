@@ -5,10 +5,9 @@ package chisel3
 import chisel3.experimental.{BaseModule, Param}
 import chisel3.layer.Layer
 import chisel3.internal.BaseBlackBox
-import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.ir._
+import chisel3.internal.firrtl.ir.{Component, DefBlackBox, ModuleIO, Port}
 import chisel3.internal.throwException
-import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.experimental.UnlocatableSourceInfo
 
 import scala.collection.mutable
 

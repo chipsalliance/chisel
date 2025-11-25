@@ -1,8 +1,7 @@
 package chisel3.internal
 
-import chisel3._
 import chisel3.experimental.BaseModule
-import chisel3.layer.Layer
+import chisel3.layer.{addLayer, Layer}
 import scala.collection.mutable
 
 private[chisel3] abstract class BaseBlackBox extends BaseModule {
@@ -49,5 +48,5 @@ private[chisel3] abstract class BaseBlackBox extends BaseModule {
     _knownLayers.toSeq
   }
 
-  knownLayers.foreach(layer.addLayer)
+  knownLayers.foreach(addLayer)
 }
