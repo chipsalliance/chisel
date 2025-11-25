@@ -7,7 +7,7 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, Chisel
 import chisel3.stage.phases.{Convert, Elaborate, Emitter}
 
 import firrtl.EmittedFirrtlCircuitAnnotation
-import firrtl.{AnnotationSeq, seqToAnnoSeq, annoSeqToSeq}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{Phase, TargetDirAnnotation}
 
 import java.io.File

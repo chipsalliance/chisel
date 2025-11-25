@@ -7,7 +7,7 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
 import chisel3.stage.phases.Elaborate
 
 import firrtl.options.Phase
-import firrtl.{AnnotationSeq, seqToAnnoSeq, annoSeqToSeq}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
