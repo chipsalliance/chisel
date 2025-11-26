@@ -116,10 +116,9 @@ Scala/Java compatibility table (maximum version supported):
 |--------|---------|------
 | 3.5.6  | 2.13.10 | 17
 | 3.6.1  | 2.13.14 | 22
-| 5.3.x  | 2.13.14 | 22
-| 6.6.x  | 2.13.16 | 23
-| 7.1.x  | 2.13.16 | 23
-| 7.2.x  | 2.13.17 | 25
+| 5.x    | 2.13.14 | 22
+| 6.x    | 2.13.16 | 23
+| 7.x    | 2.13.18 | 26
 
 Note that, by default, `brew` on Mac installs the newest version of Java which often is not LTS and not yet supported by the maximum version of Scala supported by Chisel.
 Stick to LTS and you should have no issues (e.g. `brew install openjdk@17`)
