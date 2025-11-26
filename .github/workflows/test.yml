@@ -66,7 +66,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          distribution: 'adopt'
+          distribution: 'graalvm'
           java-version: ${{ inputs.jvm }}
       - name: Install CIRCT
         id: install-circt
