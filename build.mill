@@ -14,6 +14,12 @@ import mill.scalalib.scalafmt._
 
 object v extends Module {
 
+  // Add support for later Scala 2.13 by bumping this.
+  val scala213MinorVersion: Int = 18
+
+  // Bump Scala 3 version by bumping this.
+  val scala3MinorVersion: String = "3.4"
+
   val javaVersion = {
     val rawVersion = sys.props("java.specification.version")
     // Older versions of Java started with 1., e.g. 1.8 == 8
@@ -32,20 +38,26 @@ object v extends Module {
   // Only publish plugin for 2.13.11+ when using Java > 11, but still
   // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
-    val latest213 = 18
     val java21Min213 = 11
     val minVersion = if (javaVersion > 11) java21Min213 else 0
-    val versions = minVersion to latest213
+    val versions = minVersion to scala213MinorVersion
     val versionSeq = versions.map(v => s"2.13.$v").toSeq
-    versionSeq ++ Seq("3.3.4")
+    versionSeq :+ scalaCrossToVersion("3")
   }
 
-  val scalaCrossVersions = Seq(
-    "2.13.18",
-    "3.3.4"
-  )
+  val scalaCrossVersions = Seq("2.13", "3")
 
-  def isScala3(ver: String): Boolean = ver.startsWith("3.")
+  def scalaCrossToVersion(major: String): String = major match {
+    case "2.13" => s"2.13.$scala213MinorVersion"
+    case "3"    => s"3.$scala3MinorVersion"
+  }
+
+  def scalaVersionToCross(version: String): String =
+    if (version.startsWith("2.13")) "2.13"
+    else if (version.startsWith("3.")) "3"
+    else throw new Exception(s"Unsupported version $version")
+
+  def isScala3(ver: String): Boolean = ver.startsWith("3")
 
   def buildUnits(): Seq[ScalaModule] = {
     scalaCrossVersions.flatMap { ver =>
@@ -65,7 +77,10 @@ object v extends Module {
     }
   }
 
-  val scalaVersion = scalaCrossVersions.head
+  def defaultCrossVersion = scalaCrossVersions.head
+
+  def defaultScalaVersion = scalaCrossToVersion(defaultCrossVersion)
+
   val jmhVersion = "1.37"
   val osLib = mvn"com.lihaoyi::os-lib:0.10.7" // 0.11 requires Java 11
   val upickle = mvn"com.lihaoyi::upickle:3.3.1" // upickle 4.0 requires Scala 3.4 (we target Scala 3.3 LTS)
@@ -181,6 +196,15 @@ def latestStableVersion() = Task.Command {
   docs.latestStableVersion()
 }
 
+/** Our base trait that helps with our simplified cross versioning (2.13 instead of 2.13.18)
+  *
+  * Keep this lean, it's mixed in to firrtl and svsim as well.
+  */
+trait ChiselCrossModule extends CrossSbtModule {
+  protected def _scalaVersion = v.scalaCrossToVersion(crossScalaVersion)
+  def scalaVersion = _scalaVersion
+}
+
 trait HasScala2MacroAnno extends CrossModuleBase {
   override def scalacOptions = Task {
     if (!v.isScala3(crossScalaVersion)) {
@@ -189,9 +213,10 @@ trait HasScala2MacroAnno extends CrossModuleBase {
   }
 }
 
-trait HasScalaPlugin extends CrossModuleBase {
+trait HasScalaPlugin extends ChiselCrossModule {
   import build_.plugin.Plugin
-  def pluginModule: Plugin
+
+  def pluginModule: Plugin = plugin.cross(_scalaVersion)
 
   override def scalacOptions = Task {
     super.scalacOptions() ++ Seq(s"-Xplugin:${pluginModule.jar().path}")
@@ -271,10 +296,10 @@ object circt extends Module {
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
 trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin with ScalafmtModule {
+
   override def moduleDir = super.moduleDir / os.up
   def svsimModule = svsim.cross(crossScalaVersion)
   def coreModule = core.cross(crossScalaVersion)
-  def pluginModule = plugin.cross()
 
   override def scalacOptions = Task {
     if (v.isScala3(crossScalaVersion)) {

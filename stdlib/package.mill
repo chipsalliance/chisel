@@ -12,10 +12,10 @@ object `package` extends Module {
   object cross extends Cross[Stdlib](v.scalaCrossVersions)
 }
 
-trait Stdlib extends CrossSbtModule with HasScalaPlugin with HasCommonOptions with ScalafmtModule {
+trait Stdlib extends HasScalaPlugin with HasCommonOptions with ScalafmtModule {
   def moduleDir = super.moduleDir / os.up
-  def chiselModule = chisel(crossScalaVersion)
-  def pluginModule = plugin.cross(crossScalaVersion)
 
-  override def moduleDeps = Seq(chiselModule, pluginModule)
+  def chiselModule = chisel(crossScalaVersion)
+
+  override def moduleDeps = Seq(chiselModule)
 }

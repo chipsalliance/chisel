@@ -16,7 +16,6 @@ trait LitUtility extends ScalaModule with CrossModuleBase with HasScalaPlugin wi
   override def scalacOptions = Task { Seq("-Ymacro-annotations") }
 
   def chiselModule = chisel(crossScalaVersion)
-  def pluginModule = plugin.cross(crossScalaVersion)
   def moduleDir = super.moduleDir / os.up
 
   override def moduleDeps = super.moduleDeps ++ Some(chiselModule)

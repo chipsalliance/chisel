@@ -49,7 +49,7 @@ jobs:
       matrix:
         system: ["ubuntu-24.04"]
         jvm: [21]
-        scala: ["2.13.18"]
+        scala: ["2.13"]
         espresso: ["2.4"]
         slang: ["7.0"]
         circt: ["nightly"]

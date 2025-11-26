@@ -11,21 +11,19 @@ import mill.util.Jvm
 import build._
 
 /** MDoc project */
-object `package` extends SbtModule with HasScalaPlugin with HasCommonOptions {
+object `package` extends HasScalaPlugin with HasCommonOptions {
 
-  override def scalaVersion = v.scalaVersion
+  override def scalaVersion = v.defaultScalaVersion
 
   // This not really a CrossModule but HasScala2Plugin and HasCommonOptions require it
-  override def crossValue = v.scalaVersion
-
-  def pluginModule = plugin.cross()
+  override def crossValue = v.scalaCrossVersions.head
 
   // Our scala sources to be used by mdoc live here
   override def moduleDir = super.moduleDir / os.up / "docs-target"
 
   override def mvnDeps = Task { Seq(v.mdoc, v.scalatest) }
 
-  override def moduleDeps = Seq(chisel(v.scalaVersion))
+  override def moduleDeps = Seq(chisel(crossValue))
 
   // Suppress missing interpolator warnings because mdoc appears to introduce them.
   override def extraWarnConf = Seq("msg=possible missing interpolator:s")

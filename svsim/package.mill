@@ -12,7 +12,8 @@ object `package` extends Module {
   object cross extends Cross[Svsim](v.scalaCrossVersions)
 }
 
-trait Svsim extends CrossSbtModule with HasCommonOptions with ScalafmtModule {
+trait Svsim extends ChiselCrossModule with HasCommonOptions with ScalafmtModule {
+
   def moduleDir = super.moduleDir / os.up
 
   override def scalacOptions = Task {

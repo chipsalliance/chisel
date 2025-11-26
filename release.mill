@@ -36,7 +36,7 @@ trait ChiselPublishModule extends SonatypeCentralPublishModule {
   */
 trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
 
-  def scalaVersion = v.scalaVersion
+  def scalaVersion = v.defaultScalaVersion
 
   /** Is this a SNAPSHOT release?  */
   def isSnapshot = Task { publishVersion().endsWith("-SNAPSHOT") }
@@ -71,12 +71,12 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
     transitive:   Boolean = false
   ) = Task.Command {
     // TODO consider making this parallel and publishing all cross-versions for plugin
-    plugin.cross(v.scalaVersion).publishLocal(localMvnRepo, sources, doc, transitive)()
+    plugin.cross(v.defaultScalaVersion).publishLocal(localMvnRepo, sources, doc, transitive)()
     super.publishLocal(localMvnRepo, sources, doc, transitive)()
   }
 
   // Explicitly not using moduleDeps because that influences so many things
-  def components = Seq(firrtl.cross, svsim.cross, macros.cross, core.cross, chisel).map(_(v.scalaVersion))
+  def components = Seq(firrtl.cross, svsim.cross, macros.cross, core.cross, chisel).map(_(v.defaultCrossVersion))
 
   /** Aggregated mvn deps to include as dependencies in POM */
   def mvnDeps = Task { Task.traverse(components)(_.mvnDeps)().flatten }
