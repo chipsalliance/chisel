@@ -7,7 +7,7 @@ import chisel3.simulator._
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+// import org.scalatest.matchers.should.Matchers.convertToStringShouldWrapperForVerb
 import svsim._
 
 class VerilatorSimulator(val workspacePath: String) extends Simulator[verilator.Backend] {

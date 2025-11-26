@@ -5,7 +5,7 @@ import java.io.File
 import chisel3.RawModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{ChiselStage, FirtoolOption}
-import firrtl.AnnotationSeq
+import firrtl.{seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{StageError, StageUtils}
 import sys.process._
 
