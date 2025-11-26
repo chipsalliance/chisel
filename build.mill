@@ -77,7 +77,7 @@ object v extends Module {
   val scalacheck = mvn"org.scalatestplus::scalacheck-1-18:3.2.19.0"
   val json4s = mvn"org.json4s::json4s-native:4.0.7"
   val dataclass = mvn"io.github.alexarchambault::data-class:0.2.7"
-  val commonText = mvn"org.apache.commons:commons-text:1.13.1"
+  val commonText = mvn"org.apache.commons:commons-text:1.14.0"
   val scopt = mvn"com.github.scopt::scopt:4.1.0"
   val mdoc = mvn"org.scalameta::mdoc:2.7.1"
 
