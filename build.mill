@@ -70,7 +70,7 @@ object v extends Module {
 
   val scalaVersion = scalaCrossVersions.head
   val jmhVersion = "1.37"
-  val osLib = mvn"com.lihaoyi::os-lib:0.10.7" // 0.11 requires Java 11
+  val osLib = mvn"com.lihaoyi::os-lib:0.11.6" // 0.11 requires Java 11
   val upickle = mvn"com.lihaoyi::upickle:3.3.1" // upickle 4.0 requires Scala 3.4 (we target Scala 3.3 LTS)
   val firtoolResolver = mvn"org.chipsalliance::firtool-resolver:2.0.1"
   val scalatest = mvn"org.scalatest::scalatest:3.2.19"
