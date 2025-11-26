@@ -2,82 +2,54 @@
 
 package chisel3.experimental
 
-import chisel3.SpecifiedDirection
 import chisel3.layer.Layer
-import chisel3.internal.BaseBlackBox
-import chisel3.internal.firrtl.ir.{Component, DefBlackBox, Port}
 
-/** Parameters for BlackBoxes */
-sealed abstract class Param
-case class IntParam(value: BigInt) extends Param
-case class DoubleParam(value: Double) extends Param
-case class StringParam(value: String) extends Param
 
-/** Creates a parameter from the Printable's resulting format String */
-case class PrintableParam(value: chisel3.Printable, context: BaseModule) extends Param
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+abstract class Param extends chisel3.Param
 
-/** Unquoted String */
-case class RawParam(value: String) extends Param
-
-/** Defines a black box, which is a module that can be referenced from within
-  * Chisel, but is not defined in the emitted Verilog. Useful for connecting
-  * to RTL modules defined outside Chisel.
-  *
-  * A variant of BlackBox, this has a more consistent naming scheme in allowing
-  * multiple top-level IO and does not drop the top prefix.
-  *
-  * @example
-  * Some design require a differential input clock to clock the all design.
-  * With the xilinx FPGA for example, a Verilog template named IBUFDS must be
-  * integrated to use differential input:
-  * {{{
-  *  IBUFDS #(.DIFF_TERM("TRUE"),
-  *           .IOSTANDARD("DEFAULT")) ibufds (
-  *   .IB(ibufds_IB),
-  *   .I(ibufds_I),
-  *   .O(ibufds_O)
-  *  );
-  * }}}
-  *
-  * To instantiate it, a BlackBox can be used like following:
-  * {{{
-  * import chisel3._
-  * import chisel3.experimental._
-  *
-  * // Example with Xilinx differential buffer IBUFDS
-  * class IBUFDS extends ExtModule(Map("DIFF_TERM" -> "TRUE", // Verilog parameters
-  *                                    "IOSTANDARD" -> "DEFAULT"
-  *                      )) {
-  *   val O = IO(Output(Clock()))
-  *   val I = IO(Input(Clock()))
-  *   val IB = IO(Input(Clock()))
-  * }
-  * }}}
-  * @note The parameters API is experimental and may change
-  */
-abstract class ExtModule(
-  val params:                               Map[String, Param] = Map.empty[String, Param],
-  override protected final val knownLayers: Seq[Layer] = Seq.empty[Layer]
-) extends BaseBlackBox {
-  private[chisel3] override def generateComponent(): Option[Component] = {
-    require(!_closed, "Can't generate module more than once")
-
-    evaluateAtModuleBodyEnd()
-
-    _closed = true
-
-    // Ports are named in the same way as regular Modules
-    namePorts()
-
-    val firrtlPorts = getModulePortsAndLocators.map { case (port, _, associations) =>
-      Port(port, port.specifiedDirection, associations, UnlocatableSourceInfo)
-    }
-    val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params, getKnownLayers)
-    _component = Some(component)
-    _component
-  }
-
-  private[chisel3] def initializeInParent(): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-  }
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+class IntParam(value: BigInt) extends chisel3.IntParam(value)
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+object IntParam {
+  def apply(value:   BigInt):   IntParam = new IntParam(value)
+  def unapply(param: IntParam): Option[BigInt] = Some(param.value)
 }
+
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+class DoubleParam(value: Double) extends chisel3.DoubleParam(value)
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+object DoubleParam {
+  def apply(value:   Double):      DoubleParam = new DoubleParam(value)
+  def unapply(param: DoubleParam): Option[Double] = Some(param.value)
+}
+
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+class StringParam(value: String) extends chisel3.StringParam(value)
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+object StringParam {
+  def apply(value:   String):      StringParam = new StringParam(value)
+  def unapply(param: StringParam): Option[String] = Some(param.value)
+}
+
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+class PrintableParam(value: chisel3.Printable, context: BaseModule) extends chisel3.PrintableParam(value, context)
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+object PrintableParam {
+  def apply(value: chisel3.Printable, context: BaseModule): PrintableParam = new PrintableParam(value, context)
+  def unapply(param: PrintableParam): Option[(chisel3.Printable, BaseModule)] = Some((param.value, param.context))
+}
+
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+class RawParam(value: String) extends chisel3.RawParam(value)
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+object RawParam {
+  def apply(value:   String):   RawParam = new RawParam(value)
+  def unapply(param: RawParam): Option[String] = Some(param.value)
+}
+
+@deprecated("moved from chisel3.experimental to chisel3", "7.5.0")
+abstract class ExtModule(
+  params:      Map[String, chisel3.Param] = Map.empty[String, chisel3.Param],
+  knownLayers: Seq[Layer] = Seq.empty[Layer]
+) extends chisel3.ExtModule(params, knownLayers)

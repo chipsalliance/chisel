@@ -2,8 +2,9 @@
 
 package circtTests.stage
 
+import chisel3.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, CircuitSerializationAnnotation}
-import chisel3.experimental.{ExtModule, SourceLine}
+import chisel3.experimental.SourceLine
 import chisel3.testing.scalatest.FileCheck
 import chisel3.util.HasExtModuleInline
 

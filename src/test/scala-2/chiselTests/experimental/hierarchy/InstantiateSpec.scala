@@ -9,7 +9,7 @@ import chisel3.util.Valid
 import chisel3.properties._
 import chisel3.experimental.hierarchy._
 import circt.stage.ChiselStage.{elaborate, emitCHIRRTL}
-import chisel3.experimental.{BaseModule, ExtModule, IntrinsicModule, SourceLine}
+import chisel3.experimental.{BaseModule, IntrinsicModule, SourceLine}
 import chisel3.testing.scalatest.FileCheck
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers

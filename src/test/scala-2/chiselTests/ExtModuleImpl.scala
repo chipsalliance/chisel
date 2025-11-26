@@ -5,7 +5,6 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import chisel3.experimental.ExtModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import circt.stage.ChiselStage

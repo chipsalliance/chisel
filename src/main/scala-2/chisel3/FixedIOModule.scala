@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.hierarchy.{instantiable, public}
-import chisel3.experimental.{BaseModule, ExtModule, Param, UnlocatableSourceInfo}
+import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
 
 /** A module or external module whose IO is generated from a specific generator.
   * This module may have no additional IO created other than what is specified

@@ -3,7 +3,7 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{Analog, DoubleParam, IntParam, Param, StringParam}
+import chisel3.experimental.Analog
 import ujson.Value.Value
 
 import scala.collection.immutable.SeqMap

@@ -3,8 +3,7 @@
 package chisel3.internal.firrtl
 
 import chisel3.{Placeholder => _, _}
-import chisel3.experimental._
-import chisel3.experimental.{NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
+import chisel3.experimental.{Analog, BaseModule, HasTypeAlias, NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import chisel3.properties.Property
 import firrtl.{ir => fir}
 import firrtl.annotations.{Annotation, JsonProtocol}

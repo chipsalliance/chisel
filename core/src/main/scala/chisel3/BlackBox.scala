@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.{BaseModule, Param}
+import chisel3.experimental.BaseModule
 import chisel3.layer.Layer
 import chisel3.internal.BaseBlackBox
 import chisel3.internal.firrtl.ir.{Component, DefBlackBox, ModuleIO, Port}
