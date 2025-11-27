@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{ExtModule, OpaqueType}
+import chisel3.experimental.OpaqueType
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec

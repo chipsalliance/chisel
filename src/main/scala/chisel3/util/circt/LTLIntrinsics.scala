@@ -4,7 +4,7 @@ package chisel3.util.circt
 
 import chisel3._
 import chisel3.ltl.Property
-import chisel3.experimental.{IntParam, IntrinsicModule, Param, StringParam}
+import chisel3.experimental.IntrinsicModule
 import chisel3.experimental.SourceInfo
 
 /** Base instrinsic for circt related intrinsics

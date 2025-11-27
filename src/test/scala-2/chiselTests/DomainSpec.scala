@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.domain.{Domain, Field}
 import chisel3.domains.ClockDomain
-import chisel3.experimental.ExtModule
 import chisel3.testing.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec

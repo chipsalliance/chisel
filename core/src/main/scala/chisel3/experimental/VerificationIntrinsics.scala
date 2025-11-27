@@ -20,7 +20,7 @@ private[chisel3] object IfElseFatalIntrinsic {
   ): Unit = {
     Intrinsic(
       "circt_chisel_ifelsefatal",
-      "format" -> chisel3.experimental.PrintableParam(format, id),
+      "format" -> chisel3.PrintableParam(format, id),
       "label" -> label
     )((Seq(clock, predicate, enable) ++ data): _*)
   }

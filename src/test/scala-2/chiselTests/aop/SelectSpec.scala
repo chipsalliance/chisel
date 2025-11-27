@@ -5,7 +5,6 @@ package chiselTests.aop
 import chisel3._
 import chisel3.aop.Select
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
-import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import circt.stage.ChiselStage
 import firrtl.AnnotationSeq

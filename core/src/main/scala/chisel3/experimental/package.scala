@@ -16,11 +16,11 @@ package object experimental {
   import chisel3.internal.BaseModule
 
   // Implicit conversions for BlackBox Parameters
-  implicit def fromIntToIntParam(x:       Int):    IntParam = IntParam(BigInt(x))
-  implicit def fromLongToIntParam(x:      Long):   IntParam = IntParam(BigInt(x))
-  implicit def fromBigIntToIntParam(x:    BigInt): IntParam = IntParam(x)
-  implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
-  implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+  implicit def fromIntToIntParam(x:       Int):    chisel3.IntParam = chisel3.IntParam(BigInt(x))
+  implicit def fromLongToIntParam(x:      Long):   chisel3.IntParam = chisel3.IntParam(BigInt(x))
+  implicit def fromBigIntToIntParam(x:    BigInt): chisel3.IntParam = chisel3.IntParam(x)
+  implicit def fromDoubleToDoubleParam(x: Double): chisel3.DoubleParam = chisel3.DoubleParam(x)
+  implicit def fromStringToStringParam(x: String): chisel3.StringParam = chisel3.StringParam(x)
 
   // Rocket Chip-style clonemodule
 

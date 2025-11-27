@@ -10,7 +10,7 @@ import scala.collection.{immutable, mutable}
 import scala.math._
 import firrtl.{ir => fir}
 import chisel3.{Data => ChiselData, _}
-import chisel3.experimental._
+import chisel3.experimental.{BaseModule, NoSourceInfo, SourceInfo, SourceLine, UnlocatableSourceInfo}
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir._

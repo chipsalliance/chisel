@@ -4,7 +4,7 @@ package chiselTests
 
 import circt.stage.ChiselStage.emitCHIRRTL
 import chisel3._
-import chisel3.experimental.{BaseModule, ExtModule, SourceInfo, SourceLine}
+import chisel3.experimental.{BaseModule, SourceInfo, SourceLine}
 import chisel3.experimental.hierarchy.Definition
 import firrtl.ir.FileInfo
 import org.scalatest.funspec.AnyFunSpec

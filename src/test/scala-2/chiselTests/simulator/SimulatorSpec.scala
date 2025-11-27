@@ -1,7 +1,6 @@
 package chiselTests.simulator
 
 import chisel3._
-import chisel3.experimental.ExtModule
 import chisel3.layer.{block, Convention, Layer, LayerConfig}
 import chisel3.simulator._
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}

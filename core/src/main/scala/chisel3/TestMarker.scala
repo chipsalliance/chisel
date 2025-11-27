@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.experimental.{BaseModule, Param}
+import chisel3.experimental.BaseModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.ir._
 import chisel3.internal.throwException

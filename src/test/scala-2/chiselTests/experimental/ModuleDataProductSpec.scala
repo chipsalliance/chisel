@@ -4,7 +4,7 @@ package chiselTests.experimental
 
 import chisel3._
 import chisel3.experimental.dataview.DataProduct
-import chisel3.experimental.{BaseModule, ExtModule}
+import chisel3.experimental.BaseModule
 import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec

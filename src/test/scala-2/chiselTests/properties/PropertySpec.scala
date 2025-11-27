@@ -267,7 +267,7 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
 
   it should "support Properties on an ExtModule" in {
     // See: https://github.com/chipsalliance/chisel/issues/3509
-    class Bar extends experimental.ExtModule {
+    class Bar extends ExtModule {
       val a = IO(Output(Property[Int]()))
     }
 

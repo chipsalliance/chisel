@@ -515,4 +515,42 @@ package object chisel3 {
     }
     result
   }
+
+  // ----------------------------------------------------------------------------
+  // Chisel 8 aliases.
+  //
+  // These are aliases to things in other pakcages which we are planning to
+  // fully move in Chisel 8.  However, these are difficult to move in an
+  // ABI-compatible way, so we define these aliases here for Chisel 7.
+  // ----------------------------------------------------------------------------
+  @nowarn("cat=deprecation")
+  type ExtModule = experimental.ExtModule
+
+  @nowarn("cat=deprecation")
+  type Param = experimental.Param
+
+  @nowarn("cat=deprecation")
+  type IntParam = experimental.IntParam
+  @nowarn("cat=deprecation")
+  val IntParam = experimental.IntParam
+
+  @nowarn("cat=deprecation")
+  type DoubleParam = experimental.DoubleParam
+  @nowarn("cat=deprecation")
+  val DoubleParam = experimental.DoubleParam
+
+  @nowarn("cat=deprecation")
+  type StringParam = experimental.StringParam
+  @nowarn("cat=deprecation")
+  val StringParam = experimental.StringParam
+
+  @nowarn("cat=deprecation")
+  type PrintableParam = experimental.PrintableParam
+  @nowarn("cat=deprecation")
+  val PrintableParam = experimental.PrintableParam
+
+  @nowarn("cat=deprecation")
+  type RawParam = experimental.RawParam
+  @nowarn("cat=deprecation")
+  val RawParam = experimental.RawParam
 }

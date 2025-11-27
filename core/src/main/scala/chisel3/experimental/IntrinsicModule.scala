@@ -2,8 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.SpecifiedDirection
-import chisel3.experimental.{BaseModule, Param}
+import chisel3.{Param, SpecifiedDirection}
+import chisel3.experimental.BaseModule
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.layer.Layer

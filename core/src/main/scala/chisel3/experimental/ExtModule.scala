@@ -3,12 +3,13 @@
 package chisel3.experimental
 
 import chisel3.SpecifiedDirection
-import chisel3.layer.Layer
+import chisel3.experimental.{BaseModule, UnlocatableSourceInfo}
 import chisel3.internal.BaseBlackBox
 import chisel3.internal.firrtl.ir.{Component, DefBlackBox, Port}
+import chisel3.layer.Layer
 
 /** Parameters for BlackBoxes */
-sealed abstract class Param
+abstract class Param
 case class IntParam(value: BigInt) extends Param
 case class DoubleParam(value: Double) extends Param
 case class StringParam(value: String) extends Param
@@ -42,7 +43,6 @@ case class RawParam(value: String) extends Param
   * To instantiate it, a BlackBox can be used like following:
   * {{{
   * import chisel3._
-  * import chisel3.experimental._
   *
   * // Example with Xilinx differential buffer IBUFDS
   * class IBUFDS extends ExtModule(Map("DIFF_TERM" -> "TRUE", // Verilog parameters
