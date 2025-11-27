@@ -1,32 +1,33 @@
-// RUN: scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" --java-opt="--enable-native-access=ALL-UNNAMED" --java-opt="--enable-preview" --java-opt="-Djava.library.path=%JAVALIBRARYPATH" %s | FileCheck %s -check-prefix=FIRRTL
+// RUN: scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" %s | FileCheck %s
 // SPDX-License-Identifier: Apache-2.0
 
 import chisel3._
 import chisel3.util.circt.IsX
 
 
-// FIRRTL-LABEL: circuit FooModule :
-// FIRRTL-NEXT: extmodule FooBlackbox :
-// FIRRTL-NEXT: output o : UInt<1>
-// FIRRTL-NEXT: defname = FooBlackbox
+// CHECK-LABEL: circuit FooModule :
+// CHECK: extmodule FooBlackbox :
+// CHECK-NEXT: output o : UInt<1>
+// CHECK-NEXT: defname = FooBlackbox
 class FooBlackbox extends BlackBox {
   val io = IO(new Bundle{
     val o = Output(Bool())
   })
 }
 
-// FIRRTL: public module FooModule :
-// FIRRTL-NEXT: input clock : Clock
-// FIRRTL-NEXT: input reset : UInt<1>
-// FIRRTL-NEXT: output o : UInt<1>
+// CHECK: public module FooModule :
+// CHECK-NEXT: input clock : Clock
+// CHECK-NEXT: input reset : UInt<1>
+// CHECK-NEXT: output o : UInt<1>
 class FooModule extends Module {
   val o = IO(Output(Bool()))
 
-  // FIRRTL: inst bb of FooBlackbox
+  // CHECK: inst bb of FooBlackbox
   val bb = Module(new FooBlackbox)
 
-  // FIRRTL-NEXT: connect o, intrinsic(circt_isX : UInt<1>, bb.o)
+  // CHECK-NEXT: node _o_T = intrinsic(circt_isX : UInt<1>, bb.o)
+  // CHECK-NEXT: connect o, _o_T
   o := IsX(bb.io.o)
 }
 
-println(lit.utility.panamaconverter.firrtlString(new FooModule))
+println(circt.stage.ChiselStage.emitCHIRRTL(new FooModule))

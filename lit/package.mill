@@ -31,15 +31,13 @@ trait Lit extends Module with Cross.Module[String] {
   }
 
   def run(args: String*) = Task.Command(
-    os.proc("lit", litConfig().path)
+    os.proc("lit", litConfig().path, args)
       .call(Task.dest, stdout = os.ProcessOutput.Readlines(line => Task.ctx().log.info("[lit] " + line)))
   )
   def scalaVersion: T[String] = crossValue
   def runClasspath: T[Seq[os.Path]] = Task(utility.cross(crossValue).runClasspath().map(_.path))
-  def pluginJars:   T[Seq[os.Path]] = Task(Seq(utility.cross(crossValue).panamaConverterModule.pluginModule.jar().path))
-  def javaLibraryPath: T[Seq[os.Path]] = Task(
-    utility.cross(crossValue).panamaConverterModule.circtPanamaBindingModule.libraryPaths().map(_.path)
-  )
+  def pluginJars:   T[Seq[os.Path]] = Task(Seq(utility.cross(crossValue).pluginModule.jar().path))
+  def javaLibraryPath: T[Seq[os.Path]] = Task(Seq())
   def javaHome:     T[os.Path] = Task(os.Path(sys.props("java.home")))
   def chiselLitDir: T[os.Path] = Task(moduleDir)
   def litConfigIn:  T[PathRef] = Task.Source(moduleDir / "tests" / "lit.site.cfg.py.in")
