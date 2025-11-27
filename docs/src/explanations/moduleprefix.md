@@ -211,7 +211,6 @@ you can explicitly name the module like this:
 ```scala mdoc:silent:reset
 import chisel3._
 import chisel3.experimental.hierarchy.{instantiable, Instantiate}
-import chisel3.experimental.ExtModule
 
 class Sub extends ExtModule {
   override def desiredName = modulePrefix + "Sub"
