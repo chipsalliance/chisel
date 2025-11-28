@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.util.HasExtModuleResource
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -15,14 +14,14 @@ import org.scalatest.matchers.should.Matchers
 // in their own scope.
 package extmoduletests {
 
-  class BlackBoxInverter extends ExtModule with HasExtModuleResource {
+  class BlackBoxInverter extends ExtModule {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
 
     addResource("/chisel3/BlackBoxInverter.v")
   }
 
-  class BlackBoxPassthrough extends ExtModule with HasExtModuleResource {
+  class BlackBoxPassthrough extends ExtModule {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
 

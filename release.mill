@@ -54,6 +54,8 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.ir*"),
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.internal.firrtl.ir*"),
     ProblemFilter.exclude[MissingClassProblem]("chisel3.internal.firrtl.ir*"),
+    // This was package private and is fine to break.
+    ProblemFilter.exclude[MissingClassProblem]("chisel3.util.BlackBoxHelpers*"),
     // firrtl is deprecated and is fine to break.
     ProblemFilter.exclude[DirectMissingMethodProblem]("firrtl.ir*"),
     ProblemFilter.exclude[IncompatibleResultTypeProblem]("firrtl.ir*"),
