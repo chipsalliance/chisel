@@ -533,17 +533,17 @@ private[chisel3] object Serializer {
   }
 
   private def serialize(name: String, param: Param)(implicit b: StringBuilder): Unit = param match {
-    case IntParam(value)    => b ++= name; b ++= " = "; b ++= value.toString
-    case DoubleParam(value) => b ++= name; b ++= " = "; b ++= value.toString
-    case StringParam(value) => b ++= name; b ++= " = "; b ++= firrtl.ir.StringLit(value).escape
-    case PrintableParam(value, id) => {
-      val ctx = id._component.get
-      val (fmt, _) = unpack(value, ctx, UnlocatableSourceInfo)
+    case p: IntParam    => b ++= name; b ++= " = "; b ++= p.value.toString
+    case p: DoubleParam => b ++= name; b ++= " = "; b ++= p.value.toString
+    case p: StringParam => b ++= name; b ++= " = "; b ++= firrtl.ir.StringLit(p.value).escape
+    case p: PrintableParam => {
+      val ctx = p.context._component.get
+      val (fmt, _) = unpack(p.value, ctx, UnlocatableSourceInfo)
       b ++= name; b ++= " = "; b ++= firrtl.ir.StringLit(fmt).escape
     }
-    case RawParam(value) =>
+    case p: RawParam =>
       b ++= name; b ++= " = "
-      b += '\''; b ++= value.replace("'", "\\'"); b += '\''
+      b += '\''; b ++= p.value.replace("'", "\\'"); b += '\''
   }
 
   private def serialize(param: TestParam)(implicit b: StringBuilder, indent: Int): Unit = param match {
