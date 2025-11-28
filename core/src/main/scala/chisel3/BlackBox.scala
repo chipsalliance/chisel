@@ -46,6 +46,10 @@ import scala.collection.mutable
   * }}}
   * @note The parameters API is experimental and may change
   */
+@deprecated(
+  "use `chisel3.ExtModule` instead. To migrate replace `val io = { ... }` with `val io = FlatIO { ... }`, `object io { ... }; locally { io }`, or manually flatten your IO as `ExtModule` allows calling `IO` more than once.",
+  "7.5.0"
+)
 abstract class BlackBox(
   val params:                               Map[String, Param] = Map.empty[String, Param],
   override protected final val knownLayers: Seq[Layer] = Seq.empty[Layer]

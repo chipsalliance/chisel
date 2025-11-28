@@ -80,19 +80,19 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
 
   object CompilationUnit2 {
 
-    /** This is a module above the "DUT" (Bar). This stamps out the "DUT" twice,
-      * but using the blackbox version of it that conforms to the
+    /** This is a module above the "DUT" (Bar). This stamps out the "DUT" twice, but
+      * using the external module version of it that conforms to the
       * specification-set port list. This is dependent upon having a
       * `BarInterface` in order to configure itself. This is an example of
       * bottom-up parameterization where something at the leaf of the instance
-      * hierarchy (an `iface.BlackBox`) affects its parents.
+      * hierarchy (an `iface.ExtModule`) affects its parents.
       */
     class Foo32 extends RawModule {
       val a = IO(Input(UInt(32.W)))
       val b = IO(Output(UInt(32.W)))
 
       private val intf = Package.BarInterface32
-      private val bar1, bar2 = chisel3.Module(new intf.Wrapper.BlackBox)
+      private val bar1, bar2 = chisel3.Module(new intf.Wrapper.ExtModule)
 
       bar1.io.a := a
       bar2.io.a := bar1.io.b
@@ -109,7 +109,7 @@ class ParametricInterfaceSpec extends AnyFunSpec with Matchers {
       val b = IO(Output(UInt(64.W)))
 
       private val intf = Package.BarInterface64
-      private val bar1, bar2 = chisel3.Module(new intf.Wrapper.BlackBox)
+      private val bar1, bar2 = chisel3.Module(new intf.Wrapper.ExtModule)
 
       bar1.io.a := a
       bar2.io.a := bar1.io.b

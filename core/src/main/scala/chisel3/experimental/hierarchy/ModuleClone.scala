@@ -8,6 +8,7 @@ import chisel3.internal.firrtl.ir.{Component, ModuleCloneIO, Ref}
 import chisel3.internal.{throwException, Namespace}
 import chisel3.layer.Layer
 import chisel3._
+import scala.annotation.nowarn
 
 // Private internal class to serve as a _parent for Data in cloned ports
 private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si: SourceInfo)
@@ -37,7 +38,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
   private[chisel3] lazy val ioMap: Map[Data, Data] = {
     getProto match {
       // BlackBox needs special handling for its pseduo-io Bundle
-      case protoBB: BlackBox =>
+      case protoBB: BlackBox @nowarn("cat=deprecation") =>
         Map(protoBB._io.get -> getPorts._elements("io"))
       case _ =>
         val name2Port = getPorts._elements
@@ -64,7 +65,7 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
     record.setRef(ref, force = true) // force because we did .forceName first
     getProto match {
       // BlackBox needs special handling for its pseduo-io Bundle
-      case _: BlackBox =>
+      case _: BlackBox @nowarn("cat=deprecation") =>
         // Override the io Bundle's ref so that it thinks it is the top for purposes of
         // generating FIRRTL
         record._elements("io").setRef(ref, force = true)

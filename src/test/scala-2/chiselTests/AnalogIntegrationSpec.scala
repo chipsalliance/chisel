@@ -3,10 +3,10 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.{attach, Analog}
 import chisel3.util._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.experimental._
 import org.scalatest.flatspec.AnyFlatSpec
 
 /* This test is different from AnalogSpec in that it uses more complicated black boxes that can each
@@ -29,8 +29,8 @@ class AnalogBlackBoxIO(val n: Int) extends Bundle {
 
 // Assigns bus to out
 // Assigns in.bits + index to bus when in.valid
-class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index)) with HasBlackBoxResource {
-  val io = IO(new AnalogBlackBoxIO(1))
+class AnalogBlackBox(index: Int) extends ExtModule(Map("index" -> index)) {
+  val io = FlatIO(new AnalogBlackBoxIO(1))
 
   addResource("/chisel3/AnalogBlackBox.v")
 }

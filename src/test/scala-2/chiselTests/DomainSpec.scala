@@ -9,6 +9,7 @@ import chisel3.testing.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.annotation.nowarn
 
 class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
@@ -64,6 +65,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   they should "fail to work with blackboxes" in {
 
+    @nowarn("cat=deprecation")
     class Bar extends BlackBox {
       val io = IO {
         new Bundle {

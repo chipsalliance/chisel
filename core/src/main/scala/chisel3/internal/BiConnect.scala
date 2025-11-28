@@ -11,6 +11,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.{Connect, DefInvalid}
 import chisel3.internal.firrtl.Converter
 import chisel3.internal.MonoConnect.reportIfReadOnly
+import scala.annotation.nowarn
 
 import _root_.firrtl.passes.CheckTypes
 
@@ -309,8 +310,8 @@ private[chisel3] object BiConnect {
 
     // do not bulk connect the 'io' pseudo-bundle of a BlackBox since it will be decomposed in FIRRTL
     def blackBoxCheck = Seq(source, sink).map(_._parent).forall {
-      case Some(_: BlackBox) => false
-      case _                 => true
+      case Some(_: BlackBox @nowarn("cat=deprecation")) => false
+      case _                                            => true
     }
 
     typeCheck && contextCheck && bindingCheck && flowSinkCheck && flowSourceCheck && sourceAndSinkNotLiteralOrViewCheck && blackBoxCheck

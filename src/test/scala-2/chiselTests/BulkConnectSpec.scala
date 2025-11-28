@@ -5,6 +5,7 @@ import chisel3.util.Decoupled
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
+import scala.annotation.nowarn
 
 class BulkConnectSpec extends AnyPropSpec with Matchers {
   property("Chisel connects should emit FIRRTL bulk connects when possible") {
@@ -73,6 +74,7 @@ class BulkConnectSpec extends AnyPropSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new Module {
       val io: MyBundle = IO(Flipped(new MyBundle))
 
+      @nowarn("cat=deprecation")
       val bb = Module(new BlackBox {
         val io: MyBundle = IO(Flipped(new MyBundle))
       })

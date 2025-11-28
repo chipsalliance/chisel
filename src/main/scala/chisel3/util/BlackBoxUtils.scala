@@ -6,6 +6,14 @@ import chisel3._
 import chisel3.experimental.BlackBoxHelpers.BlackBoxInlineAnnoHelpers
 import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno}
 
+private object BlackBoxUtils {
+  final val message =
+    "this trait will be removed in Chisel 8, please switch from `BlackBox` to `ExtModule` which has the methods of this trait already available"
+  final val since = "7.5.0"
+}
+import BlackBoxUtils._
+
+@deprecated(message, since)
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
@@ -23,6 +31,7 @@ trait HasBlackBoxResource extends BlackBox {
   }
 }
 
+@deprecated(message, since)
 trait HasBlackBoxInline extends BlackBox {
   self: BlackBox =>
 
@@ -36,6 +45,7 @@ trait HasBlackBoxInline extends BlackBox {
   }
 }
 
+@deprecated(message, since)
 trait HasBlackBoxPath extends BlackBox {
   self: BlackBox =>
 
