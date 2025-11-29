@@ -410,15 +410,15 @@ private[chisel3] object Converter {
   }
 
   def convert(name: String, param: Param): fir.Param = param match {
-    case IntParam(value)    => fir.IntParam(name, value)
-    case DoubleParam(value) => fir.DoubleParam(name, value)
-    case StringParam(value) => fir.StringParam(name, fir.StringLit(value))
-    case PrintableParam(value, id) => {
-      val ctx = id._component.get
-      val (fmt, _) = unpack(value, ctx, UnlocatableSourceInfo)
+    case p: IntParam    => fir.IntParam(name, p.value)
+    case p: DoubleParam => fir.DoubleParam(name, p.value)
+    case p: StringParam => fir.StringParam(name, fir.StringLit(p.value))
+    case p: PrintableParam => {
+      val ctx = p.context._component.get
+      val (fmt, _) = unpack(p.value, ctx, UnlocatableSourceInfo)
       fir.StringParam(name, fir.StringLit(fmt))
     }
-    case RawParam(value) => fir.RawStringParam(name, value)
+    case p: RawParam => fir.RawStringParam(name, p.value)
   }
 
   def convert(param: TestParam): fir.TestParam = param match {

@@ -8,16 +8,29 @@ import chisel3.internal.BaseBlackBox
 import chisel3.internal.firrtl.ir.{Component, DefBlackBox, Port}
 import chisel3.layer.Layer
 
+private object ExtModule {
+  final val deprecatedCaseClass =
+    "this has moved from `chisel3.experimental` to `chisel3` and all `case class` methods are deprecated. This will be made a `class` in Chisel 8."
+  final val since = "7.5.0"
+}
+import ExtModule._
+
 /** Parameters for BlackBoxes */
+@deprecated(deprecatedCaseClass, since)
 abstract class Param
+@deprecated(deprecatedCaseClass, since)
 case class IntParam(value: BigInt) extends Param
+@deprecated(deprecatedCaseClass, since)
 case class DoubleParam(value: Double) extends Param
+@deprecated(deprecatedCaseClass, since)
 case class StringParam(value: String) extends Param
 
 /** Creates a parameter from the Printable's resulting format String */
+@deprecated(deprecatedCaseClass, since)
 case class PrintableParam(value: chisel3.Printable, context: BaseModule) extends Param
 
 /** Unquoted String */
+@deprecated(deprecatedCaseClass, since)
 case class RawParam(value: String) extends Param
 
 /** Defines a black box, which is a module that can be referenced from within
@@ -55,6 +68,7 @@ case class RawParam(value: String) extends Param
   * }}}
   * @note The parameters API is experimental and may change
   */
+@deprecated("this has moved from `chisel3.experimental` to `chisel3`", since)
 abstract class ExtModule(
   val params:                               Map[String, Param] = Map.empty[String, Param],
   override protected final val knownLayers: Seq[Layer] = Seq.empty[Layer]
