@@ -12,11 +12,7 @@ object `package` extends Module {
   object cross extends Cross[LitUtility](v.scalaCrossVersions)
 }
 
-trait LitUtility
-    extends ScalaModule
-    with CrossModuleBase
-    with HasScalaPlugin
-    with ScalafmtModule {
+trait LitUtility extends ScalaModule with CrossModuleBase with HasScalaPlugin with ScalafmtModule {
   override def scalacOptions = Task { Seq("-Ymacro-annotations") }
 
   def chiselModule = chisel(crossScalaVersion)
