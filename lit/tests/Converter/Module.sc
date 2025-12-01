@@ -67,7 +67,7 @@ class Mem extends Module {
     // CHECK-SAME:       flip address : UInt<10>,
     val address = Input(UInt(10.W))
     // CHECK-SAME:       flip data : UInt<32>
-    val data = Input(UInt(32.W))}
+    val data = Input(UInt(32.W))
   })
 
   // CHECK: smem mem : UInt<32>[1024]
@@ -126,25 +126,25 @@ class Sram extends Module {
   // CHECK-NEXT: connect mem.readwritePorts[0].readData, mem_sram.RW0.rdata
   // CHECK-NEXT: connect mem_sram.RW0.wdata, mem.readwritePorts[0].writeData
   // CHECK-NEXT: connect mem_sram.RW0.wmode, mem.readwritePorts[0].isWrite
-  // CHECK-NEXT: connect mem_sram.RW0.wmask, UInt<1>(1)
+  // CHECK-NEXT: connect mem_sram.RW0.wmask, UInt<1>(0h1)
   // CHECK-NEXT: connect mem_sram.RW1.addr, mem.readwritePorts[1].address
   // CHECK-NEXT: connect mem_sram.RW1.clk, clock
   // CHECK-NEXT: connect mem_sram.RW1.en, mem.readwritePorts[1].enable
   // CHECK-NEXT: connect mem.readwritePorts[1].readData, mem_sram.RW1.rdata
   // CHECK-NEXT: connect mem_sram.RW1.wdata, mem.readwritePorts[1].writeData
   // CHECK-NEXT: connect mem_sram.RW1.wmode, mem.readwritePorts[1].isWrite
-  // CHECK-NEXT: connect mem_sram.RW1.wmask, UInt<1>(1)
+  // CHECK-NEXT: connect mem_sram.RW1.wmask, UInt<1>(0h1)
   // CHECK-NEXT: connect mem_sram.RW2.addr, mem.readwritePorts[2].address
   // CHECK-NEXT: connect mem_sram.RW2.clk, clock
   // CHECK-NEXT: connect mem_sram.RW2.en, mem.readwritePorts[2].enable
   // CHECK-NEXT: connect mem.readwritePorts[2].readData, mem_sram.RW2.rdata
   // CHECK-NEXT: connect mem_sram.RW2.wdata, mem.readwritePorts[2].writeData
   // CHECK-NEXT: connect mem_sram.RW2.wmode, mem.readwritePorts[2].isWrite
-  // CHECK-NEXT: connect mem_sram.RW2.wmask, UInt<1>(1)
+  // CHECK-NEXT: connect mem_sram.RW2.wmask, UInt<1>(0h1)
   val mem = SRAM(1024, UInt(8.W), 2, 2, 3)
 
-  // CHECK-NEXT: connect mem.readPorts[0].address, UInt<7>(0h100)
-  // CHECK-NEXT: connect mem.readPorts[0].enable, UInt<1>(1)
+  // CHECK-NEXT: connect mem.readPorts[0].address, UInt<7>(0h64)
+  // CHECK-NEXT: connect mem.readPorts[0].enable, UInt<1>(0h1)
   mem.readPorts(0).address := 100.U
   mem.readPorts(0).enable := true.B
 
@@ -153,24 +153,24 @@ class Sram extends Module {
   val foo = WireInit(UInt(8.W), mem.readPorts(0).data)
 
   // CHECK-NEXT: connect mem.writePorts[1].address, UInt<3>(0h5)
-  // CHECK-NEXT: connect mem.writePorts[1].enable, UInt<1>(1)
-  // CHECK-NEXT: connect mem.writePorts[1].data, UInt<4>(0h12)
+  // CHECK-NEXT: connect mem.writePorts[1].enable, UInt<1>(0h1)
+  // CHECK-NEXT: connect mem.writePorts[1].data, UInt<4>(0hc)
   mem.writePorts(1).address := 5.U
   mem.writePorts(1).enable := true.B
   mem.writePorts(1).data := 12.U
 
   // CHECK-NEXT: connect mem.readwritePorts[2].address, UInt<3>(0h5)
-  // CHECK-NEXT: connect mem.readwritePorts[2].enable, UInt<1>(1)
-  // CHECK-NEXT: connect mem.readwritePorts[2].isWrite, UInt<1>(1)
-  // CHECK-NEXT: connect mem.readwritePorts[2].writeData, UInt<7>(0h100)
+  // CHECK-NEXT: connect mem.readwritePorts[2].enable, UInt<1>(0h1)
+  // CHECK-NEXT: connect mem.readwritePorts[2].isWrite, UInt<1>(0h1)
+  // CHECK-NEXT: connect mem.readwritePorts[2].writeData, UInt<7>(0h64)
   mem.readwritePorts(2).address := 5.U
   mem.readwritePorts(2).enable := true.B
   mem.readwritePorts(2).isWrite := true.B
   mem.readwritePorts(2).writeData := 100.U
 
   // CHECK-NEXT: connect mem.readwritePorts[2].address, UInt<3>(0h5)
-  // CHECK-NEXT: connect mem.readwritePorts[2].enable, UInt<1>(1)
-  // CHECK-NEXT: connect mem.readwritePorts[2].isWrite, UInt<1>(0)
+  // CHECK-NEXT: connect mem.readwritePorts[2].enable, UInt<1>(0h1)
+  // CHECK-NEXT: connect mem.readwritePorts[2].isWrite, UInt<1>(0h0)
   mem.readwritePorts(2).address := 5.U
   mem.readwritePorts(2).enable := true.B
   mem.readwritePorts(2).isWrite := false.B
@@ -206,7 +206,7 @@ class WireAndReg extends Module {
   o_next := flip
   // CHECK:      xor(flip, r)
   flip := flip ^ r
-  // CHECK:      connect magic, pad(SInt<7>(-42), 8)
+  // CHECK:      connect magic, SInt<7>(-0h2a)
   magic := -42.S
 }
 
