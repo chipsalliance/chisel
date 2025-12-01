@@ -91,6 +91,43 @@ jobs:
       - name: Test
         run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[_].test -oF
 
+  lit:
+    name: Run lit tests
+    runs-on: ${{ inputs.system }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'adopt'
+          java-version: ${{ inputs.jvm }}
+      - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt }}
+        uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
+        with:
+          version: ${{ inputs.circt }}
+          github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set CHISEL_FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+      - name: Print firtool version
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+          $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+      - name: Test
+        run: ./mill lit.cross[].run
+
   mima:
     name: binary compatibility checking
     runs-on: ${{ inputs.system }}
