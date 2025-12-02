@@ -102,7 +102,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
       val a = IO(Input(Bool()))
       val b = IO(Output(Bool()))
 
-      val bar1, bar2 = chisel3.Module(new BarInterface.Wrapper.BlackBox)
+      val bar1, bar2 = chisel3.Module(new BarInterface.Wrapper.ExtModule)
 
       bar1.io.a := a
       bar2.io.a := bar1.io.b
@@ -209,7 +209,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
       class Foo(conformance: ConformsTo[InterfaceWithProperties.type, Bar]) extends RawModule {
         private implicit val c = conformance
 
-        val bar = Module(new InterfaceWithProperties.Wrapper.BlackBox)
+        val bar = Module(new InterfaceWithProperties.Wrapper.ExtModule)
         private val properties = bar.properties[Bar]
 
         // Check that the component works in this context.
@@ -286,7 +286,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
       class RefClient extends RawModule {
         val x = IO(Output(Bool()))
-        val refInterface = chisel3.Module(new RefInterface.Wrapper.BlackBox)
+        val refInterface = chisel3.Module(new RefInterface.Wrapper.ExtModule)
         x := read(refInterface.io.r)
       }
 
@@ -341,7 +341,7 @@ class InterfaceSpec extends AnyFunSpec with Matchers {
 
     class RefClient extends RawModule {
       val x = IO(Output(Bool()))
-      val refInterface = chisel3.Module(new RefInterface.Wrapper.BlackBox)
+      val refInterface = chisel3.Module(new RefInterface.Wrapper.ExtModule)
       x := read(refInterface.io.r)
     }
 

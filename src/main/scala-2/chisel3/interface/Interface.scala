@@ -95,8 +95,19 @@ trait Interface extends InterfaceCommon { self: Singleton =>
     /** The black box that has the same ports as this interface. This is what is
       * instantiated by any user of this interface, i.e., a test harness.
       */
+    @deprecated("use `ExtModule` instead", "7.5.0")
     final class BlackBox extends chisel3.BlackBox with Entity {
       final val io = IO(ports)
+
+      /** Return the properties of this instance.  This requires brining a conformance into scope. */
+      override final def properties[B <: BaseModule: Conformance]: Properties = implicitly[Conformance[B]].properties
+    }
+
+    /** The black box that has the same ports as this interface. This is what is
+      * instantiated by any user of this interface, i.e., a test harness.
+      */
+    final class ExtModule extends chisel3.ExtModule with Entity {
+      final val io = FlatIO(ports)
 
       /** Return the properties of this instance.  This requires brining a conformance into scope. */
       override final def properties[B <: BaseModule: Conformance]: Properties = implicitly[Conformance[B]].properties

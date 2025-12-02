@@ -2,6 +2,7 @@
 
 package chisel3
 
+import scala.annotation.nowarn
 import scala.collection.immutable.{ListMap, VectorBuilder}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 
@@ -370,7 +371,7 @@ package internal {
       // currentModule (and not clonePorts)
       val clonePorts = proto match {
         // BlackBox needs special handling for its pseduo-io Bundle
-        case b: BlackBox =>
+        case b: BlackBox @nowarn("cat=deprecation") =>
           new ClonePorts(dataPorts :+ ("io" -> b._io.get): _*)
         case _ => new ClonePorts(dataPorts: _*)
       }

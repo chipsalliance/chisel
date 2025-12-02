@@ -6,7 +6,6 @@ import java.io.File
 
 import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
-import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import circt.stage.ChiselStage
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
@@ -16,7 +15,7 @@ import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 
-class ExtModuleAdd(n: Int) extends ExtModule with HasExtModuleInline {
+class ExtModuleAdd(n: Int) extends ExtModule {
   val io = IO(new Bundle {
     val in = Input(UInt(16.W))
     val out = Output(UInt(16.W))
@@ -47,7 +46,7 @@ class UsesExtModuleAddViaInline extends Module {
   io.out := blackBoxAdd.io.out
 }
 
-class ExtModuleMinus extends ExtModule with HasExtModuleResource {
+class ExtModuleMinus extends ExtModule {
   val io = IO(new Bundle {
     val in1 = Input(UInt(16.W))
     val in2 = Input(UInt(16.W))
@@ -56,7 +55,7 @@ class ExtModuleMinus extends ExtModule with HasExtModuleResource {
   addResource("/chisel3/BlackBoxMinus.v")
 }
 
-class ExtModuleMinusPath extends ExtModule with HasExtModulePath {
+class ExtModuleMinusPath extends ExtModule {
   val io = IO(new Bundle {
     val in1 = Input(UInt(16.W))
     val in2 = Input(UInt(16.W))
@@ -95,7 +94,7 @@ class UsesExtModuleMinusViaPath extends Module {
   io.out := mod0.io.out
 }
 
-class ExtModuleResourceNotFound extends HasExtModuleResource {
+class ExtModuleResourceNotFound extends ExtModule {
   val io = IO(new Bundle {})
   addResource("/missing.resource")
 }

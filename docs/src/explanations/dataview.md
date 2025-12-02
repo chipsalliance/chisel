@@ -60,7 +60,7 @@ class my_module extends RawModule {
 ```
 
 Expressing something that matches a standard Verilog interface is important when instantiating Verilog
-modules in a Chisel design as `BlackBoxes`.
+modules in a Chisel design as `ExtModule`s.
 Generally though, Chisel developers prefer to use composition via utilities like `Decoupled` rather
 than a flat handling of `ready` and `valid` as in the above.
 A more "Chisel-y" implementation of this interface might look like:
@@ -266,7 +266,7 @@ import chisel3._
 import chisel3.experimental.dataview._
 ```
 
-A `DataView` is _total_ if all fields of the _Target_ type and all fields of the _View_ type are 
+A `DataView` is _total_ if all fields of the _Target_ type and all fields of the _View_ type are
 included in the mapping.
 Chisel will error if a field is accidentally left out from a `DataView`.
 For example:
@@ -341,7 +341,7 @@ polymorphic code.
 They are a common feature in "modern programming languages" like
 Scala,
 Swift (see [protocols](https://docs.swift.org/swift-book/LanguageGuide/Protocols.html)),
-and Rust (see [traits](https://doc.rust-lang.org/book/ch10-02-traits.html)). 
+and Rust (see [traits](https://doc.rust-lang.org/book/ch10-02-traits.html)).
 Type classes may appear similar to inheritance in object-oriented programming but there are some
 important  differences:
 
@@ -377,7 +377,7 @@ before looking in the _implicit scope_.
     * Companion object of a type
     * Implicit scope of an argument's type
     * Implicit scope of type parameters
-    
+
 If at either stage, multiple implicits are found, then the static overloading rule is used to resolve
 it.
 Put simply, if one implicit applies to a more-specific type than the other, the more-specific one
@@ -510,4 +510,3 @@ This is how Chisel is able to check for totality as [described above](#totality-
 In addition to checking if a user has left a field out of the mapping, it also allows Chisel to check
 if the user has included a `Data` in the mapping that isn't actually a part of the _target_ nor the
 _view_.
-

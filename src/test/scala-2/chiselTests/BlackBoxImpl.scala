@@ -13,7 +13,9 @@ import org.scalacheck.Test.Failed
 import org.scalatest.Succeeded
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 class BlackBoxAdd(n: Int) extends HasBlackBoxInline {
   val io = IO(new Bundle {
     val in = Input(UInt(16.W))
@@ -44,6 +46,7 @@ class UsesBlackBoxAddViaInline extends Module {
   io.out := blackBoxAdd.io.out
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxMinus extends HasBlackBoxResource {
   val io = IO(new Bundle {
     val in1 = Input(UInt(16.W))
@@ -53,6 +56,7 @@ class BlackBoxMinus extends HasBlackBoxResource {
   addResource("/chisel3/BlackBoxMinus.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxMinusPath extends HasBlackBoxPath {
   val io = IO(new Bundle {
     val in1 = Input(UInt(16.W))
@@ -90,6 +94,7 @@ class UsesBlackBoxMinusViaPath extends Module {
   io.out := mod0.io.out
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxResourceNotFound extends HasBlackBoxResource {
   val io = IO(new Bundle {})
   addResource("/missing.resource")

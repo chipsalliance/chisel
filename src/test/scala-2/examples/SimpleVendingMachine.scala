@@ -5,7 +5,7 @@ package examples
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.util.{is, switch, Counter, Enum, HasBlackBoxResource}
+import chisel3.util.{is, switch, Counter, Enum}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -50,9 +50,9 @@ class FSMVendingMachine extends SimpleVendingMachine {
   io.dispense := (state === sOk)
 }
 
-class VerilogVendingMachine extends BlackBox with HasBlackBoxResource {
+class VerilogVendingMachine extends ExtModule {
   // Because this is a blackbox, we must explicitly add clock and reset
-  val io = IO(new SimpleVendingMachineIO {
+  val io = FlatIO(new SimpleVendingMachineIO {
     val clock = Input(Clock())
     val reset = Input(Reset())
   })

@@ -16,7 +16,6 @@ Chisel has a number of new features that are worth checking out.  This page is a
 The standard Chisel *Module* requires a `val io = IO(...)`, the experimental package introduces several
 new ways of defining Modules
 - BaseModule: no contents, instantiable
-- BlackBox extends BaseModule
 - UserDefinedModule extends BaseModule: this module can contain Chisel RTL. No default clock or reset lines. No default IO. - User should be able to specify non-io ports, ideally multiple of them.
 - ImplicitModule extends UserModule: has clock, reset, and io, essentially current Chisel Module.
 - RawModule: will be the user-facing version of UserDefinedModule

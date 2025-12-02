@@ -12,7 +12,9 @@ import chisel3.testing.scalatest.FileCheck
 import chisel3.util._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.annotation.nowarn
 
+@nowarn("cat=deprecation")
 class BlackBoxInverter extends BlackBox with HasBlackBoxResource {
   val io = IO(new Bundle() {
     val in = Input(Bool())
@@ -24,6 +26,7 @@ class BlackBoxInverter extends BlackBox with HasBlackBoxResource {
 
 // Due to the removal of "val io", this technically works
 // This style is discouraged, please use "val io"
+@nowarn("cat=deprecation")
 class BlackBoxInverterSuggestName extends BlackBox with HasBlackBoxResource {
   override def desiredName: String = "BlackBoxInverter"
   val foo = IO(new Bundle() {
@@ -34,6 +37,7 @@ class BlackBoxInverterSuggestName extends BlackBox with HasBlackBoxResource {
   addResource("/chisel3/BlackBoxInverter.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxPassthrough extends BlackBox with HasBlackBoxResource {
   val io = IO(new Bundle() {
     val in = Input(Bool())
@@ -44,6 +48,7 @@ class BlackBoxPassthrough extends BlackBox with HasBlackBoxResource {
 }
 
 // Test Flip on top-level IO
+@nowarn("cat=deprecation")
 class BlackBoxPassthrough2 extends BlackBox with HasBlackBoxResource {
   val io = IO(Flipped(new Bundle() {
     val in = Output(Bool())
@@ -53,6 +58,7 @@ class BlackBoxPassthrough2 extends BlackBox with HasBlackBoxResource {
   addResource("/chisel3/BlackBoxPassthrough2.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxRegister extends BlackBox with HasBlackBoxResource {
   val io = IO(new Bundle() {
     val clock = Input(Clock())
@@ -135,6 +141,7 @@ class BlackBoxWithClockTester extends Module {
   when(end) { stop() }
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxConstant(value: Int)
     extends BlackBox(Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1)))
     with HasBlackBoxResource {
@@ -146,6 +153,7 @@ class BlackBoxConstant(value: Int)
   addResource("/chisel3/BlackBoxConstant.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) with HasBlackBoxResource {
   val io = IO(new Bundle {
     val out = UInt(32.W)
@@ -154,6 +162,7 @@ class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) wi
   addResource("/chisel3/BlackBoxStringParam.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) with HasBlackBoxResource {
   val io = IO(new Bundle {
     val out = UInt(64.W)
@@ -162,6 +171,7 @@ class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) with H
   addResource("/chisel3/BlackBoxRealParam.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw))) with HasBlackBoxResource {
   val io = IO(new Bundle {
     val out = UInt(w.W)
@@ -170,6 +180,7 @@ class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawPara
   addResource("/chisel3/BlackBoxTypeParam.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxNoIO extends BlackBox with HasBlackBoxResource {
   // Whoops! typo
   val ioo = IO(new Bundle {
@@ -179,6 +190,7 @@ class BlackBoxNoIO extends BlackBox with HasBlackBoxResource {
   addResource("/chisel3/BlackBoxNoIO.v")
 }
 
+@nowarn("cat=deprecation")
 class BlackBoxUIntIO extends BlackBox with HasBlackBoxResource {
   val io = IO(Output(UInt(8.W)))
 
@@ -253,7 +265,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
 
   "A Blackbox with Flipped IO" should "work" in {
     class Top extends RawModule {
-      val inst = Module(new BlackBox {
+      val inst = Module(new BlackBox @nowarn("cat=deprecation") {
         override def desiredName: String = "MyBB"
         val io = IO(Flipped(new Bundle {
           val in = Bool()
@@ -289,6 +301,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
 
   "BlackBoxes" should "sort the verilog output of their param map by param key" in {
 
+    @nowarn("cat=deprecation")
     class ParameterizedBlackBox(m: Map[String, Param]) extends BlackBox(m) {
       val io = IO(new Bundle {
         val out = Output(Clock())
@@ -360,17 +373,21 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
 
     object A extends layer.Layer(layer.LayerConfig.Extract())
 
-    sealed trait NoIo { this: BlackBox =>
+    sealed trait NoIo { this: BlackBox @nowarn("cat=deprecation") =>
       final val io = IO(new Bundle {})
     }
 
     // No known layers
+    @nowarn("cat=deprecation")
     class Bar extends BlackBox(knownLayers = Seq.empty) with NoIo
     // Single known layer, built-in
+    @nowarn("cat=deprecation")
     class Baz extends BlackBox(knownLayers = Seq(layers.Verification)) with NoIo
     // Multiple known layers
+    @nowarn("cat=deprecation")
     class Qux extends BlackBox(knownLayers = Seq(layers.Verification, layers.Verification.Assert)) with NoIo
     // Single known layer, user-defined and should be added to the circuit
+    @nowarn("cat=deprecation")
     class Quz extends BlackBox(knownLayers = Seq(A)) with NoIo
 
     class Foo extends Module {
@@ -398,6 +415,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
 
   they should "allow updates to knownLayers via adding layer-colored probe ports or via addLayer" in {
 
+    @nowarn("cat=deprecation")
     class Bar extends BlackBox {
       final val io = IO {
         new Bundle {
@@ -408,6 +426,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
 
     object A extends layer.Layer(layer.LayerConfig.Extract())
 
+    @nowarn("cat=deprecation")
     class Baz extends BlackBox(knownLayers = Seq(A)) {
       final val io = IO {
         new Bundle {
@@ -416,6 +435,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
       }
     }
 
+    @nowarn("cat=deprecation")
     class Qux extends BlackBox {
       final val io = IO(new Bundle {})
       layer.addLayer(A)

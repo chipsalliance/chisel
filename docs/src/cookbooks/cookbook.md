@@ -980,16 +980,14 @@ chisel3.docs.emitSystemVerilog(new Foo2)
 
 ### How can I dynamically set/parametrize the name of a module?
 
-You can override the `desiredName` function. This works with normal Chisel modules and `BlackBox`es. Example:
+You can override the `desiredName` function. This works with normal Chisel modules and external modules. Example:
 
 ```scala mdoc:silent:reset
 import chisel3._
 
-class Coffee extends BlackBox {
-    val io = IO(new Bundle {
-        val I = Input(UInt(32.W))
-        val O = Output(UInt(32.W))
-    })
+class Coffee extends ExtModule {
+    val I = IO(Input(UInt(32.W)))
+    val O = IO(Output(UInt(32.W)))
     override def desiredName = "Tea"
 }
 
@@ -998,7 +996,7 @@ class Salt extends Module {
     val drink = Module(new Coffee)
     override def desiredName = "SodiumMonochloride"
 
-    drink.io.I := 42.U
+    drink.I := 42.U
 }
 ```
 

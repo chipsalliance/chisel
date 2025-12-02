@@ -3,7 +3,6 @@ package chiselTests.simulator
 import chisel3._
 import chisel3.layer.{block, Convention, Layer, LayerConfig}
 import chisel3.simulator._
-import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
@@ -99,7 +98,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("runs a design that includes an external module") {
-      class Bar extends ExtModule with HasExtModuleInline {
+      class Bar extends ExtModule {
         val a = IO(Output(Bool()))
         setInline(
           "Bar.sv",
@@ -112,12 +111,12 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         )
       }
 
-      class Baz extends ExtModule with HasExtModuleResource {
+      class Baz extends ExtModule {
         val a = IO(Output(Bool()))
         addResource("/chisel3/simulator/Baz.sv")
       }
 
-      class Qux extends ExtModule with HasExtModulePath {
+      class Qux extends ExtModule {
         val a = IO(Output(Bool()))
         addPath("src/test/resources/chisel3/simulator/Qux.sv")
       }

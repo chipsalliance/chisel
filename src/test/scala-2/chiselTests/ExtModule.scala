@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.reflect.DataMirror
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.util.HasExtModuleResource
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -15,14 +15,14 @@ import org.scalatest.matchers.should.Matchers
 // in their own scope.
 package extmoduletests {
 
-  class BlackBoxInverter extends ExtModule with HasExtModuleResource {
+  class BlackBoxInverter extends ExtModule {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
 
     addResource("/chisel3/BlackBoxInverter.v")
   }
 
-  class BlackBoxPassthrough extends ExtModule with HasExtModuleResource {
+  class BlackBoxPassthrough extends ExtModule {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
 
@@ -105,7 +105,7 @@ class ExtModuleInvalidatedTester extends Module {
   out := inst.out
 }
 
-class ExtModuleSpec extends AnyFlatSpec with Matchers with ChiselSim {
+class ExtModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
   "A ExtModule inverter" should "work" in {
     simulate(new ExtModuleTester)(RunUntilFinished(3))
   }
@@ -139,5 +139,144 @@ class ExtModuleSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val chirrtl = ChiselStage.emitCHIRRTL(new ExtModuleInvalidatedTester)
     chirrtl shouldNot include("invalidater inst.in")
     chirrtl shouldNot include("invalidate inst.out")
+  }
+
+  it should "sort the verilog output of their param map by param key" in {
+
+    class ParameterizedBlackBox(m: Map[String, Param]) extends ExtModule(m) {
+      val io = IO(new Bundle {
+        val out = Output(Clock())
+        val in = Input(Clock())
+      })
+    }
+
+    class Top(m: Map[String, Param]) extends Module {
+      val io = IO(new Bundle {})
+      val pbb = Module(new ParameterizedBlackBox(m))
+      pbb.io.in := clock
+    }
+
+    val sixteenParams = ('a' until 'p').map { key => key.toString -> IntParam(1) }
+
+    def splitAndStrip(verilog: String): Array[String] = verilog.split("\n").map(_.dropWhile(_.isWhitespace))
+
+    getVerilogString(new Top(Map())) should include("ParameterizedBlackBox pbb")
+    getVerilogString(new Top(Map("a" -> IntParam(1)))) should include(".a(1)")
+
+    // check that both param orders are the same
+    (splitAndStrip(getVerilogString(new Top(Map("a" -> IntParam(1), "b" -> IntParam(1))))) should contain).allOf(
+      ".a(1),",
+      ".b(1)"
+    )
+    (splitAndStrip(getVerilogString(new Top(Map("b" -> IntParam(1), "a" -> IntParam(1))))) should contain).allOf(
+      ".a(1),",
+      ".b(1)"
+    )
+
+    // check that both param orders are the same, note that verilog output does a newline when more params are present
+    (splitAndStrip(getVerilogString(new Top(sixteenParams.toMap))) should contain).allOf(
+      ".a(1),",
+      ".b(1),",
+      ".c(1),",
+      ".d(1),",
+      ".e(1),",
+      ".f(1),",
+      ".g(1),",
+      ".h(1),",
+      ".i(1),",
+      ".j(1),",
+      ".k(1),",
+      ".l(1),",
+      ".m(1),",
+      ".n(1),",
+      ".o(1)"
+    )
+    (splitAndStrip(getVerilogString(new Top(sixteenParams.reverse.toMap))) should contain).allOf(
+      ".a(1),",
+      ".b(1),",
+      ".c(1),",
+      ".d(1),",
+      ".e(1),",
+      ".f(1),",
+      ".g(1),",
+      ".h(1),",
+      ".i(1),",
+      ".j(1),",
+      ".k(1),",
+      ".l(1),",
+      ".m(1),",
+      ".n(1),",
+      ".o(1)"
+    )
+  }
+
+  it should "emit FIRRTL knownlayer syntax if they have known layers" in {
+
+    object A extends layer.Layer(layer.LayerConfig.Extract())
+
+    // No known layers
+    class Bar extends ExtModule(knownLayers = Seq.empty)
+    // Single known layer, built-in
+    class Baz extends ExtModule(knownLayers = Seq(layers.Verification))
+    // Multiple known layers
+    class Qux extends ExtModule(knownLayers = Seq(layers.Verification, layers.Verification.Assert))
+    // Single known layer, user-defined and should be added to the circuit
+    class Quz extends ExtModule(knownLayers = Seq(A))
+
+    class Foo extends Module {
+      private val bar = Module(new Bar)
+      private val baz = Module(new Baz)
+      private val qux = Module(new Qux)
+      private val quz = Module(new Quz)
+    }
+
+    info("emitted CHIRRTL looks correct")
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: layer A,
+           |CHECK: extmodule Bar :
+           |CHECK: extmodule Baz knownlayer Verification :
+           |CHECK: extmodule Qux knownlayer Verification, Verification.Assert :
+           |CHECK: extmodule Quz knownlayer A :
+           |""".stripMargin
+      )
+
+    info("CIRCT compilation doesn't error")
+    ChiselStage.emitSystemVerilog(new Foo)
+  }
+
+  it should "allow updates to knownLayers via adding layer-colored probe ports or via addLayer" in {
+
+    class Bar extends ExtModule {
+      val a = IO(Output(probe.Probe(Bool(), layers.Verification)))
+    }
+
+    object A extends layer.Layer(layer.LayerConfig.Extract())
+
+    class Baz extends ExtModule(knownLayers = Seq(A)) {
+      val a = IO(Output(probe.Probe(Bool(), layers.Verification)))
+    }
+
+    class Qux extends ExtModule {
+      layer.addLayer(A)
+    }
+
+    class Foo extends Module {
+      private val bar = Module(new Bar)
+      private val baz = Module(new Baz)
+      private val qux = Module(new Qux)
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: layer Verification,
+           |CHECK: extmodule Bar knownlayer Verification :
+           |CHECK: extmodule Baz knownlayer A, Verification :
+           |CHECK: extmodule Qux knownlayer A :
+           |""".stripMargin
+      )
+
   }
 }

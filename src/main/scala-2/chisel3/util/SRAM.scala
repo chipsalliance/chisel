@@ -12,6 +12,7 @@ import chisel3.util.experimental.loadMemoryFromFileInline
 import chisel3.reflect.DataMirror
 import firrtl.annotations.{IsMember, MemoryLoadFileType}
 
+import scala.annotation.nowarn
 import scala.language.reflectiveCalls
 import chisel3.internal.firrtl.ir
 import chisel3.properties.Class.ClassDefinitionOps
@@ -201,6 +202,7 @@ case class BinaryMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.
   */
 case class HexMemoryFile(path: String) extends MemoryFile(MemoryLoadFileType.Hex)
 
+@nowarn("cat=deprecation")
 class SRAMBlackbox(parameter: CIRCTSRAMParameter)
     extends FixedIOExtModule(new CIRCTSRAMInterface(parameter))
     with HasExtModuleInline { self =>
