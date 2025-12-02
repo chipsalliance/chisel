@@ -12,13 +12,7 @@ object `package` extends Module {
   object cross extends Cross[Firrtl](v.scalaCrossVersions)
 }
 
-trait Firrtl
-    extends CrossSbtModule
-    with Cross.Module[String]
-    with HasScala2MacroAnno
-    with HasCommonOptions
-    with ScalafmtModule {
-  def scalaVersion = crossScalaVersion
+trait Firrtl extends ChiselCrossModule with HasScala2MacroAnno with HasCommonOptions with ScalafmtModule {
 
   def moduleDir = super.moduleDir / os.up
 

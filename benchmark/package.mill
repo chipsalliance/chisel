@@ -8,8 +8,8 @@ import mill.contrib.jmh.JmhModule
 import build._
 
 object `package` extends ScalaModule with JmhModule with ScalafmtModule {
-  def scalaVersion = v.scalaVersion
+  def scalaVersion = v.defaultScalaVersion
   def jmhCoreVersion = v.jmhVersion
 
-  override def moduleDeps = Seq(chisel(v.scalaVersion))
+  override def moduleDeps = Seq(chisel(v.scalaVersionToCross(v.defaultScalaVersion)))
 }

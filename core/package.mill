@@ -12,8 +12,7 @@ object `package` extends Module {
   object cross extends Cross[Core](v.scalaCrossVersions)
 }
 
-trait Core extends CrossSbtModule with HasScala2MacroAnno with HasCommonOptions with ScalafmtModule {
-  def scalaVersion = crossScalaVersion
+trait Core extends ChiselCrossModule with HasScala2MacroAnno with HasCommonOptions with ScalafmtModule {
 
   def moduleDir = super.moduleDir / os.up
 
