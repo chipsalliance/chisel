@@ -754,7 +754,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
 
       io.out := sum
     }
-    class BlackBoxWithCommonIntf extends BlackBox with ModuleIntf
+    class BlackBoxWithCommonIntf extends ExtModule with ModuleIntf
 
     it("(6.a): A Module that implements an @instantiable trait should be definable as that trait") {
       class Top extends Module {
@@ -809,7 +809,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>in"
+             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>io.in"
              |CHECK-NEXT: "tag":"gotcha"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
              |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf"
@@ -836,7 +836,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |CHECK-NEXT: "target":"~|ModuleWithCommonIntfY>io.in"
              |CHECK-NEXT: "tag":"foo"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>in"
+             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>io.in"
              |CHECK-NEXT: "tag":"bar"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
              |CHECK-NEXT: "target":"~|ModuleWithCommonIntfX>io.in"

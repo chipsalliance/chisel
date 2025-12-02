@@ -1,7 +1,6 @@
 package chiselTests.simulator
 
 import chisel3._
-import chisel3.experimental.ExtModule
 import chisel3.simulator._
 import chisel3.util.circt.dpi._
 import circt.stage.ChiselStage
@@ -9,7 +8,6 @@ import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import chisel3.util.HasBlackBoxInline
 import svsim._
 
 private object EmitDPIImplementation {
@@ -29,8 +27,8 @@ private object EmitDPIImplementation {
                      |}
   """.stripMargin
 
-    class DummyDPI extends BlackBox with HasBlackBoxInline {
-      val io = IO(new Bundle {})
+    class DummyDPI extends ExtModule {
+      val io = FlatIO(new Bundle {})
       setInline("dpi.cc", dpiImpl)
       setInline(s"$desiredName.sv", s"module $desiredName(); endmodule")
     }

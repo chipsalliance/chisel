@@ -27,8 +27,8 @@ trait AnalogReader {
   def bus: Analog
 }
 
-class AnalogReaderBlackBox extends BlackBox with AnalogReader with HasBlackBoxResource {
-  val io = IO(new AnalogReaderIO)
+class AnalogReaderBlackBox extends ExtModule with AnalogReader {
+  val io = FlatIO(new AnalogReaderIO)
   def out = io.out
   def bus = io.bus
 
@@ -36,14 +36,14 @@ class AnalogReaderBlackBox extends BlackBox with AnalogReader with HasBlackBoxRe
 }
 
 class AnalogReaderWrapper extends Module with AnalogReader {
-  val io = IO(new AnalogReaderIO)
+  val io = FlatIO(new AnalogReaderIO)
   def out = io.out
   def bus = io.bus
   val mod = Module(new AnalogReaderBlackBox)
   io <> mod.io
 }
-class AnalogWriterBlackBox extends BlackBox {
-  val io = IO(new AnalogWriterIO)
+class AnalogWriterBlackBox extends ExtModule {
+  val io = FlatIO(new AnalogWriterIO)
 }
 // Connects two Analog ports
 class AnalogConnector extends Module {

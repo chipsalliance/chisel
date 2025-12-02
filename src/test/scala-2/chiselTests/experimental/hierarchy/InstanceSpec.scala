@@ -48,7 +48,7 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
       val chirrtl = ChiselStage.emitCHIRRTL(new Top)
       chirrtl should include("inst i0 of AddOne")
     }
-    it("(0.d): BlackBoxes should be supported") {
+    it("(0.d): ExtModules should be supported") {
       class Top extends Module {
         val in = IO(Input(UInt(32.W)))
         val out = IO(Output(UInt(32.W)))
@@ -913,7 +913,7 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
 
       io.out := sum
     }
-    class BlackBoxWithCommonIntf extends BlackBox with ModuleIntf
+    class BlackBoxWithCommonIntf extends ExtModule with ModuleIntf
 
     it("(6.a): A Module that implements an @instantiable trait should be instantiable as that trait") {
       class Top extends Module {
@@ -967,7 +967,7 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
         .emitCHIRRTL(new Top)
         .fileCheck()(
           """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>in"
+             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>io.in"
              |CHECK-NEXT: "tag":"gotcha"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
              |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf"
@@ -994,7 +994,7 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
              |CHECK-NEXT: "target":"~|ModuleWithCommonIntfY>io.in"
              |CHECK-NEXT: "tag":"foo"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>in"
+             |CHECK-NEXT: "target":"~|BlackBoxWithCommonIntf>io.in"
              |CHECK-NEXT: "tag":"bar"
              |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
              |CHECK-NEXT: "target":"~|Top/insts_2:ModuleWithCommonIntfX>io.in"
@@ -1174,10 +1174,10 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
         )
     }
 
-    it("(7.e): should work on Views of BlackBoxes") {
+    it("(7.e): should work on Views of ExtModules") {
       @instantiable
-      class MyBlackBox extends BlackBox {
-        @public val io = IO(new Bundle {
+      class MyBlackBox extends ExtModule {
+        @public val io = FlatIO(new Bundle {
           val in = Input(UInt(8.W))
           val out = Output(UInt(8.W))
         })

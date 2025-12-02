@@ -452,17 +452,16 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
     }
 
-    it("should handle non-zero delays in BlackBox modules with SystemVerilog sources elegantly") {
+    it("should handle non-zero delays in external modules with SystemVerilog sources elegantly") {
       import chisel3.util.HasBlackBoxInline
 
-      class DelayedIO extends Bundle {
-        val in = Input(UInt(1.W))
-        val delayedIn = Output(UInt(1.W))
-        val delayedInitial = Output(UInt(1.W))
+      trait DelayedIO {
+        val in = IO(Input(UInt(1.W)))
+        val delayedIn = IO(Output(UInt(1.W)))
+        val delayedInitial = IO(Output(UInt(1.W)))
       }
 
-      class Delayed extends BlackBox with HasBlackBoxInline {
-        val io = IO(new DelayedIO)
+      class Delayed extends ExtModule with DelayedIO {
 
         setInline(
           "Delayed.sv",
@@ -492,11 +491,11 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         )
       }
 
-      class Foo extends Module {
-        val io = IO(new DelayedIO)
-
+      class Foo extends Module with DelayedIO {
         val delayed = Module(new Delayed)
-        io :<>= delayed.io
+        delayed.in :<= in
+        delayedIn :<= delayed.delayedIn
+        delayedInitial :<= delayed.delayedInitial
 
         // Some simple logic using the clock
         val counter = RegInit(0.U(8.W))
@@ -513,21 +512,21 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
 
       simulate(new Foo)({ dut =>
-        dut.io.in.poke(1.U)
-        dut.io.delayedIn.expect(0.U)
-        dut.io.delayedInitial.expect(0.U)
+        dut.in.poke(1.U)
+        dut.delayedIn.expect(0.U)
+        dut.delayedInitial.expect(0.U)
         dut.clock.step(1, 1000)
 
-        dut.io.delayedIn.expect(0.U)
-        dut.io.delayedInitial.expect(1.U)
+        dut.delayedIn.expect(0.U)
+        dut.delayedInitial.expect(1.U)
         dut.clock.step(1, 1000)
 
-        dut.io.in.poke(0.U)
-        dut.io.delayedIn.expect(1.U)
-        dut.io.delayedInitial.expect(0.U)
+        dut.in.poke(0.U)
+        dut.delayedIn.expect(1.U)
+        dut.delayedInitial.expect(0.U)
         dut.clock.step(2, 1000)
 
-        dut.io.delayedIn.expect(0.U)
+        dut.delayedIn.expect(0.U)
       })
     }
 

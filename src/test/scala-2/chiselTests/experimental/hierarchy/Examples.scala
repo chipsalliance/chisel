@@ -49,8 +49,8 @@ object Examples {
     out := in + 1.U
   }
   @instantiable
-  class AddOneBlackBox extends BlackBox {
-    @public val io = IO(new Bundle {
+  class AddOneBlackBox extends ExtModule {
+    @public val io = FlatIO(new Bundle {
       val in = Input(UInt(32.W))
       val out = Output(UInt(32.W))
     })

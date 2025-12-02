@@ -41,13 +41,6 @@ private[chisel3] object BlackBoxHelpers {
 }
 import BlackBoxHelpers.BlackBoxInlineAnnoHelpers
 
-private object ExtModule {
-  final val deprecatedCaseClass =
-    "this has moved from `chisel3.experimental` to `chisel3` and all `case class` methods are deprecated. This will be made a `class` in Chisel 8."
-  final val since = "7.5.0"
-}
-import ExtModule._
-
 /** Parameters for BlackBoxes */
 @deprecated(deprecatedCaseClass, since)
 abstract class Param

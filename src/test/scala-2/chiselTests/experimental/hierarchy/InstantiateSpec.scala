@@ -13,6 +13,7 @@ import chisel3.experimental.{BaseModule, IntrinsicModule, SourceLine}
 import chisel3.testing.scalatest.FileCheck
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+import scala.annotation.nowarn
 
 // Note, the instantiable classes must not be inner classes because the materialized WeakTypeTags
 // will be different and they will not give the same hashCode when looking up the Definition in the
@@ -150,7 +151,7 @@ object InstantiateSpec {
   }
 
   @instantiable
-  class InstantiableBlackBox extends BlackBox {
+  class InstantiableBlackBox extends BlackBox @nowarn("cat=deprecation") {
     @public val io = IO(new Bundle {
       val in = Input(UInt(8.W))
       val out = Output(UInt(8.W))

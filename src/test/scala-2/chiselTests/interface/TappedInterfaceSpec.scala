@@ -94,8 +94,8 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
 
   object CompilationUnit2 {
 
-    /** This acts as the testbench to the DUT wrapper. This stamps out the
-      * "DUT" once, but using the blackbox version of it that conforms to the
+    /** This acts as the testbench to the DUT wrapper. This stamps out the "DUT"
+      * once, but using the external module version of it that conforms to the
       * specification-set port list.
       *
       * This drives the probe that DUT wrapper taps.
@@ -104,7 +104,7 @@ class TappedInterfaceSpec extends AnyFunSpec with Matchers {
       val a = IO(Input(Bool()))
       val b = IO(Output(Bool()))
 
-      val baz = chisel3.Module(new WrapperModuleInterface.Wrapper.BlackBox)
+      val baz = chisel3.Module(new WrapperModuleInterface.Wrapper.ExtModule)
 
       baz.io.a := a
       b := baz.io.b

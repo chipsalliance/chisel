@@ -129,4 +129,4 @@ modules, then using `withClockAndReset(clock, !rstn)` we can use an active low
 reset in the entire design.
 
 The clock is just wired as is, but if needed, `RawModule` can be used in
-conjunction with `BlackBox` to connect a differential clock input for example.
+conjunction with `ExtModule` to connect a differential clock input for example.
