@@ -3,10 +3,16 @@
 package chisel3.util
 
 import chisel3.ExtModule
+import chisel3.experimental.BlackBoxHelpers.BlackBoxInlineAnnoHelpers
 import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno}
 
-import BlackBoxHelpers._
+private object ExtModuleUtils {
+  final val deprecationMessage = "this trait is unnecessary as `ExtModule` now has the methods it provides"
+  final val since = "7.5.0"
+}
+import ExtModuleUtils._
 
+@deprecated(deprecationMessage, since)
 trait HasExtModuleResource extends ExtModule {
   self: ExtModule =>
 
@@ -18,11 +24,12 @@ trait HasExtModuleResource extends ExtModule {
     * addResource("/blackbox.v")
     * }}}
     */
-  def addResource(blackBoxResource: String): Unit = {
+  override def addResource(blackBoxResource: String): Unit = {
     chisel3.experimental.annotate(self)(Seq(BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)))
   }
 }
 
+@deprecated(deprecationMessage, since)
 trait HasExtModuleInline extends ExtModule {
   self: ExtModule =>
 
@@ -31,11 +38,12 @@ trait HasExtModuleInline extends ExtModule {
     * @param blackBoxName   The black box module name, to create filename
     * @param blackBoxInline The black box contents
     */
-  def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
+  override def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
     chisel3.experimental.annotate(self)(Seq(BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline)))
   }
 }
 
+@deprecated(deprecationMessage, since)
 trait HasExtModulePath extends ExtModule {
   self: ExtModule =>
 
@@ -45,7 +53,7 @@ trait HasExtModulePath extends ExtModule {
     * to the current working directory, which is generally not the same as the
     * target directory.
     */
-  def addPath(blackBoxPath: String): Unit = {
+  override def addPath(blackBoxPath: String): Unit = {
     chisel3.experimental.annotate(self)(Seq(BlackBoxPathAnno(self.toNamed, blackBoxPath)))
   }
 }
