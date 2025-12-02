@@ -12,21 +12,12 @@ object `package` extends Module {
   object cross extends Cross[LitUtility](v.scalaCrossVersions)
 }
 
-trait LitUtility
-    extends ScalaModule
-    with HasPanamaConverterModule
-    with HasPanamaOMModule
-    with CrossModuleBase
-    with HasScalaPlugin
-    with ScalafmtModule {
+trait LitUtility extends ScalaModule with CrossModuleBase with HasScalaPlugin with ScalafmtModule {
   override def scalacOptions = Task { Seq("-Ymacro-annotations") }
-  override def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
 
   def chiselModule = chisel(crossScalaVersion)
   def pluginModule = plugin.cross(crossScalaVersion)
   def moduleDir = super.moduleDir / os.up
-  def panamaConverterModule = panamaconverter.cross(crossScalaVersion)
-  def panamaOMModule = panamaom.cross(crossScalaVersion)
 
   override def moduleDeps = super.moduleDeps ++ Some(chiselModule)
 }

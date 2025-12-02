@@ -91,6 +91,52 @@ jobs:
       - name: Test
         run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[_].test -oF
 
+  lit:
+    name: Run lit tests
+    runs-on: ${{ inputs.system }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Scala
+        uses: VirtusLab/scala-cli-setup@77834b5926f3eb70869d8009530c65585f7a039b # v1.9.1
+        with:
+          jvm: adoptium:17
+      - name: Install FileCheck
+        run: |
+          sudo apt update
+          sudo apt install llvm-19-tools
+          echo "/usr/lib/llvm-19/bin" >> $GITHUB_PATH
+      - name: Install Lit
+        run: |
+          pip3 install --user lit
+          PIP3_BIN_DIR="$(python3 -m site --user-base)/bin"
+          echo "$PIP3_BIN_DIR" >> $GITHUB_PATH
+      - name: Install CIRCT
+        id: install-circt
+        if: ${{ inputs.circt }}
+        uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
+        with:
+          version: ${{ inputs.circt }}
+          github-token: ${{ github.token }}
+      # TODO have install-circt do this
+      - name: Set CHISEL_FIRTOOL_PATH
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          dir=$(dirname $(which firtool))
+          echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
+      - name: Print firtool version
+        if: steps.install-circt.outcome == 'success'
+        run: |
+          echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+          $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
+          echo \`\`\` >> $GITHUB_STEP_SUMMARY
+      - name: Test
+        run: ./mill lit.cross[].run
+
   mima:
     name: binary compatibility checking
     runs-on: ${{ inputs.system }}

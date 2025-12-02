@@ -44,6 +44,13 @@ To switch the JDK in your shell to the latest patch release of Temurin Java 11:
 eval $(cs java --jvm temurin:11 --env)
 ```
 
+LLVM lit can be installed with pip3 (you may need to update your `PATH` environment variable to include the install directory)
+```sh
+pip3 install lit
+```
+
+LLVM FileCheck can be installed by compiling LLVM or CIRCT from source, or from Jack's pre-built binaries at https://github.com/jackkoenig/filecheck.
+
 ### Useful commands
 
 Mill's `resolve` command plus the wildcard `_` are useful for discovering available projects, tasks, and commands.
@@ -87,6 +94,20 @@ Note the cross-version will likely change in the future, use `./mill resolve chi
 Chisel uses ScalaTest so you can run individual tests using standard ScalaTest commands and arguments, e.g.
 ```sh
 ./mill chisel[].test.testOnly chiselTests.VecLiteralSpec -- -z "lits must fit in vec element width"
+```
+
+### lit + FileCheck Tests
+
+Some of our tests use LLVM's [lit](https://llvm.org/docs/CommandGuide/lit.html) and [FileCheck](https://llvm.org/docs/CommandGuide/FileCheck.html).
+
+These tests are also run with mill:
+```sh
+./mill lit.cross[].run
+```
+
+If a test fails, you can use `--filter` to select for the failing test and use `-v` to show the debug information from `FileCheck`:
+```sh
+./mill lit.cross[].run --filter Module -v
 ```
 
 ### Formatting

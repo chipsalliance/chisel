@@ -28,7 +28,7 @@ object v extends Module {
     val j = _root_.upickle.default.read[Map[String, String]](circtJson)
     j("version").stripPrefix("firtool-")
   }
-  // Java 21 only works with 2.13.11+, but Project Panama uses Java 21
+  // Java 21+ requires Scala 2.13.11+.
   // Only publish plugin for 2.13.11+ when using Java > 11, but still
   // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
@@ -60,10 +60,7 @@ object v extends Module {
     } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
       Seq(
         `integration-tests`.cross(ver2).test,
-        lit.utility.cross(ver2),
-        panamaconverter.cross(ver2),
-        panamalib.cross(ver2),
-        panamaom.cross(ver2)
+        lit.utility.cross(ver2)
       )
     }
   }
@@ -217,112 +214,57 @@ trait HasCommonOptions extends CrossModuleBase {
   }
 }
 
-trait HasJextractGeneratedSources extends JavaModule {
+// Build rules for managing circt artifacts
+object circt extends Module {
+  val architecture = System.getProperty("os.arch")
+  val operationSystem = System.getProperty("os.name")
 
-  def jextractBinary: T[os.Path]
+  val mac = operationSystem.toLowerCase.startsWith("mac")
+  val linux = operationSystem.toLowerCase.startsWith("linux")
+  val windows = operationSystem.toLowerCase.startsWith("win")
+  val amd64 = architecture.matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")
+  val aarch64 = architecture.equals("aarch64") | architecture.startsWith("armv8")
 
-  def includePaths: T[Seq[PathRef]]
+  def circt(version: String, os: String, platform: String) =
+    s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
 
-  def libraryPaths: T[Seq[PathRef]]
-
-  def header: T[PathRef]
-
-  def includeFunctions: T[Seq[String]]
-
-  def includeConstants: T[Seq[String]]
-
-  def includeStructs: T[Seq[String]]
-
-  def includeTypedefs: T[Seq[String]]
-
-  def includeUnions: T[Seq[String]]
-
-  def includeVars: T[Seq[String]]
-
-  def linkLibraries: T[Seq[String]]
-
-  def target: T[String]
-
-  def headerClassName: T[String]
-
-  def dumpAllIncludes = Task {
-    val f = os.temp()
-    os.proc(
-      Seq(jextractBinary().toString, header().path.toString)
-        ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
-        ++ Seq("--dump-includes", f.toString)
-    ).call()
-    os.read.lines(f).filter(s => s.nonEmpty && !s.startsWith("#"))
-  }
-
-  override def generatedSources: T[Seq[PathRef]] = Task {
-    super.generatedSources() ++ {
-      // @formatter:off
-      os.proc(
-        Seq(jextractBinary().toString, header().path.toString)
-          ++ includePaths().flatMap(p => Seq("-I", p.path.toString))
-          ++ Seq(
-            "-t", target(),
-            "--header-class-name", headerClassName(),
-            "--source",
-            "--output", Task.dest.toString
-          ) ++ includeFunctions().flatMap(f => Seq("--include-function", f)) ++
-          includeConstants().flatMap(f => Seq("--include-constant", f)) ++
-          includeStructs().flatMap(f => Seq("--include-struct", f)) ++
-          includeTypedefs().flatMap(f => Seq("--include-typedef", f)) ++
-          includeUnions().flatMap(f => Seq("--include-union", f)) ++
-          includeVars().flatMap(f => Seq("--include-var", f)) ++
-          linkLibraries().flatMap(l => Seq("-l", l))
-      ).call(Task.dest)
-      // @formatter:on
-      Seq(PathRef(Task.dest))
+  // Copy-pasted from Mill 0.12.14 and updated to Mill 1.0.0 (MIT License)
+  def download(url: String, dest: os.RelPath)(implicit ctx: mill.api.TaskCtx.Dest): PathRef = {
+    val out = ctx.dest / dest
+    val website = new java.net.URI(url).toURL
+    val websiteInputStream = website.openStream
+    try {
+      java.nio.file.Files.copy(websiteInputStream, out.toNIO)
+      PathRef(out)
+    } finally {
+      websiteInputStream.close()
     }
   }
 
-  override def javacOptions = Task(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
-}
+  // use Task(persistent = true) to avoid download repeatedly
+  def installDir: T[os.Path] = Task(persistent = true) {
+    Task.ctx().env.get("CIRCT_INSTALL_PATH") match {
+      case Some(dir) => os.Path(dir)
+      case None =>
+        Task.ctx().log.info("Use CIRCT_INSTALL_PATH to vendor circt")
+        val tarPath = Task.dest / "circt.tar.gz"
+        if (!os.exists(tarPath)) {
+          val url = circt(
+            v.firtoolVersion,
+            if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
+            // circt does not yet publish for macos-aarch64, use x64 for now
+            if (amd64 || mac) "x64" else throw new Exception("unsupported arch")
+          )
+          Task.ctx().log.info(s"Downloading circt from ${url}")
+          download(url, os.rel / "circt.tar.gz")
+          Task.ctx().log.info(s"Download Successfully")
+        }
+        os.proc("tar", "xvf", tarPath, "--strip-components=1").call(Task.dest)
+        Task.dest
+    }
+  }
 
-trait HasCIRCTPanamaBindingModule extends JavaModule {
-  import build_.circtpanamabinding.CIRCTPanamaBinding
-  def circtPanamaBindingModule: CIRCTPanamaBinding
-
-  override def moduleDeps = super.moduleDeps ++ Some(circtPanamaBindingModule)
-  //
-  override def javacOptions = Task(super.javacOptions() ++ Seq("--enable-preview", "--release", "21"))
-
-  override def forkArgs: T[Seq[String]] = Task(
-    super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED", "--enable-preview")
-      ++ circtPanamaBindingModule
-        .libraryPaths()
-        .map(p => s"-Djava.library.path=${p.path}")
-  )
-}
-
-trait HasPanamaLibModule extends ScalaModule with HasCIRCTPanamaBindingModule {
-  import build_.panamalib.PanamaLib
-  def panamaLibModule: PanamaLib
-
-  def circtPanamaBindingModule = panamaLibModule.circtPanamaBindingModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(panamaLibModule)
-}
-
-trait HasPanamaOMModule extends ScalaModule with HasCIRCTPanamaBindingModule {
-  import build_.panamaom.PanamaOM
-  def panamaOMModule: PanamaOM
-
-  def circtPanamaBindingModule = panamaOMModule.circtPanamaBindingModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(panamaOMModule)
-}
-
-trait HasPanamaConverterModule extends ScalaModule with HasCIRCTPanamaBindingModule {
-  import build_.panamaconverter.PanamaConverter
-  def panamaConverterModule: PanamaConverter
-
-  def circtPanamaBindingModule = panamaConverterModule.circtPanamaBindingModule
-
-  override def moduleDeps = super.moduleDeps ++ Some(panamaConverterModule)
+  def binDir = Task(installDir() / "bin")
 }
 
 // TODO: move chisel src to subfolder once we have dropped sbt flow
