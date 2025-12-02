@@ -10,7 +10,7 @@
 
 
 <link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.3c4e2b46.css">
-<script src="/assets/js/runtime~main.f1a67463.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.d8fe8b5a.js" defer="defer"></script>
 <script src="/assets/js/main.180ae104.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -30,7 +30,6 @@
 new ways of defining Modules</p>
 <ul>
 <li class="">BaseModule: no contents, instantiable</li>
-<li class="">BlackBox extends BaseModule</li>
 <li class="">UserDefinedModule extends BaseModule: this module can contain Chisel RTL. No default clock or reset lines. No default IO. - User should be able to specify non-io ports, ideally multiple of them.</li>
 <li class="">ImplicitModule extends UserModule: has clock, reset, and io, essentially current Chisel Module.</li>
 <li class="">RawModule: will be the user-facing version of UserDefinedModule</li>
