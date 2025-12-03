@@ -6,6 +6,7 @@ import scala.annotation.nowarn
 import scala.collection.immutable.{ListMap, VectorBuilder}
 import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet}
 
+import chisel3.experimental.dataview
 import chisel3.experimental.hierarchy.core.Hierarchy.HierarchyBaseModuleExtensions
 import chisel3.internal._
 import chisel3.internal.binding._
@@ -619,14 +620,19 @@ package experimental {
     /* Associate a port of this module with one or more domains. */
     final def associate(port: Data, domains: domain.Type*)(implicit si: SourceInfo): Unit = {
       require(domains.nonEmpty, "cannot associate a port with zero domains")
-      if (!portsContains(port)) {
+      val portx = dataview.reifySingleTarget(port).getOrElse(port)
+      if (dataview.isView(portx)) {
+        Builder.error(s"Cannot associate a non 1-1 view ($portx) with domains")
+        return
+      }
+      if (!portsContains(portx)) {
         val domainsString = domains.mkString(", ")
         Builder.error(
-          s"""Unable to associate port '$port' to domains '$domainsString' because the port does not exist in this module"""
+          s"""Unable to associate port '$portx' to domains '$domainsString' because the port does not exist in this module"""
         )(si)
         return
       }
-      _associations.updateWith(port) {
+      _associations.updateWith(portx) {
         case Some(acc) => Some(acc ++= domains)
         case None      => Some(LinkedHashSet.empty[domain.Type] ++= domains)
       }

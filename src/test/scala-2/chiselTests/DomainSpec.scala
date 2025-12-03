@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.domain.{Domain, Field}
 import chisel3.domains.ClockDomain
+import chisel3.experimental.dataview._
 import chisel3.testing.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -137,6 +138,20 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       ChiselStage.elaborate(new Foo)
     }.getMessage should include("cannot associate a port with zero domains")
 
+  }
+
+  it should "work on views" in {
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val a = IO(Input(Bool()))
+      associate(a.viewAs[Bool], A)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   input a : UInt<1> domains [A]
+         |""".stripMargin
+    }
   }
 
   behavior of "unsafe_domain_cast"
