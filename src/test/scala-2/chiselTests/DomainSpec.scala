@@ -154,6 +154,22 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
   }
 
+  it should "work with FlatIO" in {
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val io = FlatIO(new Bundle {
+        val a = Input(Bool())
+      })
+      associate(io.a, A)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   input a : UInt<1> domains [A]
+         |""".stripMargin
+    }
+  }
+
   behavior of "unsafe_domain_cast"
 
   it should "work for zero, one, and two casts" in {
