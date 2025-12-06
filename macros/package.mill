@@ -18,7 +18,7 @@ trait Macros extends ChiselCrossModule with HasScala2MacroAnno with HasCommonOpt
 
   override def mvnDeps =
     if (!v.isScala3(crossScalaVersion)) {
-      super.mvnDeps() ++ Seq(v.scalaReflect(crossScalaVersion))
+      super.mvnDeps() ++ Seq(v.scalaReflect(_scalaVersion))
     } else {
       super.mvnDeps()
     }
