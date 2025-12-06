@@ -358,6 +358,34 @@ class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with FileCheck {
       )
   }
 
+  it should "work for identity views of ExtModule ports" in {
+    import chisel3.experimental.dataview._
+    class Foo extends ExtModule {
+      val out = IO(Output(Bool()))
+      val view = out.viewAs[Bool]
+    }
+    class Top extends RawModule {
+      val foo = Module(new Foo)
+      val outProbe = IO(probe.Probe(Bool()))
+      val out = IO(Bool())
+      probe.define(outProbe, BoringUtils.tap(foo.view))
+      out := BoringUtils.tapAndRead(foo.view)
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top, args = Array("--full-stacktrace"))
+      .fileCheck()(
+        """|CHECK: extmodule Foo :
+           |CHECK:   output out : UInt<1>
+           |CHECK: public module Top :
+           |CHECK:   output outProbe : Probe<UInt<1>>
+           |CHECK:   output out : UInt<1>
+           |CHECK:   inst foo of Foo
+           |CHECK:   define outProbe = probe(foo.out)
+           |CHECK:   connect out, foo.out
+           |""".stripMargin
+      )
+  }
+
   it should "NOT work [yet] for non-identity views" in {
     import chisel3.experimental.dataview._
     class MyBundle extends Bundle {

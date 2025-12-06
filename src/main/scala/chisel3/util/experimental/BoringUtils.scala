@@ -7,7 +7,8 @@ import chisel3.probe.{Probe, RWProbe}
 import chisel3.reflect.DataMirror
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{annotate, requireIsHardware, skipPrefix, BaseModule, SourceInfo}
-import chisel3.internal.{Builder, BuilderContextCache, NamedComponent, Namespace}
+import chisel3.experimental.dataview.reifyIdentityView
+import chisel3.internal.{throwException, Builder, BuilderContextCache, NamedComponent, Namespace}
 import chisel3.internal.binding.{BlockBinding, CrossModuleBinding, PortBinding, SecretPortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import chisel3.internal.firrtl.ir.Block
@@ -209,12 +210,18 @@ object BoringUtils {
   }
 
   private def boreOrTap[A <: Data](
-    source:      A,
+    _source:     A,
     createProbe: Option[ProbeInfo] = None,
     isDrive:     Boolean = false
   )(
     implicit si: SourceInfo
   ): A = {
+    val (source, _) =
+      reifyIdentityView(_source)
+        .getOrElse(
+          throwException(s"BoringUtils currently only support identity views, ${_source} has multiple targets.")
+        )
+
     def parent(d: Data): BaseModule = d.topBinding.location.get
     def purePortTypeBase = if (createProbe.nonEmpty) Output(chiselTypeOf(source))
     else if (DataMirror.hasOuterFlip(source)) Flipped(chiselTypeOf(source))
