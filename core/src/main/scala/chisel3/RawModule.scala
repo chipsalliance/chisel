@@ -193,13 +193,7 @@ abstract class RawModule extends BaseModule {
     _component
   }
 
-  private[chisel3] def secretConnection(left: Data, _right: Data)(implicit si: SourceInfo): Unit = {
-    val (right: Data, _) = chisel3.experimental.dataview
-      .reifyIdentityView(_right)
-      .getOrElse(
-        throwException(s"BoringUtils currently only support identity views, ${_right} has multiple targets.")
-      )
-
+  private[chisel3] def secretConnection(left: Data, right: Data)(implicit si: SourceInfo): Unit = {
     def computeConnection(left: Data, right: Data): Command = {
       (left.probeInfo.nonEmpty, right.probeInfo.nonEmpty) match {
         case (true, true)                                 => ProbeDefine(si, left.lref, Node(right))
