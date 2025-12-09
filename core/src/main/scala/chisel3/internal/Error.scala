@@ -32,7 +32,12 @@ object ExceptionHelpers {
   private[chisel3] def getErrorLineInFile(sourceRoots: Seq[File], sl: SourceLine): List[String] = {
     def tryFileInSourceRoot(sourceRoot: File): Option[List[String]] = {
       try {
-        val file = new File(sourceRoot, sl.filename)
+        val file = {
+          val f = new File(sl.filename)
+          // Absolute paths are not relative to sourceRoot.
+          if (f.isAbsolute) f
+          else new File(sourceRoot, sl.filename)
+        }
         val lines = Source.fromFile(file).getLines()
         var i = 0
         while (i < (sl.line - 1) && lines.hasNext) {
