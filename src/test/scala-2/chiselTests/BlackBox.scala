@@ -459,4 +459,28 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
 
   }
 
+  they should "have source locator information on ports" in {
+    @nowarn("cat=deprecation")
+    class Baz extends BlackBox {
+      val io = IO(new Bundle {
+        val a = Output(Bool())
+      })
+    }
+
+    class Foo extends Module {
+      val a = IO(Output(Bool()))
+
+      private val baz = Module(new Baz)
+      a :<= baz.io.a
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: extmodule Baz :
+           |CHECK:   output a : UInt<1> @[{{.+}}BlackBox.scala {{[0-9]+}}:{{[0-9]+}}]
+           |""".stripMargin
+      )
+  }
+
 }

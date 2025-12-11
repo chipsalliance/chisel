@@ -96,8 +96,12 @@ abstract class BlackBox(
     // support associations because associations require having multiple ports.
     // If this restriction is lifted, then this code should be updated.
     require(!hasAsssociations, "BlackBoxes cannot support associations at this time, use an ExtModule")
+    // Get the source info for the io bundle to use for all flattened ports.
+    val ioSourceInfo = getModulePortsAndLocators.collectFirst {
+      case (port, sourceInfo, _) if port == io => sourceInfo
+    }.getOrElse(UnlocatableSourceInfo)
     val firrtlPorts = namedPorts.map { namedPort =>
-      Port(namedPort._2, namedPort._2.specifiedDirection, Seq.empty, UnlocatableSourceInfo)
+      Port(namedPort._2, namedPort._2.specifiedDirection, Seq.empty, ioSourceInfo)
     }
 
     val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params, getKnownLayers)

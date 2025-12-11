@@ -279,4 +279,26 @@ class ExtModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
       )
 
   }
+
+  it should "have source locator information on ports" in {
+    class Bar extends ExtModule {
+      val a = IO(Output(Bool()))
+    }
+
+    class Foo extends Module {
+      val a = IO(Output(Bool()))
+
+      private val bar = Module(new Bar)
+      a :<= bar.a
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: extmodule Bar :
+           |CHECK:   output a : UInt<1> @[{{.+}}ExtModule.scala {{[0-9]+}}:{{[0-9]+}}]
+           |""".stripMargin
+      )
+  }
+
 }
