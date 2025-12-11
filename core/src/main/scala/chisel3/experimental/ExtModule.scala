@@ -109,8 +109,8 @@ abstract class ExtModule(
     // Ports are named in the same way as regular Modules
     namePorts()
 
-    val firrtlPorts = getModulePortsAndLocators.map { case (port, _, associations) =>
-      Port(port, port.specifiedDirection, associations, UnlocatableSourceInfo)
+    val firrtlPorts = getModulePortsAndLocators.map { case (port, sourceInfo, associations) =>
+      Port(port, port.specifiedDirection, associations, sourceInfo)
     }
     val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params, getKnownLayers)
     _component = Some(component)
