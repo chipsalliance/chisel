@@ -485,6 +485,27 @@ class NamePluginSpec extends AnyFlatSpec with Matchers with FileCheck {
     )
   }
 
+  "FlatIOs" should "forward names to their targets" in {
+    ChiselStage.emitCHIRRTL {
+      new Module {
+        val io = FlatIO(new Bundle {
+          val in = Input(UInt(3.W))
+          val out = Output(UInt(3.W))
+        })
+        io.out := {
+          val w = Wire(UInt(3.W))
+          w := io.in + 1.U
+          w
+        }
+      }
+    }.fileCheck()(
+      """|CHECK: input in :
+         |CHECK: output out :
+         |CHECK: wire out_w :
+         |""".stripMargin
+    )
+  }
+
   "AffectsChiselName" should "name the user-defined type" in {
     case class SomeClass(d: UInt) extends AffectsChiselName
     class Test extends Module {

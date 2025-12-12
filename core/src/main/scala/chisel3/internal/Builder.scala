@@ -641,19 +641,22 @@ private[chisel3] object Builder extends LazyLogging {
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
       // If the binding is None, this is an illegal connection and later logic will error
-      def recData(data: Data): Option[String] = data.binding.flatMap {
-        case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding) => data.seedOpt
-        case ChildBinding(parent) =>
-          recData(parent).map { p =>
-            // And name of the field if we have one, we don't for dynamic indexing of Vecs
-            getSubName(data).map(p + "_" + _).getOrElse(p)
-          }
-        case DynamicIndexBinding(vec)                                => recData(vec)
-        case SampleElementBinding(parent)                            => recData(parent)
-        case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
-        case PortBinding(mod)                                        => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
-        case (_: LitBinding | _: DontCareBinding)                    => None
-        case _                                                       => Some("view_") // TODO implement
+      def recData(_data: Data): Option[String] = {
+        val data = reifySingleTarget(_data).getOrElse(_data)
+        data.binding.flatMap {
+          case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding) => data.seedOpt
+          case ChildBinding(parent) =>
+            recData(parent).map { p =>
+              // And name of the field if we have one, we don't for dynamic indexing of Vecs
+              getSubName(data).map(p + "_" + _).getOrElse(p)
+            }
+          case DynamicIndexBinding(vec)                                => recData(vec)
+          case SampleElementBinding(parent)                            => recData(parent)
+          case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
+          case PortBinding(mod)                                        => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
+          case (_: LitBinding | _: DontCareBinding)                    => None
+          case _                                                       => Some("view_") // TODO implement complex views.
+        }
       }
       id match {
         case d: Data => recData(d)
