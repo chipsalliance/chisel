@@ -91,7 +91,7 @@ object v extends Module {
   val dataclass = mvn"io.github.alexarchambault::data-class:0.2.7"
   val commonText = mvn"org.apache.commons:commons-text:1.15.0"
   val scopt = mvn"com.github.scopt::scopt:4.1.0"
-  val mdoc = mvn"org.scalameta::mdoc:2.7.2"
+  val mdoc = mvn"org.scalameta::mdoc:2.8.1"
 
   def scalaReflect(scalaVersion:   String) = mvn"org.scala-lang:scala-reflect:$scalaVersion"
   def scala2Compiler(scalaVersion: String) = mvn"org.scala-lang:scala-compiler:$scalaVersion"
