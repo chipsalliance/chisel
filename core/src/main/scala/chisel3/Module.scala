@@ -617,7 +617,7 @@ package experimental {
 
     protected def portsSize: Int = _ports.size
 
-    /* Associate a port of this module with one or more domains. */
+    /** Associate a port of this module with one or more domains. */
     final def associate(port: Data, domains: domain.Type*)(implicit si: SourceInfo): Unit = {
       require(domains.nonEmpty, "cannot associate a port with zero domains")
       val portx = dataview.reifySingleTarget(port).getOrElse(port)
@@ -636,6 +636,11 @@ package experimental {
         case Some(acc) => Some(acc ++= domains)
         case None      => Some(LinkedHashSet.empty[domain.Type] ++= domains)
       }
+    }
+
+    /** Associate multiple ports of this module with one or more domains. */
+    final def associate(port: Seq[Data], domains: domain.Type*)(implicit si: SourceInfo): Unit = {
+      port.foreach(associate(_, domains: _*))
     }
 
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
