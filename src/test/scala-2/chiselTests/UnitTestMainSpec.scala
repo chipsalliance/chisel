@@ -61,6 +61,22 @@ class UnitTestMainSpec extends AnyFlatSpec with Matchers with FileCheck {
       // CHECK: module ModuleTest :
       """)
   }
+
+  it should "support custom runpaths" in {
+    val runpathArgs = System
+      .getProperty("java.class.path")
+      .split(java.io.File.pathSeparator)
+      .map(s => if (s.trim.length == 0) "." else s)
+      .flatMap(s => Seq("-R", s))
+    val args = Seq("-l", "-f", "^chiselTests\\.sampleTests\\.") ++ runpathArgs
+    checkOut(args: _*)(
+      """
+      // CHECK-DAG: chiselTests.sampleTests.ClassTest
+      // CHECK-DAG: chiselTests.sampleTests.ObjectTest
+      // CHECK-DAG: chiselTests.sampleTests.ModuleTest
+      """
+    )
+  }
 }
 
 package sampleTests {
