@@ -392,12 +392,20 @@ object Simulation {
   final case class Port private[Simulation] (controller: Simulation.Controller, id: String, info: ModuleInfo.Port) {
 
     def set(value: BigInt) = {
+      require(
+        info.isSettable,
+        s"cannot set port '${info.name}' (id: '$id') because it is not settable.  (Did you try to poke an output port?)"
+      )
       controller.sendCommand(Simulation.Command.SetBits(id, value))
       controller.expectNextMessage { case Simulation.Message.Ack =>
       }
     }
 
     def get(isSigned: Boolean = false): Value = {
+      require(
+        info.isGettable,
+        s"cannot get port '${info.name}' (id: '$id') because it is not gettable"
+      )
       controller.sendCommand(Simulation.Command.GetBits(id, isSigned))
       controller.processNextMessage { case Simulation.Message.Bits(bitCount, value) =>
         Value(bitCount, value)

@@ -551,4 +551,20 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
   }
 
+  describe("ChiselSim user errors") {
+
+    it("should provide a sane error message if a user pokes an output port") {
+      class Foo extends RawModule {
+        val a = IO(Output(Bool()))
+        a :<= DontCare
+      }
+      intercept[java.lang.IllegalArgumentException] {
+        simulateRaw(new Foo) { dut =>
+          dut.a.poke(false.B)
+        }
+      }.getMessage.fileCheck() { "CHECK: cannot set port 'a' (id: '0') because it is not settable" }
+    }
+
+  }
+
 }
