@@ -71,8 +71,13 @@ object Module extends Module$Intf {
     }
     Builder.readyForModuleConstr = true
 
+    val event = new MeasureModuleElaboration
+    event.begin()
+
     val module = Builder.State.guard(Builder.State.default) {
       val module: T = bc
+
+      event.module = module.desiredName
 
       if (Builder.whenDepth != 0) {
         throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
@@ -97,6 +102,7 @@ object Module extends Module$Intf {
 
       module
     }
+    event.commit()
 
     module.moduleBuilt()
     module
