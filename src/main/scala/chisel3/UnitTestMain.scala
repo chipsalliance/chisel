@@ -11,7 +11,8 @@ import scopt.OptionParser
 object UnitTests {
 
   /** Command line configuration options. */
-  case class Config(
+  private case class Config(
+    runpath:    List[String] = List(),
     outputFile: Option[File] = None,
     list:       Boolean = false,
     verbose:    Boolean = false,
@@ -24,6 +25,11 @@ object UnitTests {
     val parser = new OptionParser[Config]("chisel3.UnitTests") {
       head("Chisel Unit Test Utility")
       help("help").abbr("h")
+
+      opt[Seq[String]]('R', "runpath")
+        .text("Where test classes are discovered and loaded from")
+        .unbounded()
+        .action((x, c) => c.copy(runpath = c.runpath ++ x))
 
       opt[File]('o', "output")
         .text("Output file name (\"-\" for stdout)")
@@ -92,13 +98,13 @@ object UnitTests {
     // setting up any of the Chisel builder stuff in the background. The handler
     // will never actually call the Chisel generators in this mode.
     if (config.list) {
-      DiscoverUnitTests(handler)
+      DiscoverUnitTests(handler, config.runpath)
       return
     }
 
     // Generate the unit tests.
     class AllUnitTests extends RawModule {
-      DiscoverUnitTests(handler)
+      DiscoverUnitTests(handler, config.runpath)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new AllUnitTests)
 

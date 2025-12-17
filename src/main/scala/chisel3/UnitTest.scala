@@ -5,7 +5,8 @@ package chisel3.test
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.Definition
 import chisel3.RawModule
-import java.io.File
+import java.io.{File, IOException}
+import java.net.URLClassLoader
 import java.util.jar.JarFile
 import scala.collection.JavaConverters._
 
@@ -29,8 +30,37 @@ private[chisel3] object DiscoverUnitTests {
     */
   type Callback = (String, () => Unit) => Unit
 
-  /** Discover all tests in the classpath and call `cb` for each. */
-  def apply(cb: Callback): Unit = classpath().foreach(discoverFile(_, cb))
+  /** Discover all tests in the classpath or runpath and call `cb` for each. */
+  def apply(cb: Callback, runpath: Seq[String]): Unit = {
+    // Determine the list of files to scan for tests. This is either the
+    // user-provided runpath if non-empty, or the classpath otherwise.
+    val files =
+      if (runpath.nonEmpty)
+        runpath.map(new File(_))
+      else
+        classpath()
+
+    // Construct a class loader that we use during test discovery.
+    val loader = {
+      // Map the runpath entries to URLs, and disable caching such that reruns
+      // will reload classes.
+      val urls = runpath.map(new File(_).toURI.toURL).toArray
+      urls.foreach { url =>
+        try {
+          url.openConnection.setDefaultUseCaches(false)
+        } catch {
+          case e: IOException => // just ignore these
+        }
+      }
+
+      // Create a class loader that first visits the provided runpath URLs, and
+      // then falls back to the default class loader.
+      new URLClassLoader(urls, classOf[UnitTest].getClassLoader)
+    }
+
+    // Discover tests.
+    files.foreach(discoverFile(_, cb, loader))
+  }
 
   /** Return the a sequence of files or directories on the classpath. */
   private def classpath(): Iterable[File] = System
@@ -42,14 +72,14 @@ private[chisel3] object DiscoverUnitTests {
   /** Discover all tests in a given file. If this is a JAR file, looks through
     * its contents and tries to find its classes.
     */
-  private def discoverFile(file: File, cb: Callback): Unit = file match {
+  private def discoverFile(file: File, cb: Callback, loader: ClassLoader): Unit = file match {
     // Unzip JAR files and process the class files they contain.
     case _ if file.getPath.toLowerCase.endsWith(".jar") =>
       val jarFile = new java.util.jar.JarFile(file)
       jarFile.entries.asScala.foreach { jarEntry =>
         val name = jarEntry.getName
         if (!jarEntry.isDirectory && name.endsWith(".class"))
-          discoverClass(pathToClassName(name), cb)
+          discoverClass(pathToClassName(name), cb, loader)
       }
 
     // Recursively collect any class files contained in directories.
@@ -60,7 +90,7 @@ private[chisel3] object DiscoverUnitTests {
           for (entry <- file.listFiles)
             visit(name, entry)
         } else if (name.endsWith(".class")) {
-          discoverClass(pathToClassName(name), cb)
+          discoverClass(pathToClassName(name), cb, loader)
         }
       }
       for (entry <- file.listFiles)
@@ -78,10 +108,10 @@ private[chisel3] object DiscoverUnitTests {
     * it is, call the user-provided callback with a function that either calls
     * the loaded class' constructor or ensures the loaded object is constructed.
     */
-  private def discoverClass(className: String, cb: Callback): Unit = {
+  private def discoverClass(className: String, cb: Callback, loader: ClassLoader): Unit = {
     val clazz =
       try {
-        classOf[UnitTest].getClassLoader.loadClass(className)
+        loader.loadClass(className)
       } catch {
         case _: ClassNotFoundException       => return
         case _: NoClassDefFoundError         => return
@@ -131,5 +161,5 @@ private[chisel3] object DiscoverUnitTests {
   * use a command line utility that offers some additional filtering capability.
   */
 class AllUnitTests extends RawModule {
-  DiscoverUnitTests((_, gen) => gen())
+  DiscoverUnitTests((_, gen) => gen(), Seq())
 }
