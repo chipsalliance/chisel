@@ -567,4 +567,54 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
   }
 
+  describe("Specific ChiselSim issues") {
+
+    it("should not hang like in #5128") {
+      class Incrementer(bitWidth: Int) extends Module {
+        val io = IO(new Bundle {
+          val a = Input(UInt(bitWidth.W))
+          val c = Input(Bool())
+          val out = Output(UInt((bitWidth + 1).W))
+        })
+
+        io.out := Mux(io.c, io.a.zext.asUInt + 1.U, io.a.zext.asUInt)
+      }
+
+      // Print test duration on pass when using simulate()
+      def simulateWithDuration[T <: chisel3.RawModule](
+        dut: => T
+      )(body: (T) => Unit): Unit = {
+        val start = System.currentTimeMillis()
+        simulateRaw(dut)(body)
+        val end = System.currentTimeMillis()
+        val duration = end - start
+        println(s"PASS ($duration ms)")
+      }
+
+      def randomIncrementerTest(
+        bitWidth:      Int,
+        numberOfTests: Int
+      ): Unit = {
+        simulateRaw(new Incrementer(bitWidth)) { c =>
+          // val rand = new scala.util.Random(987654321L)
+          for (i <- 1 to numberOfTests) {
+            val a = BigInt(1) // BigInt(bitWidth, rand)
+            c.io.a.poke(a.U)
+            c.io.c.poke(1.B)
+            c.io.out.expect((a + 1).U((bitWidth + 1).W))
+            c.io.c.poke(0.B)
+            c.io.out.expect(a.U((bitWidth + 1).W))
+            if (i % 100 == 0) println(s"Progress $i of $numberOfTests")
+          }
+          println("Loop done.")
+        }
+        println("Success!")
+      }
+
+      randomIncrementerTest(8, 2802)
+      randomIncrementerTest(8, 2803)
+    }
+
+  }
+
 }
