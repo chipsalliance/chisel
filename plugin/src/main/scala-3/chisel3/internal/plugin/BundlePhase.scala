@@ -38,10 +38,16 @@ object BundleHelpers {
     thiz:    tpd.This,
     conArgs: List[List[tpd.Tree]]
   )(using Context): tpd.DefDef = {
+    val typeParams = record.symbol.typeParams
+    val classType = if (typeParams.isEmpty) {
+      record.symbol.typeRef
+    } else {
+      record.symbol.typeRef.appliedTo(typeParams.map(_.typeRef))
+    }
     val newExpr: tpd.Tree = conArgs match {
-      case Nil => tpd.New(record.symbol.typeRef, Nil)
+      case Nil => tpd.New(classType, Nil)
       case head :: tail =>
-        val headApp = tpd.New(record.symbol.typeRef, head)
+        val headApp = tpd.New(classType, head)
         tail.foldLeft(headApp: tpd.Tree) { (fun, args) =>
           tpd.Apply(fun, args)
         }
