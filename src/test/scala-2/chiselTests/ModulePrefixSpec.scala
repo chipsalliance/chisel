@@ -176,8 +176,7 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new Top)
       .fileCheck()(
-        """|CHECK:      {
-           |CHECK-NEXT:   "class":"chisel3.ModulePrefixAnnotation",
+        """|CHECK:        "class":"chisel3.ModulePrefixAnnotation",
            |CHECK-NEXT:   "target":"~|Top>smem",
            |CHECK-NEXT:   "prefix":"Foo_"
            |CHECK-NEXT: },

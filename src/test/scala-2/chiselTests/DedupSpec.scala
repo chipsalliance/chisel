@@ -128,11 +128,7 @@ class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
     }.countModules should be(3)
   }
 
-  it should "work natively for desiredNames" in {
-    // TODO: This test _should_ be able to use `ChiselStage$` methods, but there
-    // are problems with annotations and D/I.
-    //
-    // See: https://github.com/chipsalliance/chisel/issues/4730
+  it should "work natively for desiredNames with ChiselStage (the class)" in {
     val verilog = new ChiselStage()
       .execute(
         Array("--target", "systemverilog"),
@@ -142,6 +138,15 @@ class DedupSpec extends AnyFlatSpec with Matchers with FileCheck {
         a.value
       }
       .get
+
+    verilog.countModules should be(3)
+  }
+
+  it should "work natively for desiredNames with ChiselStage$ (the object)" in {
+    val verilog = ChiselStage.emitSystemVerilog {
+      val top = new SharedConstantValDedupTopDesiredName
+      top
+    }
 
     verilog.countModules should be(3)
   }

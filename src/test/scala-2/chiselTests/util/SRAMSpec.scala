@@ -244,7 +244,7 @@ class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
     val chirrtl = emitCHIRRTL(new Top)
     // there should be no properties
-    chirrtl shouldNot include("class")
+    chirrtl shouldNot include(" class ")
     chirrtl shouldNot include("Integer")
     chirrtl shouldNot include("Path")
     chirrtl shouldNot include("propassign")
