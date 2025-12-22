@@ -281,7 +281,7 @@ private[chisel3] object Converter {
       )
     case LayerBlock(info, layer, region) =>
       fir.LayerBlock(convert(info), layer, convert(region, ctx, typeAliases))
-    case DefContract(info, ids, exprs) =>
+    case DefContract(info, ids, exprs, _) =>
       fir.EmptyStmt // dummy until the converter removed
     case Placeholder(info, block) =>
       convert(block, ctx, typeAliases)

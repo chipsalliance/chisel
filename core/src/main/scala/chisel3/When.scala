@@ -149,7 +149,7 @@ final class WhenContext private[chisel3] (
   // Create the `When` operation and run the `block` thunk inside the
   // `ifRegion`.  Any commands that this thunk creates will be put inside this
   // block.
-  private val whenCommand = pushCommand(new When(sourceInfo, cond().ref(sourceInfo)))
+  private val whenCommand = pushCommand(new When(sourceInfo, cond().ref(sourceInfo), Builder.currentBlock.get))
   Builder.pushWhen(this)
   scope = Some(Scope.If)
   try {

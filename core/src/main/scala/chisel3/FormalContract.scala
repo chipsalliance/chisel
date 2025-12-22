@@ -107,7 +107,7 @@ object FormalContract extends FormalContract$Intf {
     }
 
     // Create the contract.
-    val contract = Builder.pushCommand(new DefContract(sourceInfo, results, args.map(_.ref(sourceInfo))))
+    val contract = Builder.pushCommand(new DefContract(sourceInfo, results, args.map(_.ref(sourceInfo)), Builder.currentBlock.get))
 
     // Map the sequence of results to the user-defined type `R`, pass it to the
     // body to build the contract body, and also return it as the result of the

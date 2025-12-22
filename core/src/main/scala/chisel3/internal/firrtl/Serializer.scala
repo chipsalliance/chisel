@@ -382,7 +382,7 @@ private[chisel3] object Serializer {
         } else {
           block.iterator.flatMap(serializeCommand(_, ctx, typeAliases)(indent, suppressSourceInfo))
         }
-      case cmd @ DefContract(info, names, exprs) =>
+      case cmd @ DefContract(info, names, exprs, _) =>
         val start = {
           implicit val b = new StringBuilder
           doIndent()

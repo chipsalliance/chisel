@@ -381,7 +381,45 @@ private[chisel3] object ir {
     }
   }
 
-  class Block(val sourceInfo: SourceInfo) {
+  object HasBlocks {
+    /** Indicates that a command contains blocks.
+      *
+      * This is used to assist with walking from a block to a command.
+      *
+      * There are no uses of actually walking _from commands to blocks_.
+      * Therefore, this trait is currently empty.
+      */
+    sealed trait Type
+
+    /** Indicator that a block is rooted in a module.
+      *
+      * This is necessary because of the weird way that Chisel works.  Chisel
+      * doesn't want to use this IR to store the module state until it runs
+      * `generateComponent`.  However, we need to be able to track what block a
+      * module is in.  Use this for now.
+      *
+      * TODO: This should be removed as part of a refactor of Chisel to use this
+      * IR more directly and not rely on `BaseModule`.  E.g., move the mutation
+      * of `BaseModule` and its children into `DefModule` directly.  Then
+      * `DefModule` can just extends `HasBlocks.Type` directly without the
+      * indirection created here.
+      */
+    object Module extends Type
+
+    /** Indicates that a `Command` knows what `Block` it is in.
+      *
+      * This is used for walking up the `Block` stack outside of the current
+      * `Builder` context.
+      *
+      * Note: In a major refactor of Chisel, all `Command`s would know their
+      * containing `Block`, not just specific ones.  This has a memory cost.
+      */
+    sealed trait TracksContainingBlock extends Type { this: Command =>
+      def containingBlock: Block
+    }
+  }
+
+  class Block(val sourceInfo: SourceInfo, val parent: HasBlocks.Type) {
     // While building block, commands go into _commandsBuilder.
     private var _commandsBuilder = ArraySeq.newBuilder[Command]
 
@@ -433,13 +471,13 @@ private[chisel3] object ir {
     private[chisel3] def getAllCommands(): Seq[Command] = getCommands() ++ getSecretCommands()
   }
 
-  class When(val sourceInfo: SourceInfo, val pred: Arg) extends Command {
-    val ifRegion = new Block(sourceInfo)
+  class When(val sourceInfo: SourceInfo, val pred: Arg, override val containingBlock: Block) extends Command with HasBlocks.TracksContainingBlock {
+    val ifRegion = new Block(sourceInfo, this)
     private var _elseRegion: Block = null
     def hasElse:             Boolean = _elseRegion != null
     def elseRegion: Block = {
       if (_elseRegion == null) {
-        _elseRegion = new Block(sourceInfo)
+        _elseRegion = new Block(sourceInfo, this)
       }
       _elseRegion
     }
@@ -488,8 +526,8 @@ private[chisel3] object ir {
     fields:     Seq[(String, domain.Field.Type)]
   )
 
-  class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer) extends Command {
-    val region = new Block(sourceInfo)
+ class LayerBlock(val sourceInfo: SourceInfo, val layer: chisel3.layer.Layer, override val containingBlock: Block) extends Command with HasBlocks.TracksContainingBlock {
+    val region = new Block(sourceInfo, this)
   }
 
   object LayerBlock {
@@ -498,8 +536,8 @@ private[chisel3] object ir {
     }
   }
 
-  case class DefContract(sourceInfo: SourceInfo, ids: Seq[Data], exprs: Seq[Arg]) extends Command {
-    val region = new Block(sourceInfo)
+  case class DefContract(sourceInfo: SourceInfo, ids: Seq[Data], exprs: Seq[Arg], override val containingBlock: Block) extends Command with HasBlocks.TracksContainingBlock {
+    val region = new Block(sourceInfo, this)
   }
 
   case class DefOption(sourceInfo: SourceInfo, name: String, cases: Seq[DefOptionCase])

@@ -11,7 +11,7 @@ import chisel3.experimental.dataview.reifyIdentityView
 import chisel3.internal.{throwException, Builder, BuilderContextCache, NamedComponent, Namespace}
 import chisel3.internal.binding.{BlockBinding, CrossModuleBinding, PortBinding, SecretPortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import chisel3.internal.firrtl.ir.Block
+import chisel3.internal.firrtl.ir
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
 
@@ -250,13 +250,14 @@ object BoringUtils {
         Builder.error(msg)(sourceInfo)
       }
     }
-    def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): A = {
-      path.zip(connectionLocation).foldLeft(source) {
-        case (rhs, (module, _)) if ((up || isDriveDone(rhs)) && module == path(0) && isPort(rhs)) => {
-          rhs
+    def drill(source: A, path: Seq[BaseModule], connectionLocation: Seq[BaseModule], up: Boolean): (A, Seq[ir.Block]) = {
+      println(path)
+      path.zip(connectionLocation).foldLeft((source, Seq.empty[ir.Block])) {
+        case ((rhs, blocks), (module, _)) if ((up || isDriveDone(rhs)) && module == path(0) && isPort(rhs)) => {
+          (rhs, blocks)
         }
-        case (rhs, (module, conLoc)) if (module.isFullyClosed) => boringError(module); DontCare.asInstanceOf[A]
-        case (rhs, (module, conLoc)) =>
+        case ((rhs, blocks), (module, conLoc)) if (module.isFullyClosed) => boringError(module); (DontCare.asInstanceOf[A], blocks)
+        case ((rhs, blocks), (module, conLoc)) =>
           skipPrefix { // so `lcaSource` isn't in the name of the secret port
             if (!up && createProbe.nonEmpty && createProbe.get.writable) {
               Builder.error("Cannot drill writable probes upwards.")
@@ -300,11 +301,29 @@ object BoringUtils {
             // Fallback behavior is append to body in specified `conLoc` module.
             val block = containingBlockOpt.getOrElse(module.getBody.get)
 
+            // def getLayerOfBlock(block: ir.Block): Option[layer.Layer] = block.parent match {
+            //   case ir.HasBlocks.Module => None
+            //   case tracks: ir.HasBlocks.TracksContainingBlock => tracks match {
+            //     case layerBlock: ir.LayerBlock => Some(layerBlock.layer)
+            //     case _ => getLayerOfBlock(tracks.containingBlock)
+            //   }
+            // }
+
+            // DataMirror.getLayerColor(source).foreach { case layer =>
+            //   getLayerOfBlock(block) match {
+            //     case None => Builder.error(s"Cannot bore from '$source' through '${module.name}' because the location of the U-turn connection is not under a layer, but the source is colored with layer '${layer}'")
+            //     case Some(ambientLayer) => ambientLayer.canWriteTo(layer) match {
+            //       case false =>
+            //       case true => Builder.error("Illegal bore")
+            //     }
+            //   }
+            // }
+
             val (dst, src) = if (isDrive) (rhs, bore) else (bore, rhs)
             conLoc.asInstanceOf[RawModule].withRegion(block) {
               conLoc.asInstanceOf[RawModule].secretConnection(dst, src)
             }
-            bore
+            (bore, (block +: blocks))
           }
       }
     }
@@ -336,8 +355,16 @@ object BoringUtils {
       Builder.error(s"Cannot bore from $source to ${thisModule.name}, as they do not share a least common ancestor")
     }
     val (upPath, downPath) = lcaResult.get
-    val lcaSource = drill(source, upPath.dropRight(1), upPath.dropRight(1), up = !isDrive)
-    val sink = drill(lcaSource, downPath.reverse.tail, downPath.reverse, up = isDrive)
+
+    // Reject situations where the LCA is _not_ the current
+    // if (downPath.length > 1 && DataMirror.getLayerColor(source).nonEmpty) {
+    //   Builder.error(
+    //     s"""Cannot bore from layer-colored source '${source}' to non-ancestor module '${thisModule.name}'.  This is only legal for colorless sources.  Consider moving the bore into the lowest common ancestor module '${downPath.last.name}' or removing the layer coloring of the source."""
+    //   )
+    // }
+
+    val (lcaSource, _) = drill(source, upPath.dropRight(1), upPath.dropRight(1), up = !isDrive)
+    val (sink, blocks) = drill(lcaSource, downPath.reverse.tail, downPath.reverse, up = isDrive)
 
     if (
       createProbe.nonEmpty || DataMirror.hasProbeTypeModifier(purePortTypeBase) ||
@@ -345,6 +372,10 @@ object BoringUtils {
     ) {
       sink
     } else {
+      val ambientLayers = Builder.layerStack.toSet ++ Builder.enabledLayers
+      println(Builder.currentBlock.get +: blocks)
+      assert(false)
+
       // Creating a wire to assign the result to.  We will return this.
       val bore = Wire(purePortTypeBase)
       if (isDrive) {

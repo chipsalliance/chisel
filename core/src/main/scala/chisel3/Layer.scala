@@ -389,7 +389,7 @@ object layer {
     def createLayers(layers: List[Layer])(thunk: => A): A = layers match {
       case Nil => thunk
       case head :: tail =>
-        layerBlock = Builder.pushCommand(new LayerBlock(sourceInfo, head))
+        layerBlock = Builder.pushCommand(new LayerBlock(sourceInfo, head, Builder.currentBlock.get))
         Builder.layerStack = head :: Builder.layerStack
         val result = Builder.forcedUserModule.withRegion(layerBlock.region)(createLayers(tail)(thunk))
         Builder.layerStack = Builder.layerStack.tail

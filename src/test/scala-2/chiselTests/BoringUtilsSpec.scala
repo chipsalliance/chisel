@@ -231,6 +231,7 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
     }
 
     val firrtl = circt.stage.ChiselStage.emitCHIRRTL(new Foo)
+    println(firrtl)
     firrtl should include("input b_bore : UInt<1>")
   }
 
@@ -563,6 +564,34 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
            |CHECK:         propassign a_bore, bar.a_bore
            |""".stripMargin
       )
+  }
+
+  it should "provide a good error message if Boring would create illegal layer-colored probe reads" in {
+    class Bar extends RawModule {
+      val a = IO(Output(Probe(Bool(), layers.Verification)))
+
+      layer.block(layers.Verification) {
+        val b = dontTouch(WireInit(true.B))
+        define(a, ProbeValue(b))
+      }
+    }
+
+    class Baz(bar: Bar) extends RawModule {
+      layer.block(layers.Verification) {
+        dontTouch(WireInit(BoringUtils.tapAndRead(bar.a)))
+      }
+    }
+
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+      Module(new Baz(bar))
+    }
+
+    // intercept[ChiselException] {
+      ChiselStage.emitSystemVerilog(new Foo, args = Array("--throw-on-first-error"))
+    // }.getMessage should include(
+    //   "Cannot bore from layer-colored source 'Bar.a: IO[Probe[Verification]<Bool>]' to non-ancestor module 'Baz'."
+    // )
   }
 
   behavior.of("BoringUtils.drive")
