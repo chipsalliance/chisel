@@ -567,4 +567,33 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
   }
 
+  describe("Specific ChiselSim issues") {
+
+    it("should not hang like in #5128") {
+      class Incrementer extends Module {
+        val in = IO(Input(UInt(8.W)))
+        val sel = IO(Input(Bool()))
+        val out = IO(Output(UInt(9.W)))
+        out := Mux(sel, in +& 1.U, in)
+      }
+
+      def randomIncrementerTest(
+        numberOfTests: Int
+      ): Unit = {
+        simulate(new Incrementer) { dut =>
+          for (i <- 1 to numberOfTests) {
+            dut.in.poke(1)
+            dut.sel.poke(1)
+            dut.out.expect(2)
+            dut.sel.poke(0)
+            dut.out.expect(1)
+          }
+        }
+      }
+
+      randomIncrementerTest(3000) // more than 2802 to trigger the issue
+    }
+
+  }
+
 }
