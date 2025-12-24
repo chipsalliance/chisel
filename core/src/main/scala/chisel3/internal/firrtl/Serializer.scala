@@ -230,12 +230,12 @@ private[chisel3] object Serializer {
         b ++= ", "; b ++= ruw.toString
       }
       serialize(e.sourceInfo)
-    case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames) =>
+    case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames, readLatency, writeLatency) =>
       b ++= "mem "; b ++= legalize(e.name); b ++= " :"; serialize(e.sourceInfo); newLineAndIndent(1)
       b ++= "data-type => "; serializeType(t, info, typeAliases); newLineAndIndent(1)
       b ++= "depth => "; b ++= size.toString; newLineAndIndent(1)
-      b ++= "read-latency => 1"; newLineAndIndent(1)
-      b ++= "write-latency => 1"; newLineAndIndent(1)
+      b ++= "read-latency => "; b ++= readLatency.toString; newLineAndIndent(1)
+      b ++= "write-latency => "; b ++= writeLatency.toString; newLineAndIndent(1)
       readPortNames.foreach { r => b ++= "reader => "; b ++= legalize(r); newLineAndIndent(1) }
       writePortNames.foreach { w => b ++= "writer => "; b ++= legalize(w); newLineAndIndent(1) }
       readwritePortNames.foreach { r => b ++= "readwriter => "; b ++= legalize(r); newLineAndIndent(1) }

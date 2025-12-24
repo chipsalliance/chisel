@@ -350,6 +350,8 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
       None,
       None,
       sourceInfo
@@ -389,6 +391,8 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
       Some(memoryFile),
       None,
       sourceInfo
@@ -425,6 +429,8 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
       None,
       None,
       sourceInfo
@@ -462,6 +468,8 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
       Some(memoryFile),
       None,
       sourceInfo
@@ -499,6 +507,8 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
       None,
       Some(evidence),
       sourceInfo
@@ -539,6 +549,8 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
       Some(memoryFile),
       Some(evidence),
       sourceInfo
@@ -576,6 +588,8 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
       None,
       Some(evidence),
       sourceInfo
@@ -614,6 +628,8 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
       Some(memoryFile),
       Some(evidence),
       sourceInfo
@@ -730,10 +746,16 @@ object SRAM {
     readPortClocks:      Seq[Clock],
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
+    readLatency:         Int,
+    writeLatency:        Int,
     memoryFile:          Option[MemoryFile],
     evidenceOpt:         Option[HasVecDataType[T]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
+    // Validate latency parameters
+    require(readLatency >= 1, s"readLatency must be >= 1, got $readLatency")
+    require(writeLatency >= 1, s"writeLatency must be >= 1, got $writeLatency")
+
     if (Builder.useSRAMBlackbox)
       return memInterface_blackbox_impl(
         size,
@@ -811,7 +833,9 @@ object SRAM {
         size,
         firrtlReadPortNames,
         firrtlWritePortNames,
-        firrtlReadwritePortNames
+        firrtlReadwritePortNames,
+        readLatency,
+        writeLatency
       )
     )
 
