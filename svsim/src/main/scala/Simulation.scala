@@ -244,8 +244,8 @@ object Simulation {
     }
 
     private[Simulation] def expectNextMessage(f: PartialFunction[Simulation.Message, Unit]) = {
-      // If expectations queue are more than 1000 deep, we force processing to avoid deadlock
-      // see: https://github.com/chipsalliance/chisel/issues/5128
+      // If expectations queue are more than 1000 deep, we force processing to avoid deadlock.
+      // See: https://github.com/chipsalliance/chisel/issues/5128
       if (conservativeCommandResolution || expectations.size > 1000) {
         processNextMessage(f)
       } else {
