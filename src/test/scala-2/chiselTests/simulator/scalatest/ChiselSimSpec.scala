@@ -595,9 +595,12 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
 
       implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-      Await.result(Future {
-        randomIncrementerTest(3000) // more than 2802 to trigger the issue
-      }, 10.seconds)
+      Await.result(
+        Future {
+          randomIncrementerTest(3000) // more than 2802 to trigger the issue
+        },
+        10.seconds
+      )
     }
 
   }
