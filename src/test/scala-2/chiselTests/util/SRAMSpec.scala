@@ -250,6 +250,59 @@ class SRAMSpec extends AnyFlatSpec with Matchers with FileCheck {
     chirrtl shouldNot include("propassign")
   }
 
+  it should "support readLatency > 1 and writeLatency > 1" in {
+    class Top extends Module {
+      val sram = SRAM(
+        size = 32,
+        tpe = UInt(8.W),
+        numReadPorts = 1,
+        numWritePorts = 1,
+        numReadwritePorts = 0,
+        readLatency = 2,
+        writeLatency = 3
+      )
+    }
+    val chirrtl = emitCHIRRTL(new Top)
+    chirrtl should include("read-latency => 2")
+    chirrtl should include("write-latency => 3")
+  }
+
+  it should "throw an exception when readLatency < 1" in {
+    class Top extends Module {
+      val sram = SRAM(
+        size = 32,
+        tpe = UInt(8.W),
+        numReadPorts = 1,
+        numWritePorts = 1,
+        numReadwritePorts = 0,
+        readLatency = 0,
+        writeLatency = 1
+      )
+    }
+    val exception = intercept[IllegalArgumentException] {
+      emitCHIRRTL(new Top)
+    }
+    exception.getMessage should include("readLatency must be >= 1")
+  }
+
+  it should "throw an exception when writeLatency < 1" in {
+    class Top extends Module {
+      val sram = SRAM(
+        size = 32,
+        tpe = UInt(8.W),
+        numReadPorts = 1,
+        numWritePorts = 1,
+        numReadwritePorts = 0,
+        readLatency = 1,
+        writeLatency = 0
+      )
+    }
+    val exception = intercept[IllegalArgumentException] {
+      emitCHIRRTL(new Top)
+    }
+    exception.getMessage should include("writeLatency must be >= 1")
+  }
+
   it should "get emitted by SRAMBlackbox" in {
     def test(rd: Int, wr: Int, rw: Int, depth: Int, width: Int, maskGranularity: Int) = {
       class Top extends Module {
