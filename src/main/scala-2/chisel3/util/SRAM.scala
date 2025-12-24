@@ -381,8 +381,8 @@ object SRAM {
     numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    readLatency: Int,
-    writeLatency: Int
+    readLatency:       Int,
+    writeLatency:      Int
   )(
     implicit sourceInfo: SourceInfo
   ): SRAMInterface[T] = {
@@ -542,8 +542,8 @@ object SRAM {
     readPortClocks:      Seq[Clock],
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
-    readLatency: Int,
-    writeLatency: Int,
+    readLatency:         Int,
+    writeLatency:        Int,
     memoryFile:          MemoryFile
   )(
     implicit sourceInfo: SourceInfo
@@ -624,8 +624,8 @@ object SRAM {
     numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    readLatency: Int,
-    writeLatency: Int
+    readLatency:       Int,
+    writeLatency:      Int
   )(
     implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
@@ -711,8 +711,8 @@ object SRAM {
     numReadPorts:      Int,
     numWritePorts:     Int,
     numReadwritePorts: Int,
-    readLatency: Int,
-    writeLatency: Int,
+    readLatency:       Int,
+    writeLatency:      Int,
     memoryFile:        MemoryFile
   )(
     implicit evidence: HasVecDataType[T],
@@ -794,8 +794,8 @@ object SRAM {
     readPortClocks:      Seq[Clock],
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
-    readLatency: Int,
-    writeLatency: Int
+    readLatency:         Int,
+    writeLatency:        Int
   )(
     implicit evidence: HasVecDataType[T],
     sourceInfo:        SourceInfo
@@ -877,8 +877,8 @@ object SRAM {
     readPortClocks:      Seq[Clock],
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
-    readLatency: Int,
-    writeLatency: Int,
+    readLatency:         Int,
+    writeLatency:        Int,
     memoryFile:          MemoryFile
   )(
     implicit evidence: HasVecDataType[T],

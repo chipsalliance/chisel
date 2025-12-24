@@ -154,7 +154,17 @@ private[chisel3] object Converter {
       firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, false)
     case e @ DefSeqMemory(info, id, t, size, ruw) =>
       firrtl.CDefMemory(convert(info), e.name, extractType(t, info, typeAliases), size, true, ruw)
-    case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames, readLatency, writeLatency) =>
+    case e @ FirrtlMemory(
+          info,
+          id,
+          t,
+          size,
+          readPortNames,
+          writePortNames,
+          readwritePortNames,
+          readLatency,
+          writeLatency
+        ) =>
       fir.DefMemory(
         convert(info),
         e.name,

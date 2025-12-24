@@ -230,7 +230,17 @@ private[chisel3] object Serializer {
         b ++= ", "; b ++= ruw.toString
       }
       serialize(e.sourceInfo)
-    case e @ FirrtlMemory(info, id, t, size, readPortNames, writePortNames, readwritePortNames, readLatency, writeLatency) =>
+    case e @ FirrtlMemory(
+          info,
+          id,
+          t,
+          size,
+          readPortNames,
+          writePortNames,
+          readwritePortNames,
+          readLatency,
+          writeLatency
+        ) =>
       b ++= "mem "; b ++= legalize(e.name); b ++= " :"; serialize(e.sourceInfo); newLineAndIndent(1)
       b ++= "data-type => "; serializeType(t, info, typeAliases); newLineAndIndent(1)
       b ++= "depth => "; b ++= size.toString; newLineAndIndent(1)
