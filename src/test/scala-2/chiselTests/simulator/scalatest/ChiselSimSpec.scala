@@ -570,6 +570,9 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
   describe("Specific ChiselSim issues") {
 
     it("should not hang like in #5128") {
+      import scala.concurrent.{Await, Future}
+      import scala.concurrent.duration.DurationInt
+
       class Incrementer extends Module {
         val in = IO(Input(UInt(8.W)))
         val sel = IO(Input(Bool()))
@@ -591,7 +594,10 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         }
       }
 
-      randomIncrementerTest(3000) // more than 2802 to trigger the issue
+      implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+      Await.result(Future {
+        randomIncrementerTest(3000) // more than 2802 to trigger the issue
+      }, 10.seconds)
     }
 
   }
