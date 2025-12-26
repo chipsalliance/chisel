@@ -326,7 +326,9 @@ private[chisel3] object ir {
     size:               BigInt,
     readPortNames:      Seq[String],
     writePortNames:     Seq[String],
-    readwritePortNames: Seq[String]
+    readwritePortNames: Seq[String],
+    readLatency:        Int,
+    writeLatency:       Int
   ) extends Definition
 
   case class DefMemPort[T <: Data](
