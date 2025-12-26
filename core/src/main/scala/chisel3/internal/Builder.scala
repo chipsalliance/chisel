@@ -1085,8 +1085,14 @@ private[chisel3] object Builder extends LazyLogging {
         */
       def foldLayers(l: layer.Layer): Layer = {
         val children = layerAdjacencyList(l)
+        def path2str(path: java.nio.file.Path): String = {
+          System.getProperty("os.name").toLowerCase match {
+            case os if os.contains("windows") => path.toString.replace("\\", "\\\\")
+            case _                            => path.toString
+          }
+        }
         val config = l.config match {
-          case layer.LayerConfig.Extract(_) => LayerConfig.Extract(l.outputDir.map(_.toString))
+          case layer.LayerConfig.Extract(_) => LayerConfig.Extract(l.outputDir.map(path2str))
           case layer.LayerConfig.Inline     => LayerConfig.Inline
           case layer.LayerConfig.Root       => ???
         }
