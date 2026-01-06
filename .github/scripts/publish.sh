@@ -17,7 +17,7 @@ else
   BUNDLE_NAME=$(./mill show unipublish.artifactMetadata | jq -r '.group + "." + .id + "-" + .version')
   MODULES_LIST=$(jq -r 'join(",")' <<< "${MODULES}")
   ./mill mill.javalib.SonatypeCentralPublishModule/ \
-    --shouldRelease "false" \
+    --shouldRelease "true" \
     --bundleName "$BUNDLE_NAME" \
     --publishArtifacts "{${MODULES_LIST}}.publishArtifacts"
 fi

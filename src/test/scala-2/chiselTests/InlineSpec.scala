@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.dedupGroup
 import chisel3.testing.FileCheck
 import chisel3.util.experimental.{InlineInstance, InlineInstanceAllowDedup}
 import circt.stage.ChiselStage
@@ -46,6 +47,7 @@ class InlineInstanceAllowDedupSpec extends AnyFlatSpec with Matchers with FileCh
   class TopModule extends RawModule {
     val a = Module(new ModuleA)
     val b = Module(new ModuleB)
+    Seq(a, b).foreach(dedupGroup(_, "TopModule"))
   }
 
   "InlineInstanceAllowDedup" should "Inline any module that dedups with a module marked inline" in {
