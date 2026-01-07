@@ -332,7 +332,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:              BigInt,
@@ -373,7 +373,8 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:              BigInt,
@@ -415,7 +416,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:              BigInt,
@@ -455,7 +456,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:                BigInt,
@@ -493,7 +494,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:                BigInt,
@@ -534,7 +535,8 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:                BigInt,
@@ -574,7 +576,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:              BigInt,
@@ -616,7 +618,8 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:              BigInt,
@@ -659,7 +662,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:              BigInt,
@@ -703,7 +706,8 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:              BigInt,
@@ -746,7 +750,7 @@ object SRAM {
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:                BigInt,
@@ -786,7 +790,8 @@ object SRAM {
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:                BigInt,
@@ -827,7 +832,7 @@ object SRAM {
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:                BigInt,
@@ -869,7 +874,8 @@ object SRAM {
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:                BigInt,
