@@ -332,7 +332,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:              BigInt,
@@ -350,6 +350,52 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
+      None,
+      None,
+      sourceInfo
+    )
+  }
+
+  /** Generates a memory within the current module, connected to an explicit number
+    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
+    * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
+    * (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param readLatency The number of cycles >= 1 between a read request and read response (applies to all ports)
+    * @param writeLatency The number of cycles >= 1 between a write request and read response (applies to all ports)
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
+    */
+  def apply[T <: Data](
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int,
+    readLatency:       Int,
+    writeLatency:      Int
+  )(
+    implicit sourceInfo: SourceInfo
+  ): SRAMInterface[T] = {
+    val clock = Builder.forcedClock
+    memInterface_impl(
+      size,
+      tpe,
+      Seq.fill(numReadPorts)(clock),
+      Seq.fill(numWritePorts)(clock),
+      Seq.fill(numReadwritePorts)(clock),
+      readLatency,
+      writeLatency,
       None,
       None,
       sourceInfo
@@ -370,7 +416,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:              BigInt,
@@ -389,6 +435,8 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
       Some(memoryFile),
       None,
       sourceInfo
@@ -408,7 +456,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:                BigInt,
@@ -425,6 +473,8 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
       None,
       None,
       sourceInfo
@@ -444,7 +494,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def apply[T <: Data](
     size:                BigInt,
@@ -462,6 +512,52 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
+      Some(memoryFile),
+      None,
+      sourceInfo
+    )
+
+  /** Generates a memory within the current module, connected to an explicit number
+    * of read, write, and read/write ports. This SRAM abstraction has both read and write capabilities: that is,
+    * it contains at least one read accessor (a read-only or read-write port), and at least one write accessor
+    * (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param readPortClocks A sequence of clocks for each read port; and (numReadPorts + numReadwritePorts) > 0
+    * @param writePortClocks A sequence of clocks for each write port; and (numWritePorts + numReadwritePorts) > 0
+    * @param readwritePortClocks A sequence of clocks for each read-write port; and the above two conditions must hold
+    * @param readLatency The number of cycles >= 1 between a read request and read response (applies to all ports)
+    * @param writeLatency The number of cycles >= 1 between a write request and read response (applies to all ports)
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
+    */
+  def apply[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    readLatency:         Int,
+    writeLatency:        Int,
+    memoryFile:          MemoryFile
+  )(
+    implicit sourceInfo: SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(
+      size,
+      tpe,
+      readPortClocks,
+      writePortClocks,
+      readwritePortClocks,
+      readLatency,
+      writeLatency,
       Some(memoryFile),
       None,
       sourceInfo
@@ -480,7 +576,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:              BigInt,
@@ -499,6 +595,53 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
+      None,
+      Some(evidence),
+      sourceInfo
+    )
+  }
+
+  /** Generates a memory within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
+    * accessor (a read-only or read-write port), and at least one write accessor (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param readLatency The number of cycles >= 1 between a read request and read response (applies to all ports)
+    * @param writeLatency The number of cycles >= 1 between a write request and read response (applies to all ports)
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
+    */
+  def masked[T <: Data](
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int,
+    readLatency:       Int,
+    writeLatency:      Int
+  )(
+    implicit evidence: HasVecDataType[T],
+    sourceInfo:        SourceInfo
+  ): SRAMInterface[T] = {
+    val clock = Builder.forcedClock
+    memInterface_impl(
+      size,
+      tpe,
+      Seq.fill(numReadPorts)(clock),
+      Seq.fill(numWritePorts)(clock),
+      Seq.fill(numReadwritePorts)(clock),
+      readLatency,
+      writeLatency,
       None,
       Some(evidence),
       sourceInfo
@@ -519,7 +662,7 @@ object SRAM {
     *
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:              BigInt,
@@ -539,6 +682,55 @@ object SRAM {
       Seq.fill(numReadPorts)(clock),
       Seq.fill(numWritePorts)(clock),
       Seq.fill(numReadwritePorts)(clock),
+      1,
+      1,
+      Some(memoryFile),
+      Some(evidence),
+      sourceInfo
+    )
+  }
+
+  /** Generates a memory within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * This SRAM abstraction has both read and write capabilities: that is, it contains at least one read
+    * accessor (a read-only or read-write port), and at least one write accessor (a write-only or read-write port).
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param numReadPorts The number of desired read ports >= 0, and (numReadPorts + numReadwritePorts) > 0
+    * @param numWritePorts The number of desired write ports >= 0, and (numWritePorts + numReadwritePorts) > 0
+    * @param numReadwritePorts The number of desired read/write ports >= 0, and the above two conditions must hold
+    * @param readLatency The number of cycles >= 1 between a read request and read response (applies to all ports)
+    * @param writeLatency The number of cycles >= 1 between a write request and read response (applies to all ports)
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
+    */
+  def masked[T <: Data](
+    size:              BigInt,
+    tpe:               T,
+    numReadPorts:      Int,
+    numWritePorts:     Int,
+    numReadwritePorts: Int,
+    readLatency:       Int,
+    writeLatency:      Int,
+    memoryFile:        MemoryFile
+  )(
+    implicit evidence: HasVecDataType[T],
+    sourceInfo:        SourceInfo
+  ): SRAMInterface[T] = {
+    val clock = Builder.forcedClock
+    memInterface_impl(
+      size,
+      tpe,
+      Seq.fill(numReadPorts)(clock),
+      Seq.fill(numWritePorts)(clock),
+      Seq.fill(numReadwritePorts)(clock),
+      readLatency,
+      writeLatency,
       Some(memoryFile),
       Some(evidence),
       sourceInfo
@@ -558,7 +750,7 @@ object SRAM {
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:                BigInt,
@@ -576,6 +768,51 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
+      None,
+      Some(evidence),
+      sourceInfo
+    )
+
+  /** Generates a memory within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * Each port is clocked with its own explicit `Clock`, rather than being given the implicit clock.
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param readPortClocks A sequence of clocks for each read port; and (numReadPorts + numReadwritePorts) > 0
+    * @param writePortClocks A sequence of clocks for each write port; and (numWritePorts + numReadwritePorts) > 0
+    * @param readwritePortClocks A sequence of clocks for each read-write port; and the above two conditions must hold
+    * @param readLatency The number of cycles >= 1 between a read request and read response (applies to all ports)
+    * @param writeLatency The number of cycles >= 1 between a write request and read response (applies to all ports)
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
+    */
+  def masked[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    readLatency:         Int,
+    writeLatency:        Int
+  )(
+    implicit evidence: HasVecDataType[T],
+    sourceInfo:        SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(
+      size,
+      tpe,
+      readPortClocks,
+      writePortClocks,
+      readwritePortClocks,
+      readLatency,
+      writeLatency,
       None,
       Some(evidence),
       sourceInfo
@@ -595,7 +832,7 @@ object SRAM {
     * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
     * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
     * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
-    * @note Read-only memories (R >= 1, W === 0, RW === 0) and write-only memories (R === 0, W >= 1, RW === 0) are not supported by this API, and will result in an error if declared.
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
     */
   def masked[T <: Data](
     size:                BigInt,
@@ -614,6 +851,53 @@ object SRAM {
       readPortClocks,
       writePortClocks,
       readwritePortClocks,
+      1,
+      1,
+      Some(memoryFile),
+      Some(evidence),
+      sourceInfo
+    )
+
+  /** Generates a memory within the current module, connected to an explicit number
+    * of read, write, and read/write ports, with masking capability on all write and read/write ports.
+    * Each port is clocked with its own explicit `Clock`, rather than being given the implicit clock.
+    *
+    * @param size The desired size of the inner `SyncReadMem`
+    * @tparam T The data type of the memory element
+    * @param readPortClocks A sequence of clocks for each read port; and (numReadPorts + numReadwritePorts) > 0
+    * @param writePortClocks A sequence of clocks for each write port; and (numWritePorts + numReadwritePorts) > 0
+    * @param readwritePortClocks A sequence of clocks for each read-write port; and the above two conditions must hold
+    * @param readLatency The number of cycles >= 1 between a read request and read response (applies to all ports)
+    * @param writeLatency The number of cycles >= 1 between a write request and read response (applies to all ports)
+    * @param memoryFile A memory file whose path is emitted as Verilog directives to initialize the inner `SyncReadMem`
+    *
+    * @return A new `SRAMInterface` wire containing the control signals for each instantiated port
+    * @note The size of each `Clock` sequence determines the corresponding number of read, write, and read-write ports
+    * @note This does *not* return the `SyncReadMem` itself, you must interact with it using the returned bundle
+    * @throws java.lang.IllegalArgumentException if readLatency < 1 or writeLatency < 1
+    * @throws java.lang.IllegalArgumentException if attempting to create a read-only memory (R >= 1, W === 0, RW === 0) or write-only memory (R === 0, W >= 1, RW === 0)
+    */
+  def masked[T <: Data](
+    size:                BigInt,
+    tpe:                 T,
+    readPortClocks:      Seq[Clock],
+    writePortClocks:     Seq[Clock],
+    readwritePortClocks: Seq[Clock],
+    readLatency:         Int,
+    writeLatency:        Int,
+    memoryFile:          MemoryFile
+  )(
+    implicit evidence: HasVecDataType[T],
+    sourceInfo:        SourceInfo
+  ): SRAMInterface[T] =
+    memInterface_impl(
+      size,
+      tpe,
+      readPortClocks,
+      writePortClocks,
+      readwritePortClocks,
+      readLatency,
+      writeLatency,
       Some(memoryFile),
       Some(evidence),
       sourceInfo
@@ -730,10 +1014,16 @@ object SRAM {
     readPortClocks:      Seq[Clock],
     writePortClocks:     Seq[Clock],
     readwritePortClocks: Seq[Clock],
+    readLatency:         Int,
+    writeLatency:        Int,
     memoryFile:          Option[MemoryFile],
     evidenceOpt:         Option[HasVecDataType[T]],
     sourceInfo:          SourceInfo
   ): SRAMInterface[T] = {
+    // Validate latency parameters
+    require(readLatency >= 1, s"readLatency must be >= 1, got $readLatency")
+    require(writeLatency >= 1, s"writeLatency must be >= 1, got $writeLatency")
+
     if (Builder.useSRAMBlackbox)
       return memInterface_blackbox_impl(
         size,
@@ -811,7 +1101,9 @@ object SRAM {
         size,
         firrtlReadPortNames,
         firrtlWritePortNames,
-        firrtlReadwritePortNames
+        firrtlReadwritePortNames,
+        readLatency,
+        writeLatency
       )
     )
 
