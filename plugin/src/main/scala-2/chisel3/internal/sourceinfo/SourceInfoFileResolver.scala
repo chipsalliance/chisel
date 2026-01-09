@@ -1,1 +1,1 @@
-../../../../../../../core/src/main/scala-2/chisel3/internal/SourceInfoFileResolver.scala
+../../../../../../../core/src/main/scala/chisel3/internal/SourceInfoFileResolver.scala
