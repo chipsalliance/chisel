@@ -9,6 +9,7 @@ import chisel3.stage.ChiselGeneratorAnnotation
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage, FirtoolOption}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{TargetDirAnnotation, Unserializable}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 import scala.io.Source

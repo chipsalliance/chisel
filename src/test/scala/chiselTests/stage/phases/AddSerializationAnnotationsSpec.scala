@@ -7,7 +7,7 @@ import chisel3.stage.{ChiselGeneratorAnnotation, ChiselOutputFileAnnotation, Cir
 import chisel3.stage.CircuitSerializationAnnotation._
 import chisel3.stage.phases.{AddImplicitOutputFile, AddSerializationAnnotations, Elaborate}
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation}
 import firrtl.options.Viewer.view
 import org.scalatest.flatspec.AnyFlatSpec

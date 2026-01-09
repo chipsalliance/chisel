@@ -5,6 +5,7 @@ package circtTests.stage.phases
 import firrtl.ir
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import circt.stage.phases.AddImplicitOutputFile
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
