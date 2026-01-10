@@ -24,7 +24,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * @return This $coll with the `n` most significant bits removed.
     * @group Bitwise
     */
-  def tail(n: Int)(using SourceInfo): UInt = _tailImpl(n)
+  def tail(using SourceInfo)(n: Int): UInt = _tailImpl(n)
 
   /** Head operator
     *
@@ -32,7 +32,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * @return The `n` most significant bits of this $coll
     * @group Bitwise
     */
-  def head(n: Int)(using SourceInfo): UInt = _headImpl(n)
+  def head(using SourceInfo)(n: Int): UInt = _headImpl(n)
 
   /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
@@ -40,31 +40,31 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * @return the specified bit
     */
 
-  final def extract(x: BigInt)(using SourceInfo): Bool = _extractImpl(x)
+  final def extract(using SourceInfo)(x: BigInt): Bool = _extractImpl(x)
 
   /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
     * @param x an index
     * @return the specified bit
     */
-  final def apply(x: Int)(using SourceInfo): Bool = _applyImpl(x)
+  final def apply(using SourceInfo)(x: Int): Bool = _applyImpl(x)
 
   /** Grab the bottom n bits.  Return 0.U(0.W) if n==0. */
-  final def take(n: Int)(using SourceInfo): UInt = _takeImpl(n)
+  final def take(using SourceInfo)(n: Int): UInt = _takeImpl(n)
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
     * @return the specified bit
     */
-  final def extract(x: UInt)(using SourceInfo): Bool = _extractImpl(x)
+  final def extract(using SourceInfo)(x: UInt): Bool = _extractImpl(x)
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
     *
     * @param x a hardware component whose value will be used for dynamic addressing
     * @return the specified bit
     */
-  final def apply(x: UInt)(using SourceInfo): Bool = _applyImpl(x)
+  final def apply(using SourceInfo)(x: UInt): Bool = _applyImpl(x)
 
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
     *
@@ -77,7 +77,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * @param y the low bit
     * @return a hardware component contain the requested bits
     */
-  final def apply(x: Int, y: Int)(using SourceInfo): UInt = _applyImpl(x, y)
+  final def apply(using SourceInfo)(x: Int, y: Int): UInt = _applyImpl(x, y)
 
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
   /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
@@ -91,7 +91,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * @param y the low bit
     * @return a hardware component contain the requested bits
     */
-  final def apply(x: BigInt, y: BigInt)(using SourceInfo): UInt = _applyImpl(x, y)
+  final def apply(using SourceInfo)(x: BigInt, y: BigInt): UInt = _applyImpl(x, y)
 
   /** Pad operator
     *
@@ -101,7 +101,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * @note For [[SInt]]s only, this will do sign extension.
     * @group Bitwise
     */
-  def pad(that: Int)(using SourceInfo): Bits = _padImpl(that)
+  def pad(using SourceInfo)(that: Int): Bits = _padImpl(that)
 
   /** Bitwise inversion operator
     *
@@ -117,7 +117,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * $sumWidthInt
     * @group Bitwise
     */
-  def <<(that: BigInt)(using SourceInfo): Bits = _impl_<<(that)
+  def <<(using SourceInfo)(that: BigInt): Bits = _impl_<<(that)
 
   /** Static left shift operator
     *
@@ -126,7 +126,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * $sumWidthInt
     * @group Bitwise
     */
-  def <<(that: Int)(using SourceInfo): Bits = _impl_<<(that)
+  def <<(using SourceInfo)(that: Int): Bits = _impl_<<(that)
 
   /** Dynamic left shift operator
     *
@@ -135,7 +135,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
     * @group Bitwise
     */
-  def <<(that: UInt)(using SourceInfo): Bits = _impl_<<(that)
+  def <<(using SourceInfo)(that: UInt): Bits = _impl_<<(that)
 
   /** Static right shift operator
     *
@@ -144,7 +144,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * $unchangedWidth
     * @group Bitwise
     */
-  def >>(that: BigInt)(using SourceInfo): Bits = _impl_>>(that)
+  def >>(using SourceInfo)(that: BigInt): Bits = _impl_>>(that)
 
   /** Static right shift operator
     *
@@ -153,7 +153,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * $unchangedWidth
     * @group Bitwise
     */
-  def >>(that: Int)(using SourceInfo): Bits = _impl_>>(that)
+  def >>(using SourceInfo)(that: Int): Bits = _impl_>>(that)
 
   /** Dynamic right shift operator
     *
@@ -163,7 +163,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * $unchangedWidth
     * @group Bitwise
     */
-  def >>(that: UInt)(using SourceInfo): Bits = _impl_>>(that)
+  def >>(using SourceInfo)(that: UInt): Bits = _impl_>>(that)
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   def asBools(using SourceInfo): Seq[Bool] = _asBoolsImpl
@@ -184,7 +184,7 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
     * $sumWidth
     * @group Bitwise
     */
-  def ##(that: Bits)(using SourceInfo): UInt = _impl_##(that)
+  def ##(using SourceInfo)(that: Bits): UInt = _impl_##(that)
 }
 
 private[chisel3] trait UIntIntf { self: UInt =>
@@ -323,7 +323,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
     * @group Comparison
     */
-  def =/=(that: UInt)(using SourceInfo): Bool = _impl_=/=(that)
+  def =/=(using SourceInfo)(that: UInt): Bool = _impl_=/=(that)
 
   /** Dynamic equals operator
     *
@@ -331,7 +331,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
     * @group Comparison
     */
-  def ===(that: UInt)(using SourceInfo): Bool = _impl_===(that)
+  def ===(using SourceInfo)(that: UInt): Bool = _impl_===(that)
 
   /** Unary not
     *
@@ -340,31 +340,31 @@ private[chisel3] trait UIntIntf { self: UInt =>
     */
   def unary_!(using SourceInfo): Bool = _impl_unary_!
 
-  override def <<(that: Int)(using SourceInfo):    UInt = _impl_<<(that)
-  override def <<(that: BigInt)(using SourceInfo): UInt = _impl_<<(that)
-  override def <<(that: UInt)(using SourceInfo):   UInt = _impl_<<(that)
+  override def <<(using SourceInfo)(that: Int):    UInt = _impl_<<(that)
+  override def <<(using SourceInfo)(that: BigInt): UInt = _impl_<<(that)
+  override def <<(using SourceInfo)(that: UInt):   UInt = _impl_<<(that)
 
-  override def >>(that: Int)(using SourceInfo):    UInt = _impl_>>(that)
-  override def >>(that: BigInt)(using SourceInfo): UInt = _impl_>>(that)
-  override def >>(that: UInt)(using SourceInfo):   UInt = _impl_>>(that)
+  override def >>(using SourceInfo)(that: Int):    UInt = _impl_>>(that)
+  override def >>(using SourceInfo)(that: BigInt): UInt = _impl_>>(that)
+  override def >>(using SourceInfo)(that: UInt):   UInt = _impl_>>(that)
 
   /**
     * Circular shift to the left
     * @param that number of bits to rotate
     * @return UInt of same width rotated left n bits
     */
-  def rotateLeft(n: Int)(using SourceInfo): UInt = _rotateLeftImpl(n)
+  def rotateLeft(using SourceInfo)(n: Int): UInt = _rotateLeftImpl(n)
 
-  def rotateLeft(n: UInt)(using SourceInfo): UInt = _rotateLeftImpl(n)
+  def rotateLeft(using SourceInfo)(n: UInt): UInt = _rotateLeftImpl(n)
 
   /**
     * Circular shift to the right
     * @param that number of bits to rotate
     * @return UInt of same width rotated right n bits
     */
-  def rotateRight(n: Int)(using SourceInfo): UInt = _rotateRightImpl(n)
+  def rotateRight(using SourceInfo)(n: Int): UInt = _rotateRightImpl(n)
 
-  def rotateRight(n: UInt)(using SourceInfo): UInt = _rotateRightImpl(n)
+  def rotateRight(using SourceInfo)(n: UInt): UInt = _rotateRightImpl(n)
 
   /** Conditionally set or clear a bit
     *
@@ -373,7 +373,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * @return a hrdware $coll with bit `off` set or cleared based on the value of `dat`
     * $unchangedWidth
     */
-  def bitSet(off: UInt, dat: Bool)(using SourceInfo): UInt = _bitSetImpl(off, dat)
+  def bitSet(using SourceInfo)(off: UInt, dat: Bool): UInt = _bitSetImpl(off, dat)
 
   // TODO: this eventually will be renamed as toSInt, once the existing toSInt
   // completes its deprecation phase.
@@ -423,7 +423,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $singleCycleMul
     * @group Arithmetic
     */
-  def *(that: UInt)(using SourceInfo): SInt = _impl_*(that)
+  def *(using SourceInfo)(that: UInt): SInt = _impl_*(that)
 
   /** Addition operator (expanding width)
     *
@@ -432,7 +432,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def +&(that: SInt)(using SourceInfo): SInt = _impl_+&(that)
+  def +&(using SourceInfo)(that: SInt): SInt = _impl_+&(that)
 
   /** Addition operator (constant width)
     *
@@ -441,7 +441,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $maxWidth
     * @group Arithmetic
     */
-  def +%(that: SInt)(using SourceInfo): SInt = _impl_+%(that)
+  def +%(using SourceInfo)(that: SInt): SInt = _impl_+%(that)
 
   /** Subtraction operator (increasing width)
     *
@@ -450,7 +450,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def -&(that: SInt)(using SourceInfo): SInt = _impl_-&(that)
+  def -&(using SourceInfo)(that: SInt): SInt = _impl_-&(that)
 
   /** Subtraction operator (constant width)
     *
@@ -459,7 +459,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $maxWidth
     * @group Arithmetic
     */
-  def -%(that: SInt)(using SourceInfo): SInt = _impl_-%(that)
+  def -%(using SourceInfo)(that: SInt): SInt = _impl_-%(that)
 
   /** Bitwise and operator
     *
@@ -468,7 +468,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $maxWidth
     * @group Bitwise
     */
-  def &(that: SInt)(using SourceInfo): SInt = _impl_&(that)
+  def &(using SourceInfo)(that: SInt): SInt = _impl_&(that)
 
   /** Bitwise or operator
     *
@@ -486,7 +486,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $maxWidth
     * @group Bitwise
     */
-  def ^(that: SInt)(using SourceInfo): SInt = _impl_^(that)
+  def ^(using SourceInfo)(that: SInt): SInt = _impl_^(that)
 
   override def unary_~(using SourceInfo): SInt = _impl_unary_~
 
@@ -513,13 +513,13 @@ private[chisel3] trait SIntIntf { self: SInt =>
 
   def abs: SInt = _absImpl
 
-  override def <<(that: Int)(using SourceInfo):    SInt = _impl_<<(that)
-  override def <<(that: BigInt)(using SourceInfo): SInt = _impl_<<(that)
-  override def <<(that: UInt)(using SourceInfo):   SInt = _impl_<<(that)
+  override def <<(using SourceInfo)(that: Int):    SInt = _impl_<<(that)
+  override def <<(using SourceInfo)(that: BigInt): SInt = _impl_<<(that)
+  override def <<(using SourceInfo)(that: UInt):   SInt = _impl_<<(that)
 
-  override def >>(that: Int)(using SourceInfo):    SInt = _impl_>>(that)
-  override def >>(that: BigInt)(using SourceInfo): SInt = _impl_>>(that)
-  override def >>(that: UInt)(using SourceInfo):   SInt = _impl_>>(that)
+  override def >>(using SourceInfo)(that: Int):    SInt = _impl_>>(that)
+  override def >>(using SourceInfo)(that: BigInt): SInt = _impl_>>(that)
+  override def >>(using SourceInfo)(that: UInt):   SInt = _impl_>>(that)
 
   override def asSInt(using SourceInfo): SInt = _asSIntImpl
 }
@@ -553,7 +553,7 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
     * @return the bitwise and of  this $coll and `that`
     * @group Bitwise
     */
-  def &(that: Bool)(using SourceInfo): Bool = _impl_&(that)
+  def &(using SourceInfo)(that: Bool): Bool = _impl_&(that)
 
   /** Bitwise or operator
     *
@@ -569,7 +569,7 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
     * @return the bitwise xor of this $coll and `that`
     * @group Bitwise
     */
-  def ^(that: Bool)(using SourceInfo): Bool = _impl_^(that)
+  def ^(using SourceInfo)(that: Bool): Bool = _impl_^(that)
 
   override def unary_~(using SourceInfo): Bool = _impl_unary_~
 
@@ -580,7 +580,7 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
     * @note this is equivalent to [[Bool!.|(that:chisel3\.Bool)* Bool.|)]]
     * @group Logical
     */
-  def ||(that: Bool)(using SourceInfo): Bool = _impl_||(that)
+  def ||(using SourceInfo)(that: Bool): Bool = _impl_||(that)
 
   /** Logical and operator
     *
@@ -589,7 +589,7 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
     * @note this is equivalent to [[Bool!.&(that:chisel3\.Bool)* Bool.&]]
     * @group Logical
     */
-  def &&(that: Bool)(using SourceInfo): Bool = _impl_&&(that)
+  def &&(using SourceInfo)(that: Bool): Bool = _impl_&&(that)
 
   override def asBool: Bool = _asBoolImpl
 
@@ -603,5 +603,5 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
     * @param that a boolean signal
     * @return [[!this || that]]
     */
-  def implies(that: Bool)(using SourceInfo): Bool = _impl_implies(that)
+  def implies(using SourceInfo)(that: Bool): Bool = _impl_implies(that)
 }

@@ -14,7 +14,7 @@ private[chisel3] trait DataIntf { self: Data =>
     * @note bit widths are NOT checked, may pad or drop bits from input
     * @note that should have known widths
     */
-  def asTypeOf[T <: Data](that: T)(using SourceInfo): T = _asTypeOfImpl(that)
+  def asTypeOf[T <: Data](using SourceInfo)(that: T): T = _asTypeOfImpl(that)
 
   /** Reinterpret cast to UInt.
     *

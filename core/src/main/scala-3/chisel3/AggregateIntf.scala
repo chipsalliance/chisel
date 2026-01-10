@@ -16,7 +16,7 @@ import scala.collection.mutable
 
 private[chisel3] trait VecIntf[T <: Data] { self: Vec[T] =>
 
-  def apply(p: UInt)(using SourceInfo): T = _applyImpl(p)
+  def apply(using SourceInfo)(p: UInt): T = _applyImpl(p)
 
   /** A reduce operation in a tree like structure instead of sequentially
     * @example An adder tree
@@ -35,12 +35,7 @@ private[chisel3] trait VecIntf[T <: Data] { self: Vec[T] =>
     * )
     * }}}
     */
-  def reduceTree(
-    redOp:   (T, T) => T,
-    layerOp: (T) => T = (x: T) => x
-  )(
-    using SourceInfo
-  ): T = _reduceTreeImpl(redOp, layerOp)
+  def reduceTree(using SourceInfo)(redOp: (T, T) => T, layerOp: T => T = (x: T) => x): T = _reduceTreeImpl(redOp, layerOp)
 }
 
 private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =>
@@ -54,7 +49,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * element
     * @note output elements are connected from the input elements
     */
-  def apply[T <: Data](elts: Seq[T])(using SourceInfo): Vec[T] = _applyImpl(elts)
+  def apply[T <: Data](using SourceInfo)(elts: Seq[T]): Vec[T] = _applyImpl(elts)
 
   /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
     *
@@ -64,7 +59,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * element
     * @note output elements are connected from the input elements
     */
-  def apply[T <: Data](elt0: T, elts: T*)(using SourceInfo): Vec[T] = _applyImpl(elt0, elts: _*)
+  def apply[T <: Data](using SourceInfo)(elt0: T, elts: T*): Vec[T] = _applyImpl(elt0, elts: _*)
 
   /** Creates a new [[Vec]] of length `n` composed of the results of the given
     * function applied over a range of integer values starting from 0.
@@ -74,11 +69,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * @param gen function that takes in an Int (the index) and returns a
     * [[Data]] that becomes the output element
     */
-  def tabulate[T <: Data](
-    n: Int
-  )(gen: (Int) => T)(
-    using SourceInfo
-  ): Vec[T] = _tabulateImpl(n)(gen)
+  def tabulate[T <: Data](using SourceInfo)(n: Int)(gen: Int => T): Vec[T] = _tabulateImpl(n)(gen)
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the results of the given
     * function applied over a range of integer values starting from 0.
@@ -89,12 +80,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * @param gen function that takes in an Int (the index) and returns a
     * [[Data]] that becomes the output element
     */
-  def tabulate[T <: Data](
-    n: Int,
-    m: Int
-  )(gen: (Int, Int) => T)(
-    using SourceInfo
-  ): Vec[Vec[T]] = _tabulateImpl(n, m)(gen)
+  def tabulate[T <: Data](using SourceInfo)(n: Int, m: Int)(gen: (Int, Int) => T): Vec[Vec[T]] = _tabulateImpl(n, m)(gen)
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the results of the given
     * function applied over a range of integer values starting from 0.
@@ -105,13 +91,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * @param gen function that takes in an Int (the index) and returns a
     * [[Data]] that becomes the output element
     */
-  def tabulate[T <: Data](
-    n: Int,
-    m: Int,
-    p: Int
-  )(gen: (Int, Int, Int) => T)(
-    using SourceInfo
-  ): Vec[Vec[Vec[T]]] = _tabulateImpl(n, m, p)(gen)
+  def tabulate[T <: Data](using SourceInfo)(n: Int, m: Int, p: Int)(gen: (Int, Int, Int) => T): Vec[Vec[Vec[T]]] = _tabulateImpl(n, m, p)(gen)
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
     * function applied to an element of data type T.
@@ -120,7 +100,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * @param gen function that takes in an element T and returns an output
     * element of the same type
     */
-  def fill[T <: Data](n: Int)(gen: => T)(using SourceInfo): Vec[T] = _fillImpl(n)(gen)
+  def fill[T <: Data](using SourceInfo)(n: Int)(gen: => T): Vec[T] = _fillImpl(n)(gen)
 
   /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
     * function applied to an element of data type T.
@@ -130,12 +110,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * @param gen function that takes in an element T and returns an output
     * element of the same type
     */
-  def fill[T <: Data](
-    n: Int,
-    m: Int
-  )(gen: => T)(
-    using SourceInfo
-  ): Vec[Vec[T]] = _fillImpl(n, m)(gen)
+  def fill[T <: Data](using SourceInfo)(n: Int, m: Int)(gen: => T): Vec[Vec[T]] = _fillImpl(n, m)(gen)
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the result of the given
     * function applied to an element of data type T.
@@ -146,13 +121,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * @param gen function that takes in an element T and returns an output
     * element of the same type
     */
-  def fill[T <: Data](
-    n: Int,
-    m: Int,
-    p: Int
-  )(gen: => T)(
-    using SourceInfo
-  ): Vec[Vec[Vec[T]]] = _fillImpl(n, m, p)(gen)
+  def fill[T <: Data](using SourceInfo)(n: Int, m: Int, p: Int)(gen: => T): Vec[Vec[Vec[T]]] = _fillImpl(n, m, p)(gen)
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
     * function applied to an element of data type T.
@@ -162,12 +131,7 @@ private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =
     * @param f Function that applies the element T from previous index and returns the output
     * element to the next index
     */
-  def iterate[T <: Data](
-    start: T,
-    len:   Int
-  )(f: (T) => T)(
-    using SourceInfo
-  ): Vec[T] = _iterateImpl(start, len)(f)
+  def iterate[T <: Data](using SourceInfo)(start: T, len: Int)(f: T => T): Vec[T] = _iterateImpl(start, len)(f)
 }
 
 private[chisel3] trait VecLikeImpl[T <: Data] extends SourceInfoDoc { self: VecLike[T] =>
@@ -178,28 +142,28 @@ private[chisel3] trait VecLikeImpl[T <: Data] extends SourceInfoDoc { self: VecL
 
   /** Outputs true if p outputs true for every element.
     */
-  def forall(p: T => Bool)(using SourceInfo): Bool = _forallImpl(p)
+  def forall(using SourceInfo)(p: T => Bool): Bool = _forallImpl(p)
 
   /** Outputs true if p outputs true for at least one element.
     */
-  def exists(p: T => Bool)(using SourceInfo): Bool = _existsImpl(p)
+  def exists(using SourceInfo)(p: T => Bool): Bool = _existsImpl(p)
 
   /** Outputs true if the vector contains at least one element equal to x (using
     * the === operator).
     */
-  def contains(x: T)(using SourceInfo, T <:< UInt): Bool = _containsImpl(x)
+  def contains(using SourceInfo)(x: T)(using T <:< UInt): Bool = _containsImpl(x)
 
   /** Outputs the number of elements for which p is true.
     */
-  def count(p: T => Bool)(using SourceInfo): UInt = _countImpl(p)
+  def count(using SourceInfo)(p: T => Bool): UInt = _countImpl(p)
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool)(using SourceInfo): UInt = _indexWhereImpl(p)
+  def indexWhere(using SourceInfo)(p: T => Bool): UInt = _indexWhereImpl(p)
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool)(using SourceInfo): UInt = _lastIndexWhereImpl(p)
+  def lastIndexWhere(using SourceInfo)(p: T => Bool): UInt = _lastIndexWhereImpl(p)
 
   /** Outputs the index of the element for which p outputs true, assuming that
     * the there is exactly one such element.
@@ -211,5 +175,5 @@ private[chisel3] trait VecLikeImpl[T <: Data] extends SourceInfoDoc { self: VecL
     * true is NOT checked (useful in cases where the condition doesn't always
     * hold, but the results are not used in those cases)
     */
-  def onlyIndexWhere(p: T => Bool)(using SourceInfo): UInt = _onlyIndexWhereImpl(p)
+  def onlyIndexWhere(using SourceInfo)(p: T => Bool): UInt = _onlyIndexWhereImpl(p)
 }

@@ -6,12 +6,12 @@ import chisel3.experimental.SourceInfo
 
 private[chisel3] trait EnumTypeIntf { self: EnumType =>
 
-  final def ===(that: EnumType)(using SourceInfo): Bool = _impl_===(that)
-  final def =/=(that: EnumType)(using SourceInfo): Bool = _impl_=/=(that)
-  final def <(that:   EnumType)(using SourceInfo): Bool = _impl_<(that)
-  final def <=(that:  EnumType)(using SourceInfo): Bool = _impl_>(that)
-  final def >(that:   EnumType)(using SourceInfo): Bool = _impl_<=(that)
-  final def >=(that:  EnumType)(using SourceInfo): Bool = _impl_>=(that)
+  final def ===(using SourceInfo)(that: EnumType): Bool = _impl_===(that)
+  final def =/=(using SourceInfo)(that: EnumType): Bool = _impl_=/=(that)
+  final def <(using SourceInfo)(that: EnumType): Bool = _impl_<(that)
+  final def <=(using SourceInfo)(that: EnumType): Bool = _impl_>(that)
+  final def >(using SourceInfo)(that: EnumType): Bool = _impl_<=(that)
+  final def >=(using SourceInfo)(that: EnumType): Bool = _impl_>=(that)
 }
 
 private[chisel3] trait ChiselEnumIntf { self: ChiselEnum =>

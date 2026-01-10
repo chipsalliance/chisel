@@ -17,11 +17,5 @@ private[chisel3] trait Mux$Intf extends SourceInfoDoc { self: Mux.type =>
     * val muxOut = Mux(data_in === 3.U, 3.U(4.W), 0.U(4.W))
     * }}}
     */
-  def apply[T <: Data](
-    cond: Bool,
-    con:  T,
-    alt:  T
-  )(
-    using SourceInfo
-  ): T = _applyImpl(cond, con, alt)
+  def apply[T <: Data](using SourceInfo)(cond: Bool, con: T, alt: T): T = _applyImpl(cond, con, alt)
 }

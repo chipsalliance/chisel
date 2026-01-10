@@ -12,19 +12,14 @@ private[chisel3] trait Mem$Intf { self: Mem.type =>
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](
-    size: BigInt,
-    t:    T
-  )(
-    using SourceInfo
-  ): Mem[T] = _applyImpl(size, t)
+  def apply[T <: Data](using SourceInfo)(size: BigInt, t: T): Mem[T] = _applyImpl(size, t)
 
   /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](size: Int, t: T)(using SourceInfo): Mem[T] = _applyImpl(size, t)
+  def apply[T <: Data](using SourceInfo)(size: Int, t: T): Mem[T] = _applyImpl(size, t)
 }
 
 private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemBase[T] =>
@@ -34,38 +29,38 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(idx: BigInt)(using SourceInfo): T = _applyImpl(idx)
+  def apply(using SourceInfo)(idx: BigInt): T = _applyImpl(idx)
 
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(idx: Int)(using SourceInfo): T = _applyImpl(idx)
+  def apply(using SourceInfo)(idx: Int): T = _applyImpl(idx)
 
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
     */
-  def apply(idx: UInt)(using SourceInfo): T = _applyImpl(idx)
+  def apply(using SourceInfo)(idx: UInt): T = _applyImpl(idx)
 
-  def apply(idx: UInt, clock: Clock)(using SourceInfo): T = _applyImpl(idx, clock)
+  def apply(using SourceInfo)(idx: UInt, clock: Clock): T = _applyImpl(idx, clock)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def read(idx: UInt)(using SourceInfo): T = _readImpl(idx)
+  def read(using SourceInfo)(idx: UInt): T = _readImpl(idx)
 
   /** Creates a read accessor into the memory with dynamic addressing.
     * Takes a clock parameter to bind a clock that may be different
     * from the implicit clock. See the class documentation of the memory
     * for more detailed information.
     */
-  def read(idx: UInt, clock: Clock)(using SourceInfo): T = _readImpl(idx, clock)
+  def read(using SourceInfo)(idx: UInt, clock: Clock): T = _readImpl(idx, clock)
 
   /** Creates a write accessor into the memory.
     *
     * @param idx memory element index to write into
     * @param data new data to write
     */
-  def write(idx: UInt, data: T)(using SourceInfo): Unit = _writeImpl(idx, data)
+  def write(using SourceInfo)(idx: UInt, data: T): Unit = _writeImpl(idx, data)
 
   /** Creates a write accessor into the memory with a clock
     * that may be different from the implicit clock.
@@ -74,7 +69,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     * @param data new data to write
     * @param clock clock to bind to this accessor
     */
-  def write(idx: UInt, data: T, clock: Clock)(using SourceInfo): Unit = _writeImpl(idx, data, clock)
+  def write(using SourceInfo)(idx: UInt, data: T, clock: Clock): Unit = _writeImpl(idx, data, clock)
 
   /** Creates a masked write accessor into the memory.
     *
@@ -85,14 +80,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def write(
-    idx:  UInt,
-    data: T,
-    mask: Seq[Bool]
-  )(
-    using HasVecDataType[T],
-    SourceInfo
-  ): Unit = _writeImpl(idx, data, mask)
+  def write(using SourceInfo)(idx: UInt, data: T, mask: Seq[Bool])(using HasVecDataType[T]): Unit = _writeImpl(idx, data, mask)
 
   /** Creates a masked write accessor into the memory with a clock
     * that may be different from the implicit clock.
@@ -105,15 +93,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def write(
-    idx:   UInt,
-    data:  T,
-    mask:  Seq[Bool],
-    clock: Clock
-  )(
-    using HasVecDataType[T],
-    SourceInfo
-  ): Unit = _writeImpl(idx, data, mask, clock)
+  def write(using SourceInfo)(idx: UInt, data: T, mask: Seq[Bool], clock: Clock)(using HasVecDataType[T]): Unit = _writeImpl(idx, data, mask, clock)
 }
 
 private[chisel3] trait SyncReadMem$Intf { self: SyncReadMem.type =>
@@ -123,29 +103,18 @@ private[chisel3] trait SyncReadMem$Intf { self: SyncReadMem.type =>
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](
-    size: Int,
-    t:    T
-  )(
-    using SourceInfo
-  ): SyncReadMem[T] = _applyImpl(size, t)
+  def apply[T <: Data](using SourceInfo)(size: Int, t: T): SyncReadMem[T] = _applyImpl(size, t)
 
-  def apply[T <: Data](
-    size: BigInt,
-    t:    T,
-    ruw:  ReadUnderWrite = Undefined
-  )(
-    using SourceInfo
-  ): SyncReadMem[T] = _applyImpl(size, t, ruw)
+  def apply[T <: Data](using SourceInfo)(size: BigInt, t: T, ruw: ReadUnderWrite = Undefined): SyncReadMem[T] = _applyImpl(size, t, ruw)
 }
 
 private[chisel3] trait SyncReadMemIntf[T <: Data] { self: SyncReadMem[T] =>
 
-  override def read(idx: UInt)(using SourceInfo): T = _readImpl(idx)
+  override def read(using SourceInfo)(idx: UInt): T = _readImpl(idx)
 
-  def read(idx: UInt, en: Bool)(using SourceInfo): T = _readImpl(idx, en)
+  def read(using SourceInfo)(idx: UInt, en: Bool): T = _readImpl(idx, en)
 
-  def read(idx: UInt, en: Bool, clock: Clock)(using SourceInfo): T = _readImpl(idx, en, clock)
+  def read(using SourceInfo)(idx: UInt, en: Bool, clock: Clock): T = _readImpl(idx, en, clock)
 
   /** Generates an explicit read-write port for this SyncReadMem. Note that this does not infer
     * port directionality based on connection semantics and the `when` context unlike SyncReadMem.apply(),
@@ -179,7 +148,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] { self: SyncReadMem[T] =>
     *
     * }}}
     */
-  def readWrite(idx: UInt, writeData: T, en: Bool, isWrite: Bool)(using SourceInfo): T =
+  def readWrite(using SourceInfo)(idx: UInt, writeData: T, en: Bool, isWrite: Bool): T =
     _readWriteImpl(idx, writeData, en, isWrite)
 
   /** Generates an explicit read-write port for this SyncReadMem, using a clock that may be
@@ -195,15 +164,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] { self: SyncReadMem[T] =>
     * @return The read data of the memory, which gives the value at idx when enable is true and isWrite is false,
     * or an undefined value otherwise, on the following clock cycle.
     */
-  def readWrite(
-    idx:     UInt,
-    data:    T,
-    en:      Bool,
-    isWrite: Bool,
-    clock:   Clock
-  )(
-    using SourceInfo
-  ): T = _readWriteImpl(idx, data, en, isWrite, clock)
+  def readWrite(using SourceInfo)(idx: UInt, data: T, en: Bool, isWrite: Bool, clock: Clock): T = _readWriteImpl(idx, data, en, isWrite, clock)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
     * performing partial writes to a Vec element.
@@ -240,16 +201,7 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] { self: SyncReadMem[T] =>
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def readWrite(
-    idx:       UInt,
-    writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool
-  )(
-    using HasVecDataType[T],
-    SourceInfo
-  ): T = _readWriteImpl(idx, writeData, mask, en, isWrite)
+  def readWrite(using SourceInfo)(idx: UInt, writeData: T, mask: Seq[Bool], en: Bool, isWrite: Bool)(using HasVecDataType[T]): T = _readWriteImpl(idx, writeData, mask, en, isWrite)
 
   /** Generates an explicit read-write port for this SyncReadMem, with a bytemask for
     * performing partial writes to a Vec element and a clock that may be different from
@@ -269,15 +221,5 @@ private[chisel3] trait SyncReadMemIntf[T <: Data] { self: SyncReadMem[T] =>
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def readWrite(
-    idx:       UInt,
-    writeData: T,
-    mask:      Seq[Bool],
-    en:        Bool,
-    isWrite:   Bool,
-    clock:     Clock
-  )(
-    using HasVecDataType[T],
-    SourceInfo
-  ): T = _readWriteImpl(idx, writeData, mask, en, isWrite, clock)
+  def readWrite(using SourceInfo)(idx: UInt, writeData: T, mask: Seq[Bool], en: Bool, isWrite: Bool, clock: Clock)(using HasVecDataType[T]): T = _readWriteImpl(idx, writeData, mask, en, isWrite, clock)
 }

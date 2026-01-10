@@ -14,14 +14,7 @@ object VerifStmtMacrosCompat {
 
   type SourceLineInfo = (String, Int)
 
-  def formatFailureMessage(
-    kind:     String,
-    lineInfo: SourceLineInfo,
-    cond:     Bool,
-    message:  Option[Printable]
-  )(
-    using SourceInfo
-  ): Printable = {
+  def formatFailureMessage(using SourceInfo)(kind: String, lineInfo: SourceLineInfo, cond: Bool, message: Option[Printable]): Printable = {
     val (filename, line) = lineInfo
     val lineMsg = s"$filename:$line".replaceAll("%", "%%")
     message match {

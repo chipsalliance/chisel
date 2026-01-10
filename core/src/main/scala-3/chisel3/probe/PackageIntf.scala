@@ -12,4 +12,4 @@ private[chisel3] trait Probe$Intf
   *
   * @param source probe whose value is getting accessed
   */
-def read[T <: Data](source: T)(using SourceInfo): T = _readImpl(source)
+def read[T <: Data](using SourceInfo)(source: T): T = _readImpl(source)
