@@ -58,6 +58,8 @@ class SourceLocatorSpec extends AnyFunSpec with Matchers {
   import SourceLocatorSpec._
 
   def isScala2 = chisel3.BuildInfo.scalaVersion.startsWith("2.")
+  // Scala 3 has different column numbers, make it simple to express in tests
+  def col(scala2: Int, scala3: Int): Int = if (isScala2) scala2 else scala3
 
   describe("(0) Relative source paths") {
     it("(0.a): are emitted by default relative to `user-dir`") {
@@ -167,36 +169,21 @@ class SourceLocatorSpec extends AnyFunSpec with Matchers {
     it("(3.a) Should have click-to-source functionality") {
       // This click-to-source works in VSCode terminal, uncomment to manually test
       // println(s"Try clicking to this source locator! ${locator.makeMessage()}")
-      if (isScala2) {
-        locator.makeMessage() should include(s"$thisFile:18:28")
-      } else {
-        locator.makeMessage() should include(s"$thisFile:18:16")
-      }
+      locator.makeMessage() should include(s"$thisFile:18:${col(28, 16)}")
     }
   }
 
   describe("(4) SourceLocator simple definitions") {
     it("(4.a): Simple definitions should have a source locator") {
       val chirrtl = emitCHIRRTL(new SimpleDefinitions)
-      if (isScala2) {
-        chirrtl should include(s"wire wire : UInt<8> @[$thisFile 46:20]")
-        chirrtl should include(s"reg reg : UInt<8>, clock @[$thisFile 47:18]")
-        chirrtl should include(s"regreset regInit : UInt<8>, clock, reset, UInt<8>(0h0) @[$thisFile 48:26]")
-        chirrtl should include(s"reg regNext : UInt, clock @[$thisFile 49:26]")
-        chirrtl should include(s"reg regEnable : UInt<8>, clock @[$thisFile 50:30]")
-        chirrtl should include(s"input port : UInt<1> @[$thisFile 51:18]")
-        chirrtl should include(s"inst inst of RawModuleChild @[$thisFile 52:22]")
-        chirrtl should include(s"cmem mem : UInt<8>[1024] @[$thisFile 53:18]")
-      } else {
-        chirrtl should include(s"wire wire : UInt<8> @[$thisFile 46:30]")
-        chirrtl should include(s"reg reg : UInt<8>, clock @[$thisFile 47:28]")
-        chirrtl should include(s"regreset regInit : UInt<8>, clock, reset, UInt<8>(0h0) @[$thisFile 48:35]")
-        chirrtl should include(s"reg regNext : UInt, clock @[$thisFile 49:35]")
-        chirrtl should include(s"reg regEnable : UInt<8>, clock @[$thisFile 50:47]")
-        chirrtl should include(s"input port : UInt<1> @[$thisFile 51:32]")
-        chirrtl should include(s"inst inst of RawModuleChild @[core/src/main/scala-3/chisel3/ModuleIntf.scala 18:58]")
-        chirrtl should include(s"cmem mem : UInt<8>[1024] @[$thisFile 53:34]")
-      }
+      chirrtl should include(s"wire wire : UInt<8> @[$thisFile 46:${col(20, 30)}]")
+      chirrtl should include(s"reg reg : UInt<8>, clock @[$thisFile 47:${col(18, 28)}]")
+      chirrtl should include(s"regreset regInit : UInt<8>, clock, reset, UInt<8>(0h0) @[$thisFile 48:${col(26, 35)}]")
+      chirrtl should include(s"reg regNext : UInt, clock @[$thisFile 49:${col(26, 35)}]")
+      chirrtl should include(s"reg regEnable : UInt<8>, clock @[$thisFile 50:${col(30, 47)}]")
+      chirrtl should include(s"input port : UInt<1> @[$thisFile 51:${col(18, 32)}]")
+      chirrtl should include(s"inst inst of RawModuleChild @[$thisFile 52:${col(22, 41)}]")
+      chirrtl should include(s"cmem mem : UInt<8>[1024] @[$thisFile 53:${col(18, 34)}]")
     }
   }
 }
