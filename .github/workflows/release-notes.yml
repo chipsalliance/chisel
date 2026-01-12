@@ -31,6 +31,8 @@ jobs:
         with:
           configuration: .github/workflows/config/release-notes.json
           failOnError: true
+          # Works well with squash-and-merge.
+          fetchViaCommits: true
           # Amazingly, on release where the inputs are empty, this just does the right thing
           # The "toTag" is the released tag, and the "fromTag" is the previous tag according to SemVer
           fromTag: ${{ github.event.inputs.fromTag }}
