@@ -475,10 +475,10 @@ final class Workspace(
       l("clean:")
       // Add check if OS is windows, since the command syntax is different
       if (System.getProperty("os.name").toLowerCase.contains("win")) {
-        l("\tfor /f \"delims=\" %i in ('dir /b /a-d ^| findstr /v Makefile ^| findstr /v execution-script.txt') do del \"%i\"")
+        l("\tfor /f \"delims=\" %i in ('dir /b /a-d ^| findstr /v Makefile ^| findstr /v build.ninja ^| findstr /v execution-script.txt ^| findstr /v sourceFiles.F') do del \"%i\"")
         l("\tfor /d %i in (*) do rmdir /s /q \"%i\"")
       } else {
-        l("\tls . | grep -v Makefile | grep -v execution-script.txt | grep -v sourceFiles.F | xargs rm -rf")
+        l("\tls . | grep -v Makefile | grep -v build.ninja | grep -v execution-script.txt | grep -v sourceFiles.F | xargs rm -rf")
       }
       l()
       l("simulation: clean")
@@ -525,6 +525,94 @@ final class Workspace(
       //format: on
     } finally {
       makefileWriter.close()
+    }
+
+    // Emit Ninja build file for debugging (will be emitted even if compile fails)
+    val ninjaWriter = new LineWriter(s"$workingDirectoryPath/build.ninja")
+    try {
+      val l = ninjaWriter
+      l("# This Ninja build file enables lightweight debugging of `svsim` tests.")
+      l("# To rebuild the simulation run `ninja simulation` in this directory.")
+      l("# To replay the simulation run `ninja replay` in this directory.")
+      l("# Changes to `generated-sources` and `primary-sources` will be picked up when running `ninja replay` and `ninja simulation`.")
+      l()
+
+      // Helper to quote arguments for shell execution via Ninja
+      // Ninja uses $$ to escape $, and we need single quotes for shell protection
+      def quoteForNinja(arg: String): String = {
+        // First escape $ for Ninja ($ -> $$), then wrap in single quotes for shell
+        // Single quotes within the arg need special handling: 'foo'\''bar' -> foo'bar
+        val escaped = arg.replace("$", "$$")
+        "'" + escaped.replace("'", "'\\''") + "'"
+      }
+
+      // Variables
+      l("compilerPath = ", parameters.compilerPath)
+
+      // Build compiler arguments as a single variable (Ninja uses $ for variables, $$ to escape $)
+      val compilerArgs = parameters.compilerInvocation.arguments.map(quoteForNinja).mkString(" ")
+      l("compilerArgs = ", compilerArgs, " '-F' '", sourceFilesFilelistWriter.path, "'")
+
+      // Compiler environment variables
+      val compilerEnvStr = parameters.compilerInvocation.environment.map { case (name, value) =>
+        s"$name=$value"
+      }.mkString(" ")
+      l("compilerEnvironment = ", compilerEnvStr)
+
+      // Simulation environment variables
+      val simEnvStr = simulationEnvironment.map { case (name, value) =>
+        s"$name=$value"
+      }.mkString(" ")
+      l("simulationEnvironment = ", simEnvStr)
+
+      // Simulation invocation arguments
+      val simArgs = parameters.simulationInvocation.arguments.map(quoteForNinja).mkString(" ")
+      l("simulationArgs = ", simArgs)
+
+      l()
+
+      // Clean rule
+      l("rule clean_cmd")
+      if (System.getProperty("os.name").toLowerCase.contains("win")) {
+        l("  command = for /f \"delims=\" %i in ('dir /b /a-d ^| findstr /v Makefile ^| findstr /v build.ninja ^| findstr /v execution-script.txt ^| findstr /v sourceFiles.F') do del \"%i\" && for /d %i in (*) do rmdir /s /q \"%i\"")
+      } else {
+        l("  command = ls . | grep -v Makefile | grep -v build.ninja | grep -v execution-script.txt | grep -v sourceFiles.F | xargs rm -rf")
+      }
+      l("  description = Cleaning build artifacts")
+      l()
+
+      // Compile rule
+      l("rule compile")
+      l("  command = $compilerEnvironment $compilerPath $compilerArgs")
+      l("  description = Compiling simulation with verilator")
+      l()
+
+      // Replay rule (runs simulation with execution script)
+      l("rule run_replay")
+      val replayCmd = customSimulationWorkingDirectory match {
+        case None =>
+          "cat execution-script.txt | { grep '^#' || true; } && cat execution-script.txt | sed -n 's/^[0-9]*> \\(.*\\)/\\1/p' | $simulationEnvironment ./simulation $simulationArgs"
+        case Some(value) =>
+          val relativePath = workingDirectory.toPath().relativize(Paths.get(value)).toString()
+          s"cd $relativePath && cat execution-script.txt | { grep '^#' || true; } && cat execution-script.txt | sed -n 's/^[0-9]*> \\\\(.*\\\\)/\\\\1/p' | $$simulationEnvironment ./simulation $$simulationArgs"
+      }
+      l("  command = ", replayCmd)
+      l("  description = Replaying simulation")
+      l()
+
+      // Build targets
+      l("build clean: clean_cmd")
+      l()
+      l("build simulation: compile | clean")
+      l()
+      l("build replay: run_replay | simulation")
+      l()
+
+      // Default target
+      l("default simulation")
+      l()
+    } finally {
+      ninjaWriter.close()
     }
 
     /**
