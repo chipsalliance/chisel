@@ -5,7 +5,7 @@ package chiselTests.stage.phases
 import chisel3.stage.{ChiselOutputFileAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.stage.phases.Checks
 
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{OptionsException, Phase}
 import org.scalatest.flatspec.AnyFlatSpec

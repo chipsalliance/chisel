@@ -4,6 +4,7 @@ package chiselTests
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import logger.{LogLevel, LogLevelAnnotation, Logger}
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 
 trait LogUtils {
 

@@ -3,7 +3,7 @@
 package chisel3.stage
 
 import firrtl.options.Viewer.view
-import firrtl.RenameMap
+import firrtl.{seqToAnnoSeq, RenameMap}
 
 import chisel3.ElaboratedCircuit
 import chisel3.stage._
