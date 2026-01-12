@@ -44,9 +44,9 @@ abstract class ChiselSimMain[T <: Module](gen: => T) extends ControlAPI with Pee
   def test(dut: T): Unit
 
   final def main(args: Array[String]): Unit = {
-    implicit val testingDirectory: HasTestingDirectory = testdir
     if (args.isEmpty || !args.contains("--run")) {
       // Export phase: Generate .fir file and ninja build file
+      implicit val testingDirectory: HasTestingDirectory = testdir
       val exported = exportSimulation(gen, mainClass)
       println(s"Exported simulation to: ${exported.workspacePath}")
       println(s"  FIRRTL file: ${exported.firFilePath}")
@@ -59,6 +59,10 @@ abstract class ChiselSimMain[T <: Module](gen: => T) extends ControlAPI with Pee
       println(s"  ninja -C ${exported.workspacePath} simulate")
     } else {
       // Run phase: Run the simulation with pre-compiled artifacts
+      // Use current directory since ninja runs from within the workspace
+      implicit val testingDirectory: HasTestingDirectory = new HasTestingDirectory {
+        override def getDirectory: java.nio.file.Path = java.nio.file.Paths.get(".")
+      }
       runCompiledSimulation(gen)(test)
     }
   }

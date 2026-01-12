@@ -48,6 +48,7 @@ object ChiselSimExample2 extends ChiselSimMain(new Foo(8)) {
   }
 
   def test(dut: Foo): Unit = {
+    println("Running simulation!")
     // Poke different values on the two input ports.
     dut.a.poke(1)
     dut.b.poke(2)

@@ -229,6 +229,9 @@ trait SimulatorAPI {
       s"-o=$absolutePrimarySourcesPath"
     ) ++ firtoolOpts
 
+    // Get the classpath from the current JVM - this will be used for the java invocation
+    val classpath = System.getProperty("java.class.path")
+
     // Generate the ninja build file
     val ninjaFile = new File(workspacePath, "build.ninja")
     val ninjaWriter = new BufferedWriter(new FileWriter(ninjaFile))
@@ -241,6 +244,7 @@ trait SimulatorAPI {
       // Variables
       ninjaWriter.write(s"firtoolPath = $firtoolBinary\n")
       ninjaWriter.write(s"firtoolArgs = ${firtoolArgs.map(a => s"'$a'").mkString(" ")}\n")
+      ninjaWriter.write(s"classpath = $classpath\n")
       ninjaWriter.write(s"mainClass = $mainClass\n")
       ninjaWriter.write("\n")
 
@@ -253,16 +257,11 @@ trait SimulatorAPI {
       ninjaWriter.write("  description = Generating SystemVerilog from FIRRTL\n")
       ninjaWriter.write("\n")
 
-      // Rule to run the simulation (invokes the main class with an argument)
-      // Get the project root directory (where mill is located) - use canonical path
-      val projectRoot = new File(".").getCanonicalPath
-      val millPath = s"$projectRoot/mill"
+      // Rule to run the simulation using raw java invocation
+      val classpathVar = "$" + "classpath"
+      val mainClassVar = "$" + "mainClass"
       ninjaWriter.write("rule run_simulation\n")
-      // In Ninja, $varName references a variable. We construct the string to avoid
-      // false "missing interpolator" warning from the compiler.
-      val ninjaVarRef = "$" + "mainClass"
-      // Need to cd to project root since ninja runs from the workspace directory
-      ninjaWriter.write(s"  command = cd $projectRoot && $millPath chisel[2.13].runMain $ninjaVarRef --run\n")
+      ninjaWriter.write(s"  command = java -cp '$classpathVar' $mainClassVar --run\n")
       ninjaWriter.write("  description = Running simulation\n")
       ninjaWriter.write("\n")
 
@@ -294,6 +293,7 @@ trait SimulatorAPI {
     *
     * This is typically called when the main class is invoked with an argument,
     * indicating that the simulation should be run against already-compiled artifacts.
+    * This method does NOT reset the workspace, preserving pre-generated Verilog files.
     *
     * @param module the Chisel module (used to get port information)
     * @param settings ChiselSim-related settings used for simulation
@@ -313,13 +313,14 @@ trait SimulatorAPI {
     commonSettingsModifications:  svsim.CommonSettingsModifications,
     backendSettingsModifications: svsim.BackendSettingsModifications
   ): Unit = {
-    // For now, this just runs simulate normally.
-    // In a full implementation, this would skip elaboration and use pre-compiled binaries.
-    simulate(
-      module = module,
-      settings = settings,
-      additionalResetCycles = additionalResetCycles
-    )(stimulus)
+    // Use simulatePrecompiled which does NOT reset the workspace
+    hasSimulator
+      .getSimulator(testingDirectory)
+      .simulatePrecompiled(module = module, settings = settings) { dut =>
+        ResetProcedure.module[T](additionalResetCycles)(dut.wrapped)
+        stimulus(dut.wrapped)
+      }
+      .result
   }
 }
 

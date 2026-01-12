@@ -664,6 +664,52 @@ final class Workspace(
     )
   }
 
+  /** Loads an already-compiled simulation from the workspace.
+    *
+    * This method does NOT reset the workspace or recompile the simulation.
+    * It expects the simulation to have been previously compiled (e.g., via ninja).
+    *
+    * @param workingDirectoryTag The tag used when the simulation was compiled
+    * @param moduleInfo The module info describing the DUT's ports
+    * @param customSimulationWorkingDirectory Optional custom working directory for the simulation
+    */
+  def loadCompiledSimulation(
+    workingDirectoryTag:              String,
+    moduleInfo:                       ModuleInfo,
+    customSimulationWorkingDirectory: Option[String] = None
+  ): Simulation = {
+    val workingDirectoryPath = s"$absolutePath/$workingDirectoryPrefix-$workingDirectoryTag"
+    val workingDirectory = new File(workingDirectoryPath)
+
+    if (!workingDirectory.exists()) {
+      throw new Exception(s"Working directory does not exist: $workingDirectoryPath. Has the simulation been compiled?")
+    }
+
+    val simulationBinary = new File(workingDirectoryPath, "simulation")
+    if (!simulationBinary.exists()) {
+      throw new Exception(s"Simulation binary does not exist: ${simulationBinary.getAbsolutePath}. Has the simulation been compiled?")
+    }
+
+    // Read the simulation settings from the makefile/ninja if possible,
+    // or use sensible defaults for running the simulation
+    val traceFileStem = s"$workingDirectoryPath/trace"
+    val simulationEnvironment = Map(
+      "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
+      "SVSIM_SIMULATION_TRACE" -> traceFileStem
+    )
+
+    new Simulation(
+      executableName = "simulation",
+      settings = Simulation.Settings(
+        customWorkingDirectory = customSimulationWorkingDirectory,
+        arguments = Seq.empty,
+        environment = simulationEnvironment
+      ),
+      workingDirectoryPath = workingDirectoryPath,
+      moduleInfo = moduleInfo
+    )
+  }
+
 }
 
 /** A micro-DSL for writing files.

@@ -261,6 +261,15 @@ trait Simulator[T <: Backend] {
     }
     Files.walkFileTree(Paths.get(workspace.primarySourcesPath), new DirectoryFinder)
 
+    // Default file filter that only includes Verilog and C++ source files
+    // This prevents non-source files like filelist.f from being included
+    val sourceFileFilter: PartialFunction[java.io.File, Boolean] = {
+      case f =>
+        val name = f.getName
+        name.endsWith(".v") || name.endsWith(".sv") || name.endsWith(".vh") ||
+        name.endsWith(".cpp") || name.endsWith(".cc") || name.endsWith(".h")
+    }
+
     val commonCompilationSettingsUpdated = commonSettingsModifications(
       commonCompilationSettings.copy(
         // Append to the include directorires based on what the
@@ -270,7 +279,9 @@ trait Simulator[T <: Backend] {
         verilogPreprocessorDefines =
           commonCompilationSettings.verilogPreprocessorDefines ++ settings.preprocessorDefines(elaboratedModule),
         fileFilter =
-          commonCompilationSettings.fileFilter.orElse(settings.verilogLayers.shouldIncludeFile(elaboratedModule)),
+          commonCompilationSettings.fileFilter
+            .orElse(settings.verilogLayers.shouldIncludeFile(elaboratedModule))
+            .orElse(sourceFileFilter),
         directoryFilter = commonCompilationSettings.directoryFilter.orElse(
           settings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
         ),
@@ -356,6 +367,54 @@ trait Simulator[T <: Backend] {
       )
     )
 
+  }
+
+  /** Simulate a Chisel module using a pre-existing workspace.
+    *
+    * This method does NOT reset the workspace, allowing it to work with
+    * pre-generated Verilog files. It will:
+    * 1. Elaborate the module to get port mappings
+    * 2. Generate testbench sources (if not already present)
+    * 3. Compile the simulation (if not already compiled)
+    * 4. Run the simulation
+    *
+    * @param module a Chisel module to simulate
+    * @param settings ChiselSim-related settings used for simulation
+    * @param body stimulus to apply to the module
+    */
+  final def simulatePrecompiled[T <: RawModule, U](
+    module:   => T,
+    settings: Settings[T] = Settings.defaultRaw[T]
+  )(body: (SimulatedModule[T]) => U)(
+    implicit chiselOptsModifications: ChiselOptionsModifications,
+    firtoolOptsModifications:         FirtoolOptionsModifications,
+    commonSettingsModifications:      svsim.CommonSettingsModifications,
+    backendSettingsModifications:     svsim.BackendSettingsModifications
+  ): Simulator.BackendInvocationDigest[U] = {
+    val workspace = new Workspace(path = workspacePath, workingDirectoryPrefix = workingDirectoryPrefix)
+    // NOTE: We intentionally do NOT call workspace.reset() here to preserve pre-compiled artifacts
+    // But we need to ensure the generated-sources directory exists
+    new java.io.File(workspace.generatedSourcesPath).mkdirs()
+
+    // Elaborate the module to get port information (without generating Verilog)
+    // Use ChiselGeneratorAnnotation.elaborate which returns the DesignAnnotation with the DUT
+    val outputAnnotations = chisel3.stage.ChiselGeneratorAnnotation(() => module).elaborate
+
+    // Extract the DUT from DesignAnnotation
+    val designAnnotation = outputAnnotations.collectFirst {
+      case da: chisel3.stage.DesignAnnotation[_] => da.asInstanceOf[chisel3.stage.DesignAnnotation[T]]
+    }.getOrElse(throw new Exception("DesignAnnotation not found after elaboration"))
+
+    val dut = designAnnotation.design
+    val layers = designAnnotation.layers
+
+    // Get port mappings
+    val ports = workspace.getModuleInfoPorts(dut)
+    workspace.initializeModuleInfo(dut, ports.map(_._2))
+
+    val elaboratedModule = new ElaboratedModule(dut, ports, layers)
+
+    _simulate(workspace, elaboratedModule, settings)(body)
   }
 
 }
