@@ -4,6 +4,7 @@ package chisel3.internal.plugin
 
 import scala.collection.mutable
 import scala.reflect.internal.Flags
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc
 import scala.tools.nsc.{Global, Phase}
 import scala.tools.nsc.plugins.PluginComponent
@@ -248,7 +249,15 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           if isAModule(module.symbol) && !module.mods.hasFlag(
             Flag.ABSTRACT
           ) && !isOverriddenSourceLocator(module.impl) =>
-        val path = SourceInfoFileResolver.resolve(module.pos.source)
+        val path = {
+          val file: AbstractFile = module.pos.source.file
+          // No file (null) for things like mdoc and macro-generated code.
+          if (file.file == null) {
+            file.path
+          } else {
+            SourceInfoFileResolver.resolve(file.file.toPath)
+          }
+        }
         val info = localTyper.typed(q"chisel3.experimental.SourceLine($path, ${module.pos.line}, ${module.pos.column})")
 
         val sourceInfoSym =

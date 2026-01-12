@@ -2,10 +2,8 @@
 
 package chisel3.internal.sourceinfo
 
-import scala.language.experimental.macros
-import scala.reflect.macros.blackbox.Context
-
 import java.io.File.separatorChar
+import java.nio.file.Path
 
 ///////////////////////////////////////////////////////
 //                     WARNING!!                     //
@@ -22,11 +20,11 @@ private[internal] object SourceInfoFileResolver {
     else path
   }
 
-  def resolve(source: scala.reflect.internal.util.SourceFile): String = {
+  def resolve(source: Path): String = {
     val userDir = sys.props.get("user.dir") // Figure out what to do if not provided
     val projectRoot = sys.props.get("chisel.project.root")
     val root = projectRoot.orElse(userDir).map(sanitizePath)
 
-    root.map(r => source.file.canonicalPath.stripPrefix(r)).getOrElse(source.file.name)
+    root.map(r => source.toRealPath().toString.stripPrefix(r)).getOrElse(source.toString)
   }
 }
