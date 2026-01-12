@@ -7,6 +7,7 @@ import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestChoice, Tes
 import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
+import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Files
 
 trait SimulatorAPI {
@@ -154,4 +155,178 @@ trait SimulatorAPI {
         settings = settings
       ) { dut => InlineTestStimulus(timeout, additionalResetCycles, period = 10)(dut.wrapped) }
   }
+
+  /** Export a simulation without compiling or running it.
+    *
+    * This generates:
+    *   - CHIRRTL (.fir) file from the Chisel module
+    *   - A ninja build file with rules to:
+    *     - Convert .fir to SystemVerilog using firtool
+    *     - Run the simulation by invoking the main class with an argument
+    *
+    * @param module the Chisel module to generate
+    * @param mainClass the main class name that will be invoked to run the simulation
+    * @param chiselOpts command line options to pass to Chisel
+    * @param firtoolOpts command line options to pass to firtool
+    * @param testingDirectory where files will be created
+    */
+  def exportSimulation[T <: Module](
+    module:      => T,
+    mainClass:   String,
+    chiselOpts:  Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty
+  )(
+    implicit testingDirectory: HasTestingDirectory
+  ): ExportedSimulation = {
+    val workspacePath = testingDirectory.getDirectory.toString
+
+    // Create workspace directories
+    val workspaceDir = new File(workspacePath)
+    workspaceDir.mkdirs()
+    val supportArtifactsPath = s"$workspacePath/support-artifacts"
+    val primarySourcesPath = s"$workspacePath/primary-sources"
+    new File(supportArtifactsPath).mkdirs()
+    new File(primarySourcesPath).mkdirs()
+
+    // Elaborate the module and generate CHIRRTL
+    val elaboratedCircuit = circt.stage.ChiselStage.elaborate(module, chiselOpts)
+    val circuitName = elaboratedCircuit.name
+
+    // Serialize the CHIRRTL to a file
+    val firFile = new File(supportArtifactsPath, s"$circuitName.fir")
+    val firWriter = new BufferedWriter(new FileWriter(firFile))
+    try {
+      elaboratedCircuit.lazilySerialize.foreach(firWriter.write)
+    } finally {
+      firWriter.close()
+    }
+
+    // Resolve firtool binary path
+    val firtoolBinary = {
+      val version = chisel3.BuildInfo.firtoolVersion.get
+      // Create a simple logger shim for firtoolresolver
+      val loggerShim = new firtoolresolver.Logger {
+        def error(msg: String): Unit = System.err.println(s"[error] $msg")
+        def warn(msg:  String): Unit = System.err.println(s"[warn] $msg")
+        def info(msg:  String): Unit = System.out.println(s"[info] $msg")
+        def debug(msg: String): Unit = () // Suppress debug
+        def trace(msg: String): Unit = () // Suppress trace
+      }
+      val resolved = firtoolresolver.Resolve(loggerShim, version)
+      resolved match {
+        case Left(msg)  => throw new Exception(s"Failed to resolve firtool: $msg")
+        case Right(bin) => bin.path.toString
+      }
+    }
+
+    // Build firtool command arguments (use absolute paths)
+    val absolutePrimarySourcesPath = new File(primarySourcesPath).getAbsolutePath
+    val firtoolArgs = Seq(
+      firFile.getAbsolutePath,
+      "-warn-on-unprocessed-annotations",
+      "-disable-annotation-unknown",
+      "--split-verilog",
+      s"-o=$absolutePrimarySourcesPath"
+    ) ++ firtoolOpts
+
+    // Generate the ninja build file
+    val ninjaFile = new File(workspacePath, "build.ninja")
+    val ninjaWriter = new BufferedWriter(new FileWriter(ninjaFile))
+    try {
+      ninjaWriter.write("# Ninja build file for ChiselSim exported simulation\n")
+      ninjaWriter.write("# Run `ninja verilog` to generate SystemVerilog from FIRRTL\n")
+      ninjaWriter.write("# Run `ninja simulate` to compile and run the simulation\n")
+      ninjaWriter.write("\n")
+
+      // Variables
+      ninjaWriter.write(s"firtoolPath = $firtoolBinary\n")
+      ninjaWriter.write(s"firtoolArgs = ${firtoolArgs.map(a => s"'$a'").mkString(" ")}\n")
+      ninjaWriter.write(s"mainClass = $mainClass\n")
+      ninjaWriter.write("\n")
+
+      // Rule to generate Verilog from FIRRTL
+      // In Ninja, $varName references a variable defined above
+      val firtoolPathVar = "$" + "firtoolPath"
+      val firtoolArgsVar = "$" + "firtoolArgs"
+      ninjaWriter.write("rule firtool\n")
+      ninjaWriter.write(s"  command = $firtoolPathVar $firtoolArgsVar\n")
+      ninjaWriter.write("  description = Generating SystemVerilog from FIRRTL\n")
+      ninjaWriter.write("\n")
+
+      // Rule to run the simulation (invokes the main class with an argument)
+      // Get the project root directory (where mill is located) - use canonical path
+      val projectRoot = new File(".").getCanonicalPath
+      val millPath = s"$projectRoot/mill"
+      ninjaWriter.write("rule run_simulation\n")
+      // In Ninja, $varName references a variable. We construct the string to avoid
+      // false "missing interpolator" warning from the compiler.
+      val ninjaVarRef = "$" + "mainClass"
+      // Need to cd to project root since ninja runs from the workspace directory
+      ninjaWriter.write(s"  command = cd $projectRoot && $millPath chisel[2.13].runMain $ninjaVarRef --run\n")
+      ninjaWriter.write("  description = Running simulation\n")
+      ninjaWriter.write("\n")
+
+      // Build targets
+      // The verilog target generates all .sv files from the .fir file
+      ninjaWriter.write(s"build verilog: firtool\n")
+      ninjaWriter.write("\n")
+
+      // The simulate target depends on verilog and runs the simulation
+      ninjaWriter.write(s"build simulate: run_simulation | verilog\n")
+      ninjaWriter.write("\n")
+
+      // Default target
+      ninjaWriter.write("default verilog\n")
+      ninjaWriter.write("\n")
+    } finally {
+      ninjaWriter.close()
+    }
+
+    ExportedSimulation(
+      workspacePath = workspacePath,
+      firFilePath = firFile.getAbsolutePath,
+      ninjaFilePath = ninjaFile.getAbsolutePath,
+      circuitName = circuitName
+    )
+  }
+
+  /** Run a simulation against a pre-compiled simulation binary.
+    *
+    * This is typically called when the main class is invoked with an argument,
+    * indicating that the simulation should be run against already-compiled artifacts.
+    *
+    * @param module the Chisel module (used to get port information)
+    * @param settings ChiselSim-related settings used for simulation
+    * @param additionalResetCycles a number of _additional_ cycles to assert reset for
+    * @param stimulus directed stimulus to use
+    * @param testingDirectory where the pre-compiled simulation artifacts are located
+    */
+  def runCompiledSimulation[T <: Module](
+    module:                => T,
+    settings:              Settings[T] = Settings.default[T],
+    additionalResetCycles: Int = 0
+  )(stimulus: (T) => Unit)(
+    implicit hasSimulator:        HasSimulator,
+    testingDirectory:             HasTestingDirectory,
+    chiselOptsModifications:      ChiselOptionsModifications,
+    firtoolOptsModifications:     FirtoolOptionsModifications,
+    commonSettingsModifications:  svsim.CommonSettingsModifications,
+    backendSettingsModifications: svsim.BackendSettingsModifications
+  ): Unit = {
+    // For now, this just runs simulate normally.
+    // In a full implementation, this would skip elaboration and use pre-compiled binaries.
+    simulate(
+      module = module,
+      settings = settings,
+      additionalResetCycles = additionalResetCycles
+    )(stimulus)
+  }
 }
+
+/** Result of exporting a simulation */
+case class ExportedSimulation(
+  workspacePath: String,
+  firFilePath:   String,
+  ninjaFilePath: String,
+  circuitName:   String
+)
