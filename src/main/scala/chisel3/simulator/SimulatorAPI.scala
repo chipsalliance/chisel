@@ -355,16 +355,16 @@ trait SimulatorAPI {
       // then runs the Scala test which connects to the pipes
       // Note: In ninja, $$ escapes to $, so $$! becomes $! (shell's background PID)
       // Run simulation in background with full path, redirect all output to prevent blocking
-      // The $testIndex variable specifies which test (0-based) to run
+      // The $testName variable specifies which test to run (by name/description)
       l("rule run_test")
       l("  command = " +
         "rm -f $workdir/cmd.pipe $workdir/msg.pipe && " +
         "mkfifo $workdir/cmd.pipe $workdir/msg.pipe && " +
-        "SVSIM_COMMAND_PIPE=$workdir/cmd.pipe SVSIM_MESSAGE_PIPE=$workdir/msg.pipe $workdir/simulation > $workdir/simulation-$testIndex.log 2>&1 & " +
+        "SVSIM_COMMAND_PIPE=$workdir/cmd.pipe SVSIM_MESSAGE_PIPE=$workdir/msg.pipe $workdir/simulation > $workdir/simulation-$testNum.log 2>&1 & " +
         "SIM_PID=$$!; " +
-        "java -cp '$classpath' chisel3.simulator.ChiselSimRunner $mainClass $testIndex $workdir; " +
+        "java -cp '$classpath' chisel3.simulator.ChiselSimRunner $mainClass '$testName' $workdir; " +
         "RESULT=$$?; kill $$SIM_PID 2>/dev/null; rm -f $workdir/cmd.pipe $workdir/msg.pipe; exit $$RESULT")
-      l("  description = Running test $testIndex: $testDesc")
+      l("  description = Running test $testNum: $testName")
       l("  pool = console")
       l("")
 
@@ -391,8 +391,8 @@ trait SimulatorAPI {
           val testNum = index + 1  // 1-based for user-facing names
           val stampFile = s"workdir-$workdirTag/.test$testNum.stamp"
           l(s"build $stampFile: run_test | verilate")
-          l(s"  testIndex = $index")
-          l(s"  testDesc = $desc")
+          l(s"  testNum = $testNum")
+          l(s"  testName = $desc")
           l("")
           l(s"build test$testNum: phony $stampFile")
           l("")

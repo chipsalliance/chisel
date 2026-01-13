@@ -53,23 +53,25 @@ abstract class ChiselSimSuite[T <: Module](gen: => T) extends ControlAPI with Pe
   /** Get the list of registered tests (description, function pairs) */
   def tests: Seq[(String, T => Unit)] = _tests.toSeq
 
-  /** Run a specific test by index with pre-compiled artifacts using named pipes for IPC.
+  /** Run a specific test by name with pre-compiled artifacts using named pipes for IPC.
     * Called by ChiselSimRunner when invoked from ninja.
     *
     * The simulation binary should already be running and listening on the pipes.
     * This method connects to the pipes, runs the test, and sends shutdown command.
     *
-    * @param testIndex the 0-based index of the test to run
+    * @param testName the name/description of the test to run
     * @param commandPipe path to the command pipe (for sending commands to simulation)
     * @param messagePipe path to the message pipe (for receiving messages from simulation)
     * @param workdir the working directory containing the simulation
     */
-  def runSimulationWithPipes(testIndex: Int, commandPipe: Path, messagePipe: Path, workdir: Path): Unit = {
-    if (testIndex < 0 || testIndex >= _tests.size) {
-      throw new IllegalArgumentException(s"Test index $testIndex out of range (0..${_tests.size - 1})")
+  def runSimulationWithPipes(testName: String, commandPipe: Path, messagePipe: Path, workdir: Path): Unit = {
+    val testEntry = _tests.find(_._1 == testName)
+    if (testEntry.isEmpty) {
+      val available = _tests.map(_._1).mkString("'", "', '", "'")
+      throw new IllegalArgumentException(s"Test '$testName' not found. Available tests: $available")
     }
-    val (testName, testFn) = _tests(testIndex)
-    println(s"Running test $testIndex: $testName")
+    val (_, testFn) = testEntry.get
+    println(s"Running test: $testName")
 
     // Get the parent directory, handling relative paths that may not have a parent
     val parentDir = Option(workdir.toAbsolutePath.getParent).getOrElse(workdir.toAbsolutePath)

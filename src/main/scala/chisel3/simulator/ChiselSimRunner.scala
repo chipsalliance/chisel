@@ -5,27 +5,27 @@ import java.nio.file.Paths
 /** Runner for ChiselSimSuite simulations.
   *
   * This is invoked by the generated ninja file to run a pre-compiled simulation.
-  * It takes the main class name, test index, and workdir as arguments.
+  * It takes the main class name, test name, and workdir as arguments.
   *
   * The simulation binary should already be running and listening on named pipes:
   *   - workdir/cmd.pipe: for sending commands
   *   - workdir/msg.pipe: for receiving messages
   *
   * Usage:
-  *   java -cp <classpath> chisel3.simulator.ChiselSimRunner <MainClassName> <testIndex> <workdir>
+  *   java -cp <classpath> chisel3.simulator.ChiselSimRunner <MainClassName> <testName> <workdir>
   */
 object ChiselSimRunner {
   def main(args: Array[String]): Unit = {
     if (args.length < 3) {
-      System.err.println("Usage: ChiselSimRunner <MainClassName> <testIndex> <workdir>")
+      System.err.println("Usage: ChiselSimRunner <MainClassName> <testName> <workdir>")
       System.err.println("  MainClassName: The fully qualified name of a ChiselSimSuite object")
-      System.err.println("  testIndex: The 0-based index of the test to run")
+      System.err.println("  testName: The name/description of the test to run")
       System.err.println("  workdir: The working directory containing the simulation and pipes")
       System.exit(1)
     }
 
     val mainClassName = args(0)
-    val testIndex = args(1).toInt
+    val testName = args(1)
     val workdir = Paths.get(args(2))
     val commandPipe = workdir.resolve("cmd.pipe")
     val messagePipe = workdir.resolve("msg.pipe")
@@ -39,7 +39,7 @@ object ChiselSimRunner {
       // Check that it's a ChiselSimSuite and call runSimulation with pipes
       instance match {
         case simSuite: ChiselSimSuite[_] =>
-          simSuite.runSimulationWithPipes(testIndex, commandPipe, messagePipe, workdir)
+          simSuite.runSimulationWithPipes(testName, commandPipe, messagePipe, workdir)
         case _ =>
           System.err.println(s"Error: $mainClassName is not a ChiselSimSuite")
           System.exit(1)
@@ -52,9 +52,6 @@ object ChiselSimRunner {
       case e: NoSuchFieldException =>
         System.err.println(s"Error: $mainClassName does not appear to be a Scala object")
         System.err.println(s"  ${e.getMessage}")
-        System.exit(1)
-      case e: NumberFormatException =>
-        System.err.println(s"Error: testIndex '${args(1)}' is not a valid integer")
         System.exit(1)
       case e: IllegalArgumentException =>
         System.err.println(s"Error: ${e.getMessage}")
