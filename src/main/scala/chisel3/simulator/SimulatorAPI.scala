@@ -259,11 +259,13 @@ trait SimulatorAPI {
       ninjaWriter.write("  description = Generating SystemVerilog from FIRRTL\n")
       ninjaWriter.write("\n")
 
-      // Rule to run the simulation using raw java invocation
+      // Rule to run the simulation using ChiselSimRunner
       val classpathVar = "$" + "classpath"
       val mainClassVar = "$" + "mainClass"
       ninjaWriter.write("rule run_simulation\n")
-      ninjaWriter.write(s"  command = java -cp '$classpathVar' $mainClassVar --run\n")
+      ninjaWriter.write(
+        s"  command = java -cp '$classpathVar' chisel3.simulator.ChiselSimRunner $mainClassVar\n"
+      )
       ninjaWriter.write("  description = Running simulation\n")
       ninjaWriter.write("\n")
 
