@@ -291,6 +291,9 @@ object Backend {
 final class Backend(executablePath: String) extends svsim.Backend {
   type CompilationSettings = Backend.CompilationSettings
 
+  /** Get the path to the Verilator executable. */
+  def getExecutablePath: String = executablePath
+
   def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,

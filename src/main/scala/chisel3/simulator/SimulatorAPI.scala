@@ -8,7 +8,11 @@ import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
 import java.io.{BufferedWriter, File, FileWriter}
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileVisitResult, FileVisitor}
+import svsim.{CommonCompilationSettings, ModuleInfo, Workspace}
+import firrtl.annoSeqToSeq
 
 trait SimulatorAPI {
 
@@ -160,9 +164,11 @@ trait SimulatorAPI {
     *
     * This generates:
     *   - CHIRRTL (.fir) file from the Chisel module
+    *   - Testbench and simulation driver files (testbench.sv, simulation-driver.cpp, c-dpi-bridge.cpp)
     *   - A ninja build file with rules to:
     *     - Convert .fir to SystemVerilog using firtool
-    *     - Run the simulation by invoking the main class with an argument
+    *     - Compile with Verilator
+    *     - Run the simulation
     *
     * @param module the Chisel module to generate
     * @param mainClass the main class name that will be invoked to run the simulation
@@ -179,20 +185,37 @@ trait SimulatorAPI {
     implicit testingDirectory: HasTestingDirectory
   ): ExportedSimulation = {
     val workspacePath = testingDirectory.getDirectory.toString
+    val absoluteWorkspacePath = new File(workspacePath).getAbsolutePath
 
-    // Create workspace directories
-    val workspaceDir = new File(workspacePath)
-    workspaceDir.mkdirs()
-    val supportArtifactsPath = s"$workspacePath/support-artifacts"
-    val primarySourcesPath = s"$workspacePath/primary-sources"
-    new File(supportArtifactsPath).mkdirs()
-    new File(primarySourcesPath).mkdirs()
+    // Create an svsim Workspace - this handles directory creation
+    val workspace = new Workspace(path = workspacePath)
+    workspace.reset()
 
-    // Elaborate the module and generate CHIRRTL
-    val elaboratedCircuit = circt.stage.ChiselStage.elaborate(module, chiselOpts)
-    val circuitName = elaboratedCircuit.name
+    // Elaborate the module to get port information
+    // Use ChiselGeneratorAnnotation.elaborate which returns the DesignAnnotation with the DUT
+    val outputAnnotations = chisel3.stage.ChiselGeneratorAnnotation(() => module).elaborate
+
+    // Extract the DUT from DesignAnnotation
+    val designAnnotation = outputAnnotations.collectFirst {
+      case da: chisel3.stage.DesignAnnotation[_] => da.asInstanceOf[chisel3.stage.DesignAnnotation[T]]
+    }.getOrElse(throw new Exception("DesignAnnotation not found after elaboration"))
+
+    val dut = designAnnotation.design
+    val circuitName = dut.name
+
+    // Get port information from the elaborated module
+    val ports = workspace.getModuleInfoPorts(dut)
+    workspace.initializeModuleInfo(dut, ports.map(_._2))
+
+    // Get the elaborated circuit for serialization
+    val elaboratedCircuit = outputAnnotations.collectFirst {
+      case cca: chisel3.stage.ChiselCircuitAnnotation => cca.elaboratedCircuit
+    }.getOrElse(throw new Exception("ChiselCircuitAnnotation not found after elaboration"))
 
     // Serialize the CHIRRTL to a file
+    val supportArtifactsPath = workspace.supportArtifactsPath
+    val primarySourcesPath = workspace.primarySourcesPath
+    val generatedSourcesPath = workspace.generatedSourcesPath
     val firFile = new File(supportArtifactsPath, s"$circuitName.fir")
     val firWriter = new BufferedWriter(new FileWriter(firFile))
     try {
@@ -201,16 +224,18 @@ trait SimulatorAPI {
       firWriter.close()
     }
 
+    // Generate testbench.sv, c-dpi-bridge.cpp, simulation-driver.cpp
+    workspace.generateAdditionalSources(timescale = Some(CommonCompilationSettings.Timescale.default))
+
     // Resolve firtool binary path
     val firtoolBinary = {
       val version = chisel3.BuildInfo.firtoolVersion.get
-      // Create a simple logger shim for firtoolresolver
       val loggerShim = new firtoolresolver.Logger {
         def error(msg: String): Unit = System.err.println(s"[error] $msg")
         def warn(msg:  String): Unit = System.err.println(s"[warn] $msg")
         def info(msg:  String): Unit = System.out.println(s"[info] $msg")
-        def debug(msg: String): Unit = () // Suppress debug
-        def trace(msg: String): Unit = () // Suppress trace
+        def debug(msg: String): Unit = ()
+        def trace(msg: String): Unit = ()
       }
       val resolved = firtoolresolver.Resolve(loggerShim, version)
       resolved match {
@@ -219,7 +244,11 @@ trait SimulatorAPI {
       }
     }
 
-    // Build firtool command arguments (use absolute paths)
+    // Resolve Verilator binary path
+    val verilatorBackend = svsim.verilator.Backend.initializeFromProcessEnvironment()
+    val verilatorPath = verilatorBackend.getExecutablePath
+
+    // Build firtool command arguments
     val absolutePrimarySourcesPath = new File(primarySourcesPath).getAbsolutePath
     val firtoolArgs = Seq(
       firFile.getAbsolutePath,
@@ -229,67 +258,128 @@ trait SimulatorAPI {
       s"-o=$absolutePrimarySourcesPath"
     ) ++ firtoolOpts
 
-    // Get the classpath from the current JVM - this will be used for the java invocation
+    // Get the classpath from the current JVM
     val classpath = System.getProperty("java.class.path")
+
+    // Build Verilator command arguments
+    val workdirTag = "verilator"
+    val workingDirectoryPath = s"$absoluteWorkspacePath/workdir-$workdirTag"
+
+    // Create common compilation settings with include dirs
+    // Use relative paths for portability (relative to workdir-verilator)
+    val commonSettings = CommonCompilationSettings(
+      includeDirs = Some(Seq("../primary-sources")),
+      libraryPaths = Some(Seq("../primary-sources"))
+      // Use default parallelism
+    )
+
+    // Get Verilator parameters
+    val verilatorSettings = svsim.verilator.Backend.CompilationSettings.default
+    val parameters = verilatorBackend.generateParameters(
+      outputBinaryName = "simulation",
+      topModuleName = Workspace.testbenchModuleName,
+      // The header path needs to be relative to verilated-sources where make runs
+      // ".." goes from verilated-sources to workdir-verilator
+      additionalHeaderPaths = Seq(".."),
+      commonSettings = commonSettings,
+      backendSpecificSettings = verilatorSettings
+    )
+
+    // Save module info as JSON for later use during simulation
+    val moduleInfoFile = new File(supportArtifactsPath, "module-info.json")
+    val moduleInfoWriter = new BufferedWriter(new FileWriter(moduleInfoFile))
+    try {
+      val portsJson = ports.map(_._2).map { p =>
+        s"""{"name":"${p.name}","isSettable":${p.isSettable},"isGettable":${p.isGettable}}"""
+      }.mkString("[", ",", "]")
+      moduleInfoWriter.write(s"""{"name":"${circuitName}","ports":$portsJson}""")
+    } finally {
+      moduleInfoWriter.close()
+    }
 
     // Generate the ninja build file
     val ninjaFile = new File(workspacePath, "build.ninja")
     val ninjaWriter = new BufferedWriter(new FileWriter(ninjaFile))
     try {
-      ninjaWriter.write("# Ninja build file for ChiselSim exported simulation\n")
-      ninjaWriter.write("# Run `ninja verilog` to generate SystemVerilog from FIRRTL\n")
-      ninjaWriter.write("# Run `ninja simulate` to compile and run the simulation\n")
-      ninjaWriter.write("\n")
+      def l(s: String): Unit = { ninjaWriter.write(s); ninjaWriter.write("\n") }
+      def quoteForNinja(s: String): String = s"'${s.replace("$", "$$")}'"
+
+      l("# Ninja build file for ChiselSim exported simulation")
+      l("# Run `ninja verilog` to generate SystemVerilog from FIRRTL")
+      l("# Run `ninja verilate` to compile with Verilator")
+      l("# Run `ninja simulate` to run the simulation")
+      l("")
 
       // Variables
-      ninjaWriter.write(s"firtoolPath = $firtoolBinary\n")
-      ninjaWriter.write(s"firtoolArgs = ${firtoolArgs.map(a => s"'$a'").mkString(" ")}\n")
-      ninjaWriter.write(s"classpath = $classpath\n")
-      ninjaWriter.write(s"mainClass = $mainClass\n")
-      ninjaWriter.write("\n")
+      l(s"firtoolPath = $firtoolBinary")
+      l(s"firtoolArgs = ${firtoolArgs.map(quoteForNinja).mkString(" ")}")
+      l(s"verilatorPath = $verilatorPath")
+      val verilatorArgs = parameters.getCompilerArguments.map(quoteForNinja).mkString(" ")
+      l(s"verilatorArgs = $verilatorArgs")
+      l(s"classpath = $classpath")
+      l(s"mainClass = $mainClass")
+      l(s"workdir = workdir-$workdirTag")
+      l("")
 
       // Rule to generate Verilog from FIRRTL
-      // Uses a stamp file to track completion since firtool generates multiple files
-      // In Ninja, $varName references a variable defined above
-      val firtoolPathVar = "$" + "firtoolPath"
-      val firtoolArgsVar = "$" + "firtoolArgs"
-      val outVar = "$" + "out"
-      ninjaWriter.write("rule firtool\n")
-      ninjaWriter.write(s"  command = $firtoolPathVar $firtoolArgsVar && touch $outVar\n")
-      ninjaWriter.write("  description = Generating SystemVerilog from FIRRTL\n")
-      ninjaWriter.write("\n")
+      l("rule firtool")
+      l("  command = $firtoolPath $firtoolArgs && touch $out")
+      l("  description = Generating SystemVerilog from FIRRTL")
+      l("")
 
-      // Rule to run the simulation using ChiselSimRunner
-      val classpathVar = "$" + "classpath"
-      val mainClassVar = "$" + "mainClass"
-      ninjaWriter.write("rule run_simulation\n")
-      ninjaWriter.write(
-        s"  command = java -cp '$classpathVar' chisel3.simulator.ChiselSimRunner $mainClassVar\n"
-      )
-      ninjaWriter.write("  description = Running simulation\n")
-      ninjaWriter.write("\n")
+      // Rule to compile with Verilator
+      // Note: touch uses ../$out because we cd into $workdir first
+      l("rule verilator")
+      l(s"  command = cd $$workdir && $$verilatorPath $$verilatorArgs -F sourceFiles.F && touch .verilator.stamp")
+      l("  description = Compiling with Verilator")
+      l("")
+
+      // Rule to run the simulation
+      l("rule run_simulation")
+      l(s"  command = java -cp '$$classpath' chisel3.simulator.ChiselSimRunner $$mainClass")
+      l("  description = Running simulation")
+      l("")
 
       // Build targets
-      // The verilog target uses a stamp file to track when firtool was run
-      // Ninja will only re-run firtool if the .fir file is newer than the stamp file
-      val stampFile = "primary-sources/.firtool.stamp"
+      val firtoolStamp = "primary-sources/.firtool.stamp"
+      val verilatorStamp = s"workdir-$workdirTag/.verilator.stamp"
       val relativeFirFile = s"support-artifacts/$circuitName.fir"
-      ninjaWriter.write(s"build $stampFile: firtool $relativeFirFile\n")
-      ninjaWriter.write("\n")
 
-      // Phony target for convenience
-      ninjaWriter.write(s"build verilog: phony $stampFile\n")
-      ninjaWriter.write("\n")
+      l(s"build $firtoolStamp: firtool $relativeFirFile")
+      l("")
 
-      // The simulate target depends on verilog and runs the simulation
-      ninjaWriter.write(s"build simulate: run_simulation | verilog\n")
-      ninjaWriter.write("\n")
+      l(s"build verilog: phony $firtoolStamp")
+      l("")
 
-      // Default target
-      ninjaWriter.write("default verilog\n")
-      ninjaWriter.write("\n")
+      l(s"build $verilatorStamp: verilator | verilog")
+      l("")
+
+      l(s"build verilate: phony $verilatorStamp")
+      l("")
+
+      l(s"build simulate: run_simulation | verilate")
+      l("")
+
+      l("default verilog")
+      l("")
     } finally {
       ninjaWriter.close()
+    }
+
+    // Create the working directory and sourceFiles.F
+    new File(workingDirectoryPath).mkdirs()
+    val sourceFilesF = new File(workingDirectoryPath, "sourceFiles.F")
+    val sourceFilesWriter = new BufferedWriter(new FileWriter(sourceFilesF))
+    try {
+      // Add relative paths to source files (relative to workdir-verilator)
+      // The generated sources are in ../generated-sources relative to workdir-verilator
+      sourceFilesWriter.write("# Source files for Verilator compilation\n")
+      sourceFilesWriter.write("../generated-sources/testbench.sv\n")
+      sourceFilesWriter.write("../generated-sources/simulation-driver.cpp\n")
+      sourceFilesWriter.write("../generated-sources/c-dpi-bridge.cpp\n")
+      // Primary sources (Verilog from firtool) will be added via -y flag in verilator args
+    } finally {
+      sourceFilesWriter.close()
     }
 
     ExportedSimulation(

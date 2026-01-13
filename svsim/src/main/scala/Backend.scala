@@ -288,7 +288,23 @@ final object Backend {
     private[svsim] val compilerPath:         String,
     private[svsim] val compilerInvocation:   Parameters.Invocation,
     private[svsim] val simulationInvocation: Parameters.Invocation
-  )
+  ) {
+
+    /** Get the path to the compiler executable. */
+    def getCompilerPath: String = compilerPath
+
+    /** Get the compiler invocation arguments. */
+    def getCompilerArguments: Seq[String] = compilerInvocation.arguments
+
+    /** Get the compiler invocation environment variables. */
+    def getCompilerEnvironment: Seq[(String, String)] = compilerInvocation.environment
+
+    /** Get the simulation invocation arguments. */
+    def getSimulationArguments: Seq[String] = simulationInvocation.arguments
+
+    /** Get the simulation invocation environment variables. */
+    def getSimulationEnvironment: Seq[(String, String)] = simulationInvocation.environment
+  }
 
   final object Parameters {
 
@@ -298,7 +314,14 @@ final object Backend {
     final case class Invocation(
       private[svsim] val arguments:   Seq[String],
       private[svsim] val environment: Seq[(String, String)]
-    )
+    ) {
+
+      /** Get the invocation arguments. */
+      def getArguments: Seq[String] = arguments
+
+      /** Get the invocation environment variables. */
+      def getEnvironment: Seq[(String, String)] = environment
+    }
   }
 
   /**
