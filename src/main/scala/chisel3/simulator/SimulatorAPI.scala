@@ -249,11 +249,13 @@ trait SimulatorAPI {
       ninjaWriter.write("\n")
 
       // Rule to generate Verilog from FIRRTL
+      // Uses a stamp file to track completion since firtool generates multiple files
       // In Ninja, $varName references a variable defined above
       val firtoolPathVar = "$" + "firtoolPath"
       val firtoolArgsVar = "$" + "firtoolArgs"
+      val outVar = "$" + "out"
       ninjaWriter.write("rule firtool\n")
-      ninjaWriter.write(s"  command = $firtoolPathVar $firtoolArgsVar\n")
+      ninjaWriter.write(s"  command = $firtoolPathVar $firtoolArgsVar && touch $outVar\n")
       ninjaWriter.write("  description = Generating SystemVerilog from FIRRTL\n")
       ninjaWriter.write("\n")
 
@@ -266,8 +268,15 @@ trait SimulatorAPI {
       ninjaWriter.write("\n")
 
       // Build targets
-      // The verilog target generates all .sv files from the .fir file
-      ninjaWriter.write(s"build verilog: firtool\n")
+      // The verilog target uses a stamp file to track when firtool was run
+      // Ninja will only re-run firtool if the .fir file is newer than the stamp file
+      val stampFile = "primary-sources/.firtool.stamp"
+      val relativeFirFile = s"support-artifacts/$circuitName.fir"
+      ninjaWriter.write(s"build $stampFile: firtool $relativeFirFile\n")
+      ninjaWriter.write("\n")
+
+      // Phony target for convenience
+      ninjaWriter.write(s"build verilog: phony $stampFile\n")
       ninjaWriter.write("\n")
 
       // The simulate target depends on verilog and runs the simulation
