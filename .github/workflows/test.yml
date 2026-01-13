@@ -83,12 +83,13 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[_].test -oF
+        # Note firrtl tests don't work with Scala 3 so just run default version (2.13) for now.
+        run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[${{ inputs.scala }}].test -oF + chisel[${{ inputs.scala }}].test -oF
 
   lit:
     name: Run lit tests
     runs-on: ${{ inputs.system }}
-
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -129,12 +130,12 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill lit.cross[].run
+        run: ./mill lit.cross[${{ inputs.scala }}].run
 
   mima:
     name: binary compatibility checking
     runs-on: ${{ inputs.system }}
-
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -189,6 +190,7 @@ jobs:
   doc:
     name: Formatting
     runs-on: ubuntu-24.04
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -207,6 +209,7 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-24.04
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -235,12 +238,13 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: ./mill -j0 integration-tests.cross[].test -oF
+        run: ./mill -j0 integration-tests.cross[${{ inputs.scala }}].test -oF
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
     name: Benchmarking Sanity Check
     runs-on: ubuntu-24.04
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -257,9 +261,6 @@ jobs:
   std:
     name: Standard Library
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        scala: ["2.13"]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -273,12 +274,12 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ inputs.jvm }}
       - name: Compile
-        run: ./mill stdlib.cross[_].compile
+        run: ./mill stdlib.cross[${{ matrix.scala }}].compile
 
   website:
     name: Build Mdoc & Website
     runs-on: ubuntu-24.04
-
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -326,6 +327,7 @@ jobs:
 
   scala-cli-example:
     name: Test Scala-CLI Example
+    if: ${{ inputs.scala == '2.13' }}
     uses: ./.github/workflows/build-scala-cli-example.yml
     with:
       circt: ${{ inputs.circt }}
