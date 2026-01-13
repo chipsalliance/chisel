@@ -137,10 +137,12 @@ object Simulation {
     verbose:                       Boolean = false,
     traceEnabled:                  Boolean = false
   )(body: Simulation.Controller => T): T = {
-    // Open pipes - message pipe first (reading), then command pipe (writing)
-    // This order matters for proper FIFO handshake
-    val messageReader = new BufferedReader(new InputStreamReader(new java.io.FileInputStream(messagePipe.toFile)))
+    // Open pipes - command pipe first (writing), then message pipe (reading)
+    // The simulation binary opens command pipe for reading first, so we must
+    // open command pipe for writing first to unblock it, then the simulation
+    // will open message pipe for writing which unblocks our read.
     val commandWriter = new BufferedWriter(new OutputStreamWriter(new java.io.FileOutputStream(commandPipe.toFile)))
+    val messageReader = new BufferedReader(new InputStreamReader(new java.io.FileInputStream(messagePipe.toFile)))
 
     try {
       val controller = new Simulation.Controller(
