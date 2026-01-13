@@ -18,16 +18,6 @@ on:
         default: '2.13'
         required: true
         type: string
-      espresso:
-        description: 'The espresso version to use'
-        default: '2.4'
-        required: true
-        type: string
-      slang:
-        description: 'The slang version to use'
-        default: '7.0'
-        required: true
-        type: string
       circt:
         description: 'The CIRCT version to use (must be a valid release tag, "nightly", or "version-file").
                       Leave off (or empty) to let Chisel manage the CIRCT version'
@@ -37,6 +27,10 @@ on:
         default: ''
         required: false
         type: string
+
+env:
+  espresso: '2.4'
+  slang: '7.0'
 
 jobs:
   ci:
@@ -53,11 +47,11 @@ jobs:
       - name: Install Espresso
         uses: ./.github/workflows/install-espresso
         with:
-          version: ${{ inputs.espresso }}
+          version: ${{ env.espresso }}
       - name: Install Slang
         uses: ./.github/workflows/build-slang
         with:
-          version: ${{ inputs.slang }}
+          version: ${{ env.slang }}
       - name: Install FileCheck
         run: |
           sudo apt update

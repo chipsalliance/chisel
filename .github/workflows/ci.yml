@@ -20,15 +20,11 @@ jobs:
         system: ["ubuntu-24.04"]
         jvm: [21]
         scala: ["2.13"]
-        espresso: ["2.4"]
-        slang: ["7.0"]
     uses: ./.github/workflows/test.yml
     with:
       system: ${{ matrix.system }}
       jvm: ${{ matrix.jvm }}
       scala: ${{ matrix.scala }}
-      espresso: ${{ matrix.espresso }}
-      slang: ${{ matrix.slang }}
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all matrix jobs were
