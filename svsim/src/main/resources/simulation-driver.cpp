@@ -920,26 +920,43 @@ DPI_TASK_RETURN_TYPE simulation_final() {
 
 int main(int argc, const char *argv[]) {
 
-  // Remap `stdin` and `stdout` so we can use the original `stdin` and `stdout`
-  // for commands and messages.
-  int stdinCopy = dup(STDIN_FILENO);
-  if (stdinCopy == -1) {
-    failWithError("Failed to duplicate stdin.");
-  }
-  state.commandStream = fdopen(stdinCopy, "r");
-  if (state.commandStream == NULL) {
-    failWithError("Failed to open command stream for writing.");
-  }
-  int stdoutCopy = dup(STDOUT_FILENO);
-  if (stdoutCopy == -1) {
-    failWithError("Failed to duplicate stdout.");
-  }
-  state.messageStream = fdopen(stdoutCopy, "w");
-  if (state.messageStream == NULL) {
-    failWithError("Failed to open message stream for reading.");
-  }
-  if (freopen("/dev/null", "r", stdin) == NULL) {
-    failWithError("Failed to redirect stdin to /dev/null.");
+  // Check for named pipe environment variables for IPC
+  const char *commandPipePath = getenv("SVSIM_COMMAND_PIPE");
+  const char *messagePipePath = getenv("SVSIM_MESSAGE_PIPE");
+
+  if (commandPipePath != NULL && messagePipePath != NULL) {
+    // Use named pipes for IPC (ninja-based workflow)
+    state.commandStream = fopen(commandPipePath, "r");
+    if (state.commandStream == NULL) {
+      failWithError("Failed to open command pipe '%s' for reading.", commandPipePath);
+    }
+    state.messageStream = fopen(messagePipePath, "w");
+    if (state.messageStream == NULL) {
+      failWithError("Failed to open message pipe '%s' for writing.", messagePipePath);
+    }
+  } else {
+    // Use stdin/stdout for IPC (traditional process-based workflow)
+    // Remap `stdin` and `stdout` so we can use the original `stdin` and `stdout`
+    // for commands and messages.
+    int stdinCopy = dup(STDIN_FILENO);
+    if (stdinCopy == -1) {
+      failWithError("Failed to duplicate stdin.");
+    }
+    state.commandStream = fdopen(stdinCopy, "r");
+    if (state.commandStream == NULL) {
+      failWithError("Failed to open command stream for reading.");
+    }
+    int stdoutCopy = dup(STDOUT_FILENO);
+    if (stdoutCopy == -1) {
+      failWithError("Failed to duplicate stdout.");
+    }
+    state.messageStream = fdopen(stdoutCopy, "w");
+    if (state.messageStream == NULL) {
+      failWithError("Failed to open message stream for writing.");
+    }
+    if (freopen("/dev/null", "r", stdin) == NULL) {
+      failWithError("Failed to redirect stdin to /dev/null.");
+    }
   }
   state.logFilePath = getenv("SVSIM_SIMULATION_LOG");
   if (state.logFilePath == NULL) {

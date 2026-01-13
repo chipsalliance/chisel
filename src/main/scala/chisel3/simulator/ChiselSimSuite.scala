@@ -3,6 +3,7 @@ package chisel3.simulator
 import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.testing.HasTestingDirectory
+import java.nio.file.Path
 
 /** Base class for ChiselSim main functions that export simulation artifacts.
   *
@@ -44,8 +45,27 @@ abstract class ChiselSimSuite[T <: Module](gen: => T) extends ControlAPI with Pe
   /** User must implement the test stimulus */
   def test(dut: T): Unit
 
-  /** Run the simulation with pre-compiled artifacts.
+  /** Run the simulation with pre-compiled artifacts using named pipes for IPC.
     * Called by ChiselSimRunner when invoked from ninja.
+    *
+    * The simulation binary should already be running and listening on the pipes.
+    * This method connects to the pipes, runs the test, and sends shutdown command.
+    *
+    * @param commandPipe path to the command pipe (for sending commands to simulation)
+    * @param messagePipe path to the message pipe (for receiving messages from simulation)
+    * @param workdir the working directory containing the simulation
+    */
+  def runSimulationWithPipes(commandPipe: Path, messagePipe: Path, workdir: Path): Unit = {
+    // Get the parent directory, handling relative paths that may not have a parent
+    val parentDir = Option(workdir.toAbsolutePath.getParent).getOrElse(workdir.toAbsolutePath)
+    implicit val testingDirectory: HasTestingDirectory = new HasTestingDirectory {
+      override def getDirectory: java.nio.file.Path = parentDir
+    }
+    runCompiledSimulationWithPipes(gen, commandPipe, messagePipe, workdir)(test)
+  }
+
+  /** Run the simulation with pre-compiled artifacts (spawns simulation binary).
+    * For backward compatibility with process-based IPC.
     */
   def runSimulation(): Unit = {
     // Use current directory since ninja runs from within the workspace

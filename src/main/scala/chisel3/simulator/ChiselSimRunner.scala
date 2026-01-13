@@ -1,22 +1,32 @@
 package chisel3.simulator
 
-/** Runner for ChiselSimMain simulations.
+import java.nio.file.Paths
+
+/** Runner for ChiselSimSuite simulations.
   *
   * This is invoked by the generated ninja file to run a pre-compiled simulation.
-  * It takes the main class name as an argument and calls its runSimulation method.
+  * It takes the main class name and workdir as arguments and calls its runSimulation method.
+  *
+  * The simulation binary should already be running and listening on named pipes:
+  *   - workdir/cmd.pipe: for sending commands
+  *   - workdir/msg.pipe: for receiving messages
   *
   * Usage:
-  *   java -cp <classpath> chisel3.simulator.ChiselSimRunner <MainClassName>
+  *   java -cp <classpath> chisel3.simulator.ChiselSimRunner <MainClassName> <workdir>
   */
 object ChiselSimRunner {
   def main(args: Array[String]): Unit = {
-    if (args.isEmpty) {
-      System.err.println("Usage: ChiselSimRunner <MainClassName>")
-      System.err.println("  MainClassName: The fully qualified name of a ChiselSimMain object")
+    if (args.length < 2) {
+      System.err.println("Usage: ChiselSimRunner <MainClassName> <workdir>")
+      System.err.println("  MainClassName: The fully qualified name of a ChiselSimSuite object")
+      System.err.println("  workdir: The working directory containing the simulation and pipes")
       System.exit(1)
     }
 
     val mainClassName = args(0)
+    val workdir = Paths.get(args(1))
+    val commandPipe = workdir.resolve("cmd.pipe")
+    val messagePipe = workdir.resolve("msg.pipe")
 
     try {
       // Load the class and get the MODULE$ field (Scala object instance)
@@ -24,12 +34,12 @@ object ChiselSimRunner {
       val moduleField = clazz.getField("MODULE$")
       val instance = moduleField.get(null)
 
-      // Check that it's a ChiselSimSuite and call runSimulation
+      // Check that it's a ChiselSimSuite and call runSimulation with pipes
       instance match {
-        case simMain: ChiselSimSuite[_] =>
-          simMain.runSimulation()
+        case simSuite: ChiselSimSuite[_] =>
+          simSuite.runSimulationWithPipes(commandPipe, messagePipe, workdir)
         case _ =>
-          System.err.println(s"Error: $mainClassName is not a ChiselSimMain")
+          System.err.println(s"Error: $mainClassName is not a ChiselSimSuite")
           System.exit(1)
       }
     } catch {
