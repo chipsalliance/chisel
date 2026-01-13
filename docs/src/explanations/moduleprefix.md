@@ -202,6 +202,55 @@ In this example, we end up with four modules: `Top`, `Foo_Sub`, `Bar_Sub`, and `
 When using `Definition` and `Instance`, all `Definition` calls will be affected by `withModulePrefix`.
 However, `Instance` will not be effected, since it always creates an instance of the captured definition.
 
+## noModulePrefix
+
+Use `noModulePrefix` to instantiate a module without any prefixing from parent scopes applied.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  withModulePrefix("Foo") {
+    noModulePrefix {
+      Module(new ChildA)
+    }
+    Module(new ChildB)
+  }
+}
+
+class ChildA extends Module {
+  // ..
+}
+
+class ChildB extends Module {
+  // ..
+}
+```
+
+This results in the module definitions: `ChildA` and `Foo_ChildB`.
+
+`noModulePrefix` clears all nested prefixes above the current scope, but nested `withModulePrefix`s will still apply.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  val sub = withModulePrefix("Foo") {
+    noModulePrefix {
+      withModulePrefix("Bar") {
+        Module(new Child)
+      }
+    }
+  }
+}
+
+class Child extends Module {
+  // ..
+}
+```
+
+This results in the definition `Bar_Child`.
+
 ## External Modules
 
 `BlackBox` and `ExtModule` are unaffected by `withModulePrefix`.
