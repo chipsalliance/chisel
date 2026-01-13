@@ -24,9 +24,9 @@ object ChiselSimRunner {
       val moduleField = clazz.getField("MODULE$")
       val instance = moduleField.get(null)
 
-      // Check that it's a ChiselSimMain and call runSimulation
+      // Check that it's a ChiselSimSuite and call runSimulation
       instance match {
-        case simMain: ChiselSimMain[_] =>
+        case simMain: ChiselSimSuite[_] =>
           simMain.runSimulation()
         case _ =>
           System.err.println(s"Error: $mainClassName is not a ChiselSimMain")

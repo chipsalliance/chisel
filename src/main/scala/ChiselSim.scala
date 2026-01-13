@@ -1,7 +1,7 @@
 
 import chisel3._
 import chisel3.experimental.hierarchy._
-import chisel3.simulator.{ChiselSim, ChiselSimMain}
+import chisel3.simulator.{ChiselSim, ChiselSimSuite}
 import chisel3.simulator.stimulus.{RunUntilFinished, RunUntilSuccess}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.Counter
@@ -41,7 +41,7 @@ object ChiselSimExample extends ChiselSim with App {
   }
 }
 
-object ChiselSimExample2 extends ChiselSimMain(new Foo(8)) {
+object ChiselSimExample2 extends ChiselSimSuite(new Foo(8)) {
 
   override def testdir: HasTestingDirectory = new HasTestingDirectory {
     override def getDirectory: Path = Paths.get("testdir2")

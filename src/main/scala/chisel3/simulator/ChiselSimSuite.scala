@@ -28,7 +28,7 @@ import chisel3.testing.HasTestingDirectory
   *   ./mill chisel[2.13].runMain MySimMain          # Export phase
   *   ninja -C my-testdir simulate                   # Compile and run
   */
-abstract class ChiselSimMain[T <: Module](gen: => T) extends ControlAPI with PeekPokeAPI with SimulatorAPI {
+abstract class ChiselSimSuite[T <: Module](gen: => T) extends ControlAPI with PeekPokeAPI with SimulatorAPI {
   self: Singleton =>
 
   /** The main class name, used in the generated ninja file to invoke the run phase */
