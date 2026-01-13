@@ -5,6 +5,8 @@ package chisel3.util.experimental.decode
 import chisel3.util.BitPat
 import logger.LazyLogging
 
+import java.io.{BufferedReader, InputStreamReader, PrintWriter}
+
 case object EspressoNotFoundException extends Exception
 
 /** A [[Minimizer]] implementation to use espresso to minimize the [[TruthTable]].
@@ -79,9 +81,47 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
                     |""".stripMargin)
     val output =
       try {
-        os.proc("espresso").call(stdin = input).out.chunks.mkString
+        val pb = new ProcessBuilder("espresso")
+        val process = pb.start()
+
+        // Write input to stdin
+        val stdinWriter = new PrintWriter(process.getOutputStream)
+        try {
+          stdinWriter.print(input)
+        } finally {
+          stdinWriter.close()
+        }
+
+        // Read output from stdout
+        val stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream))
+        val stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
+        val result = new StringBuilder
+        val errors = new StringBuilder
+        try {
+          var line: String = null
+          while ({ line = stdoutReader.readLine(); line != null }) {
+            result.append(line).append("\n")
+          }
+        } finally {
+          stdoutReader.close()
+        }
+        try {
+          var line: String = null
+          while ({ line = stderrReader.readLine(); line != null }) {
+            errors.append(line).append("\n")
+          }
+        } finally {
+          stderrReader.close()
+        }
+
+        val exitCode = process.waitFor()
+        if (exitCode != 0) {
+          throw new RuntimeException(s"espresso failed with exit code $exitCode: ${errors.toString}")
+        }
+        result.toString.stripSuffix("\n")
       } catch {
-        case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") =>
+        case e: java.io.IOException if e.getMessage.contains("Cannot run program") ||
+          e.getMessage.contains("error=2, No such file or directory") =>
           throw EspressoNotFoundException
       }
     logger.trace(s"""espresso output table:

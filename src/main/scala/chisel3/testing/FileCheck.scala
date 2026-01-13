@@ -3,11 +3,10 @@
 package chisel3.testing
 
 import firrtl.options.StageUtils.dramaticMessage
-import java.io.{ByteArrayOutputStream, IOException, PrintWriter}
-import java.nio.file.{Files, StandardOpenOption}
+import java.io.{BufferedReader, ByteArrayOutputStream, File, IOException, InputStreamReader, PrintWriter}
+import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import scala.Console.{withErr, withOut}
 import scala.util.control.NoStackTrace
-import scala.sys.process._
 
 object FileCheck {
 
@@ -41,6 +40,14 @@ object FileCheck {
         )
         with NoStackTrace
 
+  }
+
+  /** Recursively delete a directory and all its contents. */
+  private def deleteRecursively(file: File): Unit = {
+    if (file.isDirectory) {
+      file.listFiles().foreach(deleteRecursively)
+    }
+    file.delete()
   }
 
 }
@@ -89,42 +96,54 @@ trait FileCheck {
       // Filecheck needs to have the thing to check in a file.
       //
       // TODO: This could be made ephemeral or use a named pipe?
-      val dir = os.FilePath(testingDirectory.getDirectory).resolveFrom(os.pwd)
-      os.makeDir.all(dir)
-      val tempDir = os.temp.dir(dir = dir, deleteOnExit = false)
-      val checkFile = tempDir / "check"
-      val inputFile = tempDir / "input"
-      os.write.over(target = checkFile, data = check, createFolders = true)
-      os.write.over(target = inputFile, data = input, createFolders = true)
+      val baseDir = testingDirectory.getDirectory
+      val dir = if (baseDir.isAbsolute) baseDir else Paths.get(System.getProperty("user.dir")).resolve(baseDir)
+      Files.createDirectories(dir)
+      val tempDir = Files.createTempDirectory(dir, "filecheck")
+      val checkFile = tempDir.resolve("check")
+      val inputFile = tempDir.resolve("input")
+      Files.write(checkFile, check.getBytes)
+      Files.write(inputFile, input.getBytes)
 
-      val extraArgs = os.Shellable(fileCheckArgs)
-      val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
-      val stdoutWriter = new PrintWriter(stdoutStream)
+      val stderrStream = new ByteArrayOutputStream
       val stderrWriter = new PrintWriter(stderrStream)
-      val result =
+
+      val cmd = Seq("FileCheck", checkFile.toString) ++ fileCheckArgs
+      val (exitCode, command) =
         try {
-          os.proc("FileCheck", checkFile, extraArgs)
-            .call(
-              stdin = inputFile,
-              stdout = os.ProcessOutput.Readlines(stdoutWriter.println),
-              stderr = os.ProcessOutput.Readlines(stderrWriter.println),
-              check = false
-            )
+          val pb = new ProcessBuilder(cmd: _*)
+          pb.redirectInput(inputFile.toFile)
+          // Merge stderr into stdout to simplify reading and avoid potential deadlocks
+          pb.redirectErrorStream(true)
+          val process = pb.start()
+
+          // Read combined stdout/stderr
+          val reader = new BufferedReader(new InputStreamReader(process.getInputStream))
+          try {
+            var line: String = null
+            while ({ line = reader.readLine(); line != null }) {
+              stderrWriter.println(line)
+            }
+          } finally {
+            reader.close()
+          }
+
+          val code = process.waitFor()
+          (code, cmd)
         } catch {
-          case a: IOException if a.getMessage.startsWith("Cannot run program") =>
-            throw new FileCheck.Exceptions.NotFound(a.getMessage)
+          case e: IOException if e.getMessage.startsWith("Cannot run program") =>
+            throw new FileCheck.Exceptions.NotFound(e.getMessage)
         }
-      stdoutWriter.close()
       stderrWriter.close()
 
-      result match {
-        case os.CommandResult(_, 0, _) => os.remove.all(tempDir)
-        case os.CommandResult(command, exitCode, _) =>
-          throw new FileCheck.Exceptions.NonZeroExitCode(
-            s"cat $inputFile | ${command.mkString(" ")}",
-            exitCode,
-            stderrStream.toString
-          )
+      if (exitCode == 0) {
+        FileCheck.deleteRecursively(tempDir.toFile)
+      } else {
+        throw new FileCheck.Exceptions.NonZeroExitCode(
+          s"cat $inputFile | ${command.mkString(" ")}",
+          exitCode,
+          stderrStream.toString
+        )
       }
     }
 

@@ -6,24 +6,50 @@ import chisel3._
 import chisel3.experimental.Analog
 import ujson.Value.Value
 
+import java.io.{File, PrintWriter}
+import java.nio.file.Files
 import scala.collection.immutable.SeqMap
+import scala.io.Source
 
 object SlangUtils {
 
   /** Use Slang to parse Verilog into Json AST. */
   def getVerilogAst(verilog: String): Value = {
-    val astFile = os.temp()
-    os.proc(
+    val astFile = Files.createTempFile("slang-ast", ".json").toFile
+    val verilogFile = Files.createTempFile("slang-input", ".v").toFile
+    astFile.deleteOnExit()
+    verilogFile.deleteOnExit()
+
+    // Write verilog to temp file
+    val writer = new PrintWriter(verilogFile)
+    try {
+      writer.write(verilog)
+    } finally {
+      writer.close()
+    }
+
+    val cmd = Seq(
       "slang",
-      os.temp(verilog),
+      verilogFile.getAbsolutePath,
       "--single-unit",
       "--ignore-unknown-modules",
       "--compat",
       "vcs",
       "--ast-json",
-      astFile
-    ).call()
-    ujson.read(os.read(astFile))
+      astFile.getAbsolutePath
+    )
+    val process = new ProcessBuilder(cmd: _*).inheritIO().start()
+    val exitCode = process.waitFor()
+    if (exitCode != 0) {
+      throw new ChiselException(s"slang failed with exit code $exitCode")
+    }
+
+    val source = Source.fromFile(astFile)
+    try {
+      ujson.read(source.mkString)
+    } finally {
+      source.close()
+    }
   }
 
   /** Extract IO from Verilog AST. */

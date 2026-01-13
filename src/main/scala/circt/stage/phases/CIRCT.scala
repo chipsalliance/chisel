@@ -24,7 +24,8 @@ import firrtl.options.StageUtils.dramaticMessage
 import firrtl.stage.{FirrtlOptions, FirrtlOptionsView}
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq, EmittedVerilogCircuit, EmittedVerilogCircuitAnnotation}
 
-import java.io.File
+import java.io.{BufferedReader, ByteArrayOutputStream, File, InputStreamReader, InputStream, PrintWriter}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
 import scala.util.control.NoStackTrace
 import firrtl.EmittedBtor2CircuitAnnotation
@@ -75,6 +76,26 @@ private object Helpers {
     def debug(msg: String): Unit = logger.debug(msg)
     def trace(msg: String): Unit = logger.trace(msg)
   }
+
+  /** Create a thread that reads all lines from an InputStream and writes them to a PrintWriter.
+    *
+    * @param stream the input stream to read from
+    * @param writer the writer to write lines to
+    * @return a Thread that can be started to begin piping
+    */
+  def pipeStream(stream: InputStream, writer: PrintWriter): Thread = {
+    new Thread(() => {
+      val reader = new BufferedReader(new InputStreamReader(stream))
+      try {
+        var line: String = null
+        while ({ line = reader.readLine(); line != null }) {
+          writer.println(line)
+        }
+      } finally {
+        reader.close()
+      }
+    })
+  }
 }
 
 private[this] object Exceptions {
@@ -124,8 +145,6 @@ private[this] object Exceptions {
 class CIRCT extends Phase {
 
   import Helpers._
-
-  import scala.sys.process._
 
   override def prerequisites = Seq(
     Dependency[circt.stage.phases.AddImplicitOutputFile]
@@ -194,12 +213,18 @@ class CIRCT extends Phase {
     }
 
     // FIRRTL is serialized either in memory or to a file
-    val input: Either[Iterable[String], os.Path] =
+    val input: Either[Iterable[String], Path] =
       if (circtOptions.dumpFir) {
-        val td = os.Path(stageOptions.targetDir, os.pwd)
+        val td = Paths.get(stageOptions.targetDir).toAbsolutePath
+        Files.createDirectories(td)
         val filename = firrtlOptions.outputFileName.getOrElse(circuitName)
-        val firPath = td / s"$filename.fir"
-        os.write.over(firPath, serialization, createFolders = true)
+        val firPath = td.resolve(s"$filename.fir")
+        val writer = new PrintWriter(firPath.toFile)
+        try {
+          serialization.foreach(writer.println)
+        } finally {
+          writer.close()
+        }
         Right(firPath)
       } else {
         Left(serialization)
@@ -261,21 +286,43 @@ class CIRCT extends Phase {
         })
 
     logger.info(s"""Running CIRCT: '${cmd.mkString(" ")}""" + input.fold(_ => " < $$" + "input'", _ => "'"))
-    val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
-    val stdoutWriter = new java.io.PrintWriter(stdoutStream)
-    val stderrWriter = new java.io.PrintWriter(stderrStream)
-    val stdin: os.ProcessInput = input match {
-      case Left(it) => (it: os.Source) // Static cast to apply implicit conversion
-      case Right(_) => os.Pipe
-    }
-    val stdout = os.ProcessOutput.Readlines(stdoutWriter.println)
-    val stderr = os.ProcessOutput.Readlines(stderrWriter.println)
+    val stdoutStream = new ByteArrayOutputStream
+    val stderrStream = new ByteArrayOutputStream
+    val stdoutWriter = new PrintWriter(stdoutStream)
+    val stderrWriter = new PrintWriter(stderrStream)
     val exitValue =
       try {
-        os.proc(cmd).call(check = false, stdin = stdin, stdout = stdout, stderr = stderr).exitCode
+        val pb = new ProcessBuilder(cmd: _*)
+        val process = pb.start()
+
+        // Handle stdin - write input to process if needed
+        input match {
+          case Left(it) =>
+            val stdinWriter = new PrintWriter(process.getOutputStream)
+            try {
+              it.foreach(stdinWriter.println)
+            } finally {
+              stdinWriter.close()
+            }
+          case Right(_) =>
+            // No stdin needed when reading from file
+            process.getOutputStream.close()
+        }
+
+        // Read stdout and stderr in separate threads to prevent deadlock
+        val stdoutThread = pipeStream(process.getInputStream, stdoutWriter)
+        val stderrThread = pipeStream(process.getErrorStream, stderrWriter)
+
+        stdoutThread.start()
+        stderrThread.start()
+
+        val code = process.waitFor()
+        stdoutThread.join()
+        stderrThread.join()
+        code
       } catch {
-        case a: java.io.IOException if a.getMessage().startsWith("Cannot run program") =>
-          throw new Exceptions.FirtoolNotFound(a.getMessage())
+        case e: java.io.IOException if e.getMessage.startsWith("Cannot run program") =>
+          throw new Exceptions.FirtoolNotFound(e.getMessage)
       }
     stdoutWriter.close()
     stderrWriter.close()
