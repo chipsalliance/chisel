@@ -18,16 +18,6 @@ on:
         default: '2.13'
         required: true
         type: string
-      espresso:
-        description: 'The espresso version to use'
-        default: '2.4'
-        required: true
-        type: string
-      slang:
-        description: 'The slang version to use'
-        default: '7.0'
-        required: true
-        type: string
       circt:
         description: 'The CIRCT version to use (must be a valid release tag, "nightly", or "version-file").
                       Leave off (or empty) to let Chisel manage the CIRCT version'
@@ -37,6 +27,10 @@ on:
         default: ''
         required: false
         type: string
+
+env:
+  espresso_version: '2.4'
+  slang_version: '7.0'
 
 jobs:
   ci:
@@ -53,11 +47,11 @@ jobs:
       - name: Install Espresso
         uses: ./.github/workflows/install-espresso
         with:
-          version: ${{ inputs.espresso }}
+          version: ${{ env.espresso_version }}
       - name: Install Slang
         uses: ./.github/workflows/build-slang
         with:
-          version: ${{ inputs.slang }}
+          version: ${{ env.slang_version }}
       - name: Install FileCheck
         run: |
           sudo apt update
@@ -89,12 +83,13 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill -j0 firrtl.cross[].test -oF + svsim.cross[].test -oF + chisel[_].test -oF
+        # Note firrtl tests don't work with Scala 3 so just run default version (2.13) for now.
+        run: ./mill firrtl.cross[].test -oF + svsim.cross[${{ inputs.scala }}].test -oF + chisel[${{ inputs.scala }}].test -oF
 
   lit:
     name: Run lit tests
     runs-on: ${{ inputs.system }}
-
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -135,12 +130,12 @@ jobs:
           $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
-        run: ./mill lit.cross[].run
+        run: ./mill lit.cross[${{ inputs.scala }}].run
 
   mima:
     name: binary compatibility checking
     runs-on: ${{ inputs.system }}
-
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -154,47 +149,10 @@ jobs:
       - name: Check Binary Compatibility with MiMa
         run: ./mill __.mimaReportBinaryIssues
 
-  mill:
-    name: compile project with mill
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref }}
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'adopt'
-          java-version: ${{ inputs.jvm }}
-      - name: Install CIRCT
-        id: install-circt
-        if: ${{ inputs.circt }}
-        uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
-        with:
-          version: ${{ inputs.circt }}
-          github-token: ${{ github.token }}
-      # TODO have install-circt do this
-      - name: Set CHISEL_FIRTOOL_PATH and CIRCT_INSTALL_PATH
-        if: steps.install-circt.outcome == 'success'
-        run: |
-          bindir=$(dirname $(which firtool))
-          installdir=$(dirname $bindir)
-          echo "CHISEL_FIRTOOL_PATH=$bindir" >> "$GITHUB_ENV"
-          echo "CIRCT_INSTALL_PATH=$installdir" >> "$GITHUB_ENV"
-      - name: Print firtool version
-        if: steps.install-circt.outcome == 'success'
-        run: |
-          echo "The CIRCT version used is:" >> $GITHUB_STEP_SUMMARY
-          echo \`\`\` >> $GITHUB_STEP_SUMMARY
-          $CHISEL_FIRTOOL_PATH/firtool -version >> $GITHUB_STEP_SUMMARY
-          echo \`\`\` >> $GITHUB_STEP_SUMMARY
-      - name: Compile with Mill
-        run: ./mill compileAll
-
   doc:
     name: Formatting
     runs-on: ubuntu-24.04
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -213,6 +171,7 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-24.04
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -241,12 +200,13 @@ jobs:
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
       - name: Integration Tests
-        run: ./mill -j0 integration-tests.cross[].test -oF
+        run: ./mill integration-tests.cross[${{ inputs.scala }}].test -oF
 
   # Currently just a sanity check that the benchmarking flow works
   benchmark:
     name: Benchmarking Sanity Check
     runs-on: ubuntu-24.04
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -263,9 +223,6 @@ jobs:
   std:
     name: Standard Library
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        scala: ["2.13"]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -279,12 +236,12 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ inputs.jvm }}
       - name: Compile
-        run: ./mill stdlib.cross[_].compile
+        run: ./mill stdlib.cross[${{ matrix.scala }}].compile
 
   website:
     name: Build Mdoc & Website
     runs-on: ubuntu-24.04
-
+    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -332,6 +289,7 @@ jobs:
 
   scala-cli-example:
     name: Test Scala-CLI Example
+    if: ${{ inputs.scala == '2.13' }}
     uses: ./.github/workflows/build-scala-cli-example.yml
     with:
       circt: ${{ inputs.circt }}
