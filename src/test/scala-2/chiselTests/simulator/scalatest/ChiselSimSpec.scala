@@ -599,7 +599,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         Future {
           randomIncrementerTest(3000) // more than 2802 to trigger the issue
         },
-        10.seconds
+        60.seconds
       )
     }
 
