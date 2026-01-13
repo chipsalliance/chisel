@@ -1081,8 +1081,7 @@ package experimental {
   }
 }
 
-/**
-  * Creates a block under which any generator that gets run results in a module whose name is prepended with the given prefix.
+/** Creates a block under which any generator that gets run results in a module whose name is prepended with the given prefix.
   */
 object withModulePrefix {
 
@@ -1112,8 +1111,7 @@ object withModulePrefix {
   }
 }
 
-/**
-  * Creates a block under which any generator that gets run results in a module whose name does not have any module prefix applied.
+/** Creates a block under which any generator that gets run results in a module whose name does not have any module prefix applied.
   */
 object noModulePrefix {
 
