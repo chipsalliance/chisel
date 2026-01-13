@@ -47,7 +47,21 @@ object ChiselSimExample2 extends ChiselSimSuite(new Foo(8)) {
     override def getDirectory: Path = Paths.get("testdir2")
   }
 
-  def test(dut: Foo): Unit = {
+
+  test("run a test") { dut =>
+    println("Running simulation!")
+    // Poke different values on the two input ports.
+    dut.a.poke(1)
+    dut.b.poke(2)
+
+    // Step the clock by one cycle.
+    dut.clock.step(2)
+
+    // Expect that the sum of the two inputs is on the output port.
+    dut.c.expect(3)
+  }
+
+  test("run another test") { dut =>
     println("Running simulation!")
     // Poke different values on the two input ports.
     dut.a.poke(1)

@@ -177,10 +177,11 @@ trait SimulatorAPI {
     * @param testingDirectory where files will be created
     */
   def exportSimulation[T <: Module](
-    module:      => T,
-    mainClass:   String,
-    chiselOpts:  Array[String] = Array.empty,
-    firtoolOpts: Array[String] = Array.empty
+    module:           => T,
+    mainClass:        String,
+    testDescriptions: Seq[String] = Seq.empty,
+    chiselOpts:       Array[String] = Array.empty,
+    firtoolOpts:      Array[String] = Array.empty
   )(
     implicit testingDirectory: HasTestingDirectory
   ): ExportedSimulation = {
@@ -349,20 +350,21 @@ trait SimulatorAPI {
       l("  description = Compiling with Verilator")
       l("")
 
-      // Rule to run the simulation with IPC via named pipes
+      // Rule to run a test with IPC via named pipes
       // This creates FIFOs, launches the simulation binary in background,
       // then runs the Scala test which connects to the pipes
       // Note: In ninja, $$ escapes to $, so $$! becomes $! (shell's background PID)
       // Run simulation in background with full path, redirect all output to prevent blocking
-      l("rule run_simulation")
+      // The $testIndex variable specifies which test (0-based) to run
+      l("rule run_test")
       l("  command = " +
         "rm -f $workdir/cmd.pipe $workdir/msg.pipe && " +
         "mkfifo $workdir/cmd.pipe $workdir/msg.pipe && " +
-        "SVSIM_COMMAND_PIPE=$workdir/cmd.pipe SVSIM_MESSAGE_PIPE=$workdir/msg.pipe $workdir/simulation > $workdir/simulation.log 2>&1 & " +
+        "SVSIM_COMMAND_PIPE=$workdir/cmd.pipe SVSIM_MESSAGE_PIPE=$workdir/msg.pipe $workdir/simulation > $workdir/simulation-$testIndex.log 2>&1 & " +
         "SIM_PID=$$!; " +
-        "java -cp '$classpath' chisel3.simulator.ChiselSimRunner $mainClass $workdir; " +
+        "java -cp '$classpath' chisel3.simulator.ChiselSimRunner $mainClass $testIndex $workdir; " +
         "RESULT=$$?; kill $$SIM_PID 2>/dev/null; rm -f $workdir/cmd.pipe $workdir/msg.pipe; exit $$RESULT")
-      l("  description = Running simulation")
+      l("  description = Running test $testIndex: $testDesc")
       l("  pool = console")
       l("")
 
@@ -383,8 +385,28 @@ trait SimulatorAPI {
       l(s"build verilate: phony $verilatorStamp")
       l("")
 
-      l(s"build simulate: run_simulation | verilate")
-      l("")
+      // Generate individual test targets
+      val testTargets = if (testDescriptions.nonEmpty) {
+        testDescriptions.zipWithIndex.map { case (desc, index) =>
+          val testNum = index + 1  // 1-based for user-facing names
+          val stampFile = s"workdir-$workdirTag/.test$testNum.stamp"
+          l(s"build $stampFile: run_test | verilate")
+          l(s"  testIndex = $index")
+          l(s"  testDesc = $desc")
+          l("")
+          l(s"build test$testNum: phony $stampFile")
+          l("")
+          s"test$testNum"
+        }
+      } else {
+        Seq.empty
+      }
+
+      // Generate testAll target that depends on all individual tests
+      if (testTargets.nonEmpty) {
+        l(s"build testAll: phony ${testTargets.mkString(" ")}")
+        l("")
+      }
 
       l("default verilog")
       l("")

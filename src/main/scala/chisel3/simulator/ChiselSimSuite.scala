@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.testing.HasTestingDirectory
 import java.nio.file.Path
+import scala.collection.mutable
 
 /** Base class for ChiselSim main functions that export simulation artifacts.
   *
@@ -42,43 +43,47 @@ abstract class ChiselSimSuite[T <: Module](gen: => T) extends ControlAPI with Pe
   /** Override to customize the test directory */
   def testdir: HasTestingDirectory = HasTestingDirectory.default
 
-  /** User must implement the test stimulus */
-  def test(dut: T): Unit
+  private val _tests = mutable.ArrayBuffer.empty[(String, T => Unit)]
 
-  /** Run the simulation with pre-compiled artifacts using named pipes for IPC.
+  /** Register a test with a description */
+  def test(desc: String)(f: T => Unit): Unit = {
+    _tests += ((desc, f))
+  }
+
+  /** Get the list of registered tests (description, function pairs) */
+  def tests: Seq[(String, T => Unit)] = _tests.toSeq
+
+  /** Run a specific test by index with pre-compiled artifacts using named pipes for IPC.
     * Called by ChiselSimRunner when invoked from ninja.
     *
     * The simulation binary should already be running and listening on the pipes.
     * This method connects to the pipes, runs the test, and sends shutdown command.
     *
+    * @param testIndex the 0-based index of the test to run
     * @param commandPipe path to the command pipe (for sending commands to simulation)
     * @param messagePipe path to the message pipe (for receiving messages from simulation)
     * @param workdir the working directory containing the simulation
     */
-  def runSimulationWithPipes(commandPipe: Path, messagePipe: Path, workdir: Path): Unit = {
+  def runSimulationWithPipes(testIndex: Int, commandPipe: Path, messagePipe: Path, workdir: Path): Unit = {
+    if (testIndex < 0 || testIndex >= _tests.size) {
+      throw new IllegalArgumentException(s"Test index $testIndex out of range (0..${_tests.size - 1})")
+    }
+    val (testName, testFn) = _tests(testIndex)
+    println(s"Running test $testIndex: $testName")
+
     // Get the parent directory, handling relative paths that may not have a parent
     val parentDir = Option(workdir.toAbsolutePath.getParent).getOrElse(workdir.toAbsolutePath)
     implicit val testingDirectory: HasTestingDirectory = new HasTestingDirectory {
       override def getDirectory: java.nio.file.Path = parentDir
     }
-    runCompiledSimulationWithPipes(gen, commandPipe, messagePipe, workdir)(test)
-  }
-
-  /** Run the simulation with pre-compiled artifacts (spawns simulation binary).
-    * For backward compatibility with process-based IPC.
-    */
-  def runSimulation(): Unit = {
-    // Use current directory since ninja runs from within the workspace
-    implicit val testingDirectory: HasTestingDirectory = new HasTestingDirectory {
-      override def getDirectory: java.nio.file.Path = java.nio.file.Paths.get(".")
-    }
-    runCompiledSimulation(gen)(test)
+    runCompiledSimulationWithPipes(gen, commandPipe, messagePipe, workdir)(testFn)
   }
 
   final def main(args: Array[String]): Unit = {
     // Export phase: Generate .fir file and ninja build file
     implicit val testingDirectory: HasTestingDirectory = testdir
-    val exported = exportSimulation(gen, mainClass)
+    val testDescriptions = _tests.map(_._1).toSeq
+    val exported = exportSimulation(gen, mainClass, testDescriptions)
     println(s"Exported simulation to: ${exported.workspacePath}")
     println(s"  FIRRTL file: ${exported.firFilePath}")
     println(s"  Ninja file:  ${exported.ninjaFilePath}")
@@ -86,7 +91,17 @@ abstract class ChiselSimSuite[T <: Module](gen: => T) extends ControlAPI with Pe
     println("To generate Verilog, run:")
     println(s"  ninja -C ${exported.workspacePath} verilog")
     println()
-    println("To compile and run the simulation, run:")
-    println(s"  ninja -C ${exported.workspacePath} simulate")
+    println("To compile the simulation, run:")
+    println(s"  ninja -C ${exported.workspacePath} verilate")
+    println()
+    if (testDescriptions.nonEmpty) {
+      println("To run individual tests:")
+      testDescriptions.zipWithIndex.foreach { case (desc, i) =>
+        println(s"  ninja -C ${exported.workspacePath} test${i + 1}   # $desc")
+      }
+      println()
+      println("To run all tests:")
+      println(s"  ninja -C ${exported.workspacePath} testAll")
+    }
   }
 }
