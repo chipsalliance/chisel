@@ -21,7 +21,7 @@ import chisel3.util.simpleClassName
   * @see [[Valid$ Valid factory]] for concrete examples
   * @groupdesc Signals The actual hardware fields of the Bundle
   */
-class Valid[+T <: Data](gen: T) extends Bundle {
+class Valid[+T <: Data](val gen: T) extends Bundle {
 
   /** A bit that will be asserted when `bits` is valid
     * @group Signals

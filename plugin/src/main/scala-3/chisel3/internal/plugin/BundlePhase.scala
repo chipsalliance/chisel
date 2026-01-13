@@ -153,7 +153,7 @@ object BundleHelpers {
       && (
         ChiselTypeHelpers.isData(m.info)
           || ChiselTypeHelpers.isBoxedData(m.info, isIgnoreSeq)
-      )
+      ) && !m.flags.is(Flags.Method)
     }
 
     val currentFields: List[tpd.Tree] = bundleSym.info.decls.toList.collect {
