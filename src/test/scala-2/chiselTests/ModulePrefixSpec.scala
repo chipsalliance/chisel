@@ -578,4 +578,33 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
            |""".stripMargin
       )
   }
+
+  it should "still respect localModulePrefix" in {
+    class SubWithPrefix extends RawModule {
+      override def localModulePrefix = Some("Local")
+      val a = Wire(Bool())
+    }
+
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val prefixed = Module(new SubWithPrefix)
+        val unprefixed = noModulePrefix {
+          Module(new SubWithPrefix)
+        }
+      }
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Outer_Local_SubWithPrefix :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Local_SubWithPrefix :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst prefixed of Outer_Local_SubWithPrefix
+           |CHECK-NEXT:    inst unprefixed of Local_SubWithPrefix
+           |""".stripMargin
+      )
+  }
 }
