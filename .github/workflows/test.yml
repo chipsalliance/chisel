@@ -29,8 +29,8 @@ on:
         type: string
 
 env:
-  espresso: '2.4'
-  slang: '7.0'
+  espresso_version: '2.4'
+  slang_version: '7.0'
 
 jobs:
   ci:
@@ -47,11 +47,11 @@ jobs:
       - name: Install Espresso
         uses: ./.github/workflows/install-espresso
         with:
-          version: ${{ env.espresso }}
+          version: ${{ env.espresso_version }}
       - name: Install Slang
         uses: ./.github/workflows/build-slang
         with:
-          version: ${{ env.slang }}
+          version: ${{ env.slang_version }}
       - name: Install FileCheck
         run: |
           sudo apt update
