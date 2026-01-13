@@ -1149,6 +1149,19 @@ private[chisel3] object Builder extends LazyLogging {
     context.modulePrefixStack = tail
   }
 
+  // Clears the module prefix stack and returns the prior value
+  def clearModulePrefixStack(): List[(String, Boolean)] = {
+    val context = chiselContext.get()
+    val old = context.modulePrefixStack
+    context.modulePrefixStack = Nil
+    old
+  }
+
+  // Set the module prefix stack
+  def setModulePrefixStack(stack: List[(String, Boolean)]): Unit = {
+    chiselContext.get().modulePrefixStack = stack
+  }
+
   // Returns the nested module prefix at this moment
   def getModulePrefix: String = {
     val ctx = chiselContext.get()

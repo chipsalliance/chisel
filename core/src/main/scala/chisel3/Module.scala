@@ -1112,6 +1112,23 @@ object withModulePrefix {
   }
 }
 
+/**
+  * Creates a block under which any generator that gets run results in a module whose name does not have any module prefix applied.
+  */
+object noModulePrefix {
+
+  /** Removes module prefix for all modules generated within the block.
+    *
+    * @param block The block of code to execute without module prefixing.
+    */
+  def apply[T](block: => T): T = {
+    val savedStack = Builder.clearModulePrefixStack()
+    val res = block
+    Builder.setModulePrefixStack(savedStack)
+    res
+  }
+}
+
 private case class ModulePrefixAnnotation(target: IsMember, prefix: String) extends SingleTargetAnnotation[IsMember] {
   def duplicate(n: IsMember): ModulePrefixAnnotation = this.copy(target = n)
 }
