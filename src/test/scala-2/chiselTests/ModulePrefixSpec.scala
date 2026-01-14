@@ -452,4 +452,159 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
     )
   }
 
+  behavior.of("noModulePrefix")
+
+  it should "remove module prefix within the block" in {
+    class Sub(name: String) extends RawModule {
+      override def desiredName = name
+      val a = Wire(Bool())
+    }
+
+    class Top extends RawModule {
+      val prefixed = withModulePrefix("Foo") {
+        Module(new Sub("Prefixed"))
+      }
+
+      val unprefixed = withModulePrefix("Foo") {
+        noModulePrefix {
+          Module(new Sub("Unprefixed"))
+        }
+      }
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo_Prefixed :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Unprefixed :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst prefixed of Foo_Prefixed
+           |CHECK-NEXT:    inst unprefixed of Unprefixed
+           |""".stripMargin
+      )
+  }
+
+  it should "remove nested module prefixes" in {
+    class Inner(name: String) extends RawModule {
+      override def desiredName = name
+      val a = Wire(Bool())
+    }
+
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        withModulePrefix("Inner") {
+          val prefixed = Module(new Inner("Prefixed"))
+          val unprefixed = noModulePrefix {
+            Module(new Inner("Unprefixed"))
+          }
+        }
+      }
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Outer_Inner_Prefixed :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Unprefixed :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst prefixed of Outer_Inner_Prefixed
+           |CHECK-NEXT:    inst unprefixed of Unprefixed
+           |""".stripMargin
+      )
+  }
+
+  it should "restore prefix after the block" in {
+    class Sub(name: String) extends RawModule {
+      override def desiredName = name
+      val a = Wire(Bool())
+    }
+
+    class Top extends RawModule {
+      withModulePrefix("Foo") {
+        val before = Module(new Sub("Before"))
+        noModulePrefix {
+          val inside = Module(new Sub("Inside"))
+        }
+        val after = Module(new Sub("After"))
+      }
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo_Before :
+           |CHECK-LABEL: module Inside :
+           |CHECK-LABEL: module Foo_After :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst before of Foo_Before
+           |CHECK-NEXT:    inst inside of Inside
+           |CHECK-NEXT:    inst after of Foo_After
+           |""".stripMargin
+      )
+  }
+
+  it should "allow withModulePrefix inside noModulePrefix" in {
+    class Sub(name: String) extends RawModule {
+      override def desiredName = name
+      val a = Wire(Bool())
+    }
+
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val outer = Module(new Sub("Outer"))
+        noModulePrefix {
+          val none = Module(new Sub("None"))
+          withModulePrefix("Inner") {
+            val inner = Module(new Sub("Inner"))
+          }
+        }
+      }
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Outer_Outer :
+           |CHECK-LABEL: module None :
+           |CHECK-LABEL: module Inner_Inner :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst outer of Outer_Outer
+           |CHECK-NEXT:    inst none of None
+           |CHECK-NEXT:    inst inner of Inner_Inner
+           |""".stripMargin
+      )
+  }
+
+  it should "still respect localModulePrefix" in {
+    class SubWithPrefix extends RawModule {
+      override def localModulePrefix = Some("Local")
+      val a = Wire(Bool())
+    }
+
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val prefixed = Module(new SubWithPrefix)
+        val unprefixed = noModulePrefix {
+          Module(new SubWithPrefix)
+        }
+      }
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Outer_Local_SubWithPrefix :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Local_SubWithPrefix :
+           |CHECK:         wire a : UInt<1>
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst prefixed of Outer_Local_SubWithPrefix
+           |CHECK-NEXT:    inst unprefixed of Local_SubWithPrefix
+           |""".stripMargin
+      )
+  }
 }
