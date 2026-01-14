@@ -541,7 +541,7 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
       )
     }
 
-    it("should not create a new instance for two instances both under an 'elideBlocks' scope") {
+    it("should not create a new module for two instances both under an 'elideBlocks' scope") {
       class Foo extends Module {
         layer.elideBlocks {
           val bar = Instantiate(new HasLayer)
