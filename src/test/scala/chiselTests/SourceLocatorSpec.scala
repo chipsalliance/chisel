@@ -98,70 +98,36 @@ class SourceLocatorSpec extends AnyFunSpec with Matchers {
   describe("(2) Module source locators") {
     it("(2.a): modules extending RawModule should have a source locator") {
       val chirrtl = emitCHIRRTL(new RawModuleChild)
-      if (isScala2) {
-        chirrtl should include(s"module RawModuleChild : @[$thisFile 20:9]")
-      } else {
-        chirrtl should include(s"module RawModuleChild :\n") // no source locator yet
-      }
+      chirrtl should include(s"module RawModuleChild : @[$thisFile 20:${col(9, 8)}]")
     }
     it("(2.b): modules extending Module should have a source locator") {
       val chirrtl = emitCHIRRTL(new ModuleChild)
-      if (isScala2) {
-        chirrtl should include(s"module ModuleChild : @[$thisFile 21:9]")
-      } else {
-        chirrtl should include(s"module ModuleChild :\n") // no source locator yet
-      }
-
+      chirrtl should include(s"module ModuleChild : @[$thisFile 21:${col(9, 8)}]")
     }
     it("(2.c): modules extending other user modules should have a source locator") {
       val chirrtl = emitCHIRRTL(new InheritanceModule)
-      if (isScala2) {
-        chirrtl should include(s"module InheritanceModule : @[$thisFile 22:9]")
-      } else {
-        chirrtl should include(s"module InheritanceModule :\n") // no source locator yet
-      }
+      chirrtl should include(s"module InheritanceModule : @[$thisFile 22:${col(9, 8)}]")
     }
     it("(2.d): modules extending BlackBox should have a source locator") {
       val chirrtl = emitCHIRRTL(new WrapperTop(new BlackBoxChild))
-      if (isScala2) {
-        chirrtl should include(s"extmodule BlackBoxChild : @[$thisFile 24:9]")
-      } else {
-        chirrtl should include(s"extmodule BlackBoxChild :\n") // no source locator yet
-      }
+      chirrtl should include(s"extmodule BlackBoxChild : @[$thisFile 24:${col(9, 8)}]")
     }
     it("(2.e): modules extending ExtModule should have a source locator") {
       val chirrtl = emitCHIRRTL(new WrapperTop(new ExtModuleChild))
-      if (isScala2) {
-        chirrtl should include(s"extmodule ExtModuleChild : @[$thisFile 27:9]")
-      } else {
-        chirrtl should include(s"extmodule ExtModuleChild :\n") // no source locator yet
-      }
+      chirrtl should include(s"extmodule ExtModuleChild : @[$thisFile 27:${col(9, 8)}]")
     }
     it("(2.f): user-defined Classes should have a source locator") {
       val chirrtl = emitCHIRRTL(new ClassTop)
-      if (isScala2) {
-        chirrtl should include(s"class ClassChild : @[$thisFile 31:9]")
-      } else {
-        chirrtl should include(s"class ClassChild :\n") // no source locator yet
-      }
+      chirrtl should include(s"class ClassChild : @[$thisFile 31:${col(9, 8)}]")
     }
     it("(2.g): Inner and anonymous modules should have a source locators") {
       val chirrtl = emitCHIRRTL(new Outer)
-      if (isScala2) {
-        chirrtl should include(s"module Inner : @[$thisFile 36:11]")
-        chirrtl should include(s"module AnonymousModule : @[$thisFile 38:25]")
-      } else {
-        chirrtl should include(s"module Inner :\n") // no source locator yet
-        chirrtl should include(s"module AnonymousModule :\n") // no source locator yet
-      }
+      chirrtl should include(s"module Inner : @[$thisFile 36:${col(11, 10)}]")
+      chirrtl should include(s"module AnonymousModule : @[$thisFile 38:${col(25, 20)}]")
     }
     it("(2.h): Definitions should have a source locator") {
       val chirrtl = emitCHIRRTL(new RawModuleChild)
-      if (isScala2) {
-        chirrtl should include(s"module RawModuleChild : @[$thisFile 20:9]")
-      } else {
-        chirrtl should include(s"module RawModuleChild :\n") // no source locator yet
-      }
+      chirrtl should include(s"module RawModuleChild : @[$thisFile 20:${col(9, 8)}]")
     }
   }
 

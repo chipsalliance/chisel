@@ -8,6 +8,6 @@ class ChiselPlugins extends StandardPlugin {
   val name: String = "ChiselPlugins"
   override val description = "Custom transforms for the Chisel language"
   override def init(options: List[String]): List[PluginPhase] = {
-    (new ChiselNamingPhase) :: (new ChiselBundlePhase) :: Nil
+    (new ChiselNamingPhase) :: (new ChiselBundlePhase) :: (new ChiselSourceLocatorPhase) :: Nil
   }
 }
