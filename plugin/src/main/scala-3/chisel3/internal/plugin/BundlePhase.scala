@@ -71,7 +71,6 @@ object BundleHelpers {
   )(using Context): Option[List[List[tpd.Tree]]] = {
     val template = record.rhs.asInstanceOf[tpd.Template]
     val primaryConstructorOpt = Option(template.constr)
-    val paramAccessors = record.symbol.primaryConstructor.paramSymss.flatten
 
     if (primaryConstructorOpt.isEmpty) {
       report.warning("Unable to determine primary constructor!", record.sourcePos)
@@ -79,11 +78,6 @@ object BundleHelpers {
     }
 
     val constructor = primaryConstructorOpt.get
-    val paramLookup: Map[String, Symbol] =
-      paramAccessors.map(sym => sym.name.toString -> sym).toMap
-
-    val symAccessorMap: Map[Names.Name, Symbol] =
-      record.symbol.asClass.paramAccessors.map(param => param.name -> param).toMap
 
     if (constructor.symbol.is(Flags.Private)) {
       val msg = "Private bundle constructors cannot automatically be cloned, try making it package private"
@@ -91,16 +85,31 @@ object BundleHelpers {
       return None
     }
 
-    Some(constructor.termParamss.map(_.map { case vp =>
-      // Use the accessor symbol from the class, not the constructor param symbol,
-      // to properly access private fields from within the class.
-      val accessor: Symbol = symAccessorMap(vp.name)
-      val select = tpd.ref(accessor).withSpan(thiz.span)
+    // Build a map from parameter name to the class accessor symbol.
+    // This properly handles private fields that are accessible from within the class.
+    val symAccessorMap: Map[Names.Name, Symbol] =
+      record.symbol.asClass.paramAccessors.map(param => param.name -> param).toMap
+
+    // Use the symbol's paramSymss to get the correct parameter list structure,
+    // which properly includes empty leading parameter lists for implicit-only constructors.
+    // Filter out type parameter lists.
+    val paramSymss = record.symbol.primaryConstructor.paramSymss
+      .filterNot(_.exists(_.isType))
+
+    Some(paramSymss.map(_.map { paramSym =>
+      // Try to find the accessor in symAccessorMap first (for private fields),
+      // otherwise use the param symbol's name directly.
+      // Always use Select through `thiz` to properly access the field.
+      val accessorOpt = symAccessorMap.get(paramSym.name)
+      val select = accessorOpt match {
+        case Some(accessor) => tpd.Select(thiz, accessor.asTerm.termRef)
+        case None           => tpd.Select(thiz, paramSym.name)
+      }
       val cloned: tpd.Tree =
-        if (ChiselTypeHelpers.isData(vp.tpt.tpe))
+        if (ChiselTypeHelpers.isData(paramSym.info))
           cloneTypeFull(select)
         else select
-      if (vp.tpt.tpe.isRepeatedParam)
+      if (paramSym.info.isRepeatedParam)
         tpd.SeqLiteral(List(cloned), cloned)
       else
         cloned
@@ -139,25 +148,57 @@ object BundleHelpers {
 
   def getBundleFields(record: tpd.TypeDef)(using Context): List[tpd.Tree] = {
     val bundleSym = record.symbol.asClass
-    val recordTpe = requiredClass("chisel3.Record")
+    val bundleTpe = requiredClass("chisel3.Bundle")
     val isIgnoreSeq = ChiselTypeHelpers.isIgnoreSeq(record.tpe)
 
     def isBundleDataField(m: Symbol): Boolean = {
       m.isPublic
+      && m.isTerm
+      && !m.is(Flags.Method) // We want val fields, not methods
       && (
         ChiselTypeHelpers.isData(m.info)
           || ChiselTypeHelpers.isBoxedData(m.info, isIgnoreSeq)
       )
     }
 
-    val currentFields: List[tpd.Tree] = bundleSym.info.decls.toList.collect {
-      case m if isBundleDataField(m) =>
-        val name = m.name.show
-        val thisRef: tpd.Tree = tpd.This(bundleSym.asClass)
-        val sel:     tpd.Tree = tpd.Select(thisRef, m.termRef)
-        tupleTree(List(tpd.Literal(Constant(name)), sel))
+    // Check if a symbol is exactly the Bundle class (not a subclass)
+    def isExactBundle(sym: Symbol): Boolean = sym == bundleTpe
+
+    // Recursively get all bundle fields from this class and its parents
+    def getAllBundleFields(sym: ClassSymbol, depth: Int = 0): List[tpd.Tree] = {
+      val thisRef: tpd.Tree = tpd.This(bundleSym)
+
+      // Get fields declared in this class
+      val allDecls = sym.info.decls.toList
+
+      val currentFields: List[tpd.Tree] = allDecls.collect {
+        case m if isBundleDataField(m) =>
+          val name = m.name.show
+          // For inherited fields, we need to look up the member in the bundle's type
+          // to get the correct term reference
+          val memberInBundle = bundleSym.info.member(m.name)
+          val sel: tpd.Tree = tpd.Select(thisRef, memberInBundle.symbol.asTerm.termRef)
+          tupleTree(List(tpd.Literal(Constant(name)), sel))
+      }
+
+      // Get fields from parent classes (but stop at Bundle itself)
+      // Note: we need to recurse deeper than depth 1 to handle multi-level inheritance
+      val parentFields: List[tpd.Tree] = if (!isExactBundle(sym)) {
+        sym.info.parents.flatMap { parentTpe =>
+          parentTpe.classSymbol match {
+            case parentSym: ClassSymbol if !isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
+              getAllBundleFields(parentSym, depth + 1)
+            case _ => Nil
+          }
+        }
+      } else {
+        Nil
+      }
+
+      parentFields ++ currentFields
     }
-    currentFields
+
+    getAllBundleFields(bundleSym)
   }
 
   def generateElements(record: tpd.TypeDef)(using Context): tpd.DefDef = {
