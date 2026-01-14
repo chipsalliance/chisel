@@ -526,7 +526,7 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
       )
     }
 
-    it("should include 'elideBlocks' when computing the hash") {
+    it("should create a new module in an 'elideBlocks' scope") {
       class Foo extends Module {
         val bar = Instantiate(new HasLayer)
         layer.elideBlocks {
@@ -536,6 +536,23 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
 
       emitCHIRRTL(new Foo).fileCheck()(
         """|CHECK-COUNT-3: module
+           |CHECK-NOT:     module
+           |""".stripMargin
+      )
+    }
+
+    it("should not create a new instance for two instances both under an 'elideBlocks' scope") {
+      class Foo extends Module {
+        layer.elideBlocks {
+          val bar = Instantiate(new HasLayer)
+        }
+        layer.elideBlocks {
+          val bar2 = Instantiate(new HasLayer)
+        }
+      }
+
+      emitCHIRRTL(new Foo).fileCheck()(
+        """|CHECK-COUNT-2: module
            |CHECK-NOT:     module
            |""".stripMargin
       )
