@@ -91,17 +91,11 @@ object BundleHelpers {
       return None
     }
 
-    constructor.termParamss.foreach(_.foreach {
-      case param if symAccessorMap(param.name).is(Flags.Private) =>
-        report
-          .warning("Private Bundle constructor parameters render the constructor uncloneable", constructor.sourcePos)
-        return None
-      case _ =>
-    })
-
     Some(constructor.termParamss.map(_.map { case vp =>
-      val p: Symbol = paramLookup(vp.name.toString)
-      val select = tpd.Select(thiz, p.name)
+      // Use the accessor symbol from the class, not the constructor param symbol,
+      // to properly access private fields from within the class.
+      val accessor: Symbol = symAccessorMap(vp.name)
+      val select = tpd.ref(accessor).withSpan(thiz.span)
       val cloned: tpd.Tree =
         if (ChiselTypeHelpers.isData(vp.tpt.tpe))
           cloneTypeFull(select)
