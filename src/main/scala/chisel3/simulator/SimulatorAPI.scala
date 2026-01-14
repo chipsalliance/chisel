@@ -350,20 +350,11 @@ trait SimulatorAPI {
       l("  description = Compiling with Verilator")
       l("")
 
-      // Rule to run a test with IPC via named pipes
-      // This creates FIFOs, launches the simulation binary in background,
-      // then runs the Scala test which connects to the pipes
-      // Note: In ninja, $$ escapes to $, so $$! becomes $! (shell's background PID)
-      // Run simulation in background with full path, redirect all output to prevent blocking
-      // The $testName variable specifies which test to run (by name/description)
+      // Rule to run a test using SimulationRunner
+      // SimulationRunner launches the simulation binary as a subprocess and manages IPC directly
+      // This is cross-platform compatible (no named pipes)
       l("rule run_test")
-      l("  command = " +
-        "rm -f $workdir/cmd.pipe $workdir/msg.pipe && " +
-        "mkfifo $workdir/cmd.pipe $workdir/msg.pipe && " +
-        "SVSIM_COMMAND_PIPE=$workdir/cmd.pipe SVSIM_MESSAGE_PIPE=$workdir/msg.pipe $workdir/simulation > $workdir/simulation-$testNum.log 2>&1 & " +
-        "SIM_PID=$$!; " +
-        "java -cp '$classpath' chisel3.simulator.ChiselSimRunner $mainClass '$testName' $workdir; " +
-        "RESULT=$$?; kill $$SIM_PID 2>/dev/null; rm -f $workdir/cmd.pipe $workdir/msg.pipe; exit $$RESULT")
+      l("  command = java -cp '$classpath' chisel3.simulator.SimulationRunner $workdir $mainClass '$testName' && touch $out")
       l("  description = Running test $testNum: $testName")
       l("  pool = console")
       l("")
@@ -471,91 +462,6 @@ trait SimulatorAPI {
       .result
   }
 
-  /** Run a simulation using named pipes for IPC with a pre-running simulation binary.
-    *
-    * This method connects to named pipes where the simulation binary is already
-    * listening, runs the test stimulus, and sends a shutdown command when done.
-    *
-    * @param module the Chisel module (used to get port information via elaboration)
-    * @param commandPipe path to the command pipe (write to send commands)
-    * @param messagePipe path to the message pipe (read to receive messages)
-    * @param workdir path to the working directory containing simulation artifacts
-    * @param additionalResetCycles a number of _additional_ cycles to assert reset for
-    * @param stimulus directed stimulus to use
-    * @param testingDirectory where the pre-compiled simulation artifacts are located
-    */
-  def runCompiledSimulationWithPipes[T <: Module](
-    module:                => T,
-    commandPipe:           java.nio.file.Path,
-    messagePipe:           java.nio.file.Path,
-    workdir:               java.nio.file.Path,
-    additionalResetCycles: Int = 0
-  )(stimulus: (T) => Unit)(
-    implicit testingDirectory: HasTestingDirectory
-  ): Unit = {
-    // Load module info from the JSON file
-    val moduleInfoFile = workdir.resolve("module-info.json").toFile
-    val moduleInfoJson = scala.io.Source.fromFile(moduleInfoFile).mkString
-    val moduleInfo = parseModuleInfo(moduleInfoJson)
-
-    // Create a workspace to get port mappings
-    val workspace = new svsim.Workspace(
-      path = testingDirectory.getDirectory.toString,
-      workingDirectoryPrefix = "workdir"
-    )
-
-    // Elaborate the module to get port information (without generating Verilog)
-    val outputAnnotations = chisel3.stage.ChiselGeneratorAnnotation(() => module).elaborate
-
-    // Extract the DUT from DesignAnnotation
-    val designAnnotation = outputAnnotations.collectFirst {
-      case da: chisel3.stage.DesignAnnotation[_] => da.asInstanceOf[chisel3.stage.DesignAnnotation[T]]
-    }.getOrElse(throw new Exception("DesignAnnotation not found after elaboration"))
-
-    val dut = designAnnotation.design
-    val layers = designAnnotation.layers
-    val ports = workspace.getModuleInfoPorts(dut)
-
-    // Create an ElaboratedModule for the SimulatedModule
-    val elaboratedModule = new ElaboratedModule(dut, ports, layers)
-
-    // Run the simulation with pipes using the static method
-    svsim.Simulation.runWithPipes(commandPipe, messagePipe, moduleInfo) { controller =>
-      val simModule = new SimulatedModule(elaboratedModule, controller)
-
-      AnySimulatedModule.withValue(simModule) {
-        // Apply reset procedure
-        ResetProcedure.module[T](additionalResetCycles)(simModule.wrapped)
-
-        // Run the test stimulus
-        stimulus(simModule.wrapped)
-
-        // Complete the simulation
-        simModule.completeSimulation()
-      }
-    }
-  }
-
-  /** Parse a module info JSON string into a ModuleInfo object */
-  private def parseModuleInfo(json: String): svsim.ModuleInfo = {
-    // Simple JSON parser for the format: {"name":"...", "ports":[...]}
-    val namePattern = """"name"\s*:\s*"([^"]+)"""".r
-    val portsPattern = """"ports"\s*:\s*\[([^\]]*)\]""".r
-    val portPattern = """\{"name"\s*:\s*"([^"]+)"\s*,\s*"isSettable"\s*:\s*(true|false)\s*,\s*"isGettable"\s*:\s*(true|false)\}""".r
-
-    val name = namePattern.findFirstMatchIn(json).map(_.group(1)).getOrElse("unknown")
-    val portsJson = portsPattern.findFirstMatchIn(json).map(_.group(1)).getOrElse("")
-
-    val ports = portPattern.findAllMatchIn(portsJson).map { m =>
-      svsim.ModuleInfo.Port(
-        name = m.group(1),
-        isSettable = m.group(2) == "true",
-        isGettable = m.group(3) == "true"
-      )
-    }.toSeq
-
-    svsim.ModuleInfo(name = name, ports = ports)
-  }
 }
 
 /** Result of exporting a simulation */

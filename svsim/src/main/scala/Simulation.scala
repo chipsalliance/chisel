@@ -119,57 +119,6 @@ object Simulation {
     environment:            Map[String, String] = Map()
   )
 
-  /** Run a simulation body using named pipes for IPC.
-    *
-    * This is used for ninja-based workflows where the simulation binary is
-    * launched separately and communicates with the Scala side via named pipes.
-    *
-    * @param commandPipe path to the named pipe for sending commands
-    * @param messagePipe path to the named pipe for receiving messages
-    * @param moduleInfo module information containing port definitions
-    * @param body the simulation body to execute
-    */
-  def runWithPipes[T](
-    commandPipe: Path,
-    messagePipe: Path,
-    moduleInfo:  ModuleInfo,
-    conservativeCommandResolution: Boolean = false,
-    verbose:                       Boolean = false,
-    traceEnabled:                  Boolean = false
-  )(body: Simulation.Controller => T): T = {
-    // Open pipes - command pipe first (writing), then message pipe (reading)
-    // The simulation binary opens command pipe for reading first, so we must
-    // open command pipe for writing first to unblock it, then the simulation
-    // will open message pipe for writing which unblocks our read.
-    val commandWriter = new BufferedWriter(new OutputStreamWriter(new java.io.FileOutputStream(commandPipe.toFile)))
-    val messageReader = new BufferedReader(new InputStreamReader(new java.io.FileInputStream(messagePipe.toFile)))
-
-    try {
-      val controller = new Simulation.Controller(
-        commandWriter,
-        messageReader,
-        moduleInfo,
-        conservativeCommandResolution = conservativeCommandResolution,
-        logMessagesAndCommands = verbose
-      )
-      if (traceEnabled) {
-        controller.setTraceEnabled(true)
-      }
-      val result = body(controller)
-      // Exceptions thrown from commands still in the queue should supercede returning `result`
-      controller.completeInFlightCommands()
-
-      // Send done command to gracefully shut down the simulation
-      controller.sendCommand(Simulation.Command.Done)
-      controller.completeInFlightCommands()
-
-      result
-    } finally {
-      commandWriter.close()
-      messageReader.close()
-    }
-  }
-
   /** @note Methods in this class and `Simulation.Port` are somewhat lazy in their execution. Specifically, methods returning `Unit` neither flush the command buffer, nor do they actively read from the message buffer. Only commands which return a value will wait to return until the simulation has progressed to the point where the value is available. This can improve performance by essentially enabling batching of both commands and messages. If you want to ensure that all commands have been sent to the simulation executable, you can call `completeInFlightCommands()`.
     */
   final class Controller private[Simulation] (
