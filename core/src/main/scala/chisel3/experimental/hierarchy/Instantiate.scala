@@ -94,7 +94,7 @@ object Instantiate extends InstantiateIntf {
 
   import chisel3.internal.BuilderContextCache
   // Include type of module in key since different modules could have the same arguments
-  private case class CacheKey[A <: BaseModule](args: Any, tt: Any, modulePrefix: List[String])
+  private case class CacheKey[A <: BaseModule](args: Any, tt: Any, modulePrefix: List[String], elideBlocks: Boolean)
       extends BuilderContextCache.Key[Definition[A]]
 
   protected def _instanceImpl[K, A <: BaseModule](
@@ -114,7 +114,7 @@ object Instantiate extends InstantiateIntf {
     val modulePrefix = Module.currentModulePrefix
     Builder.contextCache
       .getOrElseUpdate(
-        CacheKey[A](boxAllData(args), tt, List(modulePrefix)), {
+        CacheKey[A](boxAllData(args), tt, List(modulePrefix), Builder.elideLayerBlocks), {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
           Definition.apply(f(args))(UnlocatableSourceInfo)

@@ -64,7 +64,9 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
     // chisel3.UnitTests.Config should never have been public and was unused in public APIs
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.UnitTests#Config*"),
     ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.UnitTests#Config*"),
-    ProblemFilter.exclude[MissingTypesProblem]("chisel3.UnitTests$Config*")
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.UnitTests$Config*"),
+    // These are private case classes within objects which is safe.
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.experimental.hierarchy.Instantiate#CacheKey.*")
   )
 
   /** Publish both this project and the plugin (for the default Scala version) */
