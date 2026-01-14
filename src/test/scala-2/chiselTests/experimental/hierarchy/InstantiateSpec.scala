@@ -196,6 +196,13 @@ object InstantiateSpec {
   class LookupableChiselType extends Module {
     @public val bundleType = new MyBundle(MyBundleParameters(4, 8, true))
   }
+
+  @instantiable
+  class HasLayer extends Module {
+    layer.block(layers.Verification.Assert) {
+      val a = WireInit(false.B)
+    }
+  }
 }
 
 class ParameterizedReset(hasAsyncNotSyncReset: Boolean) extends Module {
@@ -515,6 +522,21 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
       }).fileCheck()(
         """|CHECK: intmodule InstantiableIntrinsic :
            |CHECK: module Top :
+           |""".stripMargin
+      )
+    }
+
+    it("should include 'elideBlocks' when computing the hash") {
+      class Foo extends Module {
+        val bar = Instantiate(new HasLayer)
+        layer.elideBlocks {
+          val bar2 = Instantiate(new HasLayer)
+        }
+      }
+
+      emitCHIRRTL(new Foo).fileCheck()(
+        """|CHECK-COUNT-3: module
+           |CHECK-NOT:     module
            |""".stripMargin
       )
     }
