@@ -91,22 +91,23 @@ object BundleHelpers {
       return None
     }
 
-    constructor.termParamss.foreach(_.foreach {
-      case param if symAccessorMap(param.name).is(Flags.Private) =>
-        report
-          .warning("Private Bundle constructor parameters render the constructor uncloneable", constructor.sourcePos)
-        return None
-      case _ =>
-    })
+    val paramSymss = record.symbol.primaryConstructor.paramSymss
+      .filterNot(_.exists(_.isType))
 
-    Some(constructor.termParamss.map(_.map { case vp =>
-      val p: Symbol = paramLookup(vp.name.toString)
-      val select = tpd.Select(thiz, p.name)
+    Some(paramSymss.map(_.map { paramSym =>
+      // Try to find the accessor in symAccessorMap first (for private
+      // fields), otherwise use the param symbol's name directly.
+      // Always use Select through `thiz` to properly access the field
+      val accessorOpt = symAccessorMap.get(paramSym.name)
+      val select = accessorOpt match {
+        case Some(accessor) => tpd.Select(thiz, accessor.asTerm.termRef)
+        case None           => tpd.Select(thiz, paramSym.name)
+      }
       val cloned: tpd.Tree =
-        if (ChiselTypeHelpers.isData(vp.tpt.tpe))
+        if (ChiselTypeHelpers.isData(paramSym.info))
           cloneTypeFull(select)
         else select
-      if (vp.tpt.tpe.isRepeatedParam)
+      if (paramSym.info.isRepeatedParam)
         tpd.SeqLiteral(List(cloned), cloned)
       else
         cloned
