@@ -121,7 +121,8 @@ object Definition extends SourceInfoDoc {
         context.contextCache,
         context.layerMap,
         context.inlineTestIncluder,
-        context.suppressSourceInfo
+        context.suppressSourceInfo,
+        context.elideLayerBlocks
       )
     }
     dynamicContext.inDefinition = true
