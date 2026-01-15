@@ -145,25 +145,48 @@ object BundleHelpers {
 
   def getBundleFields(record: tpd.TypeDef)(using Context): List[tpd.Tree] = {
     val bundleSym = record.symbol.asClass
-    val recordTpe = requiredClass("chisel3.Record")
+    val bundleTpe = requiredClass("chisel3.Bundle")
     val isIgnoreSeq = ChiselTypeHelpers.isIgnoreSeq(record.tpe)
 
     def isBundleDataField(m: Symbol): Boolean = {
       m.isPublic
+      && !m.is(Flags.Method)
       && (
         ChiselTypeHelpers.isData(m.info)
           || ChiselTypeHelpers.isBoxedData(m.info, isIgnoreSeq)
       )
     }
 
-    val currentFields: List[tpd.Tree] = bundleSym.info.decls.toList.collect {
-      case m if isBundleDataField(m) =>
-        val name = m.name.show
-        val thisRef: tpd.Tree = tpd.This(bundleSym.asClass)
-        val sel:     tpd.Tree = tpd.Select(thisRef, m.termRef)
-        tupleTree(List(tpd.Literal(Constant(name)), sel))
+    // Check if a symbol is exactly the Bundle class and not a subclass
+    def isExactBundle(sym: Symbol): Boolean = sym == bundleTpe
+
+    // Recursively get all bundle fields from this class and its parents
+    def getAllBundleFields(sym: ClassSymbol, depth: Int = 0): List[tpd.Tree] = {
+      val thisRef: tpd.Tree = tpd.This(bundleSym)
+
+      val currentFields: List[tpd.Tree] = sym.info.decls.toList.collect {
+        case m if isBundleDataField(m) =>
+          val name = m.name.show
+          val memberInBundle = bundleSym.info.member(m.name)
+          val sel: tpd.Tree = tpd.Select(thisRef, memberInBundle.symbol.asTerm.termRef)
+          tupleTree(List(tpd.Literal(Constant(name)), sel))
+      }
+
+      val parentFields: List[tpd.Tree] = if (!isExactBundle(sym)) {
+        sym.info.parents.flatMap { parentTpe =>
+          parentTpe.classSymbol match {
+            case parentSym: ClassSymbol if !isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
+              getAllBundleFields(parentSym, depth + 1)
+            case _ => Nil
+          }
+        }
+      } else {
+        Nil
+      }
+      parentFields ++ currentFields
     }
-    currentFields
+
+    getAllBundleFields(bundleSym)
   }
 
   def generateElements(record: tpd.TypeDef)(using Context): tpd.DefDef = {
