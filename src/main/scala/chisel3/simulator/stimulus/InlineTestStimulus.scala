@@ -7,6 +7,7 @@ import scala.util.control.NoStackTrace
 import chisel3.{Clock, Module, RawModule, Reset, TestHarness}
 import chisel3.simulator.{AnySimulatedModule, Exceptions}
 import chisel3.simulator.stimulus.{ResetProcedure, Stimulus}
+import chisel3.experimental.inlinetest.{TestHarness => InlineTestHarness}
 
 import firrtl.options.StageUtils.dramaticMessage
 
@@ -17,7 +18,7 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness] {
 
   protected def _additionalResetCycles: Int
 
-  override final def apply(dut: TestHarness): Unit = {
+  private def applyImpl(dut: TestHarness): Unit = {
     val module = AnySimulatedModule.current
     val controller = module.controller
 
@@ -45,6 +46,12 @@ trait InlineTestStimulus extends Stimulus.Type[TestHarness] {
       throw new Exceptions.TestFailed
     }
   }
+
+  override final def apply(dut: TestHarness): Unit =
+    applyImpl(dut)
+
+  final def apply(dut: InlineTestHarness[_]): Unit =
+    applyImpl(dut)
 }
 
 object InlineTestStimulus {

@@ -4,7 +4,7 @@ package chisel3.experimental.inlinetest
 
 import scala.collection.mutable
 
-import chisel3._
+import chisel3.{TestHarness => BaseTestHarness, TestHarnessInterface => BaseTestHarnessInterface, _}
 import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.simulator.SimulationOutcome
 import chisel3.util.Counter
@@ -144,19 +144,24 @@ final class TestParameters[M <: RawModule] private[inlinetest] (
   def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
+trait TestHarnessInterface extends BaseTestHarnessInterface
+
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
    *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
    *  that of the DUT, or is [[Synchronous]] if it must be inferred.
    *
    *  @tparam M the type of the DUT module
    */
-abstract class InlineTestHarness[M <: RawModule](test: TestParameters[M]) extends TestHarness {
+abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends BaseTestHarness {
   override final def desiredName = test.testHarnessDesiredName
 
   override def implicitReset: Reset = test.testHarnessResetType match {
     case Module.ResetType.Asynchronous => io.init.asAsyncReset
     case _                             => io.init
   }
+
+  final def resetType = test.testHarnessResetType
+  final def reset     = io.init
 
   protected final val dut = Instance(test.dutDefinition())
   private[inlinetest] final val testConfig = test.testBody(dut)
@@ -168,7 +173,7 @@ abstract class InlineTestHarness[M <: RawModule](test: TestParameters[M]) extend
 private[chisel3] class ElaboratedTest[M <: RawModule] private (
   val dutName:     String,
   val testName:    String,
-  val testHarness: InlineTestHarness[M]
+  val testHarness: TestHarness[M]
 )
 
 object ElaboratedTest {
@@ -188,20 +193,20 @@ object ElaboratedTest {
 trait TestHarnessGenerator[M <: RawModule] {
 
   /** Generate a testharness module given the test parameters. */
-  def generate(test: TestParameters[M]): InlineTestHarness[M]
+  def generate(test: TestParameters[M]): TestHarness[M]
 }
 
 object TestHarnessGenerator {
 
   /** Factory for a TestHarnessGenerator typeclass. */
-  def apply[M <: RawModule](gen: TestParameters[M] => InlineTestHarness[M]) =
+  def apply[M <: RawModule](gen: TestParameters[M] => TestHarness[M]) =
     new TestHarnessGenerator[M] {
       override def generate(test: TestParameters[M]) = gen(test)
     }
 
   /** Provides a default testharness for tests that return [[Unit]]. */
   implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M] = {
-    TestHarnessGenerator(new InlineTestHarness(_) {})
+    TestHarnessGenerator(new TestHarness[M](_) {})
   }
 }
 
