@@ -114,7 +114,7 @@ object SimulationTest {
     * }}}
     */
   def apply(
-    module: BaseModule,
+    module: BaseModule with TestHarnessInterface,
     params: MapTestParam = MapTestParam(Map.empty),
     name:   String = ""
   )(implicit sourceInfo: SourceInfo): Unit = {

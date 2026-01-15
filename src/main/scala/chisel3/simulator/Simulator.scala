@@ -1,7 +1,7 @@
 package chisel3.simulator
 
-import chisel3.{Data, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestHarness, TestParameters, TestResult}
+import chisel3.{Data, RawModule, TestHarness}
+import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestParameters, TestResult}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileSystems, FileVisitResult, FileVisitor, Files, Path, PathMatcher, Paths}
@@ -175,8 +175,8 @@ trait Simulator[T <: Backend] {
     includeTestGlobs: Array[String],
     chiselOpts:       Array[String] = Array.empty,
     firtoolOpts:      Array[String] = Array.empty,
-    settings:         Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]]
-  )(body: (SimulatedModule[TestHarness[T]]) => U)(
+    settings:         Settings[TestHarness] = Settings.defaultRaw[TestHarness]
+  )(body: (SimulatedModule[TestHarness]) => U)(
     implicit chiselOptsModifications: ChiselOptionsModifications,
     firtoolOptsModifications:         FirtoolOptionsModifications,
     commonSettingsModifications:      svsim.CommonSettingsModifications,

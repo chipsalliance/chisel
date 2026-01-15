@@ -4,30 +4,29 @@ package chisel3.simulator.stimulus
 
 import scala.util.control.NoStackTrace
 
-import chisel3.{Clock, Module, RawModule, Reset}
+import chisel3.{Clock, Module, RawModule, Reset, TestHarness}
 import chisel3.simulator.{AnySimulatedModule, Exceptions}
 import chisel3.simulator.stimulus.{ResetProcedure, Stimulus}
-import chisel3.experimental.inlinetest.TestHarness
 
 import firrtl.options.StageUtils.dramaticMessage
 
-trait InlineTestStimulus extends Stimulus.Type[TestHarness[_]] {
+trait InlineTestStimulus extends Stimulus.Type[TestHarness] {
   protected def _timeout: Int
 
   protected def _period: Int
 
   protected def _additionalResetCycles: Int
 
-  override final def apply(dut: TestHarness[_]): Unit = {
+  override final def apply(dut: TestHarness): Unit = {
     val module = AnySimulatedModule.current
     val controller = module.controller
 
-    val clock = module.port(dut.clock)
-    val reset = module.port(dut.reset)
+    val clock = module.port(dut.io.clock)
+    val init = module.port(dut.io.init)
     val finish = module.port(dut.io.finish)
     val success = module.port(dut.io.success)
 
-    ResetProcedure.module(_additionalResetCycles, _period)(dut)
+    ResetProcedure.testHarness(_additionalResetCycles, _period)(dut)
 
     clock.tick(
       timestepsPerPhase = 1,

@@ -2,8 +2,8 @@
 
 package chisel3.simulator
 
-import chisel3.{Module, RawModule}
-import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestChoice, TestHarness}
+import chisel3.{Module, RawModule, TestHarness}
+import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestChoice}
 import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
@@ -128,7 +128,7 @@ trait SimulatorAPI {
     timeout:               Int,
     chiselOpts:            Array[String] = Array.empty,
     firtoolOpts:           Array[String] = Array.empty,
-    settings:              Settings[TestHarness[T]] = Settings.defaultRaw[TestHarness[T]],
+    settings:              Settings[TestHarness] = Settings.defaultRaw[TestHarness],
     additionalResetCycles: Int = 0,
     subdirectory:          Option[String] = None
   )(

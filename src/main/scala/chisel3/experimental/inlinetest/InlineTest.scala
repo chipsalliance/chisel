@@ -29,7 +29,7 @@ final class TestConfiguration private (
   successCondition: Option[Bool],
   failureMessage:   Option[Printable]
 ) {
-  private[inlinetest] def driveInterface(testName: String, intf: TestHarnessInterface) = {
+  private[inlinetest] def driveInterface(testName: String, intf: TestHarnessIO) = {
     intf.finish := finishCondition.getOrElse(false.B)
     intf.success := successCondition.getOrElse(true.B)
     failureMessage.foreach { failureMessage =>
@@ -144,31 +144,19 @@ final class TestParameters[M <: RawModule] private[inlinetest] (
   def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
-/** IO that reports the status of the test implemented by a testharness. */
-private[chisel3] class TestHarnessInterface extends Bundle {
-
-  /** The test shall be considered complete on the first positive edge of
-   *  [[finish]] by the simulation. The [[TestHarness]] must drive this.
-   */
-  val finish = Bool()
-
-  /** The test shall pass if this is asserted when the test is complete.
-   *  The [[TestHarness]] must drive this.
-   */
-  val success = Bool()
-}
-
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
    *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
    *  that of the DUT, or is [[Synchronous]] if it must be inferred.
    *
    *  @tparam M the type of the DUT module
    */
-abstract class TestHarness[M <: RawModule](test: TestParameters[M])
-    extends FixedIOModule(new TestHarnessInterface)
-    with Public {
+abstract class InlineTestHarness[M <: RawModule](test: TestParameters[M]) extends TestHarness {
   override final def desiredName = test.testHarnessDesiredName
-  override final def resetType = test.testHarnessResetType
+
+  override def implicitReset: Reset = test.testHarnessResetType match {
+    case Module.ResetType.Asynchronous => io.init.asAsyncReset
+    case _                             => io.init
+  }
 
   protected final val dut = Instance(test.dutDefinition())
   private[inlinetest] final val testConfig = test.testBody(dut)
@@ -180,7 +168,7 @@ abstract class TestHarness[M <: RawModule](test: TestParameters[M])
 private[chisel3] class ElaboratedTest[M <: RawModule] private (
   val dutName:     String,
   val testName:    String,
-  val testHarness: TestHarness[M]
+  val testHarness: InlineTestHarness[M]
 )
 
 object ElaboratedTest {
@@ -200,20 +188,20 @@ object ElaboratedTest {
 trait TestHarnessGenerator[M <: RawModule] {
 
   /** Generate a testharness module given the test parameters. */
-  def generate(test: TestParameters[M]): TestHarness[M]
+  def generate(test: TestParameters[M]): InlineTestHarness[M]
 }
 
 object TestHarnessGenerator {
 
   /** Factory for a TestHarnessGenerator typeclass. */
-  def apply[M <: RawModule](gen: TestParameters[M] => TestHarness[M]) =
+  def apply[M <: RawModule](gen: TestParameters[M] => InlineTestHarness[M]) =
     new TestHarnessGenerator[M] {
       override def generate(test: TestParameters[M]) = gen(test)
     }
 
   /** Provides a default testharness for tests that return [[Unit]]. */
   implicit def baseTestHarnessGenerator[M <: RawModule]: TestHarnessGenerator[M] = {
-    TestHarnessGenerator(new TestHarness[M](_) {})
+    TestHarnessGenerator(new InlineTestHarness(_) {})
   }
 }
 

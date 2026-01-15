@@ -17,7 +17,7 @@ import circt.stage.ChiselStage.emitCHIRRTL
 // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
 // socket to which to attach a monitor.
 class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M])
-    extends TestHarness[M](test) {
+    extends InlineTestHarness[M](test) {
   val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
   monitor.io :#= probe.read(dut.monProbe)
 }
@@ -162,38 +162,38 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       |
       | CHECK:      public module test_ModuleWithTests_check1
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   input init
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   input init
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   input init
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   input init
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       | CHECK:        inst monitor of ProtocolMonitor
       | CHECK-NEXT:   connect monitor.clock, clock
-      | CHECK-NEXT:   connect monitor.reset, reset
+      | CHECK-NEXT:   connect monitor.reset, init
       | CHECK-NEXT:   connect monitor.io.out, read(dut.monProbe).out
       | CHECK-NEXT:   connect monitor.io.in, read(dut.monProbe).in
       |
       | CHECK:      public module test_ModuleWithTests_check2
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   input init
       | CHECK:        inst dut of ModuleWithTests
       """
     )
@@ -346,27 +346,27 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       |
       | CHECK:      public module test_ModuleWithTests_check1
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input init : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input init : UInt<1>
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input init : UInt<1>
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input init : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_check2
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input init : UInt<1>
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       """
@@ -390,7 +390,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       |
       | CHECK:      public module test_RawModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
+      | CHECK-NEXT:   input init : UInt<1>
       | CHECK-NEXT:   output finish : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       """
