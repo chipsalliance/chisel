@@ -112,6 +112,16 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
     ChiselStage.emitCHIRRTL(new Foo).fileCheck()("CHECK-NOT: layerblock")
   }
 
+  they should "not get confused if `elideBlocks` is called multiple times" in {
+    class Foo extends RawModule {
+      layer.elideBlocks {
+        layer.elideBlocks {}
+        layer.block(A.B) {}
+      }
+    }
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck()("CHECK-NOT: layerblock")
+  }
+
   they should "generate valid CHIRRTL when module instantiated under layer block has layer blocks" in {
     object A extends layer.Layer(layer.LayerConfig.Inline) {
       object B extends layer.Layer(layer.LayerConfig.Inline)

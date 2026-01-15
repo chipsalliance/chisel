@@ -411,9 +411,10 @@ object layer {
     * @param thunk the Chisel code that should not go into a layer block
     */
   def elideBlocks[A](thunk: => A): A = {
+    val oldElideLayerBlocks = Builder.elideLayerBlocks
     Builder.elideLayerBlocks = true
     val result = thunk
-    Builder.elideLayerBlocks = false
+    Builder.elideLayerBlocks = oldElideLayerBlocks
     return result
   }
 
