@@ -161,7 +161,7 @@ abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends Base
   }
 
   final def resetType = test.testHarnessResetType
-  final def reset     = io.init
+  final def reset = io.init
 
   protected final val dut = Instance(test.dutDefinition())
   private[inlinetest] final val testConfig = test.testBody(dut)

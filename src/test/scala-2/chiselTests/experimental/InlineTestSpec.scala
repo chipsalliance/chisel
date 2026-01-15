@@ -1,6 +1,6 @@
 package chiselTests
 
-import chisel3._
+import chisel3.{TestHarness => _, _}
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
 import chisel3.testers._
@@ -17,7 +17,7 @@ import circt.stage.ChiselStage.emitCHIRRTL
 // Here is a testharness that expects some sort of interface on its DUT, e.g. a probe
 // socket to which to attach a monitor.
 class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: TestParameters[M])
-    extends InlineTestHarness[M](test) {
+    extends TestHarness[M](test) {
   val monitor = Module(new ProtocolMonitor(dut.monProbe.cloneType))
   monitor.io :#= probe.read(dut.monProbe)
 }
