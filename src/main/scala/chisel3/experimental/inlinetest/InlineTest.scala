@@ -25,7 +25,7 @@ object TestResult {
 }
 
 final class TestConfiguration private (
-  finishCondition:    Option[Bool],
+  finishCondition:  Option[Bool],
   successCondition: Option[Bool],
   failureMessage:   Option[Printable]
 ) {
