@@ -5,7 +5,7 @@ package chisel3
 /** IO that reports the status of the test implemented by a testharness. */
 trait SimulationTestHarnessInterface {
 
-  /** The test driver shall drive a constant clock.
+  /** The test driver shall drive a fixed clock.
    */
   def clock: Clock
 
@@ -13,7 +13,7 @@ trait SimulationTestHarnessInterface {
    */
   def init: Bool
 
-  /** The test shall be considered complete on the first positive edge of
+  /** The test shall be considered complete on the first positive pulse of
    *  [[done]] by the simulation.
    */
   def done: Bool

@@ -19,10 +19,10 @@ abstract class SimulationTestHarness
     with ImplicitClock
     with ImplicitReset
     with Public {
-  override final val clock = io.clock
-  override final val init = io.init
-  override final val done = io.done
-  override final val success = io.success
+  override final def clock = io.clock
+  override final def init = io.init
+  override final def done = io.done
+  override final def success = io.success
 
   override def implicitClock: Clock = io.clock
   override def implicitReset: Reset = io.init
