@@ -57,15 +57,16 @@ abstract class ChiselSimSuite[T <: Module](gen: => T) extends ControlAPI with Pe
   def tests: Seq[(String, T => Unit)] = _tests.toSeq
 
   /** Run a specific test by name with pre-compiled artifacts.
-    * Called by SimulationRunner when invoked from ninja.
+    * Called by svsim.SimulationRunner when invoked from ninja.
     *
     * This method launches the simulation binary as a subprocess and manages the IPC
     * directly, making it cross-platform compatible (no named pipes).
     *
     * @param testName the name/description of the test to run
-    * @param workdir the working directory containing the simulation binary
+    * @param simulationBinary full path to the simulation binary
+    * @param workdir the working directory containing the simulation artifacts (module-info.json, etc.)
     */
-  def runSimulationDirectly(testName: String, workdir: Path): Unit = {
+  def runSimulationDirectly(testName: String, simulationBinary: Path, workdir: Path): Unit = {
     val testEntry = _tests.find(_._1 == testName)
     if (testEntry.isEmpty) {
       val available = _tests.map(_._1).mkString("'", "', '", "'")
@@ -84,22 +85,18 @@ abstract class ChiselSimSuite[T <: Module](gen: => T) extends ControlAPI with Pe
     val moduleInfoJson = scala.io.Source.fromFile(moduleInfoFile).mkString
     val moduleInfo = parseModuleInfo(moduleInfoJson)
 
-    // Create a workspace to load the simulation
+    // Create a workspace to get port mappings
     val workspace = new svsim.Workspace(
       path = parentDir.toString,
       workingDirectoryPrefix = "workdir"
     )
 
-    // Extract the tag from workdir name (e.g., "workdir-verilator" -> "verilator")
-    val workdirName = workdir.getFileName.toString
-    val workdirTag = if (workdirName.startsWith("workdir-")) {
-      workdirName.substring("workdir-".length)
-    } else {
-      workdirName
-    }
-
-    // Load the pre-compiled simulation
-    val simulation = workspace.loadCompiledSimulation(workdirTag, moduleInfo)
+    // Create a Simulation directly with the binary path
+    val simulation = svsim.Simulation.fromBinary(
+      binaryPath = simulationBinary,
+      workingDirectoryPath = workdir.toAbsolutePath.toString,
+      moduleInfo = moduleInfo
+    )
 
     // Elaborate the module to get port information (without generating Verilog)
     val outputAnnotations = chisel3.stage.ChiselGeneratorAnnotation(() => gen).elaborate

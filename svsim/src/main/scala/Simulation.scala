@@ -119,6 +119,41 @@ object Simulation {
     environment:            Map[String, String] = Map()
   )
 
+  /** Create a Simulation from an existing binary path.
+    *
+    * This is used for running pre-compiled simulations where the binary
+    * path is known directly (e.g., from a ninja build file).
+    *
+    * @param binaryPath full path to the simulation binary
+    * @param workingDirectoryPath the working directory for the simulation (for logs, traces, etc.)
+    * @param moduleInfo module information containing port definitions
+    */
+  def fromBinary(
+    binaryPath:           Path,
+    workingDirectoryPath: String,
+    moduleInfo:           ModuleInfo
+  ): Simulation = {
+    val binaryName = binaryPath.getFileName.toString
+    val binaryDir = binaryPath.getParent.toAbsolutePath.toString
+
+    // Set up environment for log and trace files
+    val environment = Map(
+      "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
+      "SVSIM_SIMULATION_TRACE" -> s"$workingDirectoryPath/trace"
+    )
+
+    new Simulation(
+      executableName = binaryName,
+      settings = Settings(
+        customWorkingDirectory = None,
+        arguments = Seq.empty,
+        environment = environment
+      ),
+      workingDirectoryPath = binaryDir,
+      moduleInfo = moduleInfo
+    )
+  }
+
   /** @note Methods in this class and `Simulation.Port` are somewhat lazy in their execution. Specifically, methods returning `Unit` neither flush the command buffer, nor do they actively read from the message buffer. Only commands which return a value will wait to return until the simulation has progressed to the point where the value is available. This can improve performance by essentially enabling batching of both commands and messages. If you want to ensure that all commands have been sent to the simulation executable, you can call `completeInFlightCommands()`.
     */
   final class Controller private[Simulation] (

@@ -354,7 +354,7 @@ trait SimulatorAPI {
       // SimulationRunner launches the simulation binary as a subprocess and manages IPC directly
       // This is cross-platform compatible (no named pipes)
       l("rule run_test")
-      l("  command = java -cp '$classpath' chisel3.simulator.SimulationRunner $workdir $mainClass '$testName' && touch $out")
+      l("  command = java -cp '$classpath' svsim.SimulationRunner $workdir/simulation $mainClass '$testName' && touch $out")
       l("  description = Running test $testNum: $testName")
       l("  pool = console")
       l("")
