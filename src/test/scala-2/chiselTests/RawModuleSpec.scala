@@ -273,8 +273,8 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
   }
 
   "RawModule marked as simulation test" should "emit a simulation test declaration" in {
-    class Foo extends TestHarness {
-      io.finish := true.B
+    class Foo extends SimulationTestHarness {
+      io.done := true.B
       io.success := true.B
 
       SimulationTest(this)

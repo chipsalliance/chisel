@@ -4,7 +4,7 @@ package chisel3.experimental.inlinetest
 
 import scala.collection.mutable
 
-import chisel3.{TestHarness => BaseTestHarness, TestHarnessInterface => BaseTestHarnessInterface, _}
+import chisel3._
 import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.simulator.SimulationOutcome
 import chisel3.util.Counter
@@ -25,15 +25,15 @@ object TestResult {
 }
 
 final class TestConfiguration private (
-  finishCondition:  Option[Bool],
+  doneCondition:    Option[Bool],
   successCondition: Option[Bool],
   failureMessage:   Option[Printable]
 ) {
-  private[inlinetest] def driveInterface(testName: String, intf: TestHarnessIO) = {
-    intf.finish := finishCondition.getOrElse(false.B)
+  private[inlinetest] def driveInterface(testName: String, intf: SimulationTestHarnessInterface) = {
+    intf.done := doneCondition.getOrElse(false.B)
     intf.success := successCondition.getOrElse(true.B)
     failureMessage.foreach { failureMessage =>
-      when(intf.finish && !intf.success) {
+      when(intf.done && !intf.success) {
         printf(cf"${testName} failed: ${failureMessage}")
       }
     }
@@ -42,27 +42,27 @@ final class TestConfiguration private (
 
 object TestConfiguration {
   def default(): TestConfiguration =
-    new TestConfiguration(finishCondition = None, successCondition = None, failureMessage = None)
+    new TestConfiguration(doneCondition = None, successCondition = None, failureMessage = None)
 
   def runForCycles(nCycles: Int): TestConfiguration = {
     val (_, done) = Counter(true.B, nCycles)
     new TestConfiguration(
-      finishCondition = Some(done),
+      doneCondition = Some(done),
       successCondition = None,
       failureMessage = None
     )
   }
 
-  def apply(finish: Bool): TestConfiguration =
+  def apply(done: Bool): TestConfiguration =
     new TestConfiguration(
-      finishCondition = Some(finish),
+      doneCondition = Some(done),
       successCondition = None,
       failureMessage = None
     )
 
-  def apply(finish: Bool, success: Bool, failureMessage: Printable): TestConfiguration =
+  def apply(done: Bool, success: Bool, failureMessage: Printable): TestConfiguration =
     new TestConfiguration(
-      finishCondition = Some(finish),
+      doneCondition = Some(done),
       successCondition = Some(success),
       failureMessage = Some(failureMessage)
     )
@@ -144,8 +144,8 @@ final class TestParameters[M <: RawModule] private[inlinetest] (
   def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
-@deprecated("use chisel3.TestHarnessInterface instead", "Chisel 7.8.0")
-trait TestHarnessInterface extends BaseTestHarnessInterface
+@deprecated("use chisel3.SimulationTestHarnessInterface instead", "Chisel 7.8.0")
+trait TestHarnessInterface extends SimulationTestHarnessInterface
 
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
    *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
@@ -153,7 +153,7 @@ trait TestHarnessInterface extends BaseTestHarnessInterface
    *
    *  @tparam M the type of the DUT module
    */
-abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends BaseTestHarness {
+abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends SimulationTestHarness {
   override final def desiredName = test.testHarnessDesiredName
 
   override def implicitReset: Reset = test.testHarnessResetType match {

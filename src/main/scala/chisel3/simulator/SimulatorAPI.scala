@@ -2,7 +2,7 @@
 
 package chisel3.simulator
 
-import chisel3.{Module, RawModule, TestHarness}
+import chisel3.{Module, RawModule, SimulationTestHarnessInterface}
 import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestChoice}
 import chisel3.simulator.stimulus.{InlineTestStimulus, ResetProcedure}
 import chisel3.testing.HasTestingDirectory
@@ -123,12 +123,13 @@ trait SimulatorAPI {
     * by default and if you set incompatible options, the simulation will fail.
     */
   def simulateTests[T <: RawModule with HasTests](
-    module:                => T,
-    tests:                 TestChoice.Type,
-    timeout:               Int,
-    chiselOpts:            Array[String] = Array.empty,
-    firtoolOpts:           Array[String] = Array.empty,
-    settings:              Settings[TestHarness] = Settings.defaultRaw[TestHarness],
+    module:      => T,
+    tests:       TestChoice.Type,
+    timeout:     Int,
+    chiselOpts:  Array[String] = Array.empty,
+    firtoolOpts: Array[String] = Array.empty,
+    settings: Settings[RawModule with SimulationTestHarnessInterface] =
+      Settings.defaultRaw[RawModule with SimulationTestHarnessInterface],
     additionalResetCycles: Int = 0,
     subdirectory:          Option[String] = None
   )(

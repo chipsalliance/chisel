@@ -1,6 +1,6 @@
 package chiselTests
 
-import chisel3.{TestHarness => _, _}
+import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
 import chisel3.testers._
@@ -104,7 +104,7 @@ class ModuleWithTests(
   test("failing") { instance =>
     instance.io.in := 5.U(ioWidth.W)
     TestConfiguration(
-      finish = RegNext(true.B),
+      done = RegNext(true.B),
       success = instance.io.out =/= 5.U,
       cf"unexpected output"
     )
@@ -168,21 +168,21 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input init
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input init
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input init
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       | CHECK:        inst monitor of ProtocolMonitor
@@ -351,13 +351,13 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input init : UInt<1>
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input init : UInt<1>
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
@@ -367,7 +367,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       | CHECK:      public module test_ModuleWithTests_check2
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input init : UInt<1>
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       """
 
@@ -391,13 +391,13 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       | CHECK:      public module test_RawModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
       | CHECK-NEXT:   input init : UInt<1>
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       """
     )
   }
 
-  it should "simulate and pass if finish asserted with success=1" in {
+  it should "simulate and pass if done asserted with success=1" in {
     simulateTests(
       new ModuleWithTests,
       tests = TestChoice.Globs("passing"),
@@ -405,7 +405,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     )
   }
 
-  it should "simulate and fail if finish asserted with success=0" in {
+  it should "simulate and fail if done asserted with success=0" in {
     val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
       simulateTests(
         new ModuleWithTests,

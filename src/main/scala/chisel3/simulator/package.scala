@@ -145,7 +145,7 @@ package object simulator {
       includeTestGlobs: Seq[String],
       args:             Seq[String] = Seq.empty,
       firtoolArgs:      Seq[String] = Seq.empty
-    ): Seq[(Workspace, ElaboratedTest[T], ElaboratedModule[TestHarness])] = {
+    ): Seq[(Workspace, ElaboratedTest[T], ElaboratedModule[RawModule with SimulationTestHarnessInterface])] = {
       val updatedArgs = args ++ includeTestGlobs.map("--include-tests-name=" + _)
       val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
       generated.testHarnesses.map { case elaboratedTest =>
@@ -156,7 +156,11 @@ package object simulator {
         (
           testWorkspace,
           elaboratedTest,
-          new ElaboratedModule(elaboratedTest.testHarness.asInstanceOf[TestHarness], ports, layers)
+          new ElaboratedModule(
+            elaboratedTest.testHarness.asInstanceOf[RawModule with SimulationTestHarnessInterface],
+            ports,
+            layers
+          )
         )
       }
     }
