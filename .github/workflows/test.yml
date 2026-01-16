@@ -147,7 +147,7 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ inputs.jvm }}
       - name: Check Binary Compatibility with MiMa
-        run: ./mill __.mimaReportBinaryIssues
+        run: ./mill unipublish[${{ inputs.scala}}].mimaReportBinaryIssues
 
   doc:
     name: Formatting
