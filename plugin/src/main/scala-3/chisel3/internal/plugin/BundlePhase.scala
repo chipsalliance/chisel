@@ -145,7 +145,6 @@ object BundleHelpers {
 
   def getBundleFields(record: tpd.TypeDef)(using Context): List[tpd.Tree] = {
     val bundleSym = record.symbol.asClass
-    val bundleTpe = requiredClass("chisel3.Bundle")
     val isIgnoreSeq = ChiselTypeHelpers.isIgnoreSeq(record.tpe)
 
     def isBundleDataField(m: Symbol): Boolean = {
@@ -156,9 +155,6 @@ object BundleHelpers {
           || ChiselTypeHelpers.isBoxedData(m.info, isIgnoreSeq)
       )
     }
-
-    // Check if a symbol is exactly the Bundle class and not a subclass
-    def isExactBundle(sym: Symbol): Boolean = sym == bundleTpe
 
     // Recursively get all bundle fields from this class and its parents
     def getAllBundleFields(sym: ClassSymbol, depth: Int = 0): List[tpd.Tree] = {
@@ -172,10 +168,11 @@ object BundleHelpers {
           tupleTree(List(tpd.Literal(Constant(name)), sel))
       }
 
-      val parentFields: List[tpd.Tree] = if (!isExactBundle(sym)) {
+      val parentFields: List[tpd.Tree] = if (!ChiselTypeHelpers.isExactBundle(sym)) {
         sym.info.parents.flatMap { parentTpe =>
           parentTpe.classSymbol match {
-            case parentSym: ClassSymbol if !isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
+            case parentSym: ClassSymbol
+                if !ChiselTypeHelpers.isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
               getAllBundleFields(parentSym, depth + 1)
             case _ => Nil
           }
