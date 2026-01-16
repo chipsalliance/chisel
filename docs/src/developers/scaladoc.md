@@ -8,10 +8,15 @@ section: "chisel3"
 
 We write inline documentation of code and public APIs using ScalaDoc.
 
-When creating a new feature, you can view the documentation you've written by building the ScalaDoc locally with `sbt`:
+When creating a new feature, you can view the documentation you've written by building the ScalaDoc locally with `mill`:
 
-```
-sbt:chisel> unipublish / doc
+```sh
+./mill unipublish[2.13].docJar
 ```
 
-This will build the documentation in `unipublish/target/scala-2.13/unidoc`, and you can view it by opening `unidoc/index.html` in your browser.
+This will build a documentation jar: `out/unipublish/2.13/docJar.dest/out.jar`.
+You can extract it to a directory with:
+```sh
+unzip out/unipublish/2.13/docJar.dest/out.jar -d apidocs
+```
+You can then view them by opening `apidocs/index.html` in your web browser.
