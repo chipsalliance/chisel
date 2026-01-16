@@ -246,8 +246,6 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref }}
-      - name: Install Tabby OSS Cad Suite
-        uses: ./.github/workflows/setup-oss-cad-suite
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
