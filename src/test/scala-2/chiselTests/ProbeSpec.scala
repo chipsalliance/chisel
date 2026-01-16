@@ -771,4 +771,29 @@ class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
     }
     ChiselStage.emitCHIRRTL(new TestMod)
   }
+
+  "FlatIO probe" should "not stack overflow" in {
+    class ProbeIO extends Bundle {
+      val a = UInt(32.W)
+    }
+    class WithProbeIO extends Bundle {
+      val probe = Output(Probe(new ProbeIO))
+    }
+    class FlatIOModule extends RawModule {
+      val io = FlatIO(new WithProbeIO)
+      val w = Wire(new ProbeIO)
+      define(io.probe, ProbeValue(w))
+      w.a := 0.U
+    }
+    class TestTop extends RawModule {
+      val testMod = Module(new FlatIOModule)
+      val r: Bool = testMod.io.probe.a === 0.U
+    }
+    val exc = intercept[ChiselException] {
+      ChiselStage.elaborate(new TestTop)
+    }
+    // Should get a meaningful error about probes not participating in mono connections
+    // rather than a StackOverflowError
+    exc.getMessage should include("Probed type cannot participate in a mono connection")
+  }
 }
