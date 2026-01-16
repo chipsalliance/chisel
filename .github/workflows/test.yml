@@ -147,7 +147,7 @@ jobs:
           distribution: 'adopt'
           java-version: ${{ inputs.jvm }}
       - name: Check Binary Compatibility with MiMa
-        run: ./mill __.mimaReportBinaryIssues
+        run: ./mill unipublish[${{ inputs.scala}}].mimaReportBinaryIssues
 
   doc:
     name: Formatting
@@ -237,6 +237,22 @@ jobs:
           java-version: ${{ inputs.jvm }}
       - name: Compile
         run: ./mill stdlib.cross[${{ matrix.scala }}].compile
+
+  publishLocal:
+    name: Publish Local
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'adopt'
+          java-version: ${{ inputs.jvm }}
+      - name: Compile
+        run: ./mill unipublish[${{ matrix.scala }}].publishLocal
 
   website:
     name: Build Mdoc & Website

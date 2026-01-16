@@ -41,13 +41,13 @@ jobs:
         shell: bash
         run: |
           # Determine the version and insert it into the example
-          VERSION=$(./mill show unipublish.publishVersion | tr -d \")
+          VERSION=$(./mill show 'unipublish[2.13].publishVersion' | tr -d \")
           .github/scripts/generate-scala-cli-example.sh $VERSION > chisel-example.scala
       # Need to publishLocal to test the example
       - name: Publish Local
         shell: bash
         run: |
-          ./mill -i unipublish.publishLocal
+          ./mill -i 'unipublish[2.13].publishLocal'
       - name: Test Scala CLI Example
         shell: bash
         run: scala-cli chisel-example.scala

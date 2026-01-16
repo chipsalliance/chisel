@@ -11,7 +11,7 @@ buildDir ?= build
 website_docs_dir = $(this_dir)/docs
 latest_scaladoc_dir = $(this_dir)/static/api/latest
 snapshot_scaladoc_dir = $(this_dir)/static/api/snapshot
-snapshot_scaladoc_jar = $(mill_out)/unipublish/docJar.dest/out.jar
+snapshot_scaladoc_jar = $(mill_out)/unipublish/2.13/docJar.dest/out.jar
 generate_scala_cli = $(chisel_dir)/.github/scripts/generate-scala-cli-example.sh
 latest_chisel_download = $(this_dir)/static/releases/latest/download
 snapshot_chisel_download = $(this_dir)/static/releases/snapshot/download
@@ -72,7 +72,7 @@ $(latest_scaladoc_dir)/index.html: $(latest_version) | $(latest_scaladoc_dir)
 	touch $@
 
 $(snapshot_scaladoc_jar): $(chisel-non-website)
-	cd $(chisel_dir) && ./mill unipublish.docJar
+	cd $(chisel_dir) && ./mill unipublish[2.13].docJar
 
 $(snapshot_scaladoc_dir)/index.html: $(snapshot_scaladoc_jar) | $(snapshot_scaladoc_dir)
 	rm -rf $(snapshot_scaladoc_dir)/*
@@ -90,7 +90,7 @@ $(snapshot_chisel_download):
 	mkdir -p $@
 
 $(snapshot_chisel_download)/chisel-example.scala: | $(snapshot_chisel_download)
-	$(eval VER := $(shell cd $(chisel_dir) && ./mill show unipublish.publishVersion | tr -d \"))
+	$(eval VER := $(shell cd $(chisel_dir) && ./mill show unipublish[2.13].publishVersion | tr -d \"))
 	$(generate_scala_cli) $(VER) > $@
 
 generated_dir = $(this_dir)/src/pages/generated
