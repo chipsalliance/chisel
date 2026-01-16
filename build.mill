@@ -67,7 +67,7 @@ object v extends Module {
         chisel(ver).test,
         firrtl.cross(ver).test,
         svsim.cross(ver).test,
-        unipublish
+        unipublish("2.13")
       )
     } ++ scalaCrossVersions.filterNot(isScala3(_)).flatMap { ver2 =>
       Seq(
@@ -327,4 +327,4 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
   }
 }
 
-object unipublish extends Unipublish
+object unipublish extends Cross[Unipublish](v.scalaCrossVersions)

@@ -34,9 +34,7 @@ trait ChiselPublishModule extends SonatypeCentralPublishModule {
 
 /** Aggregate project for publishing Chisel as a single artifact
   */
-trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
-
-  def scalaVersion = v.defaultScalaVersion
+trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
 
   /** Is this a SNAPSHOT release?  */
   def isSnapshot = Task { publishVersion().endsWith("-SNAPSHOT") }
@@ -71,6 +69,8 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[MissingClassProblem]("chisel3.internal.RangeTransform*")
   )
 
+  def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)
+
   /** Publish both this project and the plugin (for the default Scala version) */
   override def publishLocal(
     localMvnRepo: String = null,
@@ -79,12 +79,12 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
     transitive:   Boolean = false
   ) = Task.Command {
     // TODO consider making this parallel and publishing all cross-versions for plugin
-    plugin.cross(v.defaultScalaVersion).publishLocal(localMvnRepo, sources, doc, transitive)()
+    plugin.cross(pluginVersion).publishLocal(localMvnRepo, sources, doc, transitive)()
     super.publishLocal(localMvnRepo, sources, doc, transitive)()
   }
 
   // Explicitly not using moduleDeps because that influences so many things
-  def components = Seq(firrtl.cross, svsim.cross, macros.cross, core.cross, chisel).map(_(v.defaultCrossVersion))
+  def components = Seq(firrtl.cross, svsim.cross, macros.cross, core.cross, chisel).map(_(crossScalaVersion))
 
   /** Aggregated mvn deps to include as dependencies in POM */
   def mvnDeps = Task { Task.traverse(components)(_.mvnDeps)().flatten }
@@ -114,20 +114,29 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
   }
 
   // Needed for ScalaDoc
-  override def scalacOptions = v.scala2CommonOptions(Nil)
+  override def scalacOptions = Task {
+    if (v.isScala3(crossScalaVersion)) Seq.empty[String]
+    else v.scala2CommonOptions(Nil)
+  }
 
   def scalaDocRootDoc = Task.Source { BuildCtx.workspaceRoot / "root-doc.txt" }
 
   def unidocOptions = Task {
+    val scala2Options = Seq(
+      "-skip-packages",
+      "chisel3.internal",
+      "-diagrams",
+      "-diagrams-max-classes",
+      "25",
+      "-implicits"
+    )
+    val scala3Options = Seq(
+      "-skip-by-id=chisel3.internal"
+    )
     scalacOptions() ++ Seq[String](
       "-classpath",
       unidocCompileClasspath().map(_.path).mkString(sys.props("path.separator")),
-      "-diagrams",
       "-groups",
-      "-skip-packages",
-      "chisel3.internal",
-      "-diagrams-max-classes",
-      "25",
       "-doc-version",
       publishVersion(),
       "-doc-title",
@@ -138,8 +147,9 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
       BuildCtx.workspaceRoot.toString,
       "-doc-source-url",
       unidocSourceUrl(),
-      "-language:implicitConversions",
-      "-implicits"
+      "-language:implicitConversions"
+    ) ++ (
+      if (v.isScala3(crossScalaVersion)) scala3Options else scala2Options
     )
   }
 

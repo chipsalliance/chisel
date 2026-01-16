@@ -88,7 +88,7 @@ jobs:
           MILL_SONATYPE_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MILL_SONATYPE_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
       - run: |
-          VERSION=$(./mill show unipublish.publishVersion | tr -d \")
+          VERSION=$(./mill show 'unipublish[2.13].publishVersion' | tr -d \")
           echo "Published version: $VERSION" >> $GITHUB_STEP_SUMMARY
 
 

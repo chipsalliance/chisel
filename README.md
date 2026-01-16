@@ -317,13 +317,13 @@ If the compilation succeeded and the dependencies noted above are installed, you
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`main` branch), you will need to build from source and publish locally.
-The repository version can be found by running `./mill show unipublish.publishVersion`.
+The repository version can be found by running `./mill show unipublish[2.13].publishVersion`.
 As of the time of writing it was: `7.1.1+16-767b9eb3-SNAPSHOT`
 
 To publish your version of Chisel to the local Ivy repository, run:
 
 ```bash
-./mill unipublish.publishLocal
+./mill unipublish[2.13].publishLocal
 ```
 
 The compiled version gets placed in `~/.ivy2/local/org.chipsalliance/`.
