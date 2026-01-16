@@ -77,6 +77,12 @@ object ChiselTypeHelpers {
     dd.symbol.owner.owner.thisType <:< requiredClassRef("chisel3.Bundle")
   }
 
+  // Check if a symbol is exactly the Bundle class and not a subclass
+  def isExactBundle(sym: Symbol)(using Context): Boolean = {
+    val bundleTpe = requiredClass("chisel3.Bundle")
+    sym == bundleTpe
+  }
+
   def stringFromTermName(name: TermName): String = name.toString.trim
 
   def isData(t: Type)(using Context): Boolean = {
