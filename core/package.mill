@@ -16,12 +16,10 @@ trait Core extends ChiselCrossModule with HasScala2MacroAnno with HasCommonOptio
 
   def moduleDir = super.moduleDir / os.up
 
-  val crossModuleDeps = Seq(firrtl.cross(crossScalaVersion)) ++ {
-    if (v.isScala3(crossScalaVersion)) Seq.empty
-    else Seq(macros.cross(crossScalaVersion))
-  }
+  def firrtlModule = firrtl.cross(crossScalaVersion)
+  def macrosModule = macros.cross(crossScalaVersion)
 
-  override def moduleDeps = super.moduleDeps ++ crossModuleDeps
+  override def moduleDeps = super.moduleDeps ++ Seq(firrtlModule, macrosModule)
 
   val commonDeps = Seq(
     v.osLib,

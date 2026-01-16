@@ -477,7 +477,8 @@ private[chisel3] class DynamicContext(
   val contextCache:       BuilderContextCache,
   val layerMap:           Map[layer.Layer, layer.Layer],
   val inlineTestIncluder: InlineTestIncluder,
-  val suppressSourceInfo: Boolean
+  val suppressSourceInfo: Boolean,
+  var elideLayerBlocks:   Boolean
 ) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
@@ -545,12 +546,11 @@ private[chisel3] class DynamicContext(
   var blockStack:           List[Block] = Nil
   // Clock and Reset are "Delayed" because ImplicitClock and ImplicitReset need to set these values,
   // But the clock or reset defined by the user won't yet be initialized
-  var currentClock:     Option[Delayed[Clock]] = None
-  var currentReset:     Option[Delayed[Reset]] = None
-  var currentDisable:   Disable.Type = Disable.BeforeReset
-  var enabledLayers:    mutable.LinkedHashSet[layer.Layer] = mutable.LinkedHashSet.empty
-  var layerStack:       List[layer.Layer] = layer.Layer.root :: Nil
-  var elideLayerBlocks: Boolean = false
+  var currentClock:   Option[Delayed[Clock]] = None
+  var currentReset:   Option[Delayed[Reset]] = None
+  var currentDisable: Disable.Type = Disable.BeforeReset
+  var enabledLayers:  mutable.LinkedHashSet[layer.Layer] = mutable.LinkedHashSet.empty
+  var layerStack:     List[layer.Layer] = layer.Layer.root :: Nil
   val errors = new ErrorLog(warningFilters, sourceRoots, throwOnFirstError)
   val namingStack = new NamingStack
 

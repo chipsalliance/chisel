@@ -18,7 +18,7 @@ object v extends Module {
   val scala213MinorVersion: Int = 18
 
   // Bump Scala 3 version by bumping this.
-  val scala3MinorVersion: String = "3.4"
+  val scala3MinorVersion: String = "3.7"
 
   val javaVersion = {
     val rawVersion = sys.props("java.specification.version")

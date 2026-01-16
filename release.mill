@@ -67,6 +67,8 @@ trait Unipublish extends ScalaModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.UnitTests$Config*"),
     // These are private case classes within objects which is safe.
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.experimental.hierarchy.Instantiate#CacheKey.*"),
+    // This is internal and unusable as it will attempt to instantiate classes that were removed long ago.
+    ProblemFilter.exclude[MissingClassProblem]("chisel3.internal.RangeTransform*"),
     // No longer a FixedIOModule, now a FixedIORawModule
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.experimental.inlinetest.TestHarness")
   )

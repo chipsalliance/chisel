@@ -924,4 +924,25 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         )
     }
   }
+  describe("(8): A Definition under an elideBlock scope") {
+    it("(8.a): should elide layer blocks") {
+      class Bar extends RawModule {
+        layer.block(layers.Verification) {
+          val a = WireInit(false.B)
+        }
+      }
+      class Foo extends RawModule {
+        layer.elideBlocks {
+          val barDef = Definition(new Bar)
+        }
+      }
+      ChiselStage
+        .emitCHIRRTL(new Foo)
+        .fileCheck()(
+          """|CHECK: module Bar :
+             |CHECK-NOT: layerblock
+             |""".stripMargin
+        )
+    }
+  }
 }

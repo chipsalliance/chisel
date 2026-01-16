@@ -535,8 +535,14 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
       }
 
       emitCHIRRTL(new Foo).fileCheck()(
-        """|CHECK-COUNT-3: module
-           |CHECK-NOT:     module
+        """|CHECK:     module HasLayer :
+           |CHECK-NOT: module
+           |CHECK:       layerblock
+           |
+           |CHECK:     module HasLayer{{.*}} :
+           |CHECK-NOT:   layerblock
+           |
+           |CHECK:     module Foo :
            |""".stripMargin
       )
     }
@@ -551,9 +557,12 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
         }
       }
 
-      emitCHIRRTL(new Foo).fileCheck()(
-        """|CHECK-COUNT-2: module
-           |CHECK-NOT:     module
+      emitCHIRRTL(new Foo).fileCheck("--implicit-check-not=module")(
+        """|CHECK:     module HasLayer :
+           |CHECK-NOT:   layerblock
+           |
+           |CHECK:     module Foo :
+           |CHECK-NOT:   layerblock
            |""".stripMargin
       )
     }
