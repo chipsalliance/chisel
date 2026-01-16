@@ -3,7 +3,7 @@ package chisel3
 import svsim._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
-import chisel3.experimental.inlinetest.{ElaboratedTest, HasTests, TestHarness, TestParameters}
+import chisel3.experimental.inlinetest.{ElaboratedTest, HasTests, TestParameters}
 import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
@@ -145,7 +145,7 @@ package object simulator {
       includeTestGlobs: Seq[String],
       args:             Seq[String] = Seq.empty,
       firtoolArgs:      Seq[String] = Seq.empty
-    ): Seq[(Workspace, ElaboratedTest[T], ElaboratedModule[TestHarness[T]])] = {
+    ): Seq[(Workspace, ElaboratedTest[T], ElaboratedModule[RawModule with SimulationTestHarnessInterface])] = {
       val updatedArgs = args ++ includeTestGlobs.map("--include-tests-name=" + _)
       val generated = generateWorkspaceSources(generateModule, updatedArgs, firtoolArgs)
       generated.testHarnesses.map { case elaboratedTest =>
@@ -156,7 +156,11 @@ package object simulator {
         (
           testWorkspace,
           elaboratedTest,
-          new ElaboratedModule(elaboratedTest.testHarness.asInstanceOf[TestHarness[T]], ports, layers)
+          new ElaboratedModule(
+            elaboratedTest.testHarness.asInstanceOf[RawModule with SimulationTestHarnessInterface],
+            ports,
+            layers
+          )
         )
       }
     }

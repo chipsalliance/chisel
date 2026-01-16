@@ -273,13 +273,9 @@ class RawModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
   }
 
   "RawModule marked as simulation test" should "emit a simulation test declaration" in {
-    class Foo extends RawModule {
-      val clock = IO(Input(Clock()))
-      val init = IO(Input(Bool()))
-      val done = IO(Output(Bool()))
-      val success = IO(Output(Bool()))
-      done := true.B
-      success := true.B
+    class Foo extends SimulationTestHarness {
+      io.done := true.B
+      io.success := true.B
 
       SimulationTest(this)
       SimulationTest(this, MapTestParam(Map("hello" -> StringTestParam("world"))))

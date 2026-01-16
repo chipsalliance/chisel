@@ -162,38 +162,38 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       |
       | CHECK:      public module test_ModuleWithTests_check1
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   input init
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   input init
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   input init
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   input init
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       | CHECK:        inst dut of ModuleWithTests
       | CHECK:        inst monitor of ProtocolMonitor
       | CHECK-NEXT:   connect monitor.clock, clock
-      | CHECK-NEXT:   connect monitor.reset, reset
+      | CHECK-NEXT:   connect monitor.reset, init
       | CHECK-NEXT:   connect monitor.io.out, read(dut.monProbe).out
       | CHECK-NEXT:   connect monitor.io.in, read(dut.monProbe).in
       |
       | CHECK:      public module test_ModuleWithTests_check2
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset
+      | CHECK-NEXT:   input init
       | CHECK:        inst dut of ModuleWithTests
       """
     )
@@ -346,28 +346,28 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       |
       | CHECK:      public module test_ModuleWithTests_check1
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input init : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   input init : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_failing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   input init : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_with_monitor
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input init : UInt<1>
       |
       | CHECK:      public module test_ModuleWithTests_check2
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   input init : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       """
 
@@ -390,14 +390,14 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       |
       | CHECK:      public module test_RawModuleWithTests_passing
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : UInt<1>
-      | CHECK-NEXT:   output finish : UInt<1>
+      | CHECK-NEXT:   input init : UInt<1>
+      | CHECK-NEXT:   output done : UInt<1>
       | CHECK-NEXT:   output success : UInt<1>
       """
     )
   }
 
-  it should "simulate and pass if finish asserted with success=1" in {
+  it should "simulate and pass if done asserted with success=1" in {
     simulateTests(
       new ModuleWithTests,
       tests = TestChoice.Globs("passing"),
@@ -405,7 +405,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     )
   }
 
-  it should "simulate and fail if finish asserted with success=0" in {
+  it should "simulate and fail if done asserted with success=0" in {
     val exception = intercept[chisel3.simulator.Exceptions.TestsFailed] {
       simulateTests(
         new ModuleWithTests,

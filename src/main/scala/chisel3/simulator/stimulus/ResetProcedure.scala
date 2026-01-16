@@ -2,7 +2,7 @@
 
 package chisel3.simulator.stimulus
 
-import chisel3.{Clock, Module, RawModule, Reset}
+import chisel3.{Clock, Module, RawModule, Reset, SimulationTestHarnessInterface}
 import chisel3.simulator.AnySimulatedModule
 
 /** Stimulus that will apply a standard reset procedure to a Chisel circuit.
@@ -118,4 +118,14 @@ object ResetProcedure {
     period = period
   )
 
+  /** Return reset stimulus for a [[SimulationTestHarnessInterface]]. */
+  def testHarness[A <: RawModule with SimulationTestHarnessInterface](
+    additionalResetCycles: Int = 0,
+    period:                Int = 10
+  ): ResetProcedure[A] = any(
+    getClock = _.clock,
+    getReset = _.init,
+    additionalResetCycles = additionalResetCycles,
+    period = period
+  )
 }

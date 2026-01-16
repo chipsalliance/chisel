@@ -29,11 +29,11 @@ final class TestConfiguration private (
   successCondition: Option[Bool],
   failureMessage:   Option[Printable]
 ) {
-  private[inlinetest] def driveInterface(testName: String, intf: TestHarnessInterface) = {
-    intf.finish := finishCondition.getOrElse(false.B)
+  private[inlinetest] def driveInterface(testName: String, intf: SimulationTestHarnessInterface) = {
+    intf.done := finishCondition.getOrElse(false.B)
     intf.success := successCondition.getOrElse(true.B)
     failureMessage.foreach { failureMessage =>
-      when(intf.finish && !intf.success) {
+      when(intf.done && !intf.success) {
         printf(cf"${testName} failed: ${failureMessage}")
       }
     }
@@ -144,19 +144,8 @@ final class TestParameters[M <: RawModule] private[inlinetest] (
   def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
-/** IO that reports the status of the test implemented by a testharness. */
-private[chisel3] class TestHarnessInterface extends Bundle {
-
-  /** The test shall be considered complete on the first positive edge of
-   *  [[finish]] by the simulation. The [[TestHarness]] must drive this.
-   */
-  val finish = Bool()
-
-  /** The test shall pass if this is asserted when the test is complete.
-   *  The [[TestHarness]] must drive this.
-   */
-  val success = Bool()
-}
+@deprecated("use chisel3.SimulationTestHarnessInterface instead", "Chisel 7.8.0")
+trait TestHarnessInterface extends SimulationTestHarnessInterface
 
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
    *  the module, instantiates the DUT, and provides methods to generate the test. The [[resetType]] matches
@@ -164,11 +153,22 @@ private[chisel3] class TestHarnessInterface extends Bundle {
    *
    *  @tparam M the type of the DUT module
    */
-abstract class TestHarness[M <: RawModule](test: TestParameters[M])
-    extends FixedIOModule(new TestHarnessInterface)
-    with Public {
+abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends SimulationTestHarness {
   override final def desiredName = test.testHarnessDesiredName
-  override final def resetType = test.testHarnessResetType
+
+  override def implicitReset: Reset = test.testHarnessResetType match {
+    case Module.ResetType.Asynchronous => io.init.asAsyncReset
+    case _                             => io.init
+  }
+
+  @deprecated(
+    "chisel3.experimental.inlinetest.TestHarness no longer extends Module",
+    "Chisel 7.8.0"
+  )
+  final def resetType = test.testHarnessResetType
+
+  @deprecated("use init instead", "Chisel 7.8.0")
+  final def reset = io.init
 
   protected final val dut = Instance(test.dutDefinition())
   private[inlinetest] final val testConfig = test.testBody(dut)
