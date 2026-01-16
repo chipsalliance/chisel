@@ -104,7 +104,7 @@ class ModuleWithTests(
   test("failing") { instance =>
     instance.io.in := 5.U(ioWidth.W)
     TestConfiguration(
-      done = RegNext(true.B),
+      finish = RegNext(true.B),
       success = instance.io.out =/= 5.U,
       cf"unexpected output"
     )

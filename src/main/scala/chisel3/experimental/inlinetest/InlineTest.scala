@@ -25,12 +25,12 @@ object TestResult {
 }
 
 final class TestConfiguration private (
-  doneCondition:    Option[Bool],
+  finishCondition:    Option[Bool],
   successCondition: Option[Bool],
   failureMessage:   Option[Printable]
 ) {
   private[inlinetest] def driveInterface(testName: String, intf: SimulationTestHarnessInterface) = {
-    intf.done := doneCondition.getOrElse(false.B)
+    intf.done := finishCondition.getOrElse(false.B)
     intf.success := successCondition.getOrElse(true.B)
     failureMessage.foreach { failureMessage =>
       when(intf.done && !intf.success) {
@@ -42,27 +42,27 @@ final class TestConfiguration private (
 
 object TestConfiguration {
   def default(): TestConfiguration =
-    new TestConfiguration(doneCondition = None, successCondition = None, failureMessage = None)
+    new TestConfiguration(finishCondition = None, successCondition = None, failureMessage = None)
 
   def runForCycles(nCycles: Int): TestConfiguration = {
     val (_, done) = Counter(true.B, nCycles)
     new TestConfiguration(
-      doneCondition = Some(done),
+      finishCondition = Some(done),
       successCondition = None,
       failureMessage = None
     )
   }
 
-  def apply(done: Bool): TestConfiguration =
+  def apply(finish: Bool): TestConfiguration =
     new TestConfiguration(
-      doneCondition = Some(done),
+      finishCondition = Some(finish),
       successCondition = None,
       failureMessage = None
     )
 
-  def apply(done: Bool, success: Bool, failureMessage: Printable): TestConfiguration =
+  def apply(finish: Bool, success: Bool, failureMessage: Printable): TestConfiguration =
     new TestConfiguration(
-      doneCondition = Some(done),
+      finishCondition = Some(finish),
       successCondition = Some(success),
       failureMessage = Some(failureMessage)
     )
