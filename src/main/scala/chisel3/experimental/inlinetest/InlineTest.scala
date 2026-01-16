@@ -144,6 +144,7 @@ final class TestParameters[M <: RawModule] private[inlinetest] (
   def testHarnessDesiredName = s"test_${dutName()}_${testName}"
 }
 
+@deprecated("use chisel3.TestHarnessInterface instead", "Chisel 7.8.0")
 trait TestHarnessInterface extends BaseTestHarnessInterface
 
 /** TestHarnesses for inline tests should extend this. This abstract class sets the correct desiredName for
@@ -160,7 +161,13 @@ abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends Base
     case _                             => io.init
   }
 
+  @deprecated(
+    "chisel3.experimental.inlinetest.TestHarness no longer extends Module",
+    "Chisel 7.8.0"
+  )
   final def resetType = test.testHarnessResetType
+
+  @deprecated("use init instead", "Chisel 7.8.0")
   final def reset = io.init
 
   protected final val dut = Instance(test.dutDefinition())
