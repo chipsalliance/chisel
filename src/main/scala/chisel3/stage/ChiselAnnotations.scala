@@ -93,7 +93,7 @@ case class WarningConfigurationAnnotation(value: String)
 
   // This is eager so that the validity of the value String can be checked right away
   private[chisel3] val filters: Seq[WarningFilter] = {
-    import chisel3.internal.ListSyntax
+    import chisel3.internal.IterableSyntax
     val filters = value.split(",")
     filters.toList
       // Add accumulating index to each filter for error reporting

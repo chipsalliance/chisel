@@ -205,13 +205,18 @@ package object internal {
   }
 
   // TODO this exists in cats.Traverse, should we just use that?
-  private[chisel3] implicit class ListSyntax[A](xs: List[A]) {
-    def mapAccumulate[B, C](z: B)(f: (B, A) => (B, C)): (B, List[C]) = {
-      val (zz, result) = xs.foldLeft((z, List.empty[C])) { case ((acc, res), a) =>
-        val (accx, c) = f(acc, a)
-        (accx, c :: res)
+  private[chisel3] implicit class IterableSyntax[A, CC[X] <: Iterable[X]](xs: CC[A]) {
+    def mapAccumulate[B, C](
+      z: B
+    )(f: (B, A) => (B, C))(implicit bf: scala.collection.BuildFrom[CC[A], C, CC[C]]): (B, CC[C]) = {
+      val builder = bf.newBuilder(xs)
+      var acc = z
+      xs.foreach { a =>
+        val (newAcc, c) = f(acc, a)
+        acc = newAcc
+        builder += c
       }
-      (zz, result.reverse)
+      (acc, builder.result())
     }
   }
 
