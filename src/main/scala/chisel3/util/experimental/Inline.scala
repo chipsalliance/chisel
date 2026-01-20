@@ -78,3 +78,10 @@ trait InlineInstanceAllowDedup { self: BaseModule =>
 trait FlattenInstance { self: BaseModule =>
   chisel3.experimental.annotate(self)(Seq(FlattenAnnotation(self.toNamed), NoDedupAnnotation(self.toNamed)))
 }
+
+/** Flattens all instances of a module. If this module dedups with any other
+  * module, instances of that other module will also be flattened.
+  */
+trait FlattenInstanceAllowDedup { self: BaseModule =>
+  chisel3.experimental.annotate(self)(Seq(FlattenAnnotation(self.toNamed)))
+}
