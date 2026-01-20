@@ -84,7 +84,7 @@ jobs:
           echo \`\`\` >> $GITHUB_STEP_SUMMARY
       - name: Test
         # Note firrtl tests don't work with Scala 3 so just run default version (2.13) for now.
-        run: ./mill firrtl.cross[].test -oF + svsim.cross[${{ inputs.scala }}].test -oF + chisel[${{ inputs.scala }}].test -oF
+        run: ./mill firrtl.cross[].test -oF + svsim.cross[${{ inputs.scala }}].test -oF + chisel[${{ inputs.scala }}].test -oF + chisel[${{ inputs.scala }}].unitTest -G-v
 
   lit:
     name: Run lit tests

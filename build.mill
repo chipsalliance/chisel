@@ -11,6 +11,7 @@ import mill._
 import mill.api.{BuildCtx, Result}
 import mill.scalalib._
 import mill.scalalib.scalafmt._
+import mainargs.arg
 
 object v extends Module {
 
@@ -324,6 +325,48 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
     override def scalacOptions = Task { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
 
     override def testForkGrouping = discoveredTestClasses().grouped(8).toSeq
+  }
+
+  def unitTest(
+    @arg(short = 'G', noDefaultName = true, doc = "Pass argument to chisel3.UnitTests main")
+    chiselArgs: Seq[String] = Seq.empty,
+    @arg(short = 'C', noDefaultName = true, doc = "Pass argument to firtool")
+    firtoolArgs: Seq[String] = Seq.empty,
+    @arg(short = 'T', noDefaultName = true, doc = "Pass argument to circt-test")
+    circtTestArgs: Seq[String] = Seq.empty
+  ): Task.Command[Unit] = Task.Command {
+    val firFile = Task.dest / "unit_tests.fir"
+    val mlirFile = Task.dest / "unit_tests.mlir"
+
+    // Run the `chisel3.UnitTests` main to generate a FIR file containing all
+    // tests. Use test.runner() to include test classes in the classpath.
+    test
+      .runner()
+      .run(
+        args = Seq("-o", firFile.toString) ++ chiselArgs,
+        mainClass = "chisel3.UnitTests",
+        workingDir = Task.dest
+      )
+
+    // Compile the FIR file to MLIR using firtool.
+    os.proc(
+      Seq(
+        (circt.binDir() / "firtool").toString,
+        "--ir-hw",
+        firFile.toString,
+        "-o",
+        mlirFile.toString,
+        "--default-layer-specialization=enable"
+      ) ++ firtoolArgs
+    ).call(cwd = Task.dest, stdout = os.Inherit, stderr = os.Inherit)
+
+    // Run all tests in the MLIR file using circt-test.
+    os.proc(
+      Seq(
+        (circt.binDir() / "circt-test").toString,
+        mlirFile.toString
+      ) ++ circtTestArgs
+    ).call(cwd = Task.dest, stdout = os.Inherit, stderr = os.Inherit)
   }
 }
 
