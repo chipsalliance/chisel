@@ -10,7 +10,7 @@ import chisel3.experimental.AnyTargetable
 import firrtl.annotations._
 import firrtl.options.Unserializable
 import firrtl.passes.InlineAnnotation
-import firrtl.transforms.{DedupGroupAnnotation, NoDedupAnnotation}
+import firrtl.transforms.{DedupGroupAnnotation, FlattenAnnotation, NoDedupAnnotation}
 
 object annotate {
 
@@ -123,5 +123,29 @@ object inlineInstanceAllowDedup {
     */
   def apply[T <: RawModule](module: T): Unit = {
     annotate(module)(Seq(InlineAnnotation(module.toNamed)))
+  }
+}
+
+object flattenInstance {
+
+  /** Marks a module instance to be flattened. This module is excluded from deduplication, so any other instances of this
+    * same module won't be flattened.
+    *
+    * @param module The module instance to be marked
+    */
+  def apply[T <: RawModule](module: T): Unit = {
+    annotate(module)(Seq(FlattenAnnotation(module.toNamed), NoDedupAnnotation(module.toNamed)))
+  }
+}
+
+object flattenInstanceAllowDedup {
+
+  /** Marks a module instance to be flattened. If this module dedups with any other module, instances of that other
+    * module will also be flattened.
+    *
+    * @param module The module to be marked
+    */
+  def apply[T <: RawModule](module: T): Unit = {
+    annotate(module)(Seq(FlattenAnnotation(module.toNamed)))
   }
 }
