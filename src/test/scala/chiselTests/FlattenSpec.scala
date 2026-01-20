@@ -48,17 +48,12 @@ class FlattenSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
     ChiselStage
       .emitSystemVerilog(new Top)
-      .fileCheck("--implicit-check-not=module")(
+      .fileCheck("--implicit-check-not={{^ *}}module")(
         """|CHECK: module Leaf
-           |CHECK: endmodule
            |CHECK: module Middle
-           |CHECK: endmodule
            |CHECK: module Parent
-           |CHECK: endmodule
            |CHECK: module Parent_1
-           |CHECK: endmodule
            |CHECK: module Top
-           |CHECK: endmodule
            |""".stripMargin
       )
   }
@@ -73,11 +68,9 @@ class FlattenSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
     ChiselStage
       .emitSystemVerilog(new Top)
-      .fileCheck("--implicit-check-not=module")(
+      .fileCheck("--implicit-check-not={{^ *}}module")(
         """|CHECK: module Parent
-           |CHECK: endmodule
            |CHECK: module Top
-           |CHECK: endmodule
            |""".stripMargin
       )
   }
