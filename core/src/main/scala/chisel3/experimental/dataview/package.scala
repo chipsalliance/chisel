@@ -356,30 +356,24 @@ package object dataview {
         case AggregateViewBinding(mapping, _) =>
           // Take every single leaf and map to its target
           val leaves = DataMirror.collectLeafMembers(data)
-          // Use mapping.get to avoid NoSuchElementException which can trigger infinite recursion
-          // via toString when the key is not found (e.g., when accessing fields of Probe[Aggregate] in FlatIO)
-          val (anyNone, targets) = leaves.mapAccumulate(false) { case (anyNoneAcc, l) =>
-            val m = mapping.get(l).flatMap { oneLevel =>
-              reifySingleTarget(oneLevel)
-            }
-            (anyNoneAcc || m.isEmpty, m)
+          val targets = leaves.map { l =>
+            // All leaves are stored in the mapping.
+            val oneLevel = mapping(l)
+            // This .get is safe because collectLeafMembers returns leaves.
+            // It is of type Data (not Element) because of Probes, but Probes are atomic.
+            reifySingleTarget(oneLevel).get
           }
-          if (anyNone) {
-            None
-          } else {
-            // Now, if there are any targets, check if all of the targets share a common parent,
-            // and if that parent is exclusively composed of these targets.
-            val tset = targets.toSet
-            targets.headOption.flatMap { head =>
-              // .get is safe because we checked targets are all Some above
-              allParents(head.get).find {
-                // This is kind of a hack but ClonePorts is itself a hack.
-                // We must ignore ClonePorts because it isn't a real Data, so it cannot be the "Single Target" to which we map.
-                case _: ClonePorts => false
-                case p =>
-                  val pset = DataMirror.collectLeafMembers(p).toSet
-                  pset == tset
-              }
+          // Now, if there are any targets, check if all of the targets share a common parent,
+          // and if that parent is exclusively composed of these targets.
+          val tset = targets.toSet
+          targets.headOption.flatMap { head =>
+            allParents(head).find {
+              // This is kind of a hack but ClonePorts is itself a hack.
+              // We must ignore ClonePorts because it isn't a real Data, so it cannot be the "Single Target" to which we map.
+              case _: ClonePorts => false
+              case p =>
+                val pset = DataMirror.collectLeafMembers(p).toSet
+                pset == tset
             }
           }
         // Anything else should've been handled by reifyIdentityView
