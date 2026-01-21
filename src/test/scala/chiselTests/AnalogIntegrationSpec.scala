@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{attach, Analog}
+import chisel3.experimental.{attach, fromIntToIntParam, Analog}
 import chisel3.util._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
