@@ -787,14 +787,13 @@ class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
     }
     class TestTop extends RawModule {
       val testMod = Module(new FlatIOModule)
-      val r: Bool = testMod.io.probe.a === 0.U
+      val value: Bool = read(testMod.io.probe.a) === 0.U
     }
-    val exc = intercept[ChiselException] {
-      ChiselStage.elaborate(new TestTop)
-    }
-    // Should get a meaningful error about probes not participating in mono connections
-    // rather than a StackOverflowError
-    exc.getMessage should include("Probed type cannot participate in a mono connection")
+    // Previously this would StackOverflow due to a bug in reifySingleTarget for views.
+    // Now it should elaborate successfully.
+    val chirrtl = ChiselStage.emitCHIRRTL(new TestTop)
+    // FlatIO flattens the io, so it becomes testMod.probe not testMod.io.probe
+    chirrtl should include("read(testMod.probe.a)")
   }
 
   "test1" should "work" in {

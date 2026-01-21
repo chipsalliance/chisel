@@ -302,6 +302,35 @@ package object dataview {
     }
   }
 
+  // Look up a data element in the mapping, handling the case where the element is a child
+  // of something in the mapping (via ChildBinding).
+  // This is necessary for probes of aggregates in views, where only the probe itself
+  // is in the mapping, but we may be looking up a child of the probe.
+  private def lookupInMapping(mapping: Map[Data, Data], data: Data): Option[Data] = {
+    import chisel3.internal.firrtl.ir._
+    mapping.get(data).orElse {
+      data.binding match {
+        case Some(ChildBinding(parent)) =>
+          // Find the target for the parent
+          lookupInMapping(mapping, parent).map { parentTarget =>
+            // Get the corresponding child in the target by extracting the coordinate
+            // (field name or index) from the data's ref and applying it to the parent target.
+            (data.getRef, parentTarget) match {
+              case (Slot(_, name), rec: Record)     => rec._elements(name)
+              case (LitIndex(_, n), vec: Vec[_])    => vec.apply(n)
+              case (Index(_, ILit(n)), vec: Vec[_]) => vec.apply(n.toInt)
+              case (ModuleIO(_, name), rec: Record) => rec._elements(name)
+              case (arg, _) =>
+                throwException(
+                  s"Internal Error! Unexpected Arg '$arg' applied to '$parentTarget' when looking up '$data' in view mapping"
+                )
+            }
+          }
+        case _ => None
+      }
+    }
+  }
+
   /** Determine the target of a View if the view is an identity mapping.
     *
     * This is only true if the target of the view is of the same type and fields correspond 1:1.
@@ -316,10 +345,12 @@ package object dataview {
   ): Option[(T, ViewWriteability)] = {
     val candidate: Option[(Data, ViewWriteability)] =
       data.topBindingOpt match {
-        case None                                       => None
-        case Some(ViewBinding(target, wr))              => Some(target -> wr)
-        case Some(vb @ AggregateViewBinding(lookup, _)) => lookup.get(data).map(_ -> vb.lookupWritability(data))
-        case Some(_)                                    => Some(data -> ViewWriteability.Default)
+        case None                          => None
+        case Some(ViewBinding(target, wr)) => Some(target -> wr)
+        case Some(vb @ AggregateViewBinding(lookup, _)) =>
+          // Use lookupInMapping to handle children of mapped elements (e.g., probe.a when only probe is mapped)
+          lookupInMapping(lookup, data).map(_ -> vb.lookupWritability(data))
+        case Some(_) => Some(data -> ViewWriteability.Default)
       }
     candidate.flatMap { case (d, wr) =>
       val wrx = wrAcc.combine(wr)
@@ -346,7 +377,8 @@ package object dataview {
     * @note You should never attempt to write the result of this function.
     */
   private[chisel3] def reifySingleTarget(data: Data): Option[Data] = {
-    def err(msg: String) = throwException(s"Internal Error! $msg reifySingleTarget($data)")
+    def err(msg: String): Nothing = throwException(s"Internal Error! $msg reifySingleTarget($data)")
+
     // Identity views are obviously single targets.
     // We ignore writability because the return of this function should never be written.
     reifyIdentityView(data).map(_._1).orElse {
@@ -357,8 +389,10 @@ package object dataview {
           // Take every single leaf and map to its target
           val leaves = DataMirror.collectLeafMembers(data)
           val targets = leaves.map { l =>
-            // All leaves are stored in the mapping.
-            val oneLevel = mapping(l)
+            // Look up the leaf in the mapping, handling children of mapped elements.
+            val oneLevel = lookupInMapping(mapping, l).getOrElse {
+              err(s"Leaf '$l' not found in view mapping and has no parent in")
+            }
             // This .get is safe because collectLeafMembers returns leaves.
             // It is of type Data (not Element) because of Probes, but Probes are atomic.
             reifySingleTarget(oneLevel).get
