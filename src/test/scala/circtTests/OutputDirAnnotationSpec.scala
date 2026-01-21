@@ -7,7 +7,7 @@ import circt.outputDir
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
-import chiselTests.experimental.hierarchy.Utils
+// import chiselTests.experimental.hierarchy.Utils
 
 class OutputDirAnnotationSpec extends AnyFunSpec with Matchers {
   describe("output directory annotation works") {

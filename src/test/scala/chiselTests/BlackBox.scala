@@ -374,7 +374,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
     object A extends layer.Layer(layer.LayerConfig.Extract())
 
     sealed trait NoIo { this: BlackBox @nowarn("cat=deprecation") =>
-      final val io = IO(new Bundle {})
+      final val io = chisel3.IO(new Bundle {})
     }
 
     // No known layers
@@ -419,7 +419,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
     class Bar extends BlackBox {
       final val io = IO {
         new Bundle {
-          val a = Output(probe.Probe(Bool(), layers.Verification))
+          val a = Output(probe.Probe(Bool(), chisel3.layers.Verification))
         }
       }
     }
@@ -430,7 +430,7 @@ class BlackBoxSpec extends AnyFlatSpec with Matchers with ChiselSim with FileChe
     class Baz extends BlackBox(knownLayers = Seq(A)) {
       final val io = IO {
         new Bundle {
-          val a = Output(probe.Probe(Bool(), layers.Verification))
+          val a = Output(probe.Probe(Bool(), chisel3.layers.Verification))
         }
       }
     }

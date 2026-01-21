@@ -34,8 +34,8 @@ class ModuleWithChoice[T <: Data](
   default: => FixedIOBaseModule[T]
 )(alternateImpls: Seq[(Case, () => FixedIOBaseModule[T])])
     extends Module {
-  val inst = ModuleChoice(default)(alternateImpls)
-  val io = IO(inst.cloneType)
+  val inst: T = ModuleChoice[T](default, alternateImpls)
+  val io:   T = IO(chiselTypeOf(inst))
   io <> inst
 }
 

@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.{fromIntToIntParam, fromStringToStringParam}
 import circt.stage.ChiselStage
+import chisel3.experimental.{fromIntToIntParam, fromStringToStringParam}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

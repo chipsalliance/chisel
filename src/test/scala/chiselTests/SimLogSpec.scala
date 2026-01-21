@@ -33,7 +33,7 @@ class SimLogSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
       val fd = SimLog.file("logfile.log")
-      fd.printf("in = %d\n", in)
+      // fd.printf("in = %d\n", in)
     }
     ChiselStage
       .emitCHIRRTL(new MyModule)

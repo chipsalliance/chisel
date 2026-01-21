@@ -75,7 +75,7 @@ class BulkConnectSpec extends AnyPropSpec with Matchers {
       val io: MyBundle = IO(Flipped(new MyBundle))
 
       @nowarn("cat=deprecation")
-      val bb = Module(new BlackBox {
+      val bb = Module[BlackBox { def io: MyBundle }](new BlackBox {
         val io: MyBundle = IO(Flipped(new MyBundle))
       })
 

@@ -68,8 +68,6 @@ class HasTestingDirectorySpec extends AnyFlatSpec with Matchers {
       testingDirectory.getDirectory
     }
 
-    implicit val bar = implicitly[HasTestingDirectory]
-
     foo should be(foo)
 
   }

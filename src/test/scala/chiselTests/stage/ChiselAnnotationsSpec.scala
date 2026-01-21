@@ -8,6 +8,7 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, Design
 import firrtl.options.OptionsException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 
 class ChiselAnnotationsSpecFoo extends RawModule {
   val in = IO(Input(Bool()))

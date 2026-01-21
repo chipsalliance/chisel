@@ -5,7 +5,7 @@ import chisel3.layer.{block, Convention, Layer, LayerConfig}
 import chisel3.simulator._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+// import org.scalatest.matchers.should.Matchers.convertToStringShouldWrapperForVerb
 import svsim._
 
 class VerilatorSimulator(val workspacePath: String) extends Simulator[verilator.Backend] {
