@@ -339,6 +339,26 @@ class LayerSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
     ChiselStage.emitCHIRRTL(new Foo) should include("""layer ExpensiveAsserts, bind, "verification/ExpensiveAsserts"""")
   }
 
+  "requireNotElideBlocksContext" should "produce error iff asked to error when wrapped in 'elideBlocks'" in {
+    class Foo extends RawModule {
+      layer.requireNotElideBlocksContext("no error here")
+      val exc = intercept[ChiselException] {
+        layer.elideBlocks {
+          layer.requireNotElideBlocksContext()
+        }
+      }
+      exc.getMessage should include("must not be under elideBlocks context")
+
+      val exc2 = intercept[ChiselException] {
+        layer.elideBlocks {
+          layer.requireNotElideBlocksContext("creating layer block is mandatory")
+        }
+      }
+      exc2.getMessage should include("creating layer block is mandatory: must not be under elideBlocks context")
+    }
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck()("CHECK-NOT: layerblock")
+  }
+
   "Values returned by layer blocks" should "be layer-colored wires" in {
     class Foo extends RawModule {
       val out = IO {

@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.ChiselException
 import chisel3.Data.ProbeInfo
 import chisel3.experimental.{requireIsHardware, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.{Builder, HasId}
@@ -417,6 +418,18 @@ object layer {
     Builder.elideLayerBlocks = oldElideLayerBlocks
     return result
   }
+
+  case class ExpectedNotElideBlocks(message: String) extends ChiselException(message)
+
+  /** Throw exception if elideBlocks is active.
+    *
+    * @param msg when non-empty, prefixes (with ": ") message used in thrown exception.
+    */
+  def requireNotElideBlocksContext(msg: String = ""): Unit =
+    if (Builder.elideLayerBlocks) {
+      val prefix = if (msg.nonEmpty) s"$msg: " else ""
+      throw ExpectedNotElideBlocks(prefix + "must not be under elideBlocks context")
+    }
 
   /** Call this function from within a `Module` body to enable this layer globally for that module. */
   final def enable(layer: Layer): Unit = layer match {
