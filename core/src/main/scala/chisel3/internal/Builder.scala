@@ -478,7 +478,8 @@ private[chisel3] class DynamicContext(
   val layerMap:           Map[layer.Layer, layer.Layer],
   val inlineTestIncluder: InlineTestIncluder,
   val suppressSourceInfo: Boolean,
-  var elideLayerBlocks:   Boolean
+  var elideLayerBlocks:   Boolean,
+  val elaborationTrace:   ElaborationTrace
 ) {
   val importedDefinitionAnnos = annotationSeq.collect { case a: ImportDefinitionAnnotation[_] => a }
 
@@ -853,6 +854,8 @@ private[chisel3] object Builder extends LazyLogging {
       .map(_.inDefinition)
       .getOrElse(false)
   }
+
+  def elaborationTrace: ElaborationTrace = dynamicContext.elaborationTrace
 
   def forcedClock: Clock = currentClock.getOrElse(
     // TODO add implicit clock change to Builder.exception

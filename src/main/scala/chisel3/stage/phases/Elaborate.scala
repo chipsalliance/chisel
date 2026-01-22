@@ -5,7 +5,7 @@ package chisel3.stage.phases
 import chisel3.Module
 import chisel3.experimental.hierarchy.core.Definition
 import chisel3.internal.ExceptionHelpers.ThrowableHelpers
-import chisel3.internal.{Builder, BuilderContextCache, DynamicContext}
+import chisel3.internal.{Builder, BuilderContextCache, DynamicContext, ElaborationTrace}
 import chisel3.internal.firrtl.ir
 import chisel3.stage.{
   ChiselCircuitAnnotation,
@@ -40,6 +40,7 @@ class Elaborate extends Phase {
       val chiselOptions = view[ChiselOptions](annotations)
       val loggerOptions = view[LoggerOptions](annotations)
       try {
+        val elaborationTrace = new ElaborationTrace
         val context =
           new DynamicContext(
             annotations,
@@ -56,11 +57,13 @@ class Elaborate extends Phase {
             chiselOptions.layerMap,
             chiselOptions.inlineTestIncluder,
             chiselOptions.suppressSourceInfo,
-            false
+            false,
+            elaborationTrace
           )
         val (elaboratedCircuit, dut) = {
           Builder.build(Module(gen()), context)
         }
+        elaborationTrace.finish()
 
         // Extract the Chisel layers from a circuit via an in-order walk.
         def walkLayers(layer: ir.Layer, layers: Seq[chisel3.layer.Layer] = Nil): Seq[chisel3.layer.Layer] = {

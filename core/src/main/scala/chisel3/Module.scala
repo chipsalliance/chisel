@@ -70,6 +70,7 @@ object Module extends Module$Intf {
       )
     }
     Builder.readyForModuleConstr = true
+    Builder.elaborationTrace.pushModule()
 
     val module = Builder.State.guard(Builder.State.default) {
       val module: T = bc
@@ -98,6 +99,7 @@ object Module extends Module$Intf {
       module
     }
 
+    Builder.elaborationTrace.popModule(module.desiredName)
     module.moduleBuilt()
     module
   }
