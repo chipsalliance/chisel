@@ -131,6 +131,7 @@ private[chisel3] object DiscoverUnitTests {
     // Handle singleton objects by ensuring they are constructed.
     try {
       val field = clazz.getField("MODULE$")
+      field.setAccessible(true)
       if (isModule)
         cb(className, () => Definition(field.get(null).asInstanceOf[BaseModule]))
       else
@@ -142,11 +143,10 @@ private[chisel3] object DiscoverUnitTests {
 
     // Handle classes by calling their constructor.
     try {
-      val ctor = clazz.getConstructor()
       if (isModule)
-        cb(className, () => Definition(ctor.newInstance().asInstanceOf[BaseModule]))
+        cb(className, () => Definition(clazz.newInstance.asInstanceOf[BaseModule]))
       else
-        cb(className, () => ctor.newInstance())
+        cb(className, () => clazz.newInstance)
       return
     } catch {
       case e: NoSuchMethodException  => ()
