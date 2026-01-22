@@ -78,7 +78,7 @@ class ChiselNamingPhase extends PluginPhase {
     val isPrefixed = isNamedComp || ChiselTypeHelpers.isPrefixed(tpt)
 
     if (!ChiselTypeHelpers.okVal(tree)) tree // Cannot name this, so skip
-    else if (isData && ChiselTypeHelpers.inBundle(tree)) { // Data in a bundle
+    else if (isData && ChiselTypeHelpers.inBundle(sym)) { // Data in a bundle
       val newRHS = transformFollowing(rhs)
       val named =
         tpd
