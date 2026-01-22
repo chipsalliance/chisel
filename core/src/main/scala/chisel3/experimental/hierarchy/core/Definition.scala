@@ -122,7 +122,8 @@ object Definition extends SourceInfoDoc {
         context.layerMap,
         context.inlineTestIncluder,
         context.suppressSourceInfo,
-        context.elideLayerBlocks
+        context.elideLayerBlocks,
+        context.elaborationTrace
       )
     }
     dynamicContext.inDefinition = true
