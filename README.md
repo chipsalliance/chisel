@@ -311,7 +311,10 @@ Check that each is installed on your `PATH` by running `which verilator` and so 
 If the compilation succeeded and the dependencies noted above are installed, you can then run the included unit tests by invoking:
 
 ```bash
+# Run the ScalaTest unit tests:
 ./mill chisel[].test
+# Run the Chisel unit tests (modules marked with chisel3.UnitTest trait):
+./mill chisel[].unitTest
 ```
 
 ### Running Projects Against Local Chisel
