@@ -342,7 +342,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
     // tests. Use test.runner() to include test classes in the classpath. Use
     // `-R` arguments to limit unit test discovery to Chisel sources, but none
     // of its dependencies.
-    val runpathArgs = (localClasspath() ++ test.localClasspath()).map(_.path.toString).flatMap(s => Seq("-R", s))
+    val runpathArgs = (localClasspath() ++ test.localClasspath()).flatMap(p => Seq("-R", p.path.toString))
     test
       .runner()
       .run(
