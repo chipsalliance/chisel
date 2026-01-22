@@ -73,14 +73,20 @@ object ChiselTypeHelpers {
     }
   }
 
-  def inBundle(dd: tpd.ValDef)(using Context): Boolean = {
-    dd.symbol.owner.owner.thisType <:< requiredClassRef("chisel3.Bundle")
-  }
-
   // Check if a symbol is exactly the Bundle class and not a subclass
   def isExactBundle(sym: Symbol)(using Context): Boolean = {
     val bundleTpe = requiredClass("chisel3.Bundle")
     sym == bundleTpe
+  }
+
+  def enclosingMember(sym: Symbol)(using Context): Symbol = {
+    if sym.isClass || sym.is(Flags.Method) then sym
+    else if sym.exists then enclosingMember(sym.owner)
+    else NoSymbol
+  }
+
+  def inBundle(sym: Symbol)(using Context): Boolean = {
+    enclosingMember(sym).thisType <:< requiredClassRef("chisel3.Bundle")
   }
 
   def stringFromTermName(name: TermName): String = name.toString.trim
