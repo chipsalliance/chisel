@@ -339,11 +339,14 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
     val mlirFile = Task.dest / "unit_tests.mlir"
 
     // Run the `chisel3.UnitTests` main to generate a FIR file containing all
-    // tests. Use test.runner() to include test classes in the classpath.
+    // tests. Use test.runner() to include test classes in the classpath. Use
+    // `-R` arguments to limit unit test discovery to Chisel sources, but none
+    // of its dependencies.
+    val runpathArgs = (localClasspath() ++ test.localClasspath()).map(_.path.toString).flatMap(s => Seq("-R", s))
     test
       .runner()
       .run(
-        args = Seq("-o", firFile.toString) ++ chiselArgs,
+        args = Seq("-o", firFile.toString) ++ runpathArgs ++ chiselArgs,
         mainClass = "chisel3.UnitTests",
         workingDir = Task.dest
       )
