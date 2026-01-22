@@ -86,7 +86,7 @@ object ChiselTypeHelpers {
   }
 
   def inBundle(sym: Symbol)(using Context): Boolean = {
-    isExactBundle(enclosingMember(sym))
+    enclosingMember(sym).thisType <:< requiredClassRef("chisel3.Bundle")
   }
 
   def stringFromTermName(name: TermName): String = name.toString.trim
