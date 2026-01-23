@@ -556,11 +556,14 @@ object Serializer {
         b.toString
       }
       Iterator(start) ++ sIt(body)(indent + 1)
-    case ExtModule(info, name, ports, defname, params, knownLayers) =>
+    case ExtModule(info, name, ports, defname, params, knownLayers, requirements) =>
       implicit val b = new StringBuilder
       doIndent(0); b ++= "extmodule "; b ++= legalize(name);
       if (knownLayers.nonEmpty) {
         b ++= knownLayers.mkString(" knownlayer ", ", ", "")
+      }
+      if (requirements.nonEmpty) {
+        b ++= requirements.map(r => StringLit(r).escape).mkString(" requires ", ", ", "")
       }
       b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }

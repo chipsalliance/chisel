@@ -570,12 +570,13 @@ private[chisel3] object ir {
   ) extends Component
 
   case class DefBlackBox(
-    id:          BaseBlackBox,
-    name:        String,
-    ports:       Seq[Port],
-    topDir:      SpecifiedDirection,
-    params:      Map[String, Param],
-    knownLayers: Seq[chisel3.layer.Layer]
+    id:           BaseBlackBox,
+    name:         String,
+    ports:        Seq[Port],
+    topDir:       SpecifiedDirection,
+    params:       Map[String, Param],
+    knownLayers:  Seq[chisel3.layer.Layer],
+    requirements: Seq[String]
   ) extends Component
 
   object DefTestMarker {

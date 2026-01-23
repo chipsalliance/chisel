@@ -39,7 +39,8 @@ class ExtModuleTests extends FirrtlFlatSpec {
             DoubleParam("REAL", -1.7),
             RawStringParam("TYP", "bit")
           ),
-          Seq("A", "B", "C")
+          Seq("A", "B", "C"),
+          Seq.empty
         )
       ),
       "Top"

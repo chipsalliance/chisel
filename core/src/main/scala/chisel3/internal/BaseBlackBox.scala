@@ -51,4 +51,29 @@ private[chisel3] abstract class BaseBlackBox extends BaseModule {
   }
 
   knownLayers.foreach(addLayer)
+
+  /** Build requirements. This will be serialized to the FIRRTL for downstream
+    * tools.
+    */
+  protected def requirements: Seq[String]
+
+  // Internal tracking of _requirements.  This can be appended to with
+  // `addRequirement`.
+  private val _requirements: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty[String]
+
+  /** Add a requirement to this module. */
+  private[chisel3] def addRequirement(requirement: String) = {
+    _requirements += requirement
+  }
+
+  /** Get the requirements.
+    *
+    * @throw IllegalArgumentException if the module is not closed
+    */
+  private[chisel3] def getRequirements: Seq[String] = {
+    require(isClosed, "Can't get requirements before module is closed")
+    _requirements.toSeq
+  }
+
+  requirements.foreach(addRequirement)
 }
