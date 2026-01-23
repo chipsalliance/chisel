@@ -247,7 +247,7 @@ class TypeAliasSpec extends AnyFlatSpec with Matchers {
       "Attempted to redeclare an existing type alias 'DifferentBundle' with a new Record structure"
     )
     msg should include("The alias was previously defined as:")
-    msg should include("@[src/test/scala-2/chiselTests/TypeAliasSpec.scala")
+    msg should include("@[src/test/scala/chiselTests/TypeAliasSpec.scala")
   }
 
   "Bundles with unsanitary names" should "properly sanitize" in {
