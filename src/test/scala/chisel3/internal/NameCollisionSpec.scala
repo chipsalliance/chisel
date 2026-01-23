@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chiselTests
+package chisel3.internal
 
 import chisel3._
 import circt.stage.ChiselStage
