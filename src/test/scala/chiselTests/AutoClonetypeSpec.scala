@@ -344,7 +344,7 @@ class AutoClonetypeSpec extends AnyFlatSpec with Matchers {
     }
     emitCHIRRTL {
       new Module {
-        implicit val x = 8
+        implicit val x: Int = 8
         val in = IO(Input(new MyBundle))
         val out = IO(Output(new MyBundle))
         out := in
