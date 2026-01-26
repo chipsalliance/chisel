@@ -36,9 +36,6 @@ trait ChiselPublishModule extends SonatypeCentralPublishModule {
   */
 trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
 
-  /** Is this a SNAPSHOT release?  */
-  def isSnapshot = Task { publishVersion().endsWith("-SNAPSHOT") }
-
   // This is published as chisel
   override def artifactName = "chisel"
 

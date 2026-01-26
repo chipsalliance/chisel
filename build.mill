@@ -39,11 +39,14 @@ object v extends Module {
   // Only publish plugin for 2.13.11+ when using Java > 11, but still
   // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
-    val java21Min213 = 11
-    val minVersion = if (javaVersion > 11) java21Min213 else 0
-    val versions = minVersion to scala213MinorVersion
-    val versionSeq = versions.map(v => s"2.13.$v").toSeq
-    versionSeq :+ scalaCrossToVersion("3")
+    val scala213: Seq[String] = {
+      // Java 11+ requires Scala 2.13.11+
+      val min = if (javaVersion > 11) 11 else 0
+      min.to(18).map("2.13." + _)
+    }
+    val scala33: Seq[String] = 7.to(7).map("3.3." + _)
+    val scala38: Seq[String] = 0.to(1).map("3.8." + _)
+    scala213 ++ scala33 ++ scala38
   }
 
   val scalaCrossVersions = Seq("2.13", "3")
@@ -59,6 +62,11 @@ object v extends Module {
     else throw new Exception(s"Unsupported version $version")
 
   def isScala3(ver: String): Boolean = ver.startsWith("3")
+
+  def getScala3MinorVersion(ver: String): Int = ver.split('.') match {
+    case Array("3", minor, _) => minor.toInt
+    case _                    => require(false, s"$ver is not a valid Scala 3 version"); ???
+  }
 
   def buildUnits(): Seq[ScalaModule] = {
     scalaCrossVersions.flatMap { ver =>
@@ -180,6 +188,9 @@ object v extends Module {
         }
     }
   }
+
+  /** Is this a SNAPSHOT release?  */
+  def isSnapshot = Task { version().endsWith("-SNAPSHOT") }
 }
 
 /** Alias for compiling everything */
@@ -373,4 +384,8 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
   }
 }
 
-object unipublish extends Cross[Unipublish](v.scalaCrossVersions)
+object unipublish extends Cross[Unipublish](v.scalaCrossVersions) {
+  def publishableVersions = Task {
+    v.scalaCrossVersions.filter(v.isSnapshot() || !v.isScala3(_))
+  }
+}
