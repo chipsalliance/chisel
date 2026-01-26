@@ -5,7 +5,7 @@ package chiselTests.simulator.scalatest
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.{RunUntilFinished, RunUntilSuccess}
-import chisel3.simulator.{FailedExpectationException, HasSimulator, MacroText, Randomization, Settings}
+import chisel3.simulator.{stimulus, FailedExpectationException, HasSimulator, MacroText, Randomization, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
 import chisel3.util.Counter
@@ -549,6 +549,57 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       }
     }
 
+  }
+
+  describe("ChiselSim RunUntilSuccess.testHarness stimulus") {
+    class SuccessAfterFourCyclesHarness extends SimulationTestHarness {
+      val counter = Counter(true.B, 4)
+      done :<= counter._2
+      success :<= counter._2
+    }
+
+    it("should report success for a passing SimulationTestHarnessInterface") {
+      simulateRaw(new SuccessAfterFourCyclesHarness) { dut =>
+        stimulus.ResetProcedure.testHarness()(dut)
+        RunUntilSuccess.testHarness(maxCycles = 8)(dut)
+      }
+    }
+
+    it("should throw an exception for a failing SimulationTestHarnessInterface") {
+      intercept[chisel3.simulator.Exceptions.Timeout] {
+        simulateRaw(new SuccessAfterFourCyclesHarness) { dut =>
+          stimulus.ResetProcedure.testHarness()(dut)
+          RunUntilSuccess.testHarness(maxCycles = 2)(dut)
+        }
+      }
+    }
+  }
+
+  describe("ChiselSim RunUntilFinished.testHarness stimulus") {
+    class StopAfterFourCyclesHarness extends SimulationTestHarness {
+      val counter = Counter(true.B, 4)
+      done :<= false.B
+      success :<= false.B
+      when(counter._2) {
+        chisel3.stop()
+      }
+    }
+
+    it("should finish for a passing SimulationTestHarnessInterface") {
+      simulateRaw(new StopAfterFourCyclesHarness) { dut =>
+        stimulus.ResetProcedure.testHarness()(dut)
+        RunUntilFinished.testHarness(maxCycles = 8)(dut)
+      }
+    }
+
+    it("should throw an exception for a failing SimulationTestHarnessInterface") {
+      intercept[chisel3.simulator.Exceptions.Timeout] {
+        simulateRaw(new StopAfterFourCyclesHarness) { dut =>
+          stimulus.ResetProcedure.testHarness()(dut)
+          RunUntilFinished.testHarness(maxCycles = 2)(dut)
+        }
+      }
+    }
   }
 
   describe("ChiselSim user errors") {
