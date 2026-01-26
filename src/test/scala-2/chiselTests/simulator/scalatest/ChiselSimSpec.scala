@@ -4,7 +4,8 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
-import chisel3.simulator.stimulus.{RunUntilFinished, RunUntilSuccess}
+import chisel3.simulator.Exceptions
+import chisel3.simulator.stimulus.{ResetProcedure, RunUntilFinished, RunUntilSuccess, SimulationTestStimulus}
 import chisel3.simulator.{stimulus, FailedExpectationException, HasSimulator, MacroText, Randomization, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
@@ -597,6 +598,68 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         simulateRaw(new StopAfterFourCyclesHarness) { dut =>
           stimulus.ResetProcedure.testHarness()(dut)
           RunUntilFinished.testHarness(maxCycles = 2)(dut)
+        }
+      }
+    }
+  }
+
+  describe("ChiselSim SimulationTestStimulus") {
+    class TestHarness(finishAfter: Int, succeed: Boolean) extends SimulationTestHarness {
+      val counter = Counter(true.B, finishAfter)
+      done :<= counter._2
+      success :<= succeed.B
+    }
+
+    it("should simulate and pass if done asserted with success=1") {
+      simulateTest(new TestHarness(finishAfter = 4, succeed = true), timeout = 100)
+    }
+
+    it("should simulate and fail if done asserted with success=0") {
+      intercept[chisel3.simulator.Exceptions.TestFailed] {
+        simulateTest(new TestHarness(finishAfter = 4, succeed = false), timeout = 100)
+      }
+    }
+
+    it("should simulate and timeout if done not asserted") {
+      intercept[chisel3.simulator.Exceptions.Timeout] {
+        simulateTest(new TestHarness(finishAfter = 100, succeed = false), timeout = 10)
+      }
+    }
+
+    class DoneAfterNCycles(n: Int) extends SimulationTestHarness {
+      val (_, wrap) = Counter(true.B, n)
+      done :<= wrap
+      success :<= true.B
+    }
+
+    it("should pass if done is asserted before the timeout") {
+      simulateTest(new DoneAfterNCycles(9), timeout = 10)
+    }
+
+    it("should throw a timeout exception if done is asserted at exactly the timeout cycle") {
+      intercept[Exceptions.Timeout] {
+        simulateTest(new DoneAfterNCycles(10), timeout = 10)
+      }
+    }
+
+    it("should throw an exception if given a period <= 1") {
+      class NeverDoneTestHarness extends SimulationTestHarness {
+        done :<= false.B
+        success :<= false.B
+      }
+      intercept[IllegalArgumentException] {
+        simulateRaw(new NeverDoneTestHarness) { dut =>
+          SimulationTestStimulus(maxCycles = 10, period = 1)(dut)
+        }
+      }
+      intercept[IllegalArgumentException] {
+        simulateRaw(new NeverDoneTestHarness) { dut =>
+          SimulationTestStimulus(maxCycles = 10, period = 0)(dut)
+        }
+      }
+      intercept[IllegalArgumentException] {
+        simulateRaw(new NeverDoneTestHarness) { dut =>
+          SimulationTestStimulus(maxCycles = 10, period = -1)(dut)
         }
       }
     }
