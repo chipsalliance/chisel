@@ -2,7 +2,7 @@
 
 package chisel3.simulator.stimulus
 
-import chisel3.{Bool, Clock, Module}
+import chisel3.{Bool, Clock, Module, RawModule, SimulationTestHarnessInterface}
 import chisel3.simulator.AnySimulatedModule
 import chisel3.simulator.Exceptions
 
@@ -111,4 +111,17 @@ object RunUntilSuccess {
   def apply[A <: Module](maxCycles: Int, getSuccess: A => Bool, period: Int = 10): RunUntilSuccess[A] =
     module(maxCycles, getSuccess, period)
 
+  /** Return stimulus for a [[SimulationTestHarnessInterface]].
+    *
+    * @param maxCycles the maximum number of cycles to run the unit for before a timeout
+    */
+  def testHarness[A <: RawModule with SimulationTestHarnessInterface](
+    maxCycles: Int,
+    period:    Int = 10
+  ): RunUntilSuccess[A] = any(
+    maxCycles = maxCycles,
+    getClock = _.clock,
+    getSuccess = _.success,
+    period = period
+  )
 }
