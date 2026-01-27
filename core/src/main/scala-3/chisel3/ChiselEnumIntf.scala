@@ -22,7 +22,7 @@ private[chisel3] trait ChiselEnumIntf { self: ChiselEnum =>
   protected inline def Value(id: UInt): Type =
     ${ ChiselEnumMacros.valCustomImpl[Type]('{ this }, '{ id }) }
 
-  private[chisel3] def _value_impl(name: String): Type = do_Value(name)
+  private[chisel3] def _value_impl(name: String):           Type = do_Value(name)
   private[chisel3] def _value_impl(name: String, id: UInt): Type = do_Value(name, id)
 }
 
@@ -45,10 +45,9 @@ private[chisel3] object ChiselEnumMacros {
     }
 
     val owner = enclosingTerm(Symbol.spliceOwner)
-    val name  = owner.name.trim
+    val name = owner.name.trim
 
-    if name.contains(" ") then
-      report.errorAndAbort("Value cannot be called without assigning to an enum")
+    if name.contains(" ") then report.errorAndAbort("Value cannot be called without assigning to an enum")
     name
   }
 
