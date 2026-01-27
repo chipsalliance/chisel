@@ -37,16 +37,11 @@ private[chisel3] object ChiselEnumMacros {
   private def enumValueName(using Quotes): String = {
     import quotes.reflect.*
 
-    def enclosingTerm(sym: Symbol): Symbol = sym match {
-      case sym if sym.flags.is(Flags.Macro) => enclosingTerm(sym.owner)
-      case sym if !sym.isTerm               => enclosingTerm(sym.owner)
-      case sym if sym.isValDef              => sym
-      case _                                => enclosingTerm(sym.owner)
-    }
+    // Owner is always the macro call whose owner is the actual ValDef
+    val owner = Symbol.spliceOwner.owner
+    if !owner.isValDef then report.errorAndAbort("Invalid Value definition")
 
-    val owner = enclosingTerm(Symbol.spliceOwner)
     val name = owner.name.trim
-
     if name.contains(" ") then report.errorAndAbort("Value cannot be called without assigning to an enum")
     name
   }
