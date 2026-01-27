@@ -102,10 +102,10 @@ class SafeCastFromNonLit extends Module {
 }
 
 class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
-  val width = if (w.isDefined) w.get.W else UnknownWidth
+  val someWidth = if (w.isDefined) w.get.W else UnknownWidth
 
   val io = IO(new Bundle {
-    val in = Input(UInt(width))
+    val in = Input(UInt(someWidth))
     val out = Output(EnumExample())
   })
 
