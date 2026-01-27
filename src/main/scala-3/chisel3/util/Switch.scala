@@ -26,26 +26,27 @@ object switch {
     ${ SwitchMacros.impl[T]('cond, 'x) }
 }
 
-private[util] object SwitchMacros {
+private object SwitchMacros {
 
   def impl[T <: Element: Type](cond: Expr[T], x: Expr[Any])(using Quotes): Expr[Unit] = {
     import quotes.reflect.*
 
+    // Since switch.apply is inlined it will always be wrapped in an Inline block
     val statements: List[Statement] = x.asTerm match {
-      case Block(head, tail) => head :+ tail
       case Inlined(_, _, Block(head, tail)) => head :+ tail
     }
 
+    // List of params and blocks as in `is(params) { block }`
     val isCallExprs: List[Expr[(Iterable[T], () => Any)]] = statements.flatMap {
       case term: Term => term match {
         // Matches: is(cond) { block } (unqualified)
-        case Apply(Apply(Select(Ident("is"), "apply"), paramArgs), List(blockArg)) =>
-          Some(buildIsCallExpr[T](paramArgs, blockArg))
+        case Apply(Apply(Select(Ident("is"), "apply"), List(paramArg)), List(blockArg)) =>
+          Some(buildIsCallExpr[T](paramArg, blockArg))
 
         // Matches: chisel3.util.is(cond) { block } (fully qualified)
         case Apply(
-          Apply(Select(Select(Select(Ident("chisel3"), "util"), "is"), "apply"), paramArgs),List(blockArg)) =>
-          Some(buildIsCallExpr[T](paramArgs, blockArg))
+          Apply(Select(Select(Select(Ident("chisel3"), "util"), "is"), "apply"), List(paramArg)), List(blockArg)) =>
+          Some(buildIsCallExpr[T](paramArg, blockArg))
 
         case _ =>
           report.errorAndAbort(
@@ -71,26 +72,14 @@ private[util] object SwitchMacros {
 
   private def buildIsCallExpr[T <: Element: Type](
     using Quotes
-  )(paramArgs: List[quotes.reflect.Term], blockArg: quotes.reflect.Term): Expr[(Iterable[T], () => Any)] = {
+  )(paramArg: quotes.reflect.Term, blockArg: quotes.reflect.Term): Expr[(Iterable[T], () => Any)] = {
     import quotes.reflect.*
 
-    val paramsExpr: Expr[Iterable[T]] = paramArgs match {
-      case List(single) =>
-        single.asExpr match {
-          case '{ $iter: Iterable[T] } => iter
-          case '{ $elem: T }           => '{ Seq($elem) }
-          case other =>
-            report.errorAndAbort(s"is() parameter must be an Element or Iterable[Element], got: ${other.show}")
-        }
-      case multiple =>
-        val elemExprs = multiple.map { arg =>
-          arg.asExpr match {
-            case '{ $elem: T } => elem
-            case other =>
-              report.errorAndAbort(s"is() parameter must be an Element, got: ${other.show}")
-          }
-        }
-        Expr.ofList(elemExprs)
+    val paramsExpr: Expr[Iterable[T]] = paramArg.asExpr match {
+      case '{ $iter: Iterable[T] } => iter
+      case '{ $elem: T }           => '{ Seq($elem) }
+      case other =>
+        report.errorAndAbort(s"is() parameter must be an Element or Iterable[Element], got: ${other.show}")
     }
 
     val blockExpr: Expr[() => Any] = blockArg.asExpr match {
