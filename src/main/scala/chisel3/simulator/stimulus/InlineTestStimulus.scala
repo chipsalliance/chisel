@@ -41,7 +41,7 @@ trait InlineTestStimulus extends Stimulus.Type[RawModule with SimulationTestHarn
       outOfPhaseValue = 0,
       sentinel = Some(done, 1),
       checkElapsedCycleCount = { cycleCount =>
-        if (cycleCount > _timeout) {
+        if (cycleCount == _timeout) {
           throw new Exceptions.Timeout(_timeout, s"Test did not assert done before ${_timeout} cycles")
         }
       }
