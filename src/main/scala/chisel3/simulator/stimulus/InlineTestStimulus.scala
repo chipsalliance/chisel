@@ -19,6 +19,11 @@ trait InlineTestStimulus extends Stimulus.Type[RawModule with SimulationTestHarn
   protected def _additionalResetCycles: Int
 
   private def applyImpl(dut: RawModule with SimulationTestHarnessInterface): Unit = {
+    require(
+      _period >= 2,
+      s"specified period, '${_period}', must be 2 or greater because an integer half period must be non-zero"
+    )
+
     val module = AnySimulatedModule.current
     val controller = module.controller
 
@@ -30,14 +35,14 @@ trait InlineTestStimulus extends Stimulus.Type[RawModule with SimulationTestHarn
     ResetProcedure.testHarness(_additionalResetCycles, _period)(dut)
 
     clock.tick(
-      timestepsPerPhase = 1,
+      timestepsPerPhase = _period / 2,
       maxCycles = _timeout,
       inPhaseValue = 1,
       outOfPhaseValue = 0,
       sentinel = Some(done, 1),
       checkElapsedCycleCount = { cycleCount =>
         if (cycleCount > _timeout) {
-          throw new Exceptions.Timeout(_timeout, s"Test did not assert done before ${_timeout} timesteps")
+          throw new Exceptions.Timeout(_timeout, s"Test did not assert done before ${_timeout} cycles")
         }
       }
     )
