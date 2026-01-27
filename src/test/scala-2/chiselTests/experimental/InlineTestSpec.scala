@@ -8,7 +8,7 @@ import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
 import chisel3.simulator.{ChiselSim, Exceptions}
 import chisel3.simulator.stimulus.InlineTestStimulus
-import chisel3.util.{is, switch, Decoupled}
+import chisel3.util.{is, switch, Counter, Decoupled}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -506,6 +506,26 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
             message should include("assertion fired")
           }
         }
+      }
+    }
+  }
+
+  class DoneAfterNCycles(n: Int) extends SimulationTestHarness {
+    val (_, wrap) = Counter(true.B, n)
+    done :<= wrap
+    success :<= true.B
+  }
+
+  it should "pass if done is asserted before the timeout" in {
+    simulateRaw(new DoneAfterNCycles(9)) { dut =>
+      InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 10)(dut)
+    }
+  }
+
+  it should "throw a timeout exception if done is asserted at exactly the timeout cycle" in {
+    intercept[Exceptions.Timeout] {
+      simulateRaw(new DoneAfterNCycles(10)) { dut =>
+        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 10)(dut)
       }
     }
   }
