@@ -32,14 +32,26 @@ private[util] object SwitchMacros {
     import quotes.reflect.*
 
     val statements: List[Statement] = x.asTerm match {
-      case Inlined(_, _, block) => extractStatements(block)
-      case block                => extractStatements(block)
+      case Block(head, tail) => head :+ tail
+      case Inlined(_, _, Block(head, tail)) => head :+ tail
     }
 
-    val isCallExprs: List[Expr[(Iterable[T], () => Any)]] = statements.flatMap { stmt =>
-      stmt match {
-        case term: Term => extractIsCall[T](term)
-        case _ => None
+    val isCallExprs: List[Expr[(Iterable[T], () => Any)]] = statements.flatMap {
+      case term: Term => term match {
+        // Matches: is(cond) { block } (unqualified)
+        case Apply(Apply(Select(Ident("is"), "apply"), paramArgs), List(blockArg)) =>
+          Some(buildIsCallExpr[T](paramArgs, blockArg))
+
+        // Matches: chisel3.util.is(cond) { block } (fully qualified)
+        case Apply(
+          Apply(Select(Select(Select(Ident("chisel3"), "util"), "is"), "apply"), paramArgs),List(blockArg)) =>
+          Some(buildIsCallExpr[T](paramArgs, blockArg))
+
+        case _ =>
+          report.errorAndAbort(
+            s"Cannot include blocks that do not begin with is() in switch. Got: ${term.show}",
+            term.pos
+          )
       }
     }
 
@@ -54,57 +66,6 @@ private[util] object SwitchMacros {
         }
         ()
       }
-    }
-  }
-
-  private def extractStatements(using Quotes)(term: quotes.reflect.Term): List[quotes.reflect.Statement] = {
-    import quotes.reflect.*
-    term match {
-      case Block(stats, expr) =>
-        expr match {
-          case Literal(UnitConstant()) => stats
-          case _                       => stats :+ expr
-        }
-      case other => List(other)
-    }
-  }
-
-  private def extractIsCall[T <: Element: Type](using Quotes)(
-    term: quotes.reflect.Term
-  ): Option[Expr[(Iterable[T], () => Any)]] = {
-    import quotes.reflect.*
-
-    term match {
-      case Apply(Apply(TypeApply(Select(Ident("is"), "apply"), _), paramArgs), List(blockArg)) =>
-        Some(buildIsCallExpr[T](paramArgs, blockArg))
-
-      case Apply(Apply(Select(Ident("is"), "apply"), paramArgs), List(blockArg)) =>
-        Some(buildIsCallExpr[T](paramArgs, blockArg))
-
-      case Apply(
-            Apply(TypeApply(Select(Select(Select(Ident("chisel3"), "util"), "is"), "apply"), _), paramArgs),
-            List(blockArg)
-          ) =>
-        Some(buildIsCallExpr[T](paramArgs, blockArg))
-
-      case Apply(
-            Apply(Select(Select(Select(Ident("chisel3"), "util"), "is"), "apply"), paramArgs),
-            List(blockArg)
-          ) =>
-        Some(buildIsCallExpr[T](paramArgs, blockArg))
-
-      case Apply(Apply(TypeApply(sel @ Select(_, "apply"), _), paramArgs), List(blockArg))
-          if sel.symbol.owner.name == "is" =>
-        Some(buildIsCallExpr[T](paramArgs, blockArg))
-
-      case Apply(Apply(sel @ Select(_, "apply"), paramArgs), List(blockArg)) if sel.symbol.owner.name == "is" =>
-        Some(buildIsCallExpr[T](paramArgs, blockArg))
-
-      case _ =>
-        report.errorAndAbort(
-          s"Cannot include blocks that do not begin with is() in switch. Got: ${term.show}",
-          term.pos
-        )
     }
   }
 
@@ -129,8 +90,7 @@ private[util] object SwitchMacros {
               report.errorAndAbort(s"is() parameter must be an Element, got: ${other.show}")
           }
         }
-        val seqExpr = Expr.ofList(elemExprs)
-        '{ $seqExpr }
+        Expr.ofList(elemExprs)
     }
 
     val blockExpr: Expr[() => Any] = blockArg.asExpr match {
