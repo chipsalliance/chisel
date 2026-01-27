@@ -30,10 +30,6 @@ private[chisel3] object ChiselEnumMacros {
 
   // Derive the name of the Enum value from the symbol owner of the
   // macro expansion
-  //
-  // Expansion site should be a val inside a concrete object that
-  // extends ChiselEnum. In that case, walk up the owner chain
-  // from `Symbol.spliceOwner` to find the enclosing val
   private def enumValueName(using Quotes): String = {
     import quotes.reflect.*
 
