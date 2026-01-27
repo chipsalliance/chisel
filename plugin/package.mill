@@ -12,7 +12,7 @@ object `package` extends Module {
   object cross extends Cross[Plugin](v.pluginScalaCrossVersions)
 
   def publishableVersions = Task {
-    v.pluginScalaCrossVersions.filter(!v.isScala3(_))
+    v.pluginScalaCrossVersions.filter(v.isSnapshot() || !v.isScala3(_))
   }
 }
 
@@ -24,15 +24,22 @@ trait Plugin extends CrossSbtModule with ScalafmtModule with ChiselPublishModule
   // The plugin is compiled for every minor Scala version
   override def crossFullScalaVersion = true
 
-  // This is a bit of a hack, but for some reason, Scala compilation crashes with -release 8 for
-  // Scala 2.13.0-2.13.2. While -release 8 is what we want, -target:jvm-1.8 at least ensures the
-  // bytecode is Java 8 compatible, and then the higher Scala versions compiled with -release 8 will
-  // enforce the other guarantees of -release 8 (that we don't accidentally use Java APIs introduced
-  // in newer JDKs).
   def releaseArg(scalaVersion: String): Seq[String] = {
-    val badSet = Set("2.13.0", "2.13.1", "2.13.2")
-    if (badSet.contains(scalaVersion)) Seq("-target:jvm-1.8")
-    else Seq("-release", "8")
+    if (v.isScala3(scalaVersion)) {
+      val minor = v.getScala3MinorVersion(scalaVersion)
+      // Scala 3.8+ requires Java 17+
+      if (minor >= 8) Seq("-release", "17")
+      else Seq("-release", "8")
+    } else {
+      // This is a bit of a hack, but for some reason, Scala compilation crashes with -release 8 for
+      // Scala 2.13.0-2.13.2. While -release 8 is what we want, -target:jvm-1.8 at least ensures the
+      // bytecode is Java 8 compatible, and then the higher Scala versions compiled with -release 8 will
+      // enforce the other guarantees of -release 8 (that we don't accidentally use Java APIs introduced
+      // in newer JDKs).
+      val badSet = Set("2.13.0", "2.13.1", "2.13.2")
+      if (badSet.contains(scalaVersion)) Seq("-target:jvm-1.8")
+      else Seq("-release", "8")
+    }
   }
 
   // Does not use common options because -Wconf wasn't supported in early 2.13, nor was "-release:"
