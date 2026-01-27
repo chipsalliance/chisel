@@ -121,18 +121,8 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
   def scalaDocRootDoc = Task.Source { BuildCtx.workspaceRoot / "root-doc.txt" }
 
   def unidocOptions = Task {
-    val scala2Options = Seq(
-      "-skip-packages",
-      "chisel3.internal",
-      "-diagrams",
-      "-diagrams-max-classes",
-      "25",
-      "-implicits"
-    )
-    val scala3Options = Seq(
-      "-skip-by-id=chisel3.internal"
-    )
-    scalacOptions() ++ Seq[String](
+    // Common options that work for both Scala 2 and Scala 3 scaladoc
+    val commonOptions = Seq(
       "-classpath",
       unidocCompileClasspath().map(_.path).mkString(sys.props("path.separator")),
       "-groups",
@@ -141,13 +131,26 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
       "-doc-title",
       "chisel",
       "-doc-root-content",
-      scalaDocRootDoc().path.toString,
+      scalaDocRootDoc().path.toString
+    )
+    val scala2Options = Seq(
+      "-skip-packages",
+      "chisel3.internal",
+      "-diagrams",
+      "-diagrams-max-classes",
+      "25",
+      "-implicits",
       "-sourcepath",
       BuildCtx.workspaceRoot.toString,
       "-doc-source-url",
       unidocSourceUrl(),
       "-language:implicitConversions"
-    ) ++ (
+    )
+    val scala3Options = Seq(
+      "-skip-by-regex:.*\\.internal\\..*",
+      "-source-links:" + BuildCtx.workspaceRoot.toString + "=" + unidocSourceUrl()
+    )
+    scalacOptions() ++ commonOptions ++ (
       if (v.isScala3(crossScalaVersion)) scala3Options else scala2Options
     )
   }
@@ -167,7 +170,17 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
   }
 
   def unidocSourceFiles = Task {
-    allSourceFiles() ++ Task.traverse(components)(_.allSourceFiles)().flatten
+    if (v.isScala3(crossScalaVersion)) {
+      Task
+        .traverse(components)(_.compile)()
+        .map(_.classes)
+        .filter(dir => os.exists(dir.path))
+        .flatMap(dir => os.walk(dir.path))
+        .filter(_.ext == "tasty")
+        .map(PathRef(_))
+    } else {
+      allSourceFiles() ++ Task.traverse(components)(_.allSourceFiles)().flatten
+    }
   }
 
   // Based on UnidocModule and docJar in Mill, may need to be kept in sync.
