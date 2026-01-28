@@ -333,6 +333,8 @@ final class Backend(executablePath: String) extends svsim.Backend {
       paths.foreach(p => addArg(Seq("-y", p)))
     }
 
+    commonSettings.linkLibraryPaths.foreach(lib => addArg(Seq(lib)))
+
     commonSettings.includeDirs.foreach { dirs =>
       addArg(dirs.map(dir => s"+incdir+$dir"))
     }
