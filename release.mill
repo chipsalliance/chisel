@@ -148,6 +148,9 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     )
     val scala3Options = Seq(
       "-skip-by-regex:.*\\.internal\\..*",
+      // Workaround for colliding html files in Scala 3 ScalaDoc, Docusaurus errors.
+      // Remove when firrtl is removed (Chisel 8).
+      "-skip-by-id:firrtl.renamemap",
       "-source-links:" + BuildCtx.workspaceRoot.toString + "=" + unidocSourceUrl()
     )
     scalacOptions() ++ commonOptions ++ (
