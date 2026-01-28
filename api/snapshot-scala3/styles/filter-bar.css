@@ -1,0 +1,144 @@
+/* .documentableFilter {
+  padding: 24px 24px 24px 12px;
+  background-color: var(--documentable-bg);
+}
+
+.documentableFilter.active .filterToggleButton svg {
+  transform: rotate(90deg);
+}
+
+.documentableFilter.active .filterLowerContainer {
+  display: block;
+}
+
+.filterUpperContainer {
+  display: flex;
+  align-items: center;
+}
+
+.filterToggleButton {
+  padding: 0;
+  outline: 0;
+  border: 0;
+  background-color: transparent;
+  cursor: pointer;
+  transition: width 0.2s ease-in-out;
+}
+
+.filterToggleButton svg {
+  fill: var(--icon-color);
+  transition: fill 0.1s ease-in, transform 0.1s ease-in-out;
+}
+
+.filterToggleButton:hover svg,
+.filterToggleButton:focus svg {
+  fill: var(--icon-color);
+}
+
+.filterableInput {
+  flex: 1;
+  outline: 0;
+  border: 1px solid var(--border-medium);
+  border-radius: 3px;
+  background-color: var(--body-bg);
+  font-family: "Lato", sans-serif;
+  padding: 8px;
+  margin-left: 8px;
+}
+
+.filterableInput:focus {
+  border: 1px solid var(--active-bg-shadow);
+}
+
+.filterLowerContainer {
+  padding-top: 30px;
+  display: none;
+}
+
+.filterGroup {
+  margin-bottom: 16px;
+}
+
+.filterList {
+  margin: 0.5em;
+}
+
+.filterButtonItem {
+  display: none;
+  padding: 6px 16px;
+  margin-bottom: 6px;
+  margin-right: 6px;
+  outline: 0;
+  border: 0;
+  border-radius: 3px;
+  color: var(--inactive-fg);
+  background-color: var(--inactive-bg);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 2px solid var(--inactive-bg-shadow);
+  transition: all 0.1s ease-in;
+}
+
+.filterButtonItem:hover,
+.filterButtonItem:focus {
+  opacity: 0.7;
+}
+
+.filterButtonItem.active {
+  color: var(--active-fg);
+  border-bottom-color: var(--active-bg-shadow);
+  background-color: var(--active-bg);
+}
+
+.filterButtonItem.visible {
+  display: inline-block;
+}
+
+.groupTitle {
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: var(--body-fg);
+}
+.groupTitle > span {
+  display: inline-block;
+  vertical-align: baseline;
+}
+
+.groupButtonsContainer {
+  display: inline-block;
+  vertical-align: baseline;
+  margin-left: 1em;
+}
+
+.selectAll {
+  margin-right: 4px;
+}
+
+.selectAll,
+.deselectAll {
+  outline: 0;
+  border: 0;
+  background-color: transparent;
+  padding: 0;
+  color: var(--active-fg);
+  font-size: 0.7em;
+  cursor: pointer;
+  transition: all 0.1s ease-in;
+}
+
+.selectAll {
+  padding: 4px;
+  border-radius: 2px;
+  background-color: var(--active-bg);
+}
+
+.selectAll:hover,
+.selectAll:focus {
+  opacity: 0.7;
+}
+
+.deselectAll:hover,
+.deselectAll:focus {
+  color: var(--active-bg);
+} */
