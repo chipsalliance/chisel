@@ -39,11 +39,6 @@ private object SwitchMacros {
     // List of params and blocks as in `is(params) { block }`
     val isCallExprs: List[Expr[(Iterable[T], () => Any)]] = statements.flatMap { case term: Term =>
       term match {
-        // Matches: is(cond) { block } (unqualified)
-        case Apply(Apply(Select(Ident("is"), "apply"), List(paramArg)), List(blockArg)) =>
-          Some(buildIsCallExpr[T](paramArg, blockArg))
-
-        // Matches: chisel3.util.is(cond) { block } (fully qualified)
         case Apply(
               Apply(Select(Select(Select(Ident("chisel3"), "util"), "is"), "apply"), List(paramArg)),
               List(blockArg)
