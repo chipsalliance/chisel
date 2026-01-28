@@ -3477,7 +3477,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/util/simpleClassName$.html#","e":false,"i":"","n":"simpleClassName","t":"simpleClassName","d":"chisel3.util","k":"object","x":""},
 {"l":"chisel3/util/simpleClassName$.html#apply-fffff0b8","e":false,"i":"","n":"apply","t":"apply[T](clazz: Class[T]): String","d":"chisel3.util.simpleClassName","k":"def","x":""},
 {"l":"chisel3/util/switch$.html#","e":false,"i":"","n":"switch","t":"switch","d":"chisel3.util","k":"object","x":""},
-{"l":"chisel3/util/switch$.html#apply-3c2","e":false,"i":"","n":"apply","t":"apply[T <: Element](cond: T)(x: => Any): Unit","d":"chisel3.util.switch","k":"def","x":""},
+{"l":"chisel3/util/switch$.html#apply-9f9","e":false,"i":"","n":"apply","t":"apply[T <: Element](cond: T)(inline x: Any): Unit","d":"chisel3.util.switch","k":"def","x":""},
 {"l":"chisel3/util/unsignedBitLength$.html#","e":false,"i":"","n":"unsignedBitLength","t":"unsignedBitLength","d":"chisel3.util","k":"object","x":""},
 {"l":"chisel3/util/unsignedBitLength$.html#apply-dda","e":false,"i":"","n":"apply","t":"apply(in: BigInt): Int","d":"chisel3.util.unsignedBitLength","k":"def","x":""},
 {"l":"chisel3/ActualDirection.html#","e":false,"i":"","n":"ActualDirection","t":"ActualDirection(val value: Byte)","d":"chisel3","k":"class","x":""},
