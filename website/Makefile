@@ -11,7 +11,9 @@ buildDir ?= build
 website_docs_dir = $(this_dir)/docs
 latest_scaladoc_dir = $(this_dir)/static/api/latest
 snapshot_scaladoc_dir = $(this_dir)/static/api/snapshot
-snapshot_scaladoc_jar = $(mill_out)/unipublish/2.13/docJar.dest/out.jar
+snapshot_scala3_scaladoc_dir = $(this_dir)/static/api/snapshot-scala3
+snapshot_scaladoc_javadoc = $(mill_out)/unipublish/2.13/docJar.dest/javadoc
+snapshot_scala3_scaladoc_javadoc = $(mill_out)/unipublish/3/docJar.dest/javadoc
 generate_scala_cli = $(chisel_dir)/.github/scripts/generate-scala-cli-example.sh
 latest_chisel_download = $(this_dir)/static/releases/latest/download
 snapshot_chisel_download = $(this_dir)/static/releases/snapshot/download
@@ -59,6 +61,9 @@ $(latest_scaladoc_dir):
 $(snapshot_scaladoc_dir):
 	mkdir -p $@
 
+$(snapshot_scala3_scaladoc_dir):
+	mkdir -p $@
+
 # Must touch target because it was built when the latest release was made
 # unzip doesn't support operating on stdin so we need a temp file
 $(latest_scaladoc_dir)/index.html: $(latest_version) | $(latest_scaladoc_dir)
@@ -71,12 +76,20 @@ $(latest_scaladoc_dir)/index.html: $(latest_version) | $(latest_scaladoc_dir)
 	  rm -rf temp.jar
 	touch $@
 
-$(snapshot_scaladoc_jar): $(chisel-non-website)
+$(snapshot_scaladoc_javadoc)/index.html: $(chisel-non-website)
 	cd $(chisel_dir) && ./mill unipublish[2.13].docJar
 
-$(snapshot_scaladoc_dir)/index.html: $(snapshot_scaladoc_jar) | $(snapshot_scaladoc_dir)
+$(snapshot_scaladoc_dir)/index.html: $(snapshot_scaladoc_javadoc)/index.html | $(snapshot_scaladoc_dir)
 	rm -rf $(snapshot_scaladoc_dir)/*
-	cd $(snapshot_scaladoc_dir) && unzip -q $<
+	cp -R $(snapshot_scaladoc_javadoc)/* $(snapshot_scaladoc_dir)/
+	touch $@
+
+$(snapshot_scala3_scaladoc_javadoc)/index.html: $(chisel-non-website)
+	cd $(chisel_dir) && ./mill unipublish[3].docJar
+
+$(snapshot_scala3_scaladoc_dir)/index.html: $(snapshot_scala3_scaladoc_javadoc)/index.html | $(snapshot_scala3_scaladoc_dir)
+	rm -rf $(snapshot_scala3_scaladoc_dir)/*
+	cp -R $(snapshot_scala3_scaladoc_javadoc)/* $(snapshot_scala3_scaladoc_dir)/
 	touch $@
 
 $(latest_chisel_download):
@@ -113,7 +126,7 @@ $(install_timestamp): $(this_dir)/package.json
 
 install: $(install_timestamp)
 
-$(build_timestamp): $(this_dir)/docs/index.md $(latest_scaladoc_dir)/index.html $(snapshot_scaladoc_dir)/index.html $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only) $(latest_chisel_download)/chisel-example.scala $(snapshot_chisel_download)/chisel-example.scala
+$(build_timestamp): $(this_dir)/docs/index.md $(latest_scaladoc_dir)/index.html $(snapshot_scaladoc_dir)/index.html $(snapshot_scala3_scaladoc_dir)/index.html $(contributors) $(scaladoc_links) $(install_timestamp) $(chisel-website-only) $(latest_chisel_download)/chisel-example.scala $(snapshot_chisel_download)/chisel-example.scala
 	cd $(this_dir) && npm run build
 	touch $@
 
@@ -136,6 +149,7 @@ mrproper: clean
 	rm -rf $(this_dir)/node_modules \
 		$(chisel_dir)/out \
 		$(latest_scaladoc_dir) \
-		$(snapshot_scaladoc_dir)
+		$(snapshot_scaladoc_dir) \
+		$(snapshot_scala3_scaladoc_dir)
 
 .PHONY: clean mrproper serve install build
