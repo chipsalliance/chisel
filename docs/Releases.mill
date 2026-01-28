@@ -112,7 +112,7 @@ def sonatype(version: String): String = {
   s"${base}${version}/chisel_2.13-$version-javadoc.jar/!/index.html"
 }
 
-def generateMarkdown(logger: Logger)(snapshot: String): String = {
+def generateMarkdown(logger: Logger)(snapshot: String, scala3Snapshot: String): String = {
   val parsed = releases(logger)
   val latest = getLatest(parsed)
   val major = getLatestForEachMajorVersion(parsed)
@@ -120,7 +120,8 @@ def generateMarkdown(logger: Logger)(snapshot: String): String = {
     // pathname is needed by Docusaurus to correctly handle internal links in the static folder,
     // see https://docusaurus.io/docs/advanced/routing#escaping-from-spa-redirects
     s"- [Latest (${latest.serialize})](pathname:///api/latest/index.html)",
-    s"- [Snapshot (${snapshot})](pathname:///api/snapshot/index.html)"
+    s"- [Snapshot (${snapshot})](pathname:///api/snapshot/index.html)",
+    s"- [Snapshot (Scala 3) (${scala3Snapshot})](pathname:///api/snapshot-scala3/index.html)"
   ) ++ major.reverse.map { v =>
     s"- [${v.serialize}](${javadocIO(v)})"
   }).mkString("\n")
