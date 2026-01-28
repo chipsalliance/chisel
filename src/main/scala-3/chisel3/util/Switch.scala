@@ -31,26 +31,22 @@ private object SwitchMacros {
   def impl[T <: Element: Type](cond: Expr[T], x: Expr[Any])(using Quotes): Expr[Unit] = {
     import quotes.reflect.*
 
+    val isApplySymbol = Symbol.requiredModule("chisel3.util.is").methodMember("apply").toSet
     // Since switch.apply is inlined it will always be wrapped in an Inline block
     val statements: List[Statement] = x.asTerm match {
       case Inlined(_, _, Block(head, tail)) => head :+ tail
     }
 
     // List of params and blocks as in `is(params) { block }`
-    val isCallExprs: List[Expr[(Iterable[T], () => Any)]] = statements.flatMap { case term: Term =>
-      term match {
-        case Apply(
-              Apply(Select(Select(Select(Ident("chisel3"), "util"), "is"), "apply"), List(paramArg)),
-              List(blockArg)
-            ) =>
-          Some(buildIsCallExpr[T](paramArg, blockArg))
+    val isCallExprs: List[Expr[(Iterable[T], () => Any)]] = statements.flatMap {
+      case Apply(Apply(fun, List(paramArg)), List(blockArg)) if isApplySymbol(fun.symbol) =>
+        Some(buildIsCallExpr[T](paramArg, blockArg))
 
-        case _ =>
-          report.errorAndAbort(
-            s"Cannot include blocks that do not begin with is() in switch. Got: ${term.show}",
-            term.pos
-          )
-      }
+      case term =>
+        report.errorAndAbort(
+          s"Cannot include blocks that do not begin with is() in switch. Got: ${term.show}",
+          term.pos
+        )
     }
 
     if (isCallExprs.isEmpty) {
