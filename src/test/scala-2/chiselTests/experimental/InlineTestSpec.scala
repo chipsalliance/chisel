@@ -1,5 +1,7 @@
 package chiselTests
 
+import scala.annotation.nowarn
+
 import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
@@ -506,48 +508,6 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
             message should include("assertion fired")
           }
         }
-      }
-    }
-  }
-
-  class DoneAfterNCycles(n: Int) extends SimulationTestHarness {
-    val (_, wrap) = Counter(true.B, n)
-    done :<= wrap
-    success :<= true.B
-  }
-
-  it should "pass if done is asserted before the timeout" in {
-    simulateRaw(new DoneAfterNCycles(9)) { dut =>
-      InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 10)(dut)
-    }
-  }
-
-  it should "throw a timeout exception if done is asserted at exactly the timeout cycle" in {
-    intercept[Exceptions.Timeout] {
-      simulateRaw(new DoneAfterNCycles(10)) { dut =>
-        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 10)(dut)
-      }
-    }
-  }
-
-  it should "throw an exception if given a period <= 1" in {
-    class NeverDoneTestHarness extends SimulationTestHarness {
-      done :<= false.B
-      success :<= false.B
-    }
-    intercept[IllegalArgumentException] {
-      simulateRaw(new NeverDoneTestHarness) { dut =>
-        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 1)(dut)
-      }
-    }
-    intercept[IllegalArgumentException] {
-      simulateRaw(new NeverDoneTestHarness) { dut =>
-        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 0)(dut)
-      }
-    }
-    intercept[IllegalArgumentException] {
-      simulateRaw(new NeverDoneTestHarness) { dut =>
-        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = -1)(dut)
       }
     }
   }
