@@ -3680,6 +3680,8 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/Character.html#","e":false,"i":"","n":"Character","t":"Character(bits: Bits) extends FirrtlFormat","d":"chisel3","k":"class","x":""},
 {"l":"chisel3/Character.html#unpack-0","e":false,"i":"","n":"unpack","t":"unpack: (String, Seq[Data])","d":"chisel3.Character","k":"def","x":""},
 {"l":"chisel3/ChiselEnum.html#","e":false,"i":"","n":"ChiselEnum","t":"ChiselEnum","d":"chisel3","k":"class","x":""},
+{"l":"chisel3/ChiselEnum.html#Value-7f5","e":false,"i":"","n":"Value","t":"Value(id: UInt): Type","d":"chisel3.ChiselEnum","k":"def","x":""},
+{"l":"chisel3/ChiselEnum.html#Value-0","e":false,"i":"","n":"Value","t":"Value: Type","d":"chisel3.ChiselEnum","k":"def","x":""},
 {"l":"chisel3/ChiselEnum.html#all-0","e":false,"i":"","n":"all","t":"all: Seq[Type]","d":"chisel3.ChiselEnum","k":"def","x":""},
 {"l":"chisel3/ChiselEnum.html#allNames-0","e":false,"i":"","n":"allNames","t":"allNames: Seq[String]","d":"chisel3.ChiselEnum","k":"def","x":""},
 {"l":"chisel3/ChiselEnum.html#allWithNames-0","e":false,"i":"","n":"allWithNames","t":"allWithNames: Seq[(Type, String)]","d":"chisel3.ChiselEnum","k":"def","x":""},
