@@ -203,10 +203,3 @@ private[chisel3] trait AssertPropertyLikeIntf { self: AssertPropertyLike =>
     label:   String
   )(using SourceInfo): Unit = _applyCondClockDisableLabelImpl(cond, clock, disable, label)
 }
-
-private[chisel3] trait AssertProperty$Intf extends AssertPropertyLikeIntf { self: AssertProperty.type => }
-private[chisel3] trait AssumeProperty$Intf extends AssertPropertyLikeIntf { self: AssumeProperty.type => }
-private[chisel3] trait CoverProperty$Intf extends AssertPropertyLikeIntf { self: CoverProperty.type => }
-private[chisel3] trait RequireProperty$Intf extends AssertPropertyLikeIntf { self: RequireProperty.type => }
-private[chisel3] trait EnsureProperty$Intf extends AssertPropertyLikeIntf { self: EnsureProperty.type => }
-

@@ -495,9 +495,7 @@ sealed abstract class AssertPropertyLike(defaultLayer: Layer) extends AssertProp
   * Use like `AssertProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object AssertProperty
-    extends AssertPropertyLike(defaultLayer = layers.Verification.Assert)
-    with AssertProperty$Intf {
+object AssertProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assert) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssertIntrinsic(label)
 }
 
@@ -506,9 +504,7 @@ object AssertProperty
   * Use like `AssumeProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object AssumeProperty
-    extends AssertPropertyLike(defaultLayer = layers.Verification.Assume)
-    with AssumeProperty$Intf {
+object AssumeProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assume) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifAssumeIntrinsic(label)
 }
 
@@ -517,9 +513,7 @@ object AssumeProperty
   * Use like `CoverProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object CoverProperty
-    extends AssertPropertyLike(defaultLayer = layers.Verification.Cover)
-    with CoverProperty$Intf {
+object CoverProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Cover) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifCoverIntrinsic(label)
 }
 
@@ -536,9 +530,7 @@ object CoverProperty
   * Use like `RequireProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object RequireProperty
-    extends AssertPropertyLike(defaultLayer = layers.Verification.Assume)
-    with RequireProperty$Intf {
+object RequireProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assume) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifRequireIntrinsic(label)
 }
 
@@ -555,8 +547,6 @@ object RequireProperty
   * Use like `EnsureProperty(p)`. See `AssertPropertyLike.apply` for optional
   * clock, disable_iff, and label parameters.
   */
-object EnsureProperty
-    extends AssertPropertyLike(defaultLayer = layers.Verification.Assert)
-    with EnsureProperty$Intf {
+object EnsureProperty extends AssertPropertyLike(defaultLayer = layers.Verification.Assert) {
   protected def createIntrinsic(label: Option[String])(implicit sourceInfo: SourceInfo) = VerifEnsureIntrinsic(label)
 }
