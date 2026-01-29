@@ -164,8 +164,13 @@ object BundleHelpers {
       val currentFields: List[tpd.Tree] = sym.info.decls.toList.collect {
         case m if isBundleDataField(m) =>
           val name = m.name.show
-          val memberInBundle = bundleSym.info.member(m.name)
-          val sel: tpd.Tree = tpd.Select(thisRef, memberInBundle.symbol.asTerm.termRef)
+          // Look up the member in bundleSym to handle inherited fields
+          val memberInBundle = bundleSym.info.nonPrivateMember(m.name)
+          val fieldSym = memberInBundle.alternatives
+            .find(d => !d.symbol.is(Flags.Method))
+            .map(_.symbol)
+            .getOrElse(m) // Fall back to original symbol if not found
+          val sel: tpd.Tree = tpd.Select(thisRef, fieldSym.asTerm.termRef)
           tupleTree(List(tpd.Literal(Constant(name)), sel))
       }
 
