@@ -27,7 +27,7 @@ trait InlineTestStimulus extends Stimulus.Type[RawModule with SimulationTestHarn
 
 @deprecated("use SimulationTestStimulus instead", "Chisel 7.8.0")
 object InlineTestStimulus {
-  def apply(timeout: Int, additionalResetCycles: Int = 0, period: Int = 10) = new InlineTestStimulus {
+  def apply(timeout: Int, additionalResetCycles: Int, period: Int) = new InlineTestStimulus {
     override val _timeout = timeout
     override val _period = period
     override val _additionalResetCycles = additionalResetCycles

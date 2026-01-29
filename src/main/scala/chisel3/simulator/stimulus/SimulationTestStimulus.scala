@@ -15,7 +15,7 @@ import chisel3.simulator.{AnySimulatedModule, Exceptions}
   * @see [[RunUntilSuccess]]
   * @see [[RunUntilFinished]]
   */
-trait SimulationTestStimulus[A] extends Stimulus.Type[A] {
+sealed trait SimulationTestStimulus[A] extends Stimulus.Type[A] {
 
   /** The maximum number of cycles before timeout. */
   protected def _maxCycles: Int
