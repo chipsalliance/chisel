@@ -35,12 +35,12 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   class DelaysMod extends RawModule {
     val a, b, c = IO(Input(Bool()))
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-    val s0: Sequence = a.delay(1)
-    val s1: Sequence = b.delayRange(2, 4)
-    val s2: Sequence = c.delayAtLeast(5)
-    val s3: Sequence = a ### b
-    val s4: Sequence = a ##* b
-    val s5: Sequence = a ##+ b
+    val s0:            Sequence = a.delay(1)
+    val s1:            Sequence = b.delayRange(2, 4)
+    val s2:            Sequence = c.delayAtLeast(5)
+    val s3:            Sequence = a ### b
+    val s4:            Sequence = a ##* b
+    val s5:            Sequence = a ##+ b
   }
   it should "support sequence delay operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new DelaysMod)
@@ -71,8 +71,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   class ConcatMod extends RawModule {
     val a, b, c, d, e = IO(Input(Bool()))
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-    val s0: Sequence = a.concat(b)
-    val s1: Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
+    val s0:            Sequence = a.concat(b)
+    val s1:            Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
   }
   it should "support sequence concat operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new ConcatMod)
@@ -93,11 +93,11 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   class RepeatMod extends RawModule {
     val a, b, c, d, e = IO(Input(Bool()))
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-    val s0: Sequence = a.repeat(1)
-    val s1: Sequence = b.repeatRange(2, 4)
-    val s2: Sequence = c.repeatAtLeast(5)
-    val s3: Sequence = d.gotoRepeat(1, 3)
-    val s4: Sequence = e.nonConsecutiveRepeat(1, 3)
+    val s0:            Sequence = a.repeat(1)
+    val s1:            Sequence = b.repeatRange(2, 4)
+    val s2:            Sequence = c.repeatAtLeast(5)
+    val s3:            Sequence = d.gotoRepeat(1, 3)
+    val s4:            Sequence = e.nonConsecutiveRepeat(1, 3)
   }
   it should "support sequence repeat operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RepeatMod)
@@ -127,20 +127,20 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val a, b = IO(Input(Bool()))
     val clock = IO(Input(Clock()))
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-    val s0: Sequence = a.delay()
-    val s1: Sequence = s0.and(b)
-    val s2: Sequence = s0.or(b)
-    val si: Sequence = s0.intersect(b)
-    val sn: Sequence = Sequence.intersect(si, s1, s2)
-    val s3: Sequence = s0.clock(clock)
-    val p0: Property = a.eventually
-    val p1: Property = p0.and(b)
-    val p2: Property = p0.or(b)
-    val pi: Property = p0.intersect(b)
-    val pn: Property = Property.intersect(pi, p1, p2)
-    val p3: Property = p0.clock(clock)
-    val u1: Sequence = s0.until(b)
-    val u2: Property = p0.until(b)
+    val s0:            Sequence = a.delay()
+    val s1:            Sequence = s0.and(b)
+    val s2:            Sequence = s0.or(b)
+    val si:            Sequence = s0.intersect(b)
+    val sn:            Sequence = Sequence.intersect(si, s1, s2)
+    val s3:            Sequence = s0.clock(clock)
+    val p0:            Property = a.eventually
+    val p1:            Property = p0.and(b)
+    val p2:            Property = p0.or(b)
+    val pi:            Property = p0.intersect(b)
+    val pn:            Property = Property.intersect(pi, p1, p2)
+    val p3:            Property = p0.clock(clock)
+    val u1:            Sequence = s0.until(b)
+    val u2:            Property = p0.until(b)
   }
   it should "support and, or, intersect, and clock operations" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new AndOrClockMod)
@@ -187,7 +187,7 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   class NotMod extends RawModule {
     val a = IO(Input(Bool()))
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-    val p0: Property = Property.not(a)
+    val p0:            Property = Property.not(a)
   }
   it should "support property not operation" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new NotMod)
@@ -201,10 +201,10 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   class PropImplicationMod extends RawModule {
     val a, b = IO(Input(Bool()))
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-    val p0: Property = Property.implication(a, b)
-    val p1: Property = a |-> b
-    val p2: Property = Property.implicationNonOverlapping(a, b)
-    val p3: Property = a |=> b
+    val p0:            Property = Property.implication(a, b)
+    val p1:            Property = a |-> b
+    val p2:            Property = Property.implicationNonOverlapping(a, b)
+    val p3:            Property = a |=> b
   }
   it should "support property implication operation" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new PropImplicationMod)
@@ -237,7 +237,7 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   class EventuallyMod extends RawModule {
     val a = IO(Input(Bool()))
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-    val p0: Property = a.eventually
+    val p0:            Property = a.eventually
   }
   it should "support property eventually operation" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new EventuallyMod)
