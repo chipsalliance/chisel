@@ -27,8 +27,10 @@ object v extends Module {
     rawVersion.stripPrefix("1.").toInt
   }
 
+  // Use `moduleDir` to locate build file paths,
+  // avoiding `workspaceRoot` which may cause path errors when Chisel is used as nested build files.
   val circtJson = BuildCtx.watchValue(
-    os.read(BuildCtx.workspaceRoot / "etc" / "circt.json")
+    os.read(moduleDir / os.up / "etc" / "circt.json")
   )
 
   val firtoolVersion = {
