@@ -126,7 +126,7 @@ final class Settings[A <: RawModule] private[simulator] (
   */
 object Settings {
 
-  /** Retun a default [[Settings]] for a [[Module]].  Macros will be set to
+  /** Return a default [[Settings]] for a [[Module]].  Macros will be set to
     * disable [[chisel3.assert]]-style assertions using the [[Module]]'s reset
     * port.
     *
@@ -153,7 +153,7 @@ object Settings {
     randomization = Randomization.random
   )
 
-  /** Retun a default [[Settings]] for a [[RawModule]].
+  /** Return a default [[Settings]] for a [[RawModule]].
     *
     * This differs from [[default]] in that it cannot set default values for
     * macros because a [[RawModule]] has no defined reset port.  You will likely
