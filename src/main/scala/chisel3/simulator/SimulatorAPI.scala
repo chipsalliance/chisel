@@ -127,7 +127,7 @@ trait SimulatorAPI {
     timeout:               Int,
     chiselOpts:            Array[String] = Array.empty,
     firtoolOpts:           Array[String] = Array.empty,
-    settings:              Settings[T] = Settings.defaultRaw[T],
+    settings:              Settings[T] = Settings.defaultTest[T],
     additionalResetCycles: Int = 0,
     subdirectory:          Option[String] = None
   )(
