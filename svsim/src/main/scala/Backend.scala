@@ -1,5 +1,6 @@
 package svsim
 
+import com.lihaoyi.unroll
 import java.io.File
 import scala.util.matching.Regex
 
@@ -68,7 +69,9 @@ case class CommonCompilationSettings(
   includeDirs:        Option[Seq[String]] = None,
   fileFilter:         PartialFunction[File, Boolean] = PartialFunction.empty,
   directoryFilter:    PartialFunction[File, Boolean] = PartialFunction.empty,
-  simulationSettings: CommonSimulationSettings = CommonSimulationSettings.default
+  simulationSettings: CommonSimulationSettings = CommonSimulationSettings.default,
+  // @unroll is required to maintain binary compatibility
+  @unroll linkLibraryPaths: Seq[String] = Seq.empty
 )
 object CommonCompilationSettings {
   object VerilogPreprocessorDefine {

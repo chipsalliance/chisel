@@ -3,6 +3,7 @@ package chiselTests.simulator
 import chisel3._
 import chisel3.layer.{block, Convention, Layer, LayerConfig}
 import chisel3.simulator._
+import chisel3.util.circt.dpi._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
@@ -13,6 +14,21 @@ class VerilatorSimulator(val workspacePath: String) extends Simulator[verilator.
   val tag = "verilator"
   val commonCompilationSettings = CommonCompilationSettings()
   val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings.default
+}
+
+object SimulatorSpec {
+  class LinkLibraryTest extends RawModule {
+    val a = IO(Output(UInt(32.W)))
+    val b = IO(Output(UInt(32.W)))
+    val c = IO(Output(UInt(32.W)))
+    // The following DPI functions are implemented in
+    // `src/test/resources/chisel3/simulator/linkLib*.c`. The build system
+    // compiles these into shared libraries and makes them available to be linked
+    // into the simulator above.
+    a := RawUnclockedNonVoidFunctionCall("magicFuncA", UInt(32.W))(true.B)
+    b := RawUnclockedNonVoidFunctionCall("magicFuncB", UInt(32.W))(true.B)
+    c := RawUnclockedNonVoidFunctionCall("magicFuncC", UInt(32.W))(true.B)
+  }
 }
 
 class SimulatorSpec extends AnyFunSpec with Matchers {
@@ -332,6 +348,22 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         ) { _ => }
         .result
 
+    }
+
+    it("supports link libraries provided by the build system") {
+      val simulator = new VerilatorSimulator("test_run_dir/simulator/LinkLibrary")
+      val settings = Settings
+        .defaultRaw[SimulatorSpec.LinkLibraryTest]
+        .withLibraries(Seq("linkLibA", "linkLibB"))
+        .withLibraryPaths(Seq(sys.env("LINKLIBC_FULL_PATH")))
+      val result = simulator
+        .simulate(new SimulatorSpec.LinkLibraryTest(), settings = settings) { module =>
+          import PeekPokeAPI._
+          val dut = module.wrapped
+          (dut.a.peek().litValue, dut.b.peek().litValue, dut.c.peek().litValue)
+        }
+        .result
+      assert(result === (42, 1337, 9001))
     }
   }
 }

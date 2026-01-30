@@ -338,6 +338,39 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
     override def scalacOptions = Task { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
 
     override def testForkGrouping = discoveredTestClasses().grouped(8).toSeq
+
+    // Compile shared libraries for the simulator link library tests.
+    def sharedTestLibs: T[Seq[os.Path]] = Task(persistent = true) {
+      val srcDir = this.moduleDir / "src" / "test" / "resources" / "chisel3" / "simulator"
+      val cc = sys.env.getOrElse("CC", "cc")
+      val shared = if (scala.util.Properties.isMac) "-dynamiclib" else "-shared"
+      val srcFiles = Seq("linkLibA.c", "linkLibB.c", "linkLibC.c")
+      val libFiles = srcFiles.map { src =>
+        val lib = Task.dest / (src.stripSuffix(".c") + ".so")
+        os.proc(cc, shared, "-fPIC", srcDir / src, "-o", lib).call()
+        lib
+      }
+      libFiles
+    }
+
+    // Pass some of the pre-compiled shared libraries to the simulator via
+    // environment variables.
+    override def forkEnv = Task {
+      val libs = sharedTestLibs()
+      super.forkEnv() ++ Map(
+        // CHISELSIM_LIBS lets ChiselSim resolve libraries by name:
+        "CHISELSIM_LIBS" -> s"linkLibA=${libs(0)}",
+        // Also pass in a full path to test the `libraryPaths` setting:
+        "LINKLIBC_FULL_PATH" -> libs(2).toString
+      )
+    }
+
+    // Pass one of the pre-compiled shared libraries to the simulator via a JVM
+    // property.
+    override def forkArgs = Task {
+      val libs = sharedTestLibs()
+      super.forkArgs() :+ s"-Dchiselsim.libraries=linkLibB=${libs(1)}"
+    }
   }
 
   def unitTest(
