@@ -92,6 +92,12 @@ object MacroText {
   * @param enableWavesAtTimeZero enable waveform dumping at time zero. This
   * requires a simulator capable of dumping waves.
   * @param randomization random initialization settings to use
+  * @param libraries Names of libraries to include in simulation. Use this to
+  * provide implementations for DPI functions, for example. The simulator will
+  * resolve these libraries to concrete files using the `CHISELSIM_LIBS`
+  * environment variable and `chiselsim.libraries` Java property.
+  * @param libraryPaths Paths to libraries to include in simulation. Use this to
+  * provide implementations for DPI functions, for example.
   */
 final class Settings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
@@ -101,7 +107,9 @@ final class Settings[A <: RawModule] private[simulator] (
   val stopCond:              Option[MacroText.Type[A]],
   val plusArgs:              Seq[svsim.PlusArg],
   val enableWavesAtTimeZero: Boolean,
-  val randomization:         Randomization
+  val randomization:         Randomization,
+  val libraries:             Seq[String],
+  val libraryPaths:          Seq[String]
 ) {
 
   def copy(
@@ -113,7 +121,43 @@ final class Settings[A <: RawModule] private[simulator] (
     enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
     randomization:         Randomization = randomization
   ) =
-    new Settings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero, randomization)
+    new Settings(
+      verilogLayers,
+      assertVerboseCond,
+      printfCond,
+      stopCond,
+      plusArgs,
+      enableWavesAtTimeZero,
+      randomization,
+      libraries,
+      libraryPaths
+    )
+
+  def withLibraries(libraries: Seq[String]): Settings[A] =
+    new Settings(
+      verilogLayers,
+      assertVerboseCond,
+      printfCond,
+      stopCond,
+      plusArgs,
+      enableWavesAtTimeZero,
+      randomization,
+      libraries,
+      libraryPaths
+    )
+
+  def withLibraryPaths(libraryPaths: Seq[String]): Settings[A] =
+    new Settings(
+      verilogLayers,
+      assertVerboseCond,
+      printfCond,
+      stopCond,
+      plusArgs,
+      enableWavesAtTimeZero,
+      randomization,
+      libraries,
+      libraryPaths
+    )
 
   private[simulator] def preprocessorDefines(
     elaboratedModule: ElaboratedModule[A]
@@ -161,7 +205,9 @@ object Settings {
     stopCond = Some(MacroText.NotSignal(get = _.reset)),
     plusArgs = Seq.empty,
     enableWavesAtTimeZero = false,
-    randomization = Randomization.random
+    randomization = Randomization.random,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
   )
 
   /** Retun a default [[Settings]] for a [[RawModule]].
@@ -190,7 +236,9 @@ object Settings {
     stopCond = None,
     plusArgs = Seq.empty,
     enableWavesAtTimeZero = false,
-    randomization = Randomization.random
+    randomization = Randomization.random,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
   )
 
   /** Return a default [[Settings]] for a [[SimulationTestHarnessInterface]].  Macros will be set to
@@ -217,7 +265,9 @@ object Settings {
     stopCond = Some(MacroText.NotSignal(get = _.init)),
     plusArgs = Seq.empty,
     enableWavesAtTimeZero = false,
-    randomization = Randomization.random
+    randomization = Randomization.random,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
   )
 
   /** Simple factory for construcing a [[Settings]] from arguments.
@@ -231,6 +281,12 @@ object Settings {
     * @param printfCond a condition that guards printing of [[chisel3.printf]]s
     * @param stopCond a condition that guards terminating the simulation (via
     * `$fatal`) for asserts created from `circt_chisel_ifelsefatal` intrinsics
+    * @param libraries Names of libraries to include in simulation. Use this to
+    * provide implementations for DPI functions, for example. The simulator will
+    * resolve these libraries to concrete files using the `CHISELSIM_LIBS`
+    * environment variable and `chiselsim.libraries` Java property.
+    * @param libraryPaths Paths to libraries to include in simulation. Use this
+    * to provide implementations for DPI functions, for example.
     * @return a [[Settings]] with the provided parameters set
     */
   def apply[A <: RawModule](
@@ -248,7 +304,9 @@ object Settings {
     stopCond = stopCond,
     plusArgs = plusArgs,
     enableWavesAtTimeZero = enableWavesAtTimeZero,
-    randomization = randomization
+    randomization = randomization,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
   )
 
 }
