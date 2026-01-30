@@ -3,6 +3,7 @@
 package chisel3.simulator
 
 import chisel3.{Data, Module, RawModule}
+import chisel3.experimental.dataview.reifySingleTarget
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.Workspace
 
@@ -27,6 +28,16 @@ object MacroText {
 
   }
 
+  /** Given a [[Data]] and its parent [[ElaboratedModule]], lookup the underlying hardware. */
+  private def lookupSignal[A <: RawModule](data: Data, elaboratedModule: ElaboratedModule[A]): String = {
+    val reified = reifySingleTarget(data).getOrElse {
+      throw new IllegalArgumentException(
+        s"Cannot use $data as a macro signal because it does not map to a single Data."
+      )
+    }
+    elaboratedModule.portMap(reified).name
+  }
+
   /** A macro that will return macro text with the name of a signal in the design
     * under test
     *
@@ -38,7 +49,7 @@ object MacroText {
       macroName:        String,
       elaboratedModule: ElaboratedModule[A]
     ) = {
-      val port = elaboratedModule.portMap(get(elaboratedModule.wrapped)).name
+      val port = lookupSignal(get(elaboratedModule.wrapped), elaboratedModule)
       VerilogPreprocessorDefine(macroName, s"${Workspace.testbenchModuleName}.$port")
     }
 
@@ -55,7 +66,7 @@ object MacroText {
       macroName:        String,
       elaboratedModule: ElaboratedModule[A]
     ) = {
-      val port = elaboratedModule.portMap(get(elaboratedModule.wrapped)).name
+      val port = lookupSignal(get(elaboratedModule.wrapped), elaboratedModule)
       VerilogPreprocessorDefine(macroName, s"!${Workspace.testbenchModuleName}.$port")
     }
 
