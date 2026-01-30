@@ -65,7 +65,11 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     // This is internal and unusable as it will attempt to instantiate classes that were removed long ago.
     ProblemFilter.exclude[MissingClassProblem]("chisel3.internal.RangeTransform*"),
     // No longer a FixedIOModule, now a FixedIORawModule
-    ProblemFilter.exclude[MissingTypesProblem]("chisel3.experimental.inlinetest.TestHarness")
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.experimental.inlinetest.TestHarness"),
+    // Property is a sealed trait
+    ProblemFilter.exclude[NewMixinForwarderProblem]("chisel3.ltl.Property.*"),
+    // Sequence is a sealed trait
+    ProblemFilter.exclude[NewMixinForwarderProblem]("chisel3.ltl.Sequence.*")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)
