@@ -2474,6 +2474,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/simulator/Settings$.html#apply-fffff042","e":false,"i":"","n":"apply","t":"apply[A <: RawModule](verilogLayers: Type, assertVerboseCond: Option[Type[A]], printfCond: Option[Type[A]], stopCond: Option[Type[A]], plusArgs: Seq[PlusArg], enableWavesAtTimeZero: Boolean, randomization: Randomization): Settings[A]","d":"chisel3.simulator.Settings","k":"def","x":""},
 {"l":"chisel3/simulator/Settings$.html#default-ffffffaf","e":false,"i":"","n":"default","t":"default[A <: Module]: Settings[A]","d":"chisel3.simulator.Settings","k":"def","x":""},
 {"l":"chisel3/simulator/Settings$.html#defaultRaw-ffffffaf","e":false,"i":"","n":"defaultRaw","t":"defaultRaw[A <: RawModule]: Settings[A]","d":"chisel3.simulator.Settings","k":"def","x":""},
+{"l":"chisel3/simulator/Settings$.html#defaultTest-ffffffaf","e":false,"i":"","n":"defaultTest","t":"defaultTest[A <: RawModule & SimulationTestHarnessInterface]: Settings[A]","d":"chisel3.simulator.Settings","k":"def","x":""},
 {"l":"chisel3/simulator/SimulatedModule.html#","e":false,"i":"","n":"SimulatedModule","t":"SimulatedModule[T] extends AnySimulatedModule","d":"chisel3.simulator","k":"class","x":""},
 {"l":"chisel3/simulator/SimulatedModule.html#wrapped-0","e":false,"i":"","n":"wrapped","t":"wrapped: T","d":"chisel3.simulator.SimulatedModule","k":"def","x":""},
 {"l":"chisel3/simulator/SimulationOutcome$.html#","e":false,"i":"","n":"SimulationOutcome","t":"SimulationOutcome","d":"chisel3.simulator","k":"object","x":""},
