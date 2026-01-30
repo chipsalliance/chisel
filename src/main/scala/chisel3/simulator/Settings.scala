@@ -2,7 +2,7 @@
 
 package chisel3.simulator
 
-import chisel3.{Data, Module, RawModule}
+import chisel3.{Data, Module, RawModule, SimulationTestHarnessInterface}
 import chisel3.experimental.dataview.reifySingleTarget
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.Workspace
@@ -188,6 +188,33 @@ object Settings {
     assertVerboseCond = None,
     printfCond = None,
     stopCond = None,
+    plusArgs = Seq.empty,
+    enableWavesAtTimeZero = false,
+    randomization = Randomization.random
+  )
+
+  /** Return a default [[Settings]] for a [[SimulationTestHarnessInterface]].  Macros will be set to
+    * disable [[chisel3.assert]]-style assertions using the [[SimulationTestHarnessInterface]]'s init
+    * port.
+    *
+    * Note: this _requires_ that an explicit type parameter is provided.  You
+    * must invoke this method like:
+    *
+    * {{{
+    * Settings.default[Foo]
+    * }}}
+    *
+    * If you invoke this method like the following, you will get an error:
+    *
+    * {{{
+    * Settings.default
+    * }}}
+    */
+  final def defaultTest[A <: RawModule with SimulationTestHarnessInterface]: Settings[A] = new Settings[A](
+    verilogLayers = LayerControl.EnableAll,
+    assertVerboseCond = Some(MacroText.NotSignal(get = _.init)),
+    printfCond = Some(MacroText.NotSignal(get = _.init)),
+    stopCond = Some(MacroText.NotSignal(get = _.init)),
     plusArgs = Seq.empty,
     enableWavesAtTimeZero = false,
     randomization = Randomization.random
