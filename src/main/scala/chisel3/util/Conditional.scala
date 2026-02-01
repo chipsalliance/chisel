@@ -12,8 +12,9 @@ import chisel3.experimental.SourceInfo
   * user-facing API.
   * @note DO NOT USE. This API is subject to change without warning.
   */
-class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
-  def is(
+class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt])
+    extends SwitchContext$Intf[T] {
+  private[chisel3] def _isImpl(
     v: Iterable[T]
   )(block: => Any)(
     implicit sourceInfo: SourceInfo
@@ -35,14 +36,14 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
       this
     }
   }
-  def is(v: T)(block: => Any)(implicit sourceInfo: SourceInfo): SwitchContext[T] =
-    is(Seq(v))(block)
-  def is(
+  private[chisel3] def _isImpl(v: T)(block: => Any)(implicit sourceInfo: SourceInfo): SwitchContext[T] =
+    _isImpl(Seq(v))(block)
+  private[chisel3] def _isImpl(
     v:  T,
     vr: T*
   )(block: => Any)(
     implicit sourceInfo: SourceInfo
-  ): SwitchContext[T] = is(v :: vr.toList)(block)
+  ): SwitchContext[T] = _isImpl(v :: vr.toList)(block)
 }
 
 /** Use to specify cases in a [[switch]] block, equivalent to a [[when$ when]] block comparing to
