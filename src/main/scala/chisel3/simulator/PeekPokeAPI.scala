@@ -12,31 +12,13 @@ import svsim._
 import scala.util.control.NoStackTrace
 import scala.language.implicitConversions
 
-trait Peekable[T <: Data] {
+trait Peekable[T <: Data] extends Peekable$Intf[T] {
 
-  /**
-    * Get the value of a data port as a literal.
-    *
-    * @return the value of the peeked data
-    */
-  def peek()(implicit sourceInfo: SourceInfo): T
+  private[chisel3] def _peekImpl()(implicit sourceInfo: SourceInfo): T
 
-  /**
-      * Expect the value of a data port to be equal to the expected value.
-      *
-      * @param expected the expected value
-      * @throws FailedExpectationException if the observed value does not match the expected value
-      */
-  def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = expect(expected, "")
+  private[chisel3] def _expectImpl(expected: T)(implicit sourceInfo: SourceInfo): Unit = _expectImpl(expected, "")
 
-  /**
-  * Expect the value of a data port to be equal to the expected value.
-  *
-  * @param expected the expected value
-  * @param message a message for the failure case
-  * @throws FailedExpectationException if the observed value does not match the expected value
-  */
-  def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def _expectImpl(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit
 
   private[simulator] def dataToString(value: Data): String = {
     value match {
@@ -131,28 +113,15 @@ case class UninitializedElementException(message: String)(implicit sourceInfo: S
     )
     with PeekPokeApiException
 
-sealed trait TestableAggregate[T <: Aggregate] extends PeekPokable[T] {
+sealed trait TestableAggregate[T <: Aggregate] extends PeekPokable[T] with TestableAggregate$Intf[T] {
 
-  /**
-   * Expect the value of a data port to be equal to the expected value, skipping all uninitialized elements.
-   *
-   * @param expected the expected value
-   *  @param message a message for the failure case
-   * @throws FailedExpectationException if the observed value does not match the expected value
-   */
-  def expectPartial(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def _expectPartialImpl(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit
 
-  /**
-   * Expect the value of a data port to be equal to the expected value, skipping all uninitialized elements.
-   *
-   * @param expected the expected value
-   * @throws FailedExpectationException if the observed value does not match the expected value
-   */
-  def expectPartial(expected: T)(implicit sourceInfo: SourceInfo): Unit =
-    expectPartial(expected, "")
+  private[chisel3] def _expectPartialImpl(expected: T)(implicit sourceInfo: SourceInfo): Unit =
+    _expectPartialImpl(expected, "")
 }
 
-sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
+sealed trait TestableElement[T <: Element] extends PeekPokable[T] with TestableElement$Intf[T] {
   protected def isSigned = false
 
   private[simulator] def encode(width: Int, value: BigInt): T
@@ -166,7 +135,7 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     simulationPort.get(isSigned = isSigned)
   }
 
-  def peek()(implicit sourceInfo: SourceInfo): T = encode(peekValue())
+  private[chisel3] def _peekImpl()(implicit sourceInfo: SourceInfo): T = encode(peekValue())
 
   def poke(literal: T): Unit = poke(literal.litValue)
 
@@ -230,14 +199,7 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     sourceInfo
   )
 
-  /**
-  * Expect the value of a data port to be equal to the expected value.
-  *
-  * @param expected the expected value
-  * @param buildMessage a function taking (observedValue: T, expectedValue: T) and returning a String message for the failure case
-  * @throws FailedExpectationException if the observed value does not match the expected value
-  */
-  def expect(expected: T, buildMessage: (T, T) => String)(
+  private[chisel3] def _expectWithBuildMessageImpl(expected: T, buildMessage: (T, T) => String)(
     implicit sourceInfo: SourceInfo
   ): Unit = {
     require(expected.isLit, s"Expected value: $expected must be a literal")
@@ -251,10 +213,10 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     )
   }
 
-  override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, (_: T, _: T) => message)
+  private[chisel3] override def _expectImpl(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
+    _expectWithBuildMessageImpl(expected, (_: T, _: T) => message)
 
-  final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect[BigInt](
+  private[chisel3] def _expectBigIntImpl(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit = expect[BigInt](
     expected,
     (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
     formatObserved = (obs: Simulation.Value) => obs.asBigInt.toString,
@@ -262,7 +224,7 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     sourceInfo = sourceInfo
   )
 
-  final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
+  private[chisel3] def _expectBigIntImpl(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
     expect[BigInt](
       expected,
       (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
@@ -270,7 +232,7 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
       sourceInfo = sourceInfo
     )
 
-  override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] override def _expectImpl(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
     require(expected.isLit, s"Expected value: $expected must be a literal")
     expect(
       expected,
@@ -337,7 +299,7 @@ object PeekPokeAPI {
     override def encode(width: Int, value: BigInt) = value.asUInt(width.W)
   }
 
-  implicit final class TestableBool(val data: Bool) extends TestableElement[Bool] {
+  implicit final class TestableBool(val data: Bool) extends TestableElement[Bool] with TestableBool$Intf {
     override def encode(width: Int, value: BigInt): Bool = {
       require(width <= 1, "Bool must have width 1")
       if (value.isValidByte) {
@@ -353,7 +315,7 @@ object PeekPokeAPI {
 
     def peekBoolean(): Boolean = peekValue().asBigInt == 1
 
-    override def expect(expected: Bool)(implicit sourceInfo: SourceInfo): Unit = expect[Bool](
+    private[chisel3] override def _expectImpl(expected: Bool)(implicit sourceInfo: SourceInfo): Unit = expect[Bool](
       expected,
       (obs: Simulation.Value, exp: Bool) => obs.asBigInt == exp.litValue,
       formatObserved = (obs: Simulation.Value) => obs.asBigInt.toString,
@@ -361,7 +323,9 @@ object PeekPokeAPI {
       sourceInfo = sourceInfo
     )
 
-    def expect(value: Boolean)(implicit sourceInfo: SourceInfo): Unit = expect(value.B)
+    private[chisel3] def _expectBooleanImpl(value: Boolean)(implicit sourceInfo: SourceInfo): Unit = _expectImpl(
+      value.B
+    )
 
     def poke(value: Boolean): Unit = poke(if (value) 1 else 0)
   }
@@ -379,7 +343,7 @@ object PeekPokeAPI {
   }
 
   implicit class TestableRecord[T <: Record](val data: T) extends TestableAggregate[T] {
-    override def peek()(implicit sourceInfo: SourceInfo): T = {
+    private[chisel3] override def _peekImpl()(implicit sourceInfo: SourceInfo): T = {
       chiselTypeOf(data)._makeLit(
         data.elements.toSeq.map { case (name: String, elt: Data) =>
           (rec: T) => rec.elements(name) -> elt.peek()
@@ -387,7 +351,11 @@ object PeekPokeAPI {
       )
     }
 
-    def expect(expected: T, buildMessage: (T, T, String) => String, allowPartial: Boolean = false)(
+    private[chisel3] def _expectRecordImpl(
+      expected:     T,
+      buildMessage: (T, T, String) => String,
+      allowPartial: Boolean = false
+    )(
       implicit sourceInfo: SourceInfo
     ): Unit = {
       data.elements.foreach { case (elName, portEl) =>
@@ -427,11 +395,13 @@ object PeekPokeAPI {
     ): String = (if (userMessage.nonEmpty) s"$userMessage\n" else "") +
       s"Expectation failed for element '$elName': observed value ${dataToString(observed.elements(elName))} != expected value ${dataToString(expected.elements(elName))}"
 
-    override def expectPartial(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = true)
+    private[chisel3] override def _expectPartialImpl(expected: T, message: String)(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
+      _expectRecordImpl(expected, defaultMessageBuilder(_, _, _, message), allowPartial = true)
 
-    override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = false)
+    private[chisel3] override def _expectImpl(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
+      _expectRecordImpl(expected, defaultMessageBuilder(_, _, _, message), allowPartial = false)
 
     override def poke(literal: T): Unit = data.elements.foreach { case (name, portEl) =>
       val valueEl = literal.elements(name)
@@ -444,7 +414,7 @@ object PeekPokeAPI {
   }
 
   implicit class TestableVec[T <: Data](val data: Vec[T]) extends TestableAggregate[Vec[T]] {
-    override def peek()(implicit sourceInfo: SourceInfo): Vec[T] = {
+    private[chisel3] override def _peekImpl()(implicit sourceInfo: SourceInfo): Vec[T] = {
       val elementValues = data.getElements.map(_.peek().asInstanceOf[T])
       chiselTypeOf(data).Lit(elementValues.zipWithIndex.map { _.swap }: _*)
     }
@@ -469,13 +439,21 @@ object PeekPokeAPI {
     ): String = (if (userMessage.nonEmpty) s"$userMessage\n" else "") +
       s"Expectation failed for Vec element at index $elIndex: observed value ${dataToString(observed(elIndex))} != expected value ${dataToString(expected(elIndex))}"
 
-    override def expectPartial(expected: Vec[T], message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = true)
+    private[chisel3] override def _expectPartialImpl(expected: Vec[T], message: String)(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
+      _expectVecImpl(expected, defaultMessageBuilder(_, _, _, message), allowPartial = true)
 
-    override def expect(expected: Vec[T], message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = false)
+    private[chisel3] override def _expectImpl(expected: Vec[T], message: String)(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
+      _expectVecImpl(expected, defaultMessageBuilder(_, _, _, message), allowPartial = false)
 
-    def expect(expected: Vec[T], buildMessage: (Vec[T], Vec[T], Int) => String, allowPartial: Boolean = false)(
+    private[chisel3] def _expectVecImpl(
+      expected:     Vec[T],
+      buildMessage: (Vec[T], Vec[T], Int) => String,
+      allowPartial: Boolean = false
+    )(
       implicit sourceInfo: SourceInfo
     ): Unit = {
       data.getElements.zip(expected).zipWithIndex.foreach {
@@ -516,9 +494,9 @@ object PeekPokeAPI {
       }
     }
 
-    def peek()(implicit sourceInfo: SourceInfo): T = toPeekable.peek().asInstanceOf[T]
+    private[chisel3] def _peekImpl()(implicit sourceInfo: SourceInfo): T = toPeekable.peek().asInstanceOf[T]
 
-    override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit = {
+    private[chisel3] override def _expectImpl(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit = {
       (data, expected) match {
         case (dat: Bool, exp: Bool) =>
           new TestableBool(dat).expect(exp, message)
