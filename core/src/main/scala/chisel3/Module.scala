@@ -116,20 +116,10 @@ object Module extends Module$Intf {
   /** Returns the implicit Reset, if it is defined */
   def resetOption: Option[Reset] = Builder.currentReset
 
-  /** Returns the implicit Disable
-    *
-    * Note that [[Disable]] is a function of the implicit clock and reset
-    * so having no implicit clock or reset may imply no `Disable`.
-    */
-  def disable(implicit sourceInfo: SourceInfo): Disable =
-    disableOption.getOrElse(throwException("Error: No implicit disable."))
+  private[chisel3] def _disableImpl(implicit sourceInfo: SourceInfo): Disable =
+    _disableOptionImpl.getOrElse(throwException("Error: No implicit disable."))
 
-  /** Returns the current implicit [[Disable]], if one is defined
-    *
-    * Note that [[Disable]] is a function of the implicit clock and reset
-    * so having no implicit clock or reset may imply no `Disable`.
-    */
-  def disableOption(implicit sourceInfo: SourceInfo): Option[Disable] = {
+  private[chisel3] def _disableOptionImpl(implicit sourceInfo: SourceInfo): Option[Disable] = {
     Builder.currentDisable match {
       case Disable.Never       => None
       case Disable.BeforeReset => hasBeenReset.map(x => withName("disable")(!x))

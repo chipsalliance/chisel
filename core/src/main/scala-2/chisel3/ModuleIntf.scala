@@ -20,4 +20,18 @@ private[chisel3] trait Module$Intf extends SourceInfoDoc { self: Module.type =>
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = _applyImpl(bc)
+
+  /** Returns the implicit Disable
+    *
+    * Note that [[Disable]] is a function of the implicit clock and reset
+    * so having no implicit clock or reset may imply no `Disable`.
+    */
+  def disable(implicit sourceInfo: SourceInfo): Disable = _disableImpl
+
+  /** Returns the current implicit [[Disable]], if one is defined
+    *
+    * Note that [[Disable]] is a function of the implicit clock and reset
+    * so having no implicit clock or reset may imply no `Disable`.
+    */
+  def disableOption(implicit sourceInfo: SourceInfo): Option[Disable] = _disableOptionImpl
 }
