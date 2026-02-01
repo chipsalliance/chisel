@@ -49,7 +49,8 @@ sealed class DataView[T: DataProduct, V <: Data] private[chisel3] (
   private[chisel3] val mapping: (T, V) => Iterable[(Data, Data)],
   // Aliasing this with a def below to make the ScalaDoc show up for the field
   _total: Boolean
-)(implicit private[chisel3] val sourceInfo: SourceInfo) {
+)(implicit private[chisel3] val sourceInfo: SourceInfo)
+    extends DataViewIntf[T, V] {
 
   /** Indicates if the mapping contains every field of the target */
   def total: Boolean = _total
@@ -61,14 +62,9 @@ sealed class DataView[T: DataProduct, V <: Data] private[chisel3] (
     s"$name(defined $loc)"
   }
 
-  /** Compose two `DataViews` together to construct a view from the target of this `DataView` to the
-    * view type of the second `DataView`
-    *
-    * @param g a DataView from `V` to new view-type `V2`
-    * @tparam V2 View type of `DataView` `g`
-    * @return a new `DataView` from the original `T` to new view-type `V2`
-    */
-  def andThen[V2 <: Data](g: DataView[V, V2])(implicit sourceInfo: SourceInfo): DataView[T, V2] = {
+  private[chisel3] def _andThenImpl[V2 <: Data](
+    g: DataView[V, V2]
+  )(implicit sourceInfo: SourceInfo): DataView[T, V2] = {
     implicit val self: DataView[T, V] = this
     implicit val gg:   DataView[V, V2] = g
     new DataView[T, V2](
@@ -82,28 +78,25 @@ sealed class DataView[T: DataProduct, V <: Data] private[chisel3] (
 }
 
 /** Factory methods for constructing [[DataView]]s, see class for example use */
-object DataView extends InvertibleDataView {
+object DataView extends InvertibleDataView with DataView$ObjIntf {
 
-  /** Default factory method, alias for [[pairs]] */
-  def apply[T: DataProduct, V <: Data](
+  private[chisel3] def _applyImpl[T: DataProduct, V <: Data](
     mkView: T => V,
     pairs:  ((T, V) => (Data, Data))*
   )(
     implicit sourceInfo: SourceInfo
   ): DataView[T, V] =
-    DataView.pairs(mkView, pairs: _*)
+    _pairsImpl(mkView, pairs: _*)
 
-  /** Construct [[DataView]]s with pairs of functions from the target and view to corresponding fields */
-  def pairs[T: DataProduct, V <: Data](
+  private[chisel3] def _pairsImpl[T: DataProduct, V <: Data](
     mkView: T => V,
     pairs:  ((T, V) => (Data, Data))*
   )(
     implicit sourceInfo: SourceInfo
   ): DataView[T, V] =
-    mapping(mkView: T => V, swizzle(pairs))
+    _mappingImpl(mkView: T => V, swizzle(pairs))
 
-  /** More general factory method for complex mappings */
-  def mapping[T: DataProduct, V <: Data](
+  private[chisel3] def _mappingImpl[T: DataProduct, V <: Data](
     mkView:  T => V,
     mapping: (T, V) => Iterable[(Data, Data)]
   )(
@@ -118,51 +111,53 @@ object DataView extends InvertibleDataView {
   // ****************************** Built-in Implementations of DataView ******************************
   // Sort of the "Standard library" implementations
 
-  /** All Chisel Data are viewable as their own type */
-  implicit def identityView[A <: Data](implicit sourceInfo: SourceInfo): DataView[A, A] =
-    DataView[A, A](chiselTypeOf.apply, { case (x, y) => (x, y) })
+  private[chisel3] def _identityViewImpl[A <: Data](implicit sourceInfo: SourceInfo): DataView[A, A] =
+    _applyImpl[A, A](chiselTypeOf.apply, { case (x, y) => (x, y) })
 
-  /** Provides `DataView[Seq[A], Vec[B]]` for all `A` such that there exists `DataView[A, B]` */
-  implicit def seqDataView[A: DataProduct, B <: Data](
+  private[chisel3] def _seqDataViewImpl[A: DataProduct, B <: Data](
     implicit dv: DataView[A, B],
     sourceInfo:  SourceInfo
   ): DataView[Seq[A], Vec[B]] = {
     // TODO this would need a better way to determine the prototype for the Vec
-    DataView.mapping[Seq[A], Vec[B]](
+    _mappingImpl[Seq[A], Vec[B]](
       xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B])), // xs.head is not correct in general
       { case (s, v) => s.zip(v).map { case (a, b) => a.viewAs[B] -> b } }
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple2]]  to [[HWTuple2]] */
-  implicit def tuple2DataView[T1: DataProduct, T2: DataProduct, V1 <: Data, V2 <: Data](
+  private[chisel3] def _tuple2DataViewImpl[T1: DataProduct, T2: DataProduct, V1 <: Data, V2 <: Data](
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2), HWTuple2[V1, V2]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b) => new HWTuple2(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType) },
       { case ((a, b), hwt) =>
         Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2)
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple3]] to [[HWTuple3]] */
-  implicit def tuple3DataView[T1: DataProduct, T2: DataProduct, T3: DataProduct, V1 <: Data, V2 <: Data, V3 <: Data](
+  private[chisel3] def _tuple3DataViewImpl[
+    T1: DataProduct,
+    T2: DataProduct,
+    T3: DataProduct,
+    V1 <: Data,
+    V2 <: Data,
+    V3 <: Data
+  ](
     implicit v1: DataView[T1, V1],
     v2:          DataView[T2, V2],
     v3:          DataView[T3, V3],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3), HWTuple3[V1, V2, V3]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b, c) => new HWTuple3(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType) },
       { case ((a, b, c), hwt) =>
         Seq(a.viewAs[V1] -> hwt._1, b.viewAs[V2] -> hwt._2, c.viewAs[V3] -> hwt._3)
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple4]] to [[HWTuple4]] */
-  implicit def tuple4DataView[
+  private[chisel3] def _tuple4DataViewImpl[
     T1: DataProduct,
     T2: DataProduct,
     T3: DataProduct,
@@ -178,7 +173,7 @@ object DataView extends InvertibleDataView {
     v4:          DataView[T4, V4],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4), HWTuple4[V1, V2, V3, V4]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b, c, d) =>
         new HWTuple4(a.viewAs[V1].cloneType, b.viewAs[V2].cloneType, c.viewAs[V3].cloneType, d.viewAs[V4].cloneType)
       },
@@ -187,8 +182,7 @@ object DataView extends InvertibleDataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple5]] to [[HWTuple5]] */
-  implicit def tuple5DataView[
+  private[chisel3] def _tuple5DataViewImpl[
     T1: DataProduct,
     T2: DataProduct,
     T3: DataProduct,
@@ -207,7 +201,7 @@ object DataView extends InvertibleDataView {
     v5:          DataView[T5, V5],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5), HWTuple5[V1, V2, V3, V4, V5]] = {
-    DataView.mapping(
+    _mappingImpl(
       { case tup: Tuple5[T1, T2, T3, T4, T5] =>
         val (a, b, c, d, e) = tup
         new HWTuple5(
@@ -230,8 +224,7 @@ object DataView extends InvertibleDataView {
     )
   }
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple6]] to [[HWTuple6]] */
-  implicit def tuple6DataView[
+  private[chisel3] def _tuple6DataViewImpl[
     T1: DataProduct,
     T2: DataProduct,
     T3: DataProduct,
@@ -253,7 +246,7 @@ object DataView extends InvertibleDataView {
     v6:          DataView[T6, V6],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6), HWTuple6[V1, V2, V3, V4, V5, V6]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b, c, d, e, f) =>
         new HWTuple6(
           a.viewAs[V1].cloneType,
@@ -276,8 +269,7 @@ object DataView extends InvertibleDataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple7]] to [[HWTuple7]] */
-  implicit def tuple7DataView[
+  private[chisel3] def _tuple7DataViewImpl[
     T1: DataProduct,
     T2: DataProduct,
     T3: DataProduct,
@@ -302,7 +294,7 @@ object DataView extends InvertibleDataView {
     v7:          DataView[T7, V7],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7), HWTuple7[V1, V2, V3, V4, V5, V6, V7]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b, c, d, e, f, g) =>
         new HWTuple7(
           a.viewAs[V1].cloneType,
@@ -327,8 +319,7 @@ object DataView extends InvertibleDataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple8]] to [[HWTuple8]] */
-  implicit def tuple8DataView[
+  private[chisel3] def _tuple8DataViewImpl[
     T1: DataProduct,
     T2: DataProduct,
     T3: DataProduct,
@@ -356,7 +347,7 @@ object DataView extends InvertibleDataView {
     v8:          DataView[T8, V8],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8), HWTuple8[V1, V2, V3, V4, V5, V6, V7, V8]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b, c, d, e, f, g, h) =>
         new HWTuple8(
           a.viewAs[V1].cloneType,
@@ -383,8 +374,7 @@ object DataView extends InvertibleDataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple9]] to [[HWTuple9]] */
-  implicit def tuple9DataView[
+  private[chisel3] def _tuple9DataViewImpl[
     T1: DataProduct,
     T2: DataProduct,
     T3: DataProduct,
@@ -415,7 +405,7 @@ object DataView extends InvertibleDataView {
     v9:          DataView[T9, V9],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8, T9), HWTuple9[V1, V2, V3, V4, V5, V6, V7, V8, V9]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b, c, d, e, f, g, h, i) =>
         new HWTuple9(
           a.viewAs[V1].cloneType,
@@ -444,8 +434,7 @@ object DataView extends InvertibleDataView {
       }
     )
 
-  /** Provides implementations of [[DataView]] for [[scala.Tuple10]] to [[HWTuple10]] */
-  implicit def tuple10DataView[
+  private[chisel3] def _tuple10DataViewImpl[
     T1:  DataProduct,
     T2:  DataProduct,
     T3:  DataProduct,
@@ -479,7 +468,7 @@ object DataView extends InvertibleDataView {
     v10:         DataView[T10, V10],
     sourceInfo:  SourceInfo
   ): DataView[(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10), HWTuple10[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10]] =
-    DataView.mapping(
+    _mappingImpl(
       { case (a, b, c, d, e, f, g, h, i, j) =>
         new HWTuple10(
           a.viewAs[V1].cloneType,
@@ -512,28 +501,25 @@ object DataView extends InvertibleDataView {
 }
 
 /** Factory methods for constructing non-total [[DataView]]s */
-object PartialDataView {
+object PartialDataView extends PartialDataView$Intf {
 
-  /** Default factory method, alias for [[pairs]] */
-  def apply[T: DataProduct, V <: Data](
+  private[chisel3] def _applyImpl[T: DataProduct, V <: Data](
     mkView: T => V,
     pairs:  ((T, V) => (Data, Data))*
   )(
     implicit sourceInfo: SourceInfo
   ): DataView[T, V] =
-    PartialDataView.pairs(mkView, pairs: _*)
+    _pairsImpl(mkView, pairs: _*)
 
-  /** Construct [[DataView]]s with pairs of functions from the target and view to corresponding fields */
-  def pairs[T: DataProduct, V <: Data](
+  private[chisel3] def _pairsImpl[T: DataProduct, V <: Data](
     mkView: T => V,
     pairs:  ((T, V) => (Data, Data))*
   )(
     implicit sourceInfo: SourceInfo
   ): DataView[T, V] =
-    mapping(mkView, DataView.swizzle(pairs))
+    _mappingImpl(mkView, DataView.swizzle(pairs))
 
-  /** More general factory method for complex mappings */
-  def mapping[T: DataProduct, V <: Data](
+  private[chisel3] def _mappingImpl[T: DataProduct, V <: Data](
     mkView:  T => V,
     mapping: (T, V) => Iterable[(Data, Data)]
   )(
@@ -541,18 +527,13 @@ object PartialDataView {
   ): DataView[T, V] =
     new DataView[T, V](mkView, mapping, _total = false)
 
-  /** Constructs a non-total [[DataView]] mapping from a [[Bundle]] or [[Record]] type to a parent [[Bundle]] or [[Record]] type
-    *
-    * @param mkView a function constructing an instance `V` from an instance of `T`
-    * @return the [[DataView]] that enables viewing instances of a [[Bundle]]/[[Record]] as instances of a parent type
-    */
-  def supertype[T <: Record, V <: Record](
+  private[chisel3] def _supertypeImpl[T <: Record, V <: Record](
     mkView: T => V
   )(
     implicit ev: ChiselSubtypeOf[T, V],
     sourceInfo:  SourceInfo
   ): DataView[T, V] =
-    mapping[T, V](
+    _mappingImpl[T, V](
       mkView,
       { case (a, b) =>
         val aElts = a._elements
