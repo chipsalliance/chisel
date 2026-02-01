@@ -1,15 +1,15 @@
-* Your job is to split all public APIs using implicit SourceInfo into separate Scala 2 and Scala 3 specific interfaces
-* The list of files to consider is in: implicit-sourceinfo-public-methods.md
-* Note that public methods don't count if they are within private or package private classes, objects, or traits
-* Please do a separate commit per file being split.
-* Scala 2-only code lives in src/main/scala-2 or core/src/main/scala-2
-* Scala 3-only code lives in src/main/scala-3 or core/src/main/scala-3
-* Shared code between Scala 2 and 3 lives in src/main/scala
-* When the user asks you to split a file, only split that one file
-* A good example to consider is src/main/scala/chisel3/util/Reg.scala
-  * All public types are in src/main/scala, but methods are protected
-  * public methods accepting implicit SourceInfo for Scala 2 are in src/main/scala-2/chisel3/util/RegIntf.scala
-  * public methods accepting using SourceInfo fr Scala 3 are in src/main/scala-3/chisel3/util/RegIntf.scala
-* Any time you are splitting public APIs, find a test to run, in src/test
-* When you turn a function in src/main/scala or core/src/main/scala from public to protected, also move the ScalDoc on it to the new public methods you add in src/main/scala-2 and src/main/scala-3
+- Your job is to split all public APIs using implicit SourceInfo into separate Scala 2 and Scala 3 specific interfaces
+- The list of files to consider is in: implicit-sourceinfo-public-methods.md
+- Note that public methods don't count if they are within private or package private classes, objects, or traits
+- Please do a separate commit per file being split.
+- Scala 2-only code lives in src/main/scala-2 or core/src/main/scala-2
+- Scala 3-only code lives in src/main/scala-3 or core/src/main/scala-3
+- Shared code between Scala 2 and 3 lives in src/main/scala
+- A good example to consider is src/main/scala/chisel3/ltl/LTL.scala
+  - All public types are in src/main/scala, but methods are protected
+  - public methods accepting implicit SourceInfo for Scala 2 are in src/main/scala-2/chisel3/ltl/LTLIntf.scala
+  - public methods accepting using SourceInfo fr Scala 3 are in src/main/scala-3/chisel3/ltl/LTLIntf.scala
+- For some files, split files in src/main/scala-2 and src/main/scala-3 may already exist, please reuse them if they do. If they don't please create them.
+- Any time you are splitting public APIs, find a test to run, in src/test
+- When you turn a function in src/main/scala or core/src/main/scala from public to protected, also move the ScalDoc on it to the new public methods you add in src/main/scala-2 and src/main/scala-3
 
