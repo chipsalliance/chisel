@@ -27,6 +27,48 @@ private[chisel3] trait PopCount$Intf { self: PopCount.type =>
 
   def apply(in: Iterable[Bool])(using SourceInfo): UInt = _applyImpl(in)
   def apply(in: Bits)(using SourceInfo):           UInt = _applyImpl(in)
+
+  /** Implements PopCount(x)==n with less deep circuitry in case n=0,1,x.width-1,x.width
+    * @param n Int  Static value that PopCount(x) is compared against
+    * @param x UInt to PopCount
+    * @return true.B when x has exactly n bits set
+    */
+  def equalTo(n: Int, x: UInt)(using sourceInfo: SourceInfo): Bool = _equalToImpl(n, x)
+
+  /** Implements PopCount(x)==n with less deep circuitry in case n=0,1,x.width-1,x.width
+    * @param n Int  Static value that PopCount(x) is compared against
+    * @param x Seq/Vec of Bool to PopCount
+    * @return true.B when x has exactly n bits set
+    */
+  def equalTo(n: Int, x: Iterable[Bool])(using sourceInfo: SourceInfo): Bool = _equalToImpl(n, x)
+
+  /** Implements PopCount(x)>n with less deep circuitry in case n=0,1,x.width-1
+    * @param n Int  Static value that PopCount(x) is compared against
+    * @param x UInt to PopCount
+    * @return true.B when x has more than n bits set
+    */
+  def greaterThan(n: Int, x: UInt)(using sourceInfo: SourceInfo): Bool = _greaterThanImpl(n, x)
+
+  /** Implements PopCount(x)>n with less deep circuitry in case n=0,1,x.width-1
+    * @param n Int  Static value that PopCount(x) is compared against
+    * @param x Seq/Vec of Bool to PopCount
+    * @return true.B when x has more than n bits set
+    */
+  def greaterThan(n: Int, x: Iterable[Bool])(using sourceInfo: SourceInfo): Bool = _greaterThanImpl(n, x)
+
+  /** Implements PopCount(x)>=n with less deep circuitry in case n=0,1,2,x.width-1,x.width
+    * @param n Int  Static value that PopCount(x) is compared against
+    * @param x UInt to PopCount
+    * @return true.B when x has n or more bits set
+    */
+  def atLeast(n: Int, x: UInt)(using sourceInfo: SourceInfo): Bool = _atLeastImpl(n, x)
+
+  /** Implements PopCount(x)>=n with less deep circuitry in case n=0,1,2,x.width-1,x.width
+    * @param n Int  Static value that PopCount(x) is compared against
+    * @param x Seq/Vec of Bool to PopCount
+    * @return true.B when x has n or more bits set
+    */
+  def atLeast(n: Int, x: Iterable[Bool])(using sourceInfo: SourceInfo): Bool = _atLeastImpl(n, x)
 }
 
 private[chisel3] trait Fill$Intf { self: Fill.type =>

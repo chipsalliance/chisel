@@ -46,12 +46,7 @@ object PopCount extends PopCount$Intf {
     (0 until in.getWidth).map(in(_))
   )
 
-  /** Implements PopCount(x)==n with less deep circuitry in case n=0,1,x.width-1,x.width
-    * @param n Int  Static value that PopCount(x) is compared against
-    * @param x UInt to PopCount
-    * @return true.B when x has exactly n bits set
-    */
-  def equalTo(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
+  protected def _equalToImpl(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
     require(n >= 0, "Cannot check for negative number of bits")
     n match {
       case h: Int if h > x.getWidth => false.B
@@ -62,37 +57,18 @@ object PopCount extends PopCount$Intf {
     }
   }
 
-  /** Implements PopCount(x)==n with less deep circuitry in case n=0,1,x.width-1,x.width
-    * @param n Int  Static value that PopCount(x) is compared against
-    * @param x Seq/Vec of Bool to PopCount
-    * @return true.B when x has exactly n bits set
-    */
-  def equalTo(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool = equalTo(n, VecInit(x.toSeq).asUInt)
+  protected def _equalToImpl(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool =
+    _equalToImpl(n, VecInit(x.toSeq).asUInt)
 
-  /** Implements PopCount(x)>n with less deep circuitry in case n=0,1,x.width-1
-    * @param n Int  Static value that PopCount(x) is compared against
-    * @param x UInt to PopCount
-    * @return true.B when x has more than n bits set
-    */
-  def greaterThan(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
+  protected def _greaterThanImpl(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
     require(n >= 0, "Cannot check for negative number of bits")
     atLeast(n + 1, x)
   }
 
-  /** Implements PopCount(x)>n with less deep circuitry in case n=0,1,x.width-1
-    * @param n Int  Static value that PopCount(x) is compared against
-    * @param x Seq/Vec of Bool to PopCount
-    * @return true.B when x has more than n bits set
-    */
-  def greaterThan(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool =
-    greaterThan(n, VecInit(x.toSeq).asUInt)
+  protected def _greaterThanImpl(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool =
+    _greaterThanImpl(n, VecInit(x.toSeq).asUInt)
 
-  /** Implements PopCount(x)>=n with less deep circuitry in case n=0,1,2,x.width-1,x.width
-    * @param n Int  Static value that PopCount(x) is compared against
-    * @param x UInt to PopCount
-    * @return true.B when x has n or more bits set
-    */
-  def atLeast(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
+  protected def _atLeastImpl(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): Bool = {
     require(n >= 0, "Cannot check for negative number of bits")
     n match {
       case 0 => true.B
@@ -105,12 +81,8 @@ object PopCount extends PopCount$Intf {
     }
   }
 
-  /** Implements PopCount(x)>=n with less deep circuitry in case n=0,1,2,x.width-1,x.width
-    * @param n Int  Static value that PopCount(x) is compared against
-    * @param x Seq/Vec of Bool to PopCount
-    * @return true.B when x has n or more bits set
-    */
-  def atLeast(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool = atLeast(n, VecInit(x.toSeq).asUInt)
+  protected def _atLeastImpl(n: Int, x: Iterable[Bool])(implicit sourceInfo: SourceInfo): Bool =
+    _atLeastImpl(n, VecInit(x.toSeq).asUInt)
 }
 
 /** Create repetitions of the input using a tree fanout topology.
