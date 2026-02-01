@@ -111,7 +111,7 @@ class BoringUtilsException(message: String) extends Exception(message)
   * The automatic generation of hierarchical names relies on a global, mutable namespace. This is currently persistent
   * across circuit elaborations.
   */
-object BoringUtils {
+object BoringUtils extends BoringUtils$Intf {
   /* A global namespace for boring ids */
   private[chisel3] case object CacheKey extends BuilderContextCache.Key[Namespace]
   private def boringNamespace = Builder.contextCache.getOrElseUpdate(CacheKey, Namespace.empty)
@@ -356,32 +356,16 @@ object BoringUtils {
     }
   }
 
-  /** Access a source [[Data]] that may or may not be in the current module.  If
-    * this is in a child module, then create ports to allow access to the
-    * requested source.
-    */
-  def bore[A <: Data](source: A)(implicit si: SourceInfo): A = {
+  protected def _boreImpl[A <: Data](source: A)(implicit si: SourceInfo): A = {
     boreOrTap(source, createProbe = None)
   }
 
-  /** Access a sink [[Data]] for driving that may or may not be in the current module.
-    *
-    * If the sink is in a child module, than create input ports to allow driving the requested sink.
-    *
-    * Note that the sink may not be a probe, and [[rwTap]] should be used instead.
-    */
-  def drive[A <: Data](sink: A)(implicit si: SourceInfo): A = {
+  protected def _driveImpl[A <: Data](sink: A)(implicit si: SourceInfo): A = {
     require(!DataMirror.hasProbeTypeModifier(sink), "cannot drive a probe from BoringUtils.drive")
     boreOrTap(sink, createProbe = None, isDrive = true)
   }
 
-  /** Access a source [[Data]] that may or may not be in the current module.  If
-    * this is in a child module, then create read-only probe ports to allow
-    * access to the requested source.
-    *
-    * Returns a probe Data type.
-    */
-  def tap[A <: Data](source: A)(implicit si: SourceInfo): A = {
+  protected def _tapImpl[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix {
       boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = None)))
     }
@@ -392,13 +376,7 @@ object BoringUtils {
     }
   }
 
-  /** Access a source [[Data]] that may or may not be in the current module.  If
-    * this is in a child module, then create write-only probe ports to allow
-    * access to the requested source. Supports downward accesses only.
-    *
-    * Returns a probe Data type.
-    */
-  def rwTap[A <: Data](source: A)(implicit si: SourceInfo): A = {
+  protected def _rwTapImpl[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix { boreOrTap(source, createProbe = Some(ProbeInfo(writable = true, color = None))) }
     if (tapIntermediate.probeInfo.nonEmpty) {
       tapIntermediate
@@ -407,13 +385,7 @@ object BoringUtils {
     }
   }
 
-  /** Access a source [[Data]] that may or may not be in the current module.  If
-    * this is in a child module, then create read-only probe ports to allow
-    * access to the requested source.
-    *
-    * Returns a non-probe Data type.
-    */
-  def tapAndRead[A <: Data](source: A)(implicit si: SourceInfo): A = {
+  protected def _tapAndReadImpl[A <: Data](source: A)(implicit si: SourceInfo): A = {
     val tapIntermediate = skipPrefix {
       boreOrTap(source, createProbe = Some(ProbeInfo(writable = false, color = None)))
     }
