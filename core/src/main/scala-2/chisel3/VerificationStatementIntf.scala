@@ -141,3 +141,22 @@ private[chisel3] trait Cover$Impl extends VerifPrintMacrosDoc { self: cover.type
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Cover =
     macro VerifStmtMacrosCompat.cover._applyMacroWithNoMessage
 }
+
+private[chisel3] trait Stop$Intf { self: stop.type =>
+
+  /** Terminate execution, indicating success and printing a message.
+    *
+    * @param message a message describing why simulation was stopped
+    */
+  def apply(message: String)(implicit sourceInfo: SourceInfo): Stop = _applyImpl(message)
+
+  /** Terminate execution, indicating success and printing a message.
+    *
+    * @param message a printable describing why simulation was stopped
+    */
+  def apply(message: Printable)(implicit sourceInfo: SourceInfo): Stop = _applyImpl(message)
+
+  /** Terminate execution, indicating success.
+    */
+  def apply()(implicit sourceInfo: SourceInfo): Stop = _applyImpl()
+}

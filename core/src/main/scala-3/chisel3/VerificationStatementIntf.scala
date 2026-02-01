@@ -16,7 +16,7 @@ private[chisel3] trait Assert$Intf extends VerifPrintMacrosDoc { self: assert.ty
     message: String,
     data:    Bits*
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): Assert = VerifStmtMacrosCompat.assert._applyWithSourceLinePrintable(
     cond,
     emptySourceLine,
@@ -27,10 +27,10 @@ private[chisel3] trait Assert$Intf extends VerifPrintMacrosDoc { self: assert.ty
     cond:    Bool,
     message: Printable
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): Assert = VerifStmtMacrosCompat.assert._applyWithSourceLinePrintable(cond, emptySourceLine, Some(message))
 
-  def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Assert =
+  def apply(cond: Bool)(using sourceInfo: SourceInfo): Assert =
     VerifStmtMacrosCompat.assert._applyWithSourceLinePrintable(cond, emptySourceLine, None)
 }
 
@@ -41,7 +41,7 @@ private[chisel3] trait Assume$Intf extends VerifPrintMacrosDoc { self: assume.ty
     message: String,
     data:    Bits*
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): Assume = VerifStmtMacrosCompat.assume._applyWithSourceLinePrintable(
     cond,
     emptySourceLine,
@@ -52,16 +52,35 @@ private[chisel3] trait Assume$Intf extends VerifPrintMacrosDoc { self: assume.ty
     cond:    Bool,
     message: Printable
   )(
-    implicit sourceInfo: SourceInfo
+    using sourceInfo: SourceInfo
   ): Assume = VerifStmtMacrosCompat.assume._applyWithSourceLinePrintable(cond, emptySourceLine, Some(message))
 
-  def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Assume =
+  def apply(cond: Bool)(using sourceInfo: SourceInfo): Assume =
     VerifStmtMacrosCompat.assume._applyWithSourceLinePrintable(cond, emptySourceLine, None)
 }
 
 private[chisel3] trait Cover$Impl extends VerifPrintMacrosDoc { self: cover.type =>
-  def apply(cond: Bool, message: String)(implicit sourceInfo: SourceInfo): Cover =
+  def apply(cond: Bool, message: String)(using sourceInfo: SourceInfo): Cover =
     VerifStmtMacrosCompat.cover._applyWithSourceLine(cond, emptySourceLine, Some(message))
-  def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Cover =
+  def apply(cond: Bool)(using sourceInfo: SourceInfo): Cover =
     VerifStmtMacrosCompat.cover._applyWithSourceLine(cond, emptySourceLine, None)
+}
+
+private[chisel3] trait Stop$Intf { self: stop.type =>
+
+  /** Terminate execution, indicating success and printing a message.
+    *
+    * @param message a message describing why simulation was stopped
+    */
+  def apply(message: String)(using sourceInfo: SourceInfo): Stop = _applyImpl(message)
+
+  /** Terminate execution, indicating success and printing a message.
+    *
+    * @param message a printable describing why simulation was stopped
+    */
+  def apply(message: Printable)(using sourceInfo: SourceInfo): Stop = _applyImpl(message)
+
+  /** Terminate execution, indicating success.
+    */
+  def apply()(using sourceInfo: SourceInfo): Stop = _applyImpl()
 }
