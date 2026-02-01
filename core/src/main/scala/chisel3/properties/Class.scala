@@ -152,7 +152,7 @@ object AnyClassType {
     }
 }
 
-object Class {
+object Class extends Class$Intf {
 
   /** Helper to create a Property[ClassType] type for a Class of a given name.
     *
@@ -165,11 +165,9 @@ object Class {
     Property[cls.Type]()
   }
 
-  /** Helper to create a DynamicObject for a Class of a given name.
-    *
-    * *WARNING*: It is the caller's resonsibility to ensure the Class exists, this is not checked automatically.
-    */
-  def unsafeGetDynamicObject(className: String)(implicit sourceInfo: SourceInfo): DynamicObject = {
+  private[chisel3] def _unsafeGetDynamicObjectImpl(
+    className: String
+  )(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Object.
     val obj = new DynamicObject(ClassType.unsafeGetClassTypeByName(className))
 
