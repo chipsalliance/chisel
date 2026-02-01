@@ -29,18 +29,9 @@ package object experimental {
     */
   type ClonePorts = BaseModule.ClonePorts
 
-  object CloneModuleAsRecord {
+  object CloneModuleAsRecord extends CloneModuleAsRecord$Intf {
 
-    /** Clones an existing module and returns a record of all its top-level ports.
-      * Each element of the record is named with a string matching the
-      * corresponding port's name and shares the port's type.
-      * @example {{{
-      * val q1 = Module(new Queue(UInt(32.W), 2))
-      * val q2_io = CloneModuleAsRecord(q1)("io").asInstanceOf[q1.io.type]
-      * q2_io.enq <> q1.io.deq
-      * }}}
-      */
-    def apply(
+    private[chisel3] def _applyImpl(
       proto: BaseModule
     )(
       implicit sourceInfo: chisel3.experimental.SourceInfo
@@ -133,8 +124,8 @@ package object experimental {
   trait AffectsChiselName
 
   object BundleLiterals {
-    implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
-      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {
+    implicit class AddBundleLiteralConstructor[T <: Record](val x: T) extends AddBundleLiteralConstructorIntf[T] {
+      private[chisel3] def _LitImpl(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo): T = {
         val fs = elems.map(_.asInstanceOf[Data => (Data, Data)])
         x._makeLit(fs: _*).asInstanceOf[T]
       }
@@ -144,25 +135,16 @@ package object experimental {
   /** This class provides the `Lit` method needed to define a `Vec` literal
     */
   object VecLiterals {
-    implicit class AddVecLiteralConstructor[T <: Data](x: Vec[T]) {
+    implicit class AddVecLiteralConstructor[T <: Data](val x: Vec[T]) extends AddVecLiteralConstructorIntf[T] {
 
-      /** Given a generator of a list tuples of the form [Int, Data]
-        * constructs a Vec literal, parallel concept to `BundleLiteral`
-        *
-        * @param elems tuples of an index and a literal value
-        * @return
-        */
-      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo): Vec[T] = {
+      private[chisel3] def _LitImpl(elems: (Int, T)*)(implicit sourceInfo: SourceInfo): Vec[T] = {
         x._makeLit(elems: _*)
       }
     }
 
-    implicit class AddObjectLiteralConstructor(x: Vec.type) {
+    implicit class AddObjectLiteralConstructor(val x: Vec.type) extends AddObjectLiteralConstructorIntf {
 
-      /** This provides an literal construction method for cases using
-        * object `Vec` as in `Vec.Lit(1.U, 2.U)`
-        */
-      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo): Vec[T] = {
+      private[chisel3] def _LitImpl[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo): Vec[T] = {
         val sampleElement = cloneSupertype(elems, s"Vec.Lit(...)")
         val vec: Vec[T] = Vec.apply(elems.length, sampleElement)
         vec.Lit(elems.zipWithIndex.map(_.swap): _*)
