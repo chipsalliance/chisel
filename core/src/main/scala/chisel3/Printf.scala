@@ -14,7 +14,7 @@ object printf extends PrintfIntf {
   final class Printf private[chisel3] (val pable: Printable) extends VerificationStatement
 
   private[chisel3] def _applyPrintableImpl(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf =
-    SimLog.StdErr.printf(pable)(sourceInfo)
+    SimLog.StdErr._printfImpl(pable)(sourceInfo)
 
   /** Helper for packing escape characters */
   private[chisel3] def format(formatIn: String): String = {

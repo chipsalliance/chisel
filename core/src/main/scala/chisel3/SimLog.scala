@@ -25,26 +25,11 @@ import chisel3.experimental.SourceInfo
   */
 sealed trait SimLog extends SimLogIntf {
 
-  /** Prints a message in simulation
-    *
-    * Prints a message every cycle. If defined within the scope of a [[when]] block, the message
-    * will only be printed on cycles that the when condition is true.
-    *
-    * Does not fire when in reset (defined as the encapsulating Module's reset). If your definition
-    * of reset is not the encapsulating Module's reset, you will need to gate this externally.
-    *
-    * May be called outside of a Module (like defined in a function), uses the current default clock
-    * and reset. These can be overriden with [[withClockAndReset]].
-    *
-    * @see [[Printable]] documentation
-    * @param pable [[Printable]] to print
-    */
-  def printf(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf = {
+  private[chisel3] def _printfImpl(pable: Printable)(implicit sourceInfo: SourceInfo): chisel3.printf.Printf = {
     this.printfWithReset(pable)(sourceInfo)
   }
 
-  /** Flush any buffered output immediately */
-  def flush()(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _flushImpl()(implicit sourceInfo: SourceInfo): Unit = {
     val clock = Builder.forcedClock
     _filename.foreach(Printable.checkScope(_, "SimLog filename "))
 
@@ -106,15 +91,13 @@ private object StdErrSimLog extends SimLog {
   override protected def _filename: Option[Printable] = None
 }
 
-object SimLog {
+object SimLog extends SimLog$Intf {
 
-  /** Print to a file given by `filename`
-    */
-  def file(filename: String)(implicit sourceInfo: SourceInfo): SimLog = {
+  private[chisel3] def _fileImpl(filename: String)(implicit sourceInfo: SourceInfo): SimLog = {
     new SimLogFile(PString(filename))
   }
 
-  def file(filename: Printable)(implicit sourceInfo: SourceInfo): SimLog = {
+  private[chisel3] def _fileImpl(filename: Printable)(implicit sourceInfo: SourceInfo): SimLog = {
     new SimLogFile(filename)
   }
 
