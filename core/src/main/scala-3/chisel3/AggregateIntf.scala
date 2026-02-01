@@ -14,9 +14,48 @@ import chisel3.internal.firrtl._
 import java.lang.Math.{floor, log10, pow}
 import scala.collection.mutable
 
+private[chisel3] trait VecFactory$Intf extends SourceInfoDoc { self: VecFactory =>
+
+  /** Creates a new [[Vec]] with `n` entries of the specified data type.
+    *
+    * @note elements are NOT assigned by default and have no value
+    */
+  def apply[T <: Data](n: Int, gen: T)(using SourceInfo): Vec[T] = _applyImpl(n, gen)
+}
+
 private[chisel3] trait VecIntf[T <: Data] { self: Vec[T] =>
 
   def apply(p: UInt)(using SourceInfo): T = _applyImpl(p)
+
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Seq.
+    *
+    * @note the length of this Vec and that Seq must match
+    * @param that the Seq to connect from
+    * @group connection
+    */
+  def <>(that: Seq[T])(using SourceInfo): Unit = _bulkConnectSeqImpl(that)
+
+  /** The "bulk connect operator", assigning elements in this Vec from elements in a Vec.
+    *
+    * @note the length of this Vec and that Vec must match
+    * @param that the Vec to connect from
+    * @group connection
+    */
+  def <>(that: Vec[T])(using SourceInfo): Unit = _bulkConnectVecImpl(that)
+
+  /** "The strong connect operator", assigning elements in this Vec from elements in a Seq.
+    *
+    * @note the length of this Vec must match the length of the input Seq
+    * @group connection
+    */
+  def :=(that: Seq[T])(using SourceInfo): Unit = _connectSeqImpl(that)
+
+  /** "The strong connect operator", assigning elements in this Vec from elements in a Vec.
+    *
+    * @note the length of this Vec must match the length of the input Vec
+    * @group connection
+    */
+  def :=(that: Vec[T])(using SourceInfo): Unit = _connectVecImpl(that)
 
   /** A reduce operation in a tree like structure instead of sequentially
     * @example An adder tree

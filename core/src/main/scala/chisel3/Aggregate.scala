@@ -169,7 +169,7 @@ trait VecFactory extends SourceInfoDoc {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo): Vec[T] = {
+  protected def _applyImpl[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo): Vec[T] = {
     requireIsChiselType(gen, "vec type")
     new Vec(gen.cloneTypeFull, n)
   }
@@ -298,7 +298,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * @param that the Seq to connect from
     * @group connection
     */
-  def <>(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  protected def _bulkConnectSeqImpl(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
     if (this.length != that.length)
       Builder.error(
         s"Vec (size ${this.length}) and Seq (size ${that.length}) being bulk connected have different lengths!"
@@ -321,7 +321,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * @param that the Vec to connect from
     * @group connection
     */
-  def <>(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit =
+  protected def _bulkConnectVecImpl(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit =
     this.bulkConnect(that.asInstanceOf[Data])
 
   /** "The strong connect operator", assigning elements in this Vec from elements in a Seq.
@@ -335,7 +335,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Seq
     * @group connection
     */
-  def :=(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  protected def _connectSeqImpl(that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
     require(
       this.length == that.length,
       s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}"
@@ -356,7 +356,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Vec
     * @group connection
     */
-  def :=(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = this.connect(that)
+  protected def _connectVecImpl(that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = this.connect(that)
 
   private[chisel3] def _applyImpl(p: UInt)(implicit sourceInfo: SourceInfo): T = {
     requireIsHardware(this, "vec")
@@ -644,7 +644,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   }
 }
 
-object Vec extends VecFactory
+object Vec extends VecFactory with VecFactory$Intf
 
 object VecInit extends VecInit$Intf {
 

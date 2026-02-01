@@ -129,7 +129,7 @@ object DataView extends InvertibleDataView {
   ): DataView[Seq[A], Vec[B]] = {
     // TODO this would need a better way to determine the prototype for the Vec
     DataView.mapping[Seq[A], Vec[B]](
-      xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B]))(sourceInfo), // xs.head is not correct in general
+      xs => Vec(xs.size, chiselTypeClone(xs.head.viewAs[B])), // xs.head is not correct in general
       { case (s, v) => s.zip(v).map { case (a, b) => a.viewAs[B] -> b } }
     )
   }
