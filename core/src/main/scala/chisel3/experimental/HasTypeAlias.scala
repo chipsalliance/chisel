@@ -18,9 +18,11 @@ case class RecordAlias private[chisel3] (info: SourceInfo, id: String, strippedS
     new RecordAlias(info, id, strippedSuffix)
 }
 
-object RecordAlias {
-  def apply(id: String)(implicit info: SourceInfo): RecordAlias = new RecordAlias(info, id)
-  def apply(id: String, strippedSuffix: String)(implicit info: SourceInfo): RecordAlias =
+object RecordAlias extends RecordAlias$Intf {
+  private[chisel3] def _applyImpl(id: String)(implicit info: SourceInfo): RecordAlias = new RecordAlias(info, id)
+  private[chisel3] def _applyWithSuffixImpl(id: String, strippedSuffix: String)(
+    implicit info: SourceInfo
+  ): RecordAlias =
     RecordAlias(info, id, strippedSuffix)
   def apply(info: SourceInfo, id: String, strippedSuffix: String): RecordAlias =
     new RecordAlias(info, id, strippedSuffix)
