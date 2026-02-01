@@ -8,6 +8,9 @@ import scala.reflect.macros.whitebox
 
 private[chisel3] trait FormalContract$Intf { self: FormalContract.type =>
 
+  /** Create a `contract` block with no arguments and results. */
+  def apply(body: => Unit)(implicit sourceInfo: SourceInfo): Unit = _applyNoArgsImpl(body)
+
   /** Create a `contract` block with one or more arguments and results. */
   def apply(head: Data, tail: Data*): (Any => Unit) => Any =
     macro FormalContractMacro.apply_impl

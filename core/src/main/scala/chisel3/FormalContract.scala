@@ -118,7 +118,7 @@ object FormalContract extends FormalContract$Intf {
   }
 
   /** Create a `contract` block with no arguments and results. */
-  def apply(body: => Unit)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _applyNoArgsImpl(body: => Unit)(implicit sourceInfo: SourceInfo): Unit = {
     mapped[Unit](Seq(), _ => ())(_ => body)
   }
 }

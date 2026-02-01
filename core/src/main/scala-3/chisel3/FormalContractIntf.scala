@@ -2,9 +2,13 @@
 
 package chisel3
 
+import chisel3.experimental.SourceInfo
 import scala.quoted.*
 
 private[chisel3] trait FormalContract$Intf { self: FormalContract.type =>
+
+  /** Create a `contract` block with no arguments and results. */
+  def apply(body: => Unit)(using sourceInfo: SourceInfo): Unit = _applyNoArgsImpl(body)
 
   /** Create a `contract` block with one or more arguments and results. */
   transparent inline def apply[T <: Data](inline args: T*): Any =
