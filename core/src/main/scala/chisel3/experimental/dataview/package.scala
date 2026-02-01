@@ -19,8 +19,8 @@ package object dataview {
     *
     * Calling `viewAs` also requires an implementation of [[DataView]] for the target type
     */
-  implicit class DataViewable[T](target: T) {
-    private def _viewAsImpl[V <: Data](
+  implicit class DataViewable[T](target: T) extends DataViewableIntf[T] {
+    private[chisel3] def _viewAsImpl[V <: Data](
       writability: ViewWriteability
     )(
       implicit dataproduct: DataProduct[T],
@@ -45,12 +45,6 @@ package object dataview {
       result
     }
 
-    def viewAs[V <: Data](
-      implicit dataproduct: DataProduct[T],
-      dataView:             DataView[T, V],
-      sourceInfo:           SourceInfo
-    ): V = _viewAsImpl(ViewWriteability.Default)
-
     private[chisel3] def viewAsReadOnlyDeprecated[V <: Data](
       getWarning: SourceInfo => Warning
     )(
@@ -69,10 +63,14 @@ package object dataview {
   }
 
   /** Provides `viewAsSupertype` for subclasses of [[Record]] */
-  implicit class RecordUpcastable[T <: Record](target: T) {
+  implicit class RecordUpcastable[T <: Record](target: T) extends RecordUpcastableIntf[T] {
 
-    /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
-    def viewAsSupertype[V <: Record](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V = {
+    private[chisel3] def _viewAsSupertypeImpl[V <: Record](
+      proto: V
+    )(
+      implicit ev: ChiselSubtypeOf[T, V],
+      sourceInfo:  SourceInfo
+    ): V = {
       implicit val dataView: DataView[T, V] = PartialDataView.supertype[T, V](_ => proto)
       target.viewAs[V]
     }

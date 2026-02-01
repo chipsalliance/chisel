@@ -5,6 +5,7 @@ package chisel3.experimental.dataview
 import chisel3._
 import chisel3.experimental.{HWTuple10, HWTuple2, HWTuple3, HWTuple4, HWTuple5, HWTuple6, HWTuple7, HWTuple8, HWTuple9}
 import chisel3.experimental.{ChiselSubtypeOf, SourceInfo}
+import chisel3.internal.binding.ViewWriteability
 
 private[chisel3] trait DataViewIntf[T, V <: Data] { self: DataView[T, V] =>
 
@@ -304,4 +305,19 @@ private[chisel3] trait PartialDataView$Intf { self: PartialDataView.type =>
     implicit ev: ChiselSubtypeOf[T, V],
     sourceInfo:  SourceInfo
   ): DataView[T, V] = _supertypeImpl(mkView)
+}
+
+private[chisel3] trait DataViewableIntf[T] { self: DataViewable[T] =>
+  def viewAs[V <: Data](
+    implicit dataproduct: DataProduct[T],
+    dataView:             DataView[T, V],
+    sourceInfo:           SourceInfo
+  ): V = _viewAsImpl(ViewWriteability.Default)
+}
+
+private[chisel3] trait RecordUpcastableIntf[T <: Record] { self: RecordUpcastable[T] =>
+
+  /** View a [[Bundle]] or [[Record]] as a parent type (upcast) */
+  def viewAsSupertype[V <: Record](proto: V)(implicit ev: ChiselSubtypeOf[T, V], sourceInfo: SourceInfo): V =
+    _viewAsSupertypeImpl(proto)
 }
