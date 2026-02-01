@@ -73,7 +73,8 @@ class SparseVec[A <: Data](
   indices:          Seq[Int],
   defaultValue:     DefaultValueBehavior.Type = DefaultValueBehavior.Indeterminate,
   outOfBoundsValue: OutOfBoundsBehavior.Type = OutOfBoundsBehavior.Indeterminate
-) extends Record {
+) extends Record
+    with SparseVec$Intf[A] {
 
   require(indices.size <= size, s"the SparseVec indices size (${indices.size}) must be <= the SparseVec size ($size)")
 
@@ -123,16 +124,9 @@ class SparseVec[A <: Data](
     outOfBoundsValue: OutOfBoundsBehavior.Type
   ) = this(indices.max, gen, indices, defaultValue, outOfBoundsValue)
 
-  /** Read a value from a [[SparseVec]] using one of several possible lookup
-    * types. The returned value is read-only.
-    *
-    * @param addr the address of the value to read from the vec
-    * @param lookupType the type of lookup, e.g., binary, one-hot, or when-based
-    * @param sourceinfo implicit source locator information
-    * @return a read-only value from the specified address
-    * @throws ChiselException if the returned value is written to
-    */
-  def apply(addr: UInt, lookupType: Lookup.Type = Lookup.Binary)(implicit sourceinfo: SourceInfo): A = {
+  private[chisel3] def _applyImpl(addr: UInt, lookupType: Lookup.Type = Lookup.Binary)(
+    implicit sourceinfo: SourceInfo
+  ): A = {
     val result: A = lookupType match {
       // Short circuit path if the indices is empty.  Return the default value.
       // A default value must exist.
@@ -219,7 +213,7 @@ class SparseVec[A <: Data](
 
         // Use a decoder to generate a lookup into the denseVec using the
         // provided Lookup.Decoder strategy.  Return the value.
-        d.lookup(
+        d._lookupImpl(
           decoder(addr, ttable),
           denseVec
         ).asInstanceOf[A]
@@ -293,10 +287,10 @@ object SparseVec {
     sealed trait Type
 
     /** A [[SparseVec$]] that is accessed using a [[chisel3.util.experimental.decode.decoder]]. */
-    sealed trait Decoder extends Type {
+    sealed trait Decoder extends Type with Lookup$Decoder$Intf {
       def encoding(index: Int, width: Int): UInt
 
-      def lookup[A <: Data](
+      private[chisel3] def _lookupImpl[A <: Data](
         index:  UInt,
         values: VecLike[A]
       )(
@@ -308,7 +302,7 @@ object SparseVec {
     case object Binary extends Decoder {
       override final def encoding(index: Int, width: Int) = index.U(log2Up(width).W)
 
-      override final def lookup[A <: Data](
+      override final private[chisel3] def _lookupImpl[A <: Data](
         index:  UInt,
         values: VecLike[A]
       )(
@@ -320,7 +314,7 @@ object SparseVec {
     case object OneHot extends Decoder {
       override final def encoding(index: Int, width: Int) = (BigInt(1) << index).U((width).W)
 
-      override final def lookup[A <: Data](
+      override final private[chisel3] def _lookupImpl[A <: Data](
         index:  UInt,
         values: VecLike[A]
       )(
