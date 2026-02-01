@@ -13,6 +13,28 @@ private[chisel3] trait EnumTypeIntf { self: EnumType =>
   final def <=(that:  EnumType)(using SourceInfo): Bool = _impl_<=(that)
   final def >(that:   EnumType)(using SourceInfo): Bool = _impl_>(that)
   final def >=(that:  EnumType)(using SourceInfo): Bool = _impl_>=(that)
+
+  def isValid(using SourceInfo): Bool = _isValidImpl
+
+  final def isOneOf(s: Seq[EnumType])(using SourceInfo): Bool = _isOneOfSeqImpl(s)
+
+  final def isOneOf(
+    u1: EnumType,
+    u2: EnumType*
+  )(
+    using SourceInfo
+  ): Bool = _isOneOfImpl(u1, u2.toSeq)
+
+  def nameContains(s: String)(using SourceInfo): Bool = _nameContainsImpl(s)
+
+  def next(using SourceInfo): this.type = _nextImpl
+}
+
+private[chisel3] trait ChiselEnum$Intf { self: ChiselEnum =>
+
+  def apply(n: UInt)(using SourceInfo): Type = _applyImpl(n)
+
+  def safe(n: UInt)(using SourceInfo): (Type, Bool) = _safeImpl(n)
 }
 
 private[chisel3] trait ChiselEnumIntf { self: ChiselEnum =>

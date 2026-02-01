@@ -88,7 +88,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
 
   protected[chisel3] override def width: Width = factory.width
 
-  def isValid(implicit sourceInfo: SourceInfo): Bool = {
+  protected def _isValidImpl(implicit sourceInfo: SourceInfo): Bool = {
     if (litOption.isDefined) {
       true.B
     } else {
@@ -101,7 +101,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
     * @param s a [[scala.collection.Seq$ Seq]] of enumeration values to look for
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
-  final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo): Bool = {
+  protected def _isOneOfSeqImpl(s: Seq[EnumType])(implicit sourceInfo: SourceInfo): Bool = {
     s.length match {
       case 0 => false.B
       case _ => VecInit(s.map(this === _)).asUInt.orR
@@ -114,21 +114,21 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
     * @param u2 zero or more additional values to look for
     * @return a hardware [[Bool]] that indicates if this value matches any of the given values
     */
-  final def isOneOf(
+  protected def _isOneOfImpl(
     u1: EnumType,
-    u2: EnumType*
+    u2: Seq[EnumType]
   )(
     implicit sourceInfo: SourceInfo
-  ): Bool = isOneOf(u1 +: u2.toSeq)
+  ): Bool = _isOneOfSeqImpl(u1 +: u2)
 
   /** Creates circuitry that outputs True iff the Enum is equal to one of the values that has `s` in its name
     *
     * @param s the substring to search for in the Enum value's name
     */
-  def nameContains(s: String)(implicit sourceInfo: SourceInfo): Bool =
-    isOneOf(factory.allWithNames.filter(m => m._2 contains s).map(m => m._1))
+  protected def _nameContainsImpl(s: String)(implicit sourceInfo: SourceInfo): Bool =
+    _isOneOfSeqImpl(factory.allWithNames.filter(m => m._2 contains s).map(m => m._1))
 
-  def next(implicit sourceInfo: SourceInfo): this.type = {
+  protected def _nextImpl(implicit sourceInfo: SourceInfo): this.type = {
     if (litOption.isDefined) {
       val index = factory.all.indexOf(this)
 
@@ -212,7 +212,7 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
   }
 }
 
-abstract class ChiselEnum extends ChiselEnumIntf {
+abstract class ChiselEnum extends ChiselEnumIntf with ChiselEnum$Intf {
   class Type extends EnumType(this)
   object Type {
     def apply(): Type = ChiselEnum.this.apply()
@@ -340,7 +340,7 @@ abstract class ChiselEnum extends ChiselEnumIntf {
     * @param n the UInt to cast
     * @return the equivalent Enum to the value of the cast UInt
     */
-  def apply(n: UInt)(implicit sourceInfo: SourceInfo): Type =
+  protected def _applyImpl(n: UInt)(implicit sourceInfo: SourceInfo): Type =
     castImpl(n, warn = true)
 
   /** Safely cast an [[UInt]] to the type of this Enum
@@ -349,7 +349,7 @@ abstract class ChiselEnum extends ChiselEnumIntf {
     * @return the equivalent Enum to the value of the cast UInt and a Bool indicating if the
     *         Enum is valid
     */
-  def safe(n: UInt)(implicit sourceInfo: SourceInfo): (Type, Bool) = {
+  protected def _safeImpl(n: UInt)(implicit sourceInfo: SourceInfo): (Type, Bool) = {
     val t = castImpl(n, warn = false)
     (t, t.isValid)
   }
