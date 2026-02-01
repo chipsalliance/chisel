@@ -7,27 +7,9 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir._
 import chisel3.experimental.{SourceInfo, UnlocatableSourceInfo}
 
-object when {
+object when extends when$Intf {
 
-  /** Create a `when` condition block, where whether a block of logic is
-    * executed or not depends on the conditional.
-    *
-    * @param cond condition to execute upon
-    * @param block logic that runs only if `cond` is true
-    *
-    * @example
-    * {{{
-    * when ( myData === 3.U ) {
-    *   // Some logic to run when myData equals 3.
-    * } .elsewhen ( myData === 1.U ) {
-    *   // Some logic to run when myData equals 1.
-    * } .otherwise {
-    *   // Some logic to run when myData is neither 3 nor 1.
-    * }
-    * }}}
-    */
-
-  def apply(
+  private[chisel3] def _applyImpl(
     cond: => Bool
   )(block: => Any)(
     implicit sourceInfo: SourceInfo
@@ -88,7 +70,7 @@ final class WhenContext private[chisel3] (
   block:       => Any,
   // For capturing conditions from prior whens or elsewhens
   altConds: List[() => Bool]
-) {
+) extends WhenContext$Intf {
 
   /** Indicate if the `WhenContext` is "closed" (`None`) or if this is writing to
     * the "if" or "else" region.
@@ -110,13 +92,7 @@ final class WhenContext private[chisel3] (
     }
   }
 
-  /** This block of logic gets executed if above conditions have been
-    * false and this condition is true. The lazy argument pattern
-    * makes it possible to delay evaluation of cond, emitting the
-    * declaration and assignment of the Bool node of the predicate in
-    * the correct place.
-    */
-  def elsewhen(
+  private[chisel3] def _elsewhenImpl(
     elseCond: => Bool
   )(block: => Any)(
     implicit sourceInfo: SourceInfo
@@ -126,14 +102,7 @@ final class WhenContext private[chisel3] (
     }
   }
 
-  /** This block of logic gets executed only if the above conditions
-    * were all false. No additional logic blocks may be appended past
-    * the `otherwise`. The lazy argument pattern makes it possible to
-    * delay evaluation of cond, emitting the declaration and
-    * assignment of the Bool node of the predicate in the correct
-    * place.
-    */
-  def otherwise(block: => Any)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _otherwiseImpl(block: => Any)(implicit sourceInfo: SourceInfo): Unit = {
     Builder.pushWhen(this)
     scope = Some(Scope.Else)
     Builder.forcedUserModule.withRegion(whenCommand.elseRegion) {
