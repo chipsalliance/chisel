@@ -7,22 +7,9 @@ import chisel3.properties.{Class, Property}
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
 import chisel3.reflect.DataMirror.{hasProbeTypeModifier, specifiedDirectionOf}
 
-object IO {
+object IO extends IO$Intf {
 
-  /** Constructs a port for the current Module.
-    *
-    * This must wrap the datatype used to set the io field of any Module.
-    * i.e. All concrete modules must have defined io in this form:
-    * [lazy] val io[: io type] = IO(...[: io type])
-    *
-    * Items in [] are optional.
-    *
-    * The granted iodef must be a chisel type and not be bound to hardware.
-    *
-    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
-    * requested (so that all calls to ports will return the same information).
-    */
-  def apply[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _applyImpl[T <: Data](iodef: => T)(implicit sourceInfo: SourceInfo): T = {
     val module = Module.currentModule.get // Impossible to fail
     if (!module.isIOCreationAllowed)
       Builder.error(
@@ -80,8 +67,8 @@ object IO {
   * }
   * }}}
   */
-object FlatIO {
-  def apply[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
+object FlatIO extends FlatIO$Intf {
+  private[chisel3] def _applyImpl[T <: Data](gen: => T)(implicit sourceInfo: SourceInfo): T = noPrefix {
     import chisel3.experimental.dataview._
 
     def coerceDirection(d: Data): Data = {
