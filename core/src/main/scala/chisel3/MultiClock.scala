@@ -94,14 +94,9 @@ object withReset {
 
 }
 
-object withoutIO {
+object withoutIO extends withoutIO$Intf {
 
-  /** Creates a new scope in which IO creation causes a runtime error
-    *
-    * @param block the block of code to run with where IO creation is illegal
-    * @return the result of the block
-    */
-  def apply[T](block: => T)(implicit si: experimental.SourceInfo): T = {
+  private[chisel3] def _applyImpl[T](block: => T)(implicit si: experimental.SourceInfo): T = {
     Builder.currentModule.get.disallowIO(block)
   }
 }
