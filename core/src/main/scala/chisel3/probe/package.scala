@@ -27,12 +27,7 @@ package object probe extends Probe$Intf {
     }
   }
 
-  /** Initialize a probe with a provided probe value.
-    *
-    * @param sink probe to initialize
-    * @param probeExpr value to initialize the sink to
-    */
-  def define[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _defineImpl[T <: Data](sink: T, probeExpr: T)(implicit sourceInfo: SourceInfo): Unit = {
     val (realSink, writable) = reifyIdentityView(sink).getOrElse {
       Builder.error(s"Define only supports identity views for the sink, $sink has multiple targets.")
       return // This error is recoverable and this function returns Unit, just continue elaboration.
@@ -108,52 +103,24 @@ package object probe extends Probe$Intf {
     }
   }
 
-  /** Override existing driver of a writable probe on initialization.
-    *
-    * @param probe writable Probe to force
-    * @param value to force onto the probe
-    */
-  def forceInitial(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _forceInitialImpl(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot forceInitial a non-writable Probe.")
     pushCommand(ProbeForceInitial(sourceInfo, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
-  /** Release initial driver on a probe.
-    *
-    * @param probe writable Probe to release
-    */
-  def releaseInitial(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _releaseInitialImpl(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot releaseInitial a non-writable Probe.")
     pushCommand(ProbeReleaseInitial(sourceInfo, probe.ref))
   }
 
-  /** Override existing driver of a writable probe. If called within the scope
-    * of a [[when]] block, the force will only occur on cycles that the when
-    * condition is true.
-    *
-    * Fires only when reset has been asserted and then deasserted through the
-    * [[Disable]] API.
-    *
-    * @param probe writable Probe to force
-    * @param value to force onto the probe
-    */
-  def force(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _forceImpl(probe: Data, value: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot force a non-writable Probe.")
     val clock = Builder.forcedClock
     val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
     pushCommand(ProbeForce(sourceInfo, clock.ref, cond.ref, probe.ref, padDataToProbeWidth(value, probe).ref))
   }
 
-  /** Release driver on a probe. If called within the scope of a [[when]]
-    * block, the release will only occur on cycles that the when condition
-    * is true.
-    *
-    * Fires only when reset has been asserted and then deasserted through the
-    * [[Disable]] API.
-    *
-    * @param probe writable Probe to release
-    */
-  def release(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def _releaseImpl(probe: Data)(implicit sourceInfo: SourceInfo): Unit = {
     requireHasWritableProbeTypeModifier(probe, "Cannot release a non-writable Probe.")
     val clock = Builder.forcedClock
     val cond = Module.disableOption.map(!_.value).getOrElse(true.B)
