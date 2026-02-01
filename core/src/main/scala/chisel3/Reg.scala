@@ -27,13 +27,9 @@ import chisel3.experimental.{requireIsChiselType, requireIsHardware, SourceInfo}
   * // Width of r4.known is set to 8
   * }}}
   */
-object Reg {
+object Reg extends Reg$Intf {
 
-  /** Construct a [[Reg]] from a type template with no initialization value (reset is ignored).
-    * Value will not change unless the [[Reg]] is given a connection.
-    * @param t The template from which to construct this wire
-    */
-  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _applyImpl[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "reg type")
@@ -73,10 +69,9 @@ object Reg {
   * val bar = RegNext(foo)           // the width of bar.x is 4
   * }}}
   */
-object RegNext {
+object RegNext extends RegNext$Intf {
 
-  /** Returns a register ''with an unset width'' connected to the signal `next` and with no reset value. */
-  def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _applyImpl[T <: Data](next: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
       case next => next.cloneTypeFull
@@ -89,8 +84,7 @@ object RegNext {
     reg
   }
 
-  /** Returns a register ''with an unset width'' connected to the signal `next` and with the reset value `init`. */
-  def apply[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _applyImpl[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
       case next => next.cloneTypeFull
@@ -162,13 +156,9 @@ object RegNext {
   * }
   * }}}
   */
-object RegInit {
+object RegInit extends RegInit$Intf {
 
-  /** Construct a [[Reg]] from a type template initialized to the specified value on reset
-    * @param t The type template used to construct this [[Reg]]
-    * @param init The value the [[Reg]] is initialized to on reset
-    */
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _applyImpl[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     requireIsChiselType(t, "reg type")
     val reg = t.cloneTypeFull
     val clock = Builder.forcedClock
@@ -181,10 +171,7 @@ object RegInit {
     reg
   }
 
-  /** Construct a [[Reg]] initialized on reset to the specified value.
-    * @param init Initial value that serves as a type template and reset value
-    */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo): T = {
+  private[chisel3] def _applyImpl[T <: Data](init: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (init match {
       // If init is a literal without forced width OR any non-literal, let width be inferred
       case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
