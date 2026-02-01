@@ -78,7 +78,7 @@ private trait LookupableImpl[-B] extends Lookupable[B] {
   override def definitionLookup[A](that: A => B, definition: Definition[A]): C = impl(that, definition)
 }
 
-object Lookupable {
+object Lookupable extends Lookupable$Intf {
 
   /** Type alias for simplifying explicit Lookupable type ascriptions */
   type Aux[B, C0] = Lookupable[B] { type C = C0 }
@@ -96,9 +96,7 @@ object Lookupable {
     override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = that(hierarchy.proto)
   }
 
-  /** Factory method for creating Lookupable for user-defined types
-    */
-  def product1[X, T1: Lookupable](
+  private[chisel3] def _product1Impl[X, T1: Lookupable](
     in:  X => T1,
     out: T1 => X
   )(
@@ -111,9 +109,7 @@ object Lookupable {
     }
   }
 
-  /** Factory method for creating Lookupable for user-defined types
-    */
-  def product2[X, T1: Lookupable, T2: Lookupable](
+  private[chisel3] def _product2Impl[X, T1: Lookupable, T2: Lookupable](
     in:  X => (T1, T2),
     out: (T1, T2) => X
   )(
@@ -127,9 +123,7 @@ object Lookupable {
     }
   }
 
-  /** Factory method for creating Lookupable for user-defined types
-    */
-  def product3[X, T1: Lookupable, T2: Lookupable, T3: Lookupable](
+  private[chisel3] def _product3Impl[X, T1: Lookupable, T2: Lookupable, T3: Lookupable](
     in:  X => (T1, T2, T3),
     out: (T1, T2, T3) => X
   )(
@@ -144,9 +138,7 @@ object Lookupable {
     }
   }
 
-  /** Factory method for creating Lookupable for user-defined types
-    */
-  def product4[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable](
+  private[chisel3] def _product4Impl[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable](
     in:  X => (T1, T2, T3, T4),
     out: (T1, T2, T3, T4) => X
   )(
@@ -162,9 +154,7 @@ object Lookupable {
     }
   }
 
-  /** Factory method for creating Lookupable for user-defined types
-    */
-  def product5[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable, T5: Lookupable](
+  private[chisel3] def _product5Impl[X, T1: Lookupable, T2: Lookupable, T3: Lookupable, T4: Lookupable, T5: Lookupable](
     in:  X => (T1, T2, T3, T4, T5),
     out: (T1, T2, T3, T4, T5) => X
   )(
@@ -409,7 +399,7 @@ object Lookupable {
     def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = that(instance.proto)
   }
 
-  implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo): Simple[Instance[B]] =
+  private[chisel3] def _lookupInstanceImpl[B <: BaseModule](implicit sourceInfo: SourceInfo): Simple[Instance[B]] =
     new Lookupable[Instance[B]] {
       type C = Instance[B]
       def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
@@ -427,7 +417,7 @@ object Lookupable {
     }
 
   @deprecated("Looking up Modules is deprecated, please cast to Instance instead (.toInstance).", "Chisel 7.0.0")
-  implicit def lookupModule[B <: BaseModule](implicit sourceInfo: SourceInfo): Aux[B, Instance[B]] =
+  private[chisel3] def _lookupModuleImpl[B <: BaseModule](implicit sourceInfo: SourceInfo): Aux[B, Instance[B]] =
     new Lookupable[B] {
       type C = Instance[B]
       def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
@@ -444,7 +434,7 @@ object Lookupable {
       }
     }
 
-  implicit def lookupData[B <: Data](implicit sourceInfo: SourceInfo): Simple[B] =
+  private[chisel3] def _lookupDataImpl[B <: Data](implicit sourceInfo: SourceInfo): Simple[B] =
     new Lookupable[B] {
       type C = B
       def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
@@ -511,7 +501,7 @@ object Lookupable {
     }
   }
 
-  implicit def lookupMem[B <: MemBase[_]](implicit sourceInfo: SourceInfo): Simple[B] =
+  private[chisel3] def _lookupMemImpl[B <: MemBase[_]](implicit sourceInfo: SourceInfo): Simple[B] =
     new LookupableImpl[B] {
       type C = B
       override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = {
@@ -548,7 +538,7 @@ object Lookupable {
     }
   }
 
-  implicit def lookupHasTarget(implicit sourceInfo: SourceInfo): Simple[HasTarget] =
+  private[chisel3] def _lookupHasTargetImpl(implicit sourceInfo: SourceInfo): Simple[HasTarget] =
     new LookupableImpl[HasTarget] {
       type C = HasTarget
       override protected def impl[A](that: A => HasTarget, hierarchy: Hierarchy[A]): C = {
@@ -557,7 +547,7 @@ object Lookupable {
     }
 
   import scala.language.higherKinds // Required to avoid warning for lookupIterable type parameter
-  implicit def lookupIterable[B, F[_] <: Iterable[_]](
+  private[chisel3] def _lookupIterableImpl[B, F[_] <: Iterable[_]](
     implicit sourceInfo: SourceInfo,
     lookupable:          Lookupable[B]
   ): Aux[F[B], F[lookupable.C]] = new LookupableImpl[F[B]] {
@@ -567,7 +557,7 @@ object Lookupable {
       ret.map { (x: B) => lookupable.hierarchyLookup[A](_ => x, hierarchy) }.asInstanceOf[C]
     }
   }
-  implicit def lookupOption[B](
+  private[chisel3] def _lookupOptionImpl[B](
     implicit sourceInfo: SourceInfo,
     lookupable:          Lookupable[B]
   ): Aux[Option[B], Option[lookupable.C]] = new LookupableImpl[Option[B]] {
@@ -577,7 +567,7 @@ object Lookupable {
       ret.map { (x: B) => lookupable.hierarchyLookup[A](_ => x, hierarchy) }
     }
   }
-  implicit def lookupEither[L, R](
+  private[chisel3] def _lookupEitherImpl[L, R](
     implicit sourceInfo: SourceInfo,
     lookupableL:         Lookupable[L],
     lookupableR:         Lookupable[R]
@@ -592,7 +582,7 @@ object Lookupable {
   }
 
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
-  implicit def lookupTuple2[T1, T2](
+  private[chisel3] def _lookupTuple2Impl[T1, T2](
     implicit sourceInfo: SourceInfo,
     lookupableT1:        Lookupable[T1],
     lookupableT2:        Lookupable[T2]
@@ -606,7 +596,7 @@ object Lookupable {
   }
 
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
-  implicit def lookupTuple3[T1, T2, T3](
+  private[chisel3] def _lookupTuple3Impl[T1, T2, T3](
     implicit sourceInfo: SourceInfo,
     lookupableT1:        Lookupable[T1],
     lookupableT2:        Lookupable[T2],
@@ -622,7 +612,7 @@ object Lookupable {
   }
 
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
-  implicit def lookupTuple4[T1, T2, T3, T4](
+  private[chisel3] def _lookupTuple4Impl[T1, T2, T3, T4](
     implicit sourceInfo: SourceInfo,
     lookupableT1:        Lookupable[T1],
     lookupableT2:        Lookupable[T2],
@@ -641,7 +631,7 @@ object Lookupable {
     }
 
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
-  implicit def lookupTuple5[T1, T2, T3, T4, T5](
+  private[chisel3] def _lookupTuple5Impl[T1, T2, T3, T4, T5](
     implicit sourceInfo: SourceInfo,
     lookupableT1:        Lookupable[T1],
     lookupableT2:        Lookupable[T2],
@@ -665,7 +655,7 @@ object Lookupable {
     "Use of @instantiable on user-defined types is deprecated. Implement Lookupable for your type instead.",
     "Chisel 7.0.0"
   )
-  implicit def lookupIsInstantiable[B <: IsInstantiable](
+  private[chisel3] def _lookupIsInstantiableImpl[B <: IsInstantiable](
     implicit sourceInfo: SourceInfo
   ): Aux[B, Instance[B]] = new LookupableImpl[B] {
     type C = Instance[B]
@@ -679,7 +669,8 @@ object Lookupable {
     }
   }
 
-  implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo): Simple[B] = isLookupable[B]
+  private[chisel3] def _lookupIsLookupableImpl[B <: IsLookupable](implicit sourceInfo: SourceInfo): Simple[B] =
+    isLookupable[B]
 
   implicit val lookupInt:             Simple[Int] = isLookupable[Int]
   implicit val lookupByte:            Simple[Byte] = isLookupable[Byte]
