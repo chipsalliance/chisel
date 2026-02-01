@@ -818,7 +818,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
     * @param that the Data to connect from
     * @group connection
     */
-  final def :=(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
+  protected def _colonEqImpl(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
     prefix(this) {
       this.connect(that)(sourceInfo)
     }
@@ -835,7 +835,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
     * @param that the Data to connect from
     * @group connection
     */
-  final def <>(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
+  protected def _bulkConnectImpl(that: => Data)(implicit sourceInfo: SourceInfo): Unit = {
     prefix(this) {
       this.bulkConnect(that)(sourceInfo)
     }
@@ -892,7 +892,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   def typeName: String = simpleClassName(this.getClass)
 }
 
-object Data {
+object Data extends Data$ObjIntf {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
 
@@ -988,104 +988,76 @@ object Data {
         }
     }
 
-  /**
-    * Provides generic, recursive equality for [[Bundle]] and [[Vec]] hardware. This avoids the
-    * need to use workarounds such as `bundle1.asUInt === bundle2.asUInt` by allowing users
-    * to instead write `bundle1 === bundle2`.
-    *
-    * Static type safety of this comparison is guaranteed at compile time as the extension
-    * method requires the same parameterized type for both the left-hand and right-hand
-    * sides. It is, however, possible to get around this type safety using `Bundle` subtypes
-    * that can differ during runtime (e.g. through a generator). These cases are
-    * subsequently raised as elaboration errors.
-    *
-    * @param lhs The [[Data]] hardware on the left-hand side of the equality
-    */
-  implicit class DataEquality[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo) {
+  /** Helper method for DataEquality implementation */
+  protected def _dataEqualityImpl[T <: Data](lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): Bool = {
+    (lhs, rhs) match {
+      case (thiz: UInt, that: UInt)             => thiz === that
+      case (thiz: SInt, that: SInt)             => thiz === that
+      case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
+      case (thiz: Reset, that: Reset)           => thiz.asBool === that.asBool
+      case (thiz: EnumType, that: EnumType)     => thiz === that
+      case (thiz: Clock, that: Clock)           => thiz.asUInt === that.asUInt
+      case (thiz: Vec[_], that: Vec[_]) =>
+        if (thiz.length != that.length) {
+          throwException(s"Cannot compare Vecs $thiz and $that: Vec sizes differ")
+        } else {
+          thiz.elementsIterator
+            .zip(that.elementsIterator)
+            .map { case (thisData, thatData) => _dataEqualityImpl(thisData, thatData) }
+            .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
+            .getOrElse(true.B)
+        }
+      case (thiz: Record, that: Record) =>
+        if (thiz._elements.size != that._elements.size) {
+          throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
+        } else {
+          thiz._elements.map { case (thisName, thisData) =>
+            if (!that._elements.contains(thisName))
+              throwException(
+                s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
+              )
 
-    /** Dynamic recursive equality operator for generic [[Data]]
-      *
-      * @param rhs a hardware [[Data]] to compare `lhs` to
-      * @return a hardware [[Bool]] asserted if `lhs` is equal to `rhs`
-      * @throws ChiselException when `lhs` and `rhs` are different types during elaboration time
-      */
-    def ===(rhs: T): Bool = {
-      (lhs, rhs) match {
-        case (thiz: UInt, that: UInt)             => thiz === that
-        case (thiz: SInt, that: SInt)             => thiz === that
-        case (thiz: AsyncReset, that: AsyncReset) => thiz.asBool === that.asBool
-        case (thiz: Reset, that: Reset)           => thiz.asBool === that.asBool
-        case (thiz: EnumType, that: EnumType)     => thiz === that
-        case (thiz: Clock, that: Clock)           => thiz.asUInt === that.asUInt
-        case (thiz: Vec[_], that: Vec[_]) =>
-          if (thiz.length != that.length) {
-            throwException(s"Cannot compare Vecs $thiz and $that: Vec sizes differ")
-          } else {
-            thiz.elementsIterator
-              .zip(that.elementsIterator)
-              .map { case (thisData, thatData) => thisData === thatData }
-              .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
-              .getOrElse(true.B)
-          }
-        case (thiz: Record, that: Record) =>
-          if (thiz._elements.size != that._elements.size) {
-            throwException(s"Cannot compare Bundles $thiz and $that: Bundle types differ")
-          } else {
-            thiz._elements.map { case (thisName, thisData) =>
-              if (!that._elements.contains(thisName))
+            val thatData = that._elements(thisName)
+
+            try {
+              _dataEqualityImpl(thisData, thatData)
+            } catch {
+              case e: chisel3.ChiselException =>
                 throwException(
-                  s"Cannot compare Bundles $thiz and $that: field $thisName (from $thiz) was not found in $that"
+                  s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
                 )
-
-              val thatData = that._elements(thisName)
-
-              try {
-                thisData === thatData
-              } catch {
-                case e: chisel3.ChiselException =>
-                  throwException(
-                    s"Cannot compare field $thisName in Bundles $thiz and $that: ${e.getMessage.split(": ").last}"
-                  )
-              }
             }
-              .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
-              .getOrElse(true.B)
           }
-        // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
-        case (_: DontCare.type, _: DontCare.type) => true.B
+            .reduceOption(_ && _) // forall but that isn't defined for Bool on Seq
+            .getOrElse(true.B)
+        }
+      // This should be matching to (DontCare, DontCare) but the compiler wasn't happy with that
+      case (_: DontCare.type, _: DontCare.type) => true.B
 
-        case (thiz: Analog, that: Analog) =>
-          throwException(s"Cannot compare Analog values $thiz and $that: Equality isn't defined for Analog values")
-        // Runtime types are different
-        case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
-      }
+      case (thiz: Analog, that: Analog) =>
+        throwException(s"Cannot compare Analog values $thiz and $that: Equality isn't defined for Analog values")
+      // Runtime types are different
+      case (thiz, that) => throwException(s"Cannot compare $thiz and $that: Runtime types differ")
     }
   }
 
-  implicit class AsReadOnly[T <: Data](self: T) {
-
-    /** Returns a read-only view of this Data
-      *
-      * It is illegal to connect to the return value of this method.
-      * This Data this method is called on must be a hardware type.
-      */
-    def readOnly(implicit sourceInfo: SourceInfo): T = {
-      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
-      if (alreadyReadOnly) {
-        self
-      } else {
-        self.viewAsReadOnly(_ => "Cannot connect to read-only value")
-      }
+  /** Helper method for AsReadOnly implementation */
+  protected def _readOnlyImpl[T <: Data](self: T)(implicit sourceInfo: SourceInfo): T = {
+    val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
+    if (alreadyReadOnly) {
+      self
+    } else {
+      self.viewAsReadOnly(_ => "Cannot connect to read-only value")
     }
   }
 }
 
-trait WireFactory {
+trait WireFactory extends WireFactory$Intf {
 
   /** Construct a [[Wire]] from a type template
     * @param t The template from which to construct this wire
     */
-  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
+  protected def _applyImpl[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     val t = source // evaluate once (passed by name)
     requireIsChiselType(t, "wire type")
@@ -1122,9 +1094,9 @@ trait WireFactory {
   */
 object Wire extends WireFactory
 
-private[chisel3] sealed trait WireDefaultImpl {
+private[chisel3] sealed trait WireDefaultImpl extends WireDefaultImpl$Intf {
 
-  private def applyImpl[T <: Data](
+  private def applyImplInternal[T <: Data](
     t:    T,
     init: Data
   )(
@@ -1141,27 +1113,27 @@ private[chisel3] sealed trait WireDefaultImpl {
     * @param init The default connection to this [[Wire]], can only be [[DontCare]]
     * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
     */
-  def apply[T <: Data](
+  protected def _applyDontCareImpl[T <: Data](
     t:    T,
     init: DontCare.type
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
-    applyImpl(t, init)
+    applyImplInternal(t, init)
   }
 
   /** Construct a [[Wire]] with a type template and a default connection
     * @param t The type template used to construct this [[Wire]]
     * @param init The hardware value that will serve as the default value
     */
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
-    applyImpl(t, init)
+  protected def _applyTwoArgImpl[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+    applyImplInternal(t, init)
   }
 
   /** Construct a [[Wire]] with a default connection
     * @param init The hardware value that will serve as a type template and default value
     */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo): T = {
+  protected def _applyOneArgImpl[T <: Data](init: T)(implicit sourceInfo: SourceInfo): T = {
     val model = (init match {
       // If init is a literal without forced width OR any non-literal, let width be inferred
       case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
