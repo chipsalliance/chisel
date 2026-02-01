@@ -9,8 +9,8 @@ import chisel3.experimental.{requireIsChiselType, SourceInfo}
 /** Create a constant type in FIRRTL, which is guaranteed to take a single
   * constant value.
   */
-object Const {
-  def apply[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
+object Const extends Const$Intf {
+  protected def _applyImpl[T <: Data](source: => T)(implicit sourceInfo: SourceInfo): T = {
     val prevId = Builder.idGen.value
     val data = source // should only evaluate source once
     requireIsChiselType(data)
