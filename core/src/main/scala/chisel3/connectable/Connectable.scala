@@ -263,7 +263,9 @@ object Connectable {
     (consumer.copy(waived = cWaived.toSet), producer.copy(waived = pWaived.toSet))
   }
 
-  implicit class ConnectableOpExtension[T <: Data](consumer: Connectable[T]) extends ConnectableDocs {
+  implicit class ConnectableOpExtension[T <: Data](val consumer: Connectable[T])
+      extends ConnectableDocs
+      with ConnectableOpExtensionIntf[T] {
     import Connection.connect
 
     /** $colonLessEq
@@ -271,7 +273,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessEqDataImpl[S <: Data](
+      lProducer: => S
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonLessEq)
     }
@@ -281,7 +285,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessEqConnectableImpl[S <: Data](
+      producer: Connectable[S]
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonLessEq)
       }
@@ -292,7 +298,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonGreaterEqDataImpl[S <: Data](
+      lProducer: => S
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonGreaterEq)
     }
@@ -302,7 +310,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonGreaterEqConnectableImpl[S <: Data](
+      producer: Connectable[S]
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonGreaterEq)
       }
@@ -330,7 +340,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessGreaterEqDataImpl[S <: Data](
+      lProducer: => S
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
         doFirrtlConnect(consumer.base, producer)
@@ -344,7 +356,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessGreaterEqConnectableImpl[S <: Data](
+      producer: Connectable[S]
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         if (ColonLessGreaterEq.canFirrtlConnect(consumer, producer)) {
           doFirrtlConnect(consumer.base, producer.base)
@@ -359,7 +373,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    final def :#=[S <: Data](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonHashEqDataImpl[S <: Data](
+      lProducer: => S
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       val producer = prefix(consumer.base) { lProducer }
       connect(consumer, producer, ColonHashEq)
     }
@@ -369,7 +385,9 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    final def :#=[S <: Data](producer: Connectable[S])(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+    protected def _colonHashEqConnectableImpl[S <: Data](
+      producer: Connectable[S]
+    )(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
       prefix(consumer.base) {
         connect(consumer, producer, ColonHashEq)
       }
@@ -380,7 +398,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    final def :<=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessEqDontCareImpl(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       connect(consumer, producer, ColonLessEq)
     }
 
@@ -389,7 +407,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonGreaterEqDontCareImpl(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       connect(consumer, producer, ColonGreaterEq)
     }
 
@@ -398,7 +416,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    final def :<>=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessGreaterEqDontCareImpl(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       connect(consumer, producer, ColonLessGreaterEq)
     }
 
@@ -407,7 +425,7 @@ object Connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonHashEqDontCareImpl(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       connect(consumer, producer, ColonHashEq)
     }
 
