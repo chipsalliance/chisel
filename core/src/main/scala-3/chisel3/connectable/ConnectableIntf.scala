@@ -43,3 +43,28 @@ private[chisel3] trait ConnectableOpExtensionIntf[T <: Data] { self: Connectable
   final def :#=(producer: DontCare.type)(using SourceInfo): Unit =
     _colonHashEqDontCareImpl(producer)
 }
+
+private[chisel3] trait ConnectableVecOperatorsIntf[T <: Data] {
+  self: connectable.ConnectableVecOperators[T] =>
+
+  def :<=(producer: Seq[T])(using SourceInfo): Unit =
+    _colonLessEqSeqImpl(producer)
+
+  def :>=(producer: Seq[T])(using SourceInfo): Unit =
+    _colonGreaterEqSeqImpl(producer)
+
+  def :<>=(producer: Seq[T])(using SourceInfo): Unit =
+    _colonLessGreaterEqSeqImpl(producer)
+
+  def :#=(producer: Seq[T])(using SourceInfo): Unit =
+    _colonHashEqSeqImpl(producer)
+
+  def :#=(producer: DontCare.type)(using SourceInfo): Unit =
+    _colonHashEqDontCareImpl(producer)
+}
+
+private[chisel3] trait ConnectableDontCareIntf { self: connectable.ConnectableDontCare =>
+
+  final def :>=[T <: Data](producer: => T)(using SourceInfo): Unit =
+    _colonGreaterEqDataImpl(producer)
+}

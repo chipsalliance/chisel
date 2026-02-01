@@ -22,14 +22,16 @@ package object connectable {
     *
     * @param consumer the left-hand-side of the connection
     */
-  implicit class ConnectableVecOperators[T <: Data](consumer: Vec[T]) extends ConnectableDocs {
+  implicit class ConnectableVecOperators[T <: Data](val consumer: Vec[T])
+      extends ConnectableDocs
+      with ConnectableVecOperatorsIntf[T] {
 
     /** $colonLessEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    def :<=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessEqSeqImpl(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
         Builder.error(
           s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
@@ -42,7 +44,7 @@ package object connectable {
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    def :>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonGreaterEqSeqImpl(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
         Builder.error(
           s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
@@ -55,7 +57,7 @@ package object connectable {
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    def :<>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonLessGreaterEqSeqImpl(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
         Builder.error(
           s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
@@ -68,7 +70,7 @@ package object connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    def :#=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonHashEqSeqImpl(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
       if (consumer.length != producer.length)
         Builder.error(
           s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
@@ -81,19 +83,19 @@ package object connectable {
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonHashEqDontCareImpl(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       for (a <- consumer) { a :#= DontCare }
     }
   }
 
-  implicit class ConnectableDontCare(consumer: DontCare.type) extends ConnectableDocs {
+  implicit class ConnectableDontCare(val consumer: DontCare.type) extends ConnectableDocs with ConnectableDontCareIntf {
 
     /** $colonGreaterEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    final def :>=[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
+    protected def _colonGreaterEqDataImpl[T <: Data](producer: => T)(implicit sourceInfo: SourceInfo): Unit = {
       prefix(consumer) {
         connect(consumer, producer, ColonGreaterEq)
       }
