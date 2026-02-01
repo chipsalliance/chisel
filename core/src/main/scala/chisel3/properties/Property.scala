@@ -211,7 +211,7 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
   * describe a set of non-hardware types, so they have no width, cannot be used
   * in aggregate Data types, and cannot be connected to Data types.
   */
-sealed trait Property[T] extends Element { self =>
+sealed trait Property[T] extends Element with Property$Intf[T] { self =>
   sealed trait ClassType
   private object ClassType {
     implicit def classTypeProvider(
@@ -300,19 +300,23 @@ sealed trait Property[T] extends Element { self =>
     tpe.getPropertyType()
   }
 
-  /** Perform addition as defined by FIRRTL spec section Integer Add Operation.
-    */
-  final def +(that: Property[T])(implicit ev: PropertyArithmeticOps[Property[T]], sourceInfo: SourceInfo): Property[T] =
+  protected final def _addImpl(
+    that: Property[T]
+  )(
+    implicit ev: PropertyArithmeticOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] =
     ev.add(this, that)
 
-  /** Perform multiplication as defined by FIRRTL spec section Integer Multiply Operation.
-    */
-  final def *(that: Property[T])(implicit ev: PropertyArithmeticOps[Property[T]], sourceInfo: SourceInfo): Property[T] =
+  protected final def _mulImpl(
+    that: Property[T]
+  )(
+    implicit ev: PropertyArithmeticOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] =
     ev.mul(this, that)
 
-  /** Perform shift right as defined by FIRRTL spec section Integer Shift Right Operation.
-    */
-  final def >>(
+  protected final def _shrImpl(
     that: Property[T]
   )(
     implicit ev: PropertyArithmeticOps[Property[T]],
@@ -320,9 +324,7 @@ sealed trait Property[T] extends Element { self =>
   ): Property[T] =
     ev.shr(this, that)
 
-  /** Perform shift left as defined by FIRRTL spec section Integer Shift Left Operation.
-    */
-  final def <<(
+  protected final def _shlImpl(
     that: Property[T]
   )(
     implicit ev: PropertyArithmeticOps[Property[T]],
@@ -330,9 +332,7 @@ sealed trait Property[T] extends Element { self =>
   ): Property[T] =
     ev.shl(this, that)
 
-  /** Perform concatenation as defined by FIRRTL spec section List Concatenation Operation.
-    */
-  final def ++(
+  protected final def _concatImpl(
     that: Property[T]
   )(
     implicit ev: PropertySequenceOps[Property[T]],
