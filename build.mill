@@ -228,9 +228,7 @@ trait HasScala2MacroAnno extends CrossModuleBase {
 }
 
 trait HasScalaPlugin extends ChiselCrossModule {
-  import build_.plugin.Plugin
-
-  def pluginModule: Plugin = plugin.cross(_scalaVersion)
+  def pluginModule = plugin.cross(_scalaVersion)
 
   override def scalacOptions = Task {
     super.scalacOptions() ++ Seq(s"-Xplugin:${pluginModule.jar().path}")
