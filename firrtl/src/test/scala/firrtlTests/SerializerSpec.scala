@@ -75,6 +75,7 @@ object SerializerSpec {
     ),
     "child",
     Seq.empty,
+    Seq.empty,
     Seq.empty
   )
 
@@ -328,7 +329,9 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       "module `42_module`"
     )
     // TODO: an external module with a numeric defname should probably be rejected
-    Serializer.serialize(ExtModule(NoInfo, "42_extmodule", Seq.empty, "<TODO>", Seq.empty, Seq.empty)) should include(
+    Serializer.serialize(
+      ExtModule(NoInfo, "42_extmodule", Seq.empty, "<TODO>", Seq.empty, Seq.empty, Seq.empty)
+    ) should include(
       "extmodule `42_extmodule`"
     )
     Serializer.serialize(IntModule(NoInfo, "42_intmodule", Seq.empty, "foo", Seq.empty)) should include(

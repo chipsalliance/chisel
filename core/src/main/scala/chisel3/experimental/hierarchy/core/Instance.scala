@@ -149,7 +149,9 @@ object Instance extends SourceInfoDoc {
           firrtlPorts,
           SpecifiedDirection.Unspecified,
           params,
-          importedDefinition.proto.layers
+          importedDefinition.proto.layers,
+          // Imported Definitions necessarily don't have external requirements
+          Seq.empty
         )
       Some(component)
     }

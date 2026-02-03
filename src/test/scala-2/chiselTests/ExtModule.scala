@@ -301,4 +301,61 @@ class ExtModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
       )
   }
 
+  it should "emit require statements" in {
+    class Bar extends ExtModule(requirements = Seq.empty)
+    class Baz extends ExtModule(requirements = Seq("libdv"))
+    class Qux extends ExtModule(requirements = Seq("libdv", "vcs>=202505"))
+
+    class Foo extends Module {
+      private val bar = Module(new Bar)
+      private val baz = Module(new Baz)
+      private val qux = Module(new Qux)
+    }
+
+    info("emitted CHIRRTL looks correct")
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: extmodule Bar :
+           |CHECK: extmodule Baz requires "libdv" :
+           |CHECK: extmodule Qux requires "libdv", "vcs>=202505" :
+           |""".stripMargin
+      )
+  }
+
+  it should "emit both knownlayer and requires when both are specified" in {
+    object A extends layer.Layer(layer.LayerConfig.Extract())
+
+    class Bar extends ExtModule(knownLayers = Seq(A), requirements = Seq("libdv"))
+
+    class Foo extends Module {
+      private val bar = Module(new Bar)
+    }
+
+    info("emitted CHIRRTL looks correct")
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: layer A,
+           |CHECK: extmodule Bar knownlayer A requires "libdv" :
+           |""".stripMargin
+      )
+  }
+
+  it should "escape special characters in requirements" in {
+    class Bar extends ExtModule(requirements = Seq("\"quoted\"", "back\\slash"))
+
+    class Foo extends Module {
+      private val bar = Module(new Bar)
+    }
+
+    info("emitted CHIRRTL looks correct")
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: extmodule Bar requires "\"quoted\"", "back\\slash" :
+           |""".stripMargin
+      )
+  }
+
 }

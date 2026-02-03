@@ -96,9 +96,13 @@ case class RawParam(value: String) extends Param
   */
 @deprecated("this has moved from `chisel3.experimental` to `chisel3`", since)
 abstract class ExtModule(
-  val params:                               Map[String, Param] = Map.empty[String, Param],
-  override protected final val knownLayers: Seq[Layer] = Seq.empty[Layer]
+  val params:                                Map[String, Param] = Map.empty[String, Param],
+  override protected final val knownLayers:  Seq[Layer] = Seq.empty[Layer],
+  override protected final val requirements: Seq[String] = Seq.empty[String]
 ) extends BaseBlackBox {
+  def this(params: Map[String, Param], knownLayers: Seq[Layer]) =
+    this(params, knownLayers, Seq.empty[String])
+
   private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
 
@@ -112,7 +116,16 @@ abstract class ExtModule(
     val firrtlPorts = getModulePortsAndLocators.map { case (port, sourceInfo, associations) =>
       Port(port, port.specifiedDirection, associations, sourceInfo)
     }
-    val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params, getKnownLayers)
+    val component =
+      DefBlackBox(
+        this,
+        name,
+        firrtlPorts,
+        SpecifiedDirection.Unspecified,
+        params,
+        getKnownLayers,
+        getRequirements
+      )
     _component = Some(component)
     _component
   }

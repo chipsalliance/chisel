@@ -787,12 +787,13 @@ case class Module(info: Info, name: String, public: Boolean, layers: Seq[String]
   */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ExtModule(
-  info:    Info,
-  name:    String,
-  ports:   Seq[Port],
-  defname: String,
-  params:  Seq[Param],
-  layers:  Seq[String]
+  info:         Info,
+  name:         String,
+  ports:        Seq[Port],
+  defname:      String,
+  params:       Seq[Param],
+  layers:       Seq[String],
+  requirements: Seq[String]
 ) extends DefModule
     with UseSerializer
 
