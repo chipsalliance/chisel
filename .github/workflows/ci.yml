@@ -79,7 +79,8 @@ jobs:
       - name: Setup Scala
         uses: VirtusLab/scala-cli-setup@77834b5926f3eb70869d8009530c65585f7a039b # v1.9.1
         with:
-          jvm: temurin:17
+          # This needs to stay Java 11 to support Scala <= 2.13.10
+          jvm: temurin:11
       - name: Publish
         run: .github/scripts/publish.sh
         env:
