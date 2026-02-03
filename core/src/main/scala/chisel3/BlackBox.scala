@@ -64,7 +64,7 @@ abstract class BlackBox(
   // Allow access to bindings from the compatibility package
   protected def _compatIoPortBound() = _io.exists(portsContains(_))
 
-  override val requirements = Seq.empty[String]
+  override def requirements = Seq.empty[String]
 
   private[chisel3] override def generateComponent(): Option[Component] = {
     // Restrict IO to just io, clock, and reset
