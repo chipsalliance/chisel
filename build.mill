@@ -1,4 +1,4 @@
-//| mill-version: 1.0.6-jvm
+//| mill-version: 1.0.6
 //| mvnDeps:
 //| - com.lihaoyi::mill-contrib-jmh:$MILL_VERSION
 //| - com.47deg::github4s:0.33.3
@@ -27,25 +27,20 @@ object v extends Module {
     rawVersion.stripPrefix("1.").toInt
   }
 
+  // Use `moduleDir` to locate build file paths,
+  // avoiding `workspaceRoot` which may cause path errors when Chisel is used as nested build files.
   val circtJson = BuildCtx.watchValue(
-    os.read(BuildCtx.workspaceRoot / "etc" / "circt.json")
+    os.read(moduleDir / os.up / "etc" / "circt.json")
   )
 
   val firtoolVersion = {
     val j = _root_.upickle.default.read[Map[String, String]](circtJson)
     j("version").stripPrefix("firtool-")
   }
-  // Java 21+ requires Scala 2.13.11+.
-  // Only publish plugin for 2.13.11+ when using Java > 11, but still
-  // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
-    val scala213: Seq[String] = {
-      // Java 11+ requires Scala 2.13.11+
-      val min = if (javaVersion > 11) 11 else 0
-      min.to(18).map("2.13." + _)
-    }
-    val scala33: Seq[String] = 7.to(7).map("3.3." + _)
-    val scala38: Seq[String] = 0.to(1).map("3.8." + _)
+    val scala213: Seq[String] = 0.to(18).map("2.13." + _)
+    val scala33:  Seq[String] = 7.to(7).map("3.3." + _)
+    val scala38:  Seq[String] = 0.to(1).map("3.8." + _)
     scala213 ++ scala33 ++ scala38
   }
 
@@ -226,9 +221,7 @@ trait HasScala2MacroAnno extends CrossModuleBase {
 }
 
 trait HasScalaPlugin extends ChiselCrossModule {
-  import build_.plugin.Plugin
-
-  def pluginModule: Plugin = plugin.cross(_scalaVersion)
+  def pluginModule = plugin.cross(_scalaVersion)
 
   override def scalacOptions = Task {
     super.scalacOptions() ++ Seq(s"-Xplugin:${pluginModule.jar().path}")
@@ -336,6 +329,39 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
     override def scalacOptions = Task { super.scalacOptions() :+ "-Wconf:cat=other-implicit-type:s" }
 
     override def testForkGrouping = discoveredTestClasses().grouped(8).toSeq
+
+    // Compile shared libraries for the simulator link library tests.
+    def sharedTestLibs: T[Seq[os.Path]] = Task(persistent = true) {
+      val srcDir = this.moduleDir / "src" / "test" / "resources" / "chisel3" / "simulator"
+      val cc = sys.env.getOrElse("CC", "cc")
+      val shared = if (scala.util.Properties.isMac) "-dynamiclib" else "-shared"
+      val srcFiles = Seq("linkLibA.c", "linkLibB.c", "linkLibC.c")
+      val libFiles = srcFiles.map { src =>
+        val lib = Task.dest / (src.stripSuffix(".c") + ".so")
+        os.proc(cc, shared, "-fPIC", srcDir / src, "-o", lib).call()
+        lib
+      }
+      libFiles
+    }
+
+    // Pass some of the pre-compiled shared libraries to the simulator via
+    // environment variables.
+    override def forkEnv = Task {
+      val libs = sharedTestLibs()
+      super.forkEnv() ++ Map(
+        // CHISELSIM_LIBS lets ChiselSim resolve libraries by name:
+        "CHISELSIM_LIBS" -> s"linkLibA=${libs(0)}",
+        // Also pass in a full path to test the `libraryPaths` setting:
+        "LINKLIBC_FULL_PATH" -> libs(2).toString
+      )
+    }
+
+    // Pass one of the pre-compiled shared libraries to the simulator via a JVM
+    // property.
+    override def forkArgs = Task {
+      val libs = sharedTestLibs()
+      super.forkArgs() :+ s"-Dchiselsim.libraries=linkLibB=${libs(1)}"
+    }
   }
 
   def unitTest(

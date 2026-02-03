@@ -2,7 +2,8 @@
 
 package chisel3.simulator
 
-import chisel3.{Data, Module, RawModule}
+import chisel3.{Data, Module, RawModule, SimulationTestHarnessInterface}
+import chisel3.experimental.dataview.reifySingleTarget
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 import svsim.Workspace
 
@@ -27,6 +28,16 @@ object MacroText {
 
   }
 
+  /** Given a [[Data]] and its parent [[ElaboratedModule]], lookup the underlying hardware. */
+  private def lookupSignal[A <: RawModule](data: Data, elaboratedModule: ElaboratedModule[A]): String = {
+    val reified = reifySingleTarget(data).getOrElse {
+      throw new IllegalArgumentException(
+        s"Cannot use $data as a macro signal because it does not map to a single Data."
+      )
+    }
+    elaboratedModule.portMap(reified).name
+  }
+
   /** A macro that will return macro text with the name of a signal in the design
     * under test
     *
@@ -38,7 +49,7 @@ object MacroText {
       macroName:        String,
       elaboratedModule: ElaboratedModule[A]
     ) = {
-      val port = elaboratedModule.portMap(get(elaboratedModule.wrapped)).name
+      val port = lookupSignal(get(elaboratedModule.wrapped), elaboratedModule)
       VerilogPreprocessorDefine(macroName, s"${Workspace.testbenchModuleName}.$port")
     }
 
@@ -55,7 +66,7 @@ object MacroText {
       macroName:        String,
       elaboratedModule: ElaboratedModule[A]
     ) = {
-      val port = elaboratedModule.portMap(get(elaboratedModule.wrapped)).name
+      val port = lookupSignal(get(elaboratedModule.wrapped), elaboratedModule)
       VerilogPreprocessorDefine(macroName, s"!${Workspace.testbenchModuleName}.$port")
     }
 
@@ -81,6 +92,12 @@ object MacroText {
   * @param enableWavesAtTimeZero enable waveform dumping at time zero. This
   * requires a simulator capable of dumping waves.
   * @param randomization random initialization settings to use
+  * @param libraries Names of libraries to include in simulation. Use this to
+  * provide implementations for DPI functions, for example. The simulator will
+  * resolve these libraries to concrete files using the `CHISELSIM_LIBS`
+  * environment variable and `chiselsim.libraries` Java property.
+  * @param libraryPaths Paths to libraries to include in simulation. Use this to
+  * provide implementations for DPI functions, for example.
   */
 final class Settings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
@@ -90,7 +107,9 @@ final class Settings[A <: RawModule] private[simulator] (
   val stopCond:              Option[MacroText.Type[A]],
   val plusArgs:              Seq[svsim.PlusArg],
   val enableWavesAtTimeZero: Boolean,
-  val randomization:         Randomization
+  val randomization:         Randomization,
+  val libraries:             Seq[String],
+  val libraryPaths:          Seq[String]
 ) {
 
   def copy(
@@ -102,7 +121,43 @@ final class Settings[A <: RawModule] private[simulator] (
     enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
     randomization:         Randomization = randomization
   ) =
-    new Settings(verilogLayers, assertVerboseCond, printfCond, stopCond, plusArgs, enableWavesAtTimeZero, randomization)
+    new Settings(
+      verilogLayers,
+      assertVerboseCond,
+      printfCond,
+      stopCond,
+      plusArgs,
+      enableWavesAtTimeZero,
+      randomization,
+      libraries,
+      libraryPaths
+    )
+
+  def withLibraries(libraries: Seq[String]): Settings[A] =
+    new Settings(
+      verilogLayers,
+      assertVerboseCond,
+      printfCond,
+      stopCond,
+      plusArgs,
+      enableWavesAtTimeZero,
+      randomization,
+      libraries,
+      libraryPaths
+    )
+
+  def withLibraryPaths(libraryPaths: Seq[String]): Settings[A] =
+    new Settings(
+      verilogLayers,
+      assertVerboseCond,
+      printfCond,
+      stopCond,
+      plusArgs,
+      enableWavesAtTimeZero,
+      randomization,
+      libraries,
+      libraryPaths
+    )
 
   private[simulator] def preprocessorDefines(
     elaboratedModule: ElaboratedModule[A]
@@ -126,7 +181,7 @@ final class Settings[A <: RawModule] private[simulator] (
   */
 object Settings {
 
-  /** Retun a default [[Settings]] for a [[Module]].  Macros will be set to
+  /** Return a default [[Settings]] for a [[Module]].  Macros will be set to
     * disable [[chisel3.assert]]-style assertions using the [[Module]]'s reset
     * port.
     *
@@ -150,10 +205,12 @@ object Settings {
     stopCond = Some(MacroText.NotSignal(get = _.reset)),
     plusArgs = Seq.empty,
     enableWavesAtTimeZero = false,
-    randomization = Randomization.random
+    randomization = Randomization.random,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
   )
 
-  /** Retun a default [[Settings]] for a [[RawModule]].
+  /** Return a default [[Settings]] for a [[RawModule]].
     *
     * This differs from [[default]] in that it cannot set default values for
     * macros because a [[RawModule]] has no defined reset port.  You will likely
@@ -179,7 +236,38 @@ object Settings {
     stopCond = None,
     plusArgs = Seq.empty,
     enableWavesAtTimeZero = false,
-    randomization = Randomization.random
+    randomization = Randomization.random,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
+  )
+
+  /** Return a default [[Settings]] for a [[SimulationTestHarnessInterface]].  Macros will be set to
+    * disable [[chisel3.assert]]-style assertions using the [[SimulationTestHarnessInterface]]'s init
+    * port.
+    *
+    * Note: this _requires_ that an explicit type parameter is provided.  You
+    * must invoke this method like:
+    *
+    * {{{
+    * Settings.default[Foo]
+    * }}}
+    *
+    * If you invoke this method like the following, you will get an error:
+    *
+    * {{{
+    * Settings.default
+    * }}}
+    */
+  final def defaultTest[A <: RawModule with SimulationTestHarnessInterface]: Settings[A] = new Settings[A](
+    verilogLayers = LayerControl.EnableAll,
+    assertVerboseCond = Some(MacroText.NotSignal(get = _.init)),
+    printfCond = Some(MacroText.NotSignal(get = _.init)),
+    stopCond = Some(MacroText.NotSignal(get = _.init)),
+    plusArgs = Seq.empty,
+    enableWavesAtTimeZero = false,
+    randomization = Randomization.random,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
   )
 
   /** Simple factory for construcing a [[Settings]] from arguments.
@@ -193,6 +281,12 @@ object Settings {
     * @param printfCond a condition that guards printing of [[chisel3.printf]]s
     * @param stopCond a condition that guards terminating the simulation (via
     * `$fatal`) for asserts created from `circt_chisel_ifelsefatal` intrinsics
+    * @param libraries Names of libraries to include in simulation. Use this to
+    * provide implementations for DPI functions, for example. The simulator will
+    * resolve these libraries to concrete files using the `CHISELSIM_LIBS`
+    * environment variable and `chiselsim.libraries` Java property.
+    * @param libraryPaths Paths to libraries to include in simulation. Use this
+    * to provide implementations for DPI functions, for example.
     * @return a [[Settings]] with the provided parameters set
     */
   def apply[A <: RawModule](
@@ -210,7 +304,9 @@ object Settings {
     stopCond = stopCond,
     plusArgs = plusArgs,
     enableWavesAtTimeZero = enableWavesAtTimeZero,
-    randomization = randomization
+    randomization = randomization,
+    libraries = Seq.empty,
+    libraryPaths = Seq.empty
   )
 
 }

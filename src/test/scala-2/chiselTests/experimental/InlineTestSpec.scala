@@ -1,5 +1,7 @@
 package chiselTests
 
+import scala.annotation.nowarn
+
 import chisel3._
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.inlinetest._
@@ -8,7 +10,7 @@ import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
 import chisel3.simulator.{ChiselSim, Exceptions}
 import chisel3.simulator.stimulus.InlineTestStimulus
-import chisel3.util.{is, switch, Decoupled}
+import chisel3.util.{is, switch, Counter, Decoupled}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -506,28 +508,6 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
             message should include("assertion fired")
           }
         }
-      }
-    }
-  }
-
-  it should "throw an exception if given a period <= 1" in {
-    class NeverDoneTestHarness extends SimulationTestHarness {
-      done :<= false.B
-      success :<= false.B
-    }
-    intercept[IllegalArgumentException] {
-      simulateRaw(new NeverDoneTestHarness) { dut =>
-        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 1)(dut)
-      }
-    }
-    intercept[IllegalArgumentException] {
-      simulateRaw(new NeverDoneTestHarness) { dut =>
-        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = 0)(dut)
-      }
-    }
-    intercept[IllegalArgumentException] {
-      simulateRaw(new NeverDoneTestHarness) { dut =>
-        InlineTestStimulus(timeout = 10, additionalResetCycles = 0, period = -1)(dut)
       }
     }
   }

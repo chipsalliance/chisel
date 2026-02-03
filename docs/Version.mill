@@ -9,8 +9,7 @@ sealed trait Branch { def serialize: String }
 
 case class SemanticVersion(major: Int, minor: Int, patch: Int, candidate: Option[Int], milestone: Option[Int])
     extends Branch
-    with Ordered[SemanticVersion]
-    derives ReadWriter {
+    with Ordered[SemanticVersion] derives ReadWriter {
   require(!(candidate.nonEmpty && milestone.nonEmpty), s"Cannot be both a release candidate and a milestone! $this")
 
   def prerelease: Boolean = candidate.nonEmpty || milestone.nonEmpty

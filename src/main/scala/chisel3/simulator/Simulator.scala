@@ -262,6 +262,41 @@ trait Simulator[T <: Backend] {
     }
     Files.walkFileTree(Paths.get(workspace.primarySourcesPath), new DirectoryFinder)
 
+    // Collect a list of library names and paths from the environment. These
+    // will be used to resolve library names provided by the user. Environment
+    // variables take precedence over Java properties.
+    def parseLibraryMap(value: Option[String]): Map[String, String] = {
+      value
+        .getOrElse("")
+        .split(":")
+        .filter(_.nonEmpty)
+        .map { entry =>
+          entry.split("=", 2) match {
+            case Array(name, path) => name -> path
+            case _ =>
+              throw new IllegalArgumentException(
+                s"Invalid link library mapping `$entry`; expected `<name>=<path>`"
+              )
+          }
+        }
+        .toMap
+    }
+    val libraryMapFromProp = parseLibraryMap(sys.props.get("chiselsim.libraries"))
+    val libraryMapFromEnv = parseLibraryMap(sys.env.get("CHISELSIM_LIBS"))
+    val libraryMap = libraryMapFromProp ++ libraryMapFromEnv
+    val resolvedLibraryPaths = settings.libraries.map { name =>
+      libraryMap.getOrElse(
+        name,
+        throw new NoSuchElementException(
+          s"Link library `$name` not found. " +
+            "Set the `CHISELSIM_LIBS` environment variable or the " +
+            "`chiselsim.libraries` Java property to provide a list of " +
+            "`<name>=<path>` mappings separated by `:`. Available libraries: " +
+            s"[${libraryMap.keys.mkString(", ")}]"
+        )
+      )
+    }
+
     val commonCompilationSettingsUpdated = commonSettingsModifications(
       commonCompilationSettings.copy(
         // Append to the include directorires based on what the
@@ -275,6 +310,7 @@ trait Simulator[T <: Backend] {
         directoryFilter = commonCompilationSettings.directoryFilter.orElse(
           settings.verilogLayers.shouldIncludeDirectory(elaboratedModule, workspace.primarySourcesPath)
         ),
+        linkLibraryPaths = commonCompilationSettings.linkLibraryPaths ++ resolvedLibraryPaths ++ settings.libraryPaths,
         simulationSettings = commonCompilationSettings.simulationSettings.copy(
           plusArgs = commonCompilationSettings.simulationSettings.plusArgs ++ settings.plusArgs,
           enableWavesAtTimeZero =

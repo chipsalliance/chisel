@@ -351,6 +351,8 @@ final class Backend(
             case Some(paths) => paths.flatMap(Seq("-y", _))
           },
 
+          commonSettings.linkLibraryPaths.flatMap(lib => Seq("-sv_lib", lib)),
+
           commonSettings.includeDirs match {
             case None => Seq()
             case Some(dirs) => dirs.map(dir => s"+incdir+$dir")

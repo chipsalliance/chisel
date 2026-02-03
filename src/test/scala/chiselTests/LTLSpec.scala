@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.ltl._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.experimental.SourceLine
+import chisel3.experimental.{SourceInfo, SourceLine}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -33,8 +33,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class DelaysMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b, c = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     val s0: Sequence = a.delay(1)
     val s1: Sequence = b.delayRange(2, 4)
     val s2: Sequence = c.delayAtLeast(5)
@@ -69,8 +69,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class ConcatMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b, c, d, e = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     val s0: Sequence = a.concat(b)
     val s1: Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
   }
@@ -91,8 +91,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class RepeatMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b, c, d, e = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     val s0: Sequence = a.repeat(1)
     val s1: Sequence = b.repeatRange(2, 4)
     val s2: Sequence = c.repeatAtLeast(5)
@@ -124,9 +124,9 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class AndOrClockMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b = IO(Input(Bool()))
     val clock = IO(Input(Clock()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     val s0: Sequence = a.delay()
     val s1: Sequence = s0.and(b)
     val s2: Sequence = s0.or(b)
@@ -185,8 +185,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class NotMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     val p0: Property = Property.not(a)
   }
   it should "support property not operation" in {
@@ -199,8 +199,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class PropImplicationMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     val p0: Property = Property.implication(a, b)
     val p1: Property = a |-> b
     val p2: Property = Property.implicationNonOverlapping(a, b)
@@ -235,8 +235,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class EventuallyMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     val p0: Property = a.eventually
   }
   it should "support property eventually operation" in {
@@ -249,8 +249,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class BasicVerifMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     AssertProperty(a)
     AssumeProperty(a)
     CoverProperty(a)
@@ -281,8 +281,9 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
   it should "not create layer blocks if already in a layer block" in {
     class Foo extends RawModule {
+      implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
       val a = IO(Input(Bool()))
-      layer.block(layers.Verification.Cover) {
+      layer.block(chisel3.layers.Verification.Cover) {
         AssertProperty(a)
       }
     }
@@ -304,8 +305,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
 
     for ((prop, (intrinsic, op)) <- properties) {
       val chirrtl = ChiselStage.emitCHIRRTL(new Module {
+        implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
         val a = IO(Input(Bool()))
-        implicit val info = SourceLine("Foo.scala", 1, 2)
         prop(a)
       })
       val sourceLoc = "@[Foo.scala 1:2]"
@@ -318,6 +319,7 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class LabeledVerifMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a = IO(Input(Bool()))
     AssertProperty(a, label = Some("foo0"))
     AssumeProperty(a, label = Some("foo1"))
@@ -360,8 +362,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class SequenceConvMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     AssertProperty(Sequence(a))
     AssertProperty(Sequence(a, b))
     AssertProperty(Sequence(Delay(), a))
@@ -428,8 +430,8 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   class LayerBlockMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b = IO(Input(Bool()))
-    implicit val info = SourceLine("Foo.scala", 1, 2)
     AssertProperty(Sequence(Delay(), a))
     AssumeProperty(a |-> b)
   }

@@ -4,7 +4,8 @@ package chiselTests.simulator.scalatest
 
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
-import chisel3.simulator.stimulus.{RunUntilFinished, RunUntilSuccess}
+import chisel3.simulator.Exceptions
+import chisel3.simulator.stimulus.{ResetProcedure, RunUntilFinished, RunUntilSuccess, SimulationTestStimulus}
 import chisel3.simulator.{stimulus, FailedExpectationException, HasSimulator, MacroText, Randomization, Settings}
 import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.{FileCheck, TestingDirectory}
@@ -142,6 +143,166 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
           """|CHECK:      '+define+ASSERT_VERBOSE_COND=svsimTestbench.a'
              |CHECK-NEXT: '+define+PRINTF_COND=svsimTestbench.b'
              |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.c'
+             |""".stripMargin
+        )
+    }
+
+    it("should set macros to use init for Settings.defaultTest") {
+      class Foo extends SimulationTestHarness {
+        val (_, wrap) = Counter(true.B, 4)
+        done :<= wrap
+        success :<= true.B
+      }
+      simulateTest(new Foo, timeout = 100, settings = Settings.defaultTest[Foo])
+      io.Source
+        .fromFile(
+          FileSystems
+            .getDefault()
+            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
+            .toFile
+        )
+        .mkString
+        .fileCheck()(
+          """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.init'
+             |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.init'
+             |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.init'
+             |""".stripMargin
+        )
+    }
+
+    it("should set macros for SimulationTestHarnessInterface with separate IO") {
+      class SeparateIOHarness extends RawModule with SimulationTestHarnessInterface {
+        val clock = IO(Input(Clock()))
+        val init = IO(Input(Bool()))
+        val done = IO(Output(Bool()))
+        val success = IO(Output(Bool()))
+
+        withClockAndReset(clock, init) {
+          val (_, wrap) = Counter(true.B, 4)
+          done := wrap
+          success := true.B
+        }
+      }
+      simulateTest(new SeparateIOHarness, timeout = 100, settings = Settings.defaultTest[SeparateIOHarness])
+      io.Source
+        .fromFile(
+          FileSystems
+            .getDefault()
+            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
+            .toFile
+        )
+        .mkString
+        .fileCheck()(
+          """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.init'
+             |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.init'
+             |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.init'
+             |""".stripMargin
+        )
+    }
+
+    it("should set macros for SimulationTestHarnessInterface with FlatIO") {
+      class FlatIOHarness extends RawModule with SimulationTestHarnessInterface {
+        private val io = FlatIO(new Bundle {
+          val clock = Input(Clock())
+          val init = Input(Bool())
+          val done = Output(Bool())
+          val success = Output(Bool())
+        })
+        def clock = io.clock
+        def init = io.init
+        def done = io.done
+        def success = io.success
+
+        withClockAndReset(clock, init) {
+          val (_, wrap) = Counter(true.B, 4)
+          io.done := wrap
+          io.success := true.B
+        }
+      }
+      simulateTest(new FlatIOHarness, timeout = 100, settings = Settings.defaultTest[FlatIOHarness])
+      io.Source
+        .fromFile(
+          FileSystems
+            .getDefault()
+            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
+            .toFile
+        )
+        .mkString
+        .fileCheck()(
+          """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.init'
+             |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.init'
+             |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.init'
+             |""".stripMargin
+        )
+    }
+
+    it("should set macros for SimulationTestHarnessInterface with IO of a bundle") {
+      class BundleIOHarness extends RawModule with SimulationTestHarnessInterface {
+        private val io = IO(new Bundle {
+          val clock = Input(Clock())
+          val init = Input(Bool())
+          val done = Output(Bool())
+          val success = Output(Bool())
+        })
+        def clock = io.clock
+        def init = io.init
+        def done = io.done
+        def success = io.success
+
+        withClockAndReset(clock, init) {
+          val (_, wrap) = Counter(true.B, 4)
+          io.done := wrap
+          io.success := true.B
+        }
+      }
+      simulateTest(new BundleIOHarness, timeout = 100, settings = Settings.defaultTest[BundleIOHarness])
+      io.Source
+        .fromFile(
+          FileSystems
+            .getDefault()
+            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
+            .toFile
+        )
+        .mkString
+        .fileCheck()(
+          """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.io_init'
+             |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.io_init'
+             |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.io_init'
+             |""".stripMargin
+        )
+    }
+
+    it("should set macros for SimulationTestHarnessInterface with renamed ports") {
+      class RenamedPortHarness extends RawModule with SimulationTestHarnessInterface {
+        val clk = IO(Input(Clock()))
+        val reset_n = IO(Input(Bool()))
+        val finished = IO(Output(Bool()))
+        val passed = IO(Output(Bool()))
+
+        def clock = clk
+        def init = reset_n
+        def done = finished
+        def success = passed
+
+        withClockAndReset(clk, reset_n) {
+          val (_, wrap) = Counter(true.B, 4)
+          finished := wrap
+          passed := true.B
+        }
+      }
+      simulateTest(new RenamedPortHarness, timeout = 100, settings = Settings.defaultTest[RenamedPortHarness])
+      io.Source
+        .fromFile(
+          FileSystems
+            .getDefault()
+            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
+            .toFile
+        )
+        .mkString
+        .fileCheck()(
+          """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.reset_n'
+             |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.reset_n'
+             |CHECK-NEXT: '+define+STOP_COND=!svsimTestbench.reset_n'
              |""".stripMargin
         )
     }
@@ -597,6 +758,68 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         simulateRaw(new StopAfterFourCyclesHarness) { dut =>
           stimulus.ResetProcedure.testHarness()(dut)
           RunUntilFinished.testHarness(maxCycles = 2)(dut)
+        }
+      }
+    }
+  }
+
+  describe("ChiselSim SimulationTestStimulus") {
+    class TestHarness(finishAfter: Int, succeed: Boolean) extends SimulationTestHarness {
+      val counter = Counter(true.B, finishAfter)
+      done :<= counter._2
+      success :<= succeed.B
+    }
+
+    it("should simulate and pass if done asserted with success=1") {
+      simulateTest(new TestHarness(finishAfter = 4, succeed = true), timeout = 100)
+    }
+
+    it("should simulate and fail if done asserted with success=0") {
+      intercept[chisel3.simulator.Exceptions.TestFailed] {
+        simulateTest(new TestHarness(finishAfter = 4, succeed = false), timeout = 100)
+      }
+    }
+
+    it("should simulate and timeout if done not asserted") {
+      intercept[chisel3.simulator.Exceptions.Timeout] {
+        simulateTest(new TestHarness(finishAfter = 100, succeed = false), timeout = 10)
+      }
+    }
+
+    class DoneAfterNCycles(n: Int) extends SimulationTestHarness {
+      val (_, wrap) = Counter(true.B, n)
+      done :<= wrap
+      success :<= true.B
+    }
+
+    it("should pass if done is asserted before the timeout") {
+      simulateTest(new DoneAfterNCycles(9), timeout = 10)
+    }
+
+    it("should throw a timeout exception if done is asserted at exactly the timeout cycle") {
+      intercept[Exceptions.Timeout] {
+        simulateTest(new DoneAfterNCycles(10), timeout = 10)
+      }
+    }
+
+    it("should throw an exception if given a period <= 1") {
+      class NeverDoneTestHarness extends SimulationTestHarness {
+        done :<= false.B
+        success :<= false.B
+      }
+      intercept[IllegalArgumentException] {
+        simulateRaw(new NeverDoneTestHarness) { dut =>
+          SimulationTestStimulus(maxCycles = 10, period = 1)(dut)
+        }
+      }
+      intercept[IllegalArgumentException] {
+        simulateRaw(new NeverDoneTestHarness) { dut =>
+          SimulationTestStimulus(maxCycles = 10, period = 0)(dut)
+        }
+      }
+      intercept[IllegalArgumentException] {
+        simulateRaw(new NeverDoneTestHarness) { dut =>
+          SimulationTestStimulus(maxCycles = 10, period = -1)(dut)
         }
       }
     }
