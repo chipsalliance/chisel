@@ -37,17 +37,10 @@ object v extends Module {
     val j = _root_.upickle.default.read[Map[String, String]](circtJson)
     j("version").stripPrefix("firtool-")
   }
-  // Java 21+ requires Scala 2.13.11+.
-  // Only publish plugin for 2.13.11+ when using Java > 11, but still
-  // publish all versions when Java version <= 11.
   val pluginScalaCrossVersions = {
-    val scala213: Seq[String] = {
-      // Java 11+ requires Scala 2.13.11+
-      val min = if (javaVersion > 11) 11 else 0
-      min.to(18).map("2.13." + _)
-    }
-    val scala33: Seq[String] = 7.to(7).map("3.3." + _)
-    val scala38: Seq[String] = 0.to(1).map("3.8." + _)
+    val scala213: Seq[String] = 0.to(18).map("2.13." + _)
+    val scala33:  Seq[String] = 7.to(7).map("3.3." + _)
+    val scala38:  Seq[String] = 0.to(1).map("3.8." + _)
     scala213 ++ scala33 ++ scala38
   }
 
