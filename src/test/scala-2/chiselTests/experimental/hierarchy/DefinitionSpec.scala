@@ -945,4 +945,30 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         )
     }
   }
+  describe("(9): Calling .toDefinition should update Builder.definitions") {
+    it("(9.a): calling .toDefinition from another definition's child Instance should work as expected") {
+      class Bar extends RawModule {
+        val a = WireInit(false.B)
+      }
+      @instantiable
+      class Foo extends RawModule {
+        @public val bar = Module(new Bar)
+      }
+      class Baz(d: Definition[Foo]) extends RawModule {
+        val bar = Instance(d.bar.toDefinition)
+      }
+      ChiselStage
+        .emitCHIRRTL({
+          val d = Definition(new Foo)
+          new Baz(d)
+        }, Array("--full-stacktrace"))
+        .fileCheck()(
+          """|CHECK: module Bar :
+             |CHECK: module Baz :
+             |""".stripMargin
+        )
+    }
+  }
+
+
 }
