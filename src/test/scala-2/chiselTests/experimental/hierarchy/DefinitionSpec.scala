@@ -958,10 +958,13 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         val bar = Instance(d.bar.toDefinition)
       }
       ChiselStage
-        .emitCHIRRTL({
-          val d = Definition(new Foo)
-          new Baz(d)
-        }, Array("--full-stacktrace"))
+        .emitCHIRRTL(
+          {
+            val d = Definition(new Foo)
+            new Baz(d)
+          },
+          Array("--full-stacktrace")
+        )
         .fileCheck()(
           """|CHECK: module Bar :
              |CHECK: module Baz :
@@ -969,6 +972,5 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         )
     }
   }
-
 
 }
