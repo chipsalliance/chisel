@@ -971,6 +971,33 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
+    it("(9.b): calling .toDefinition twice from anther definition's child Instance should work as expected") {
+      class Bar extends RawModule {
+        val a = WireInit(false.B)
+      }
+      @instantiable
+      class Foo extends RawModule {
+        @public val bar = Module(new Bar)
+      }
+      class Baz(d: Definition[Foo]) extends RawModule {
+        val bar = Instance(d.bar.toDefinition)
+        val bar2 = Instance(d.bar.toDefinition)
+      }
+      val x = ChiselStage
+        .emitCHIRRTL(
+          {
+            val d = Definition(new Foo)
+            new Baz(d)
+          },
+          Array("--full-stacktrace")
+        )
+        .fileCheck()(
+          """|CHECK: module Bar :
+             |CHECK-NOT: module Bar_
+             |CHECK: module Baz :
+             |""".stripMargin
+        )
+    }
   }
 
 }
