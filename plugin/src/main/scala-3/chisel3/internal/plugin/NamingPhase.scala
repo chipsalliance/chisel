@@ -58,9 +58,9 @@ class ChiselNamingPhase extends PluginPhase {
     // For each synthetic tuple val, find the subsequent selecting ValDefs
     // that extract tuple elements (e.g., val a = $1$._1 or val a = this.$1$._1)
     syntheticTupleVals.foreach { case (syntheticName, arity) =>
-      val names = Array.fill(arity)("")
-      stats.foreach {
-        case vd @ tpd.ValDef(_, _, Select(qual, selectedName)) =>
+      // Collect (index, name) pairs from selecting ValDefs
+      val indexedNames = stats.collect {
+        case tpd.ValDef(name, _, Select(qual, selectedName)) =>
           // Extract qualifier name, handling both local (Ident) and member (Select) access
           val qualName = qual match {
             case Ident(n)           => n.toString
@@ -68,16 +68,15 @@ class ChiselNamingPhase extends PluginPhase {
             case Select(_, n)       => n.toString
             case _                  => ""
           }
-          if (qualName == syntheticName) {
-            for {
-              idx <- scala.util.Try(selectedName.toString.stripPrefix("_").toInt).toOption
-              if idx >= 1 && idx <= arity
-            } names(idx - 1) = vd.name.toString
-          }
-        case _ =>
-      }
-      if (names.exists(_.nonEmpty)) {
-        unapplyNamesMap(syntheticName) = names.toList
+          (qualName, selectedName.toString, name.toString)
+      }.collect {
+        case (`syntheticName`, sel, name) =>
+          scala.util.Try(sel.stripPrefix("_").toInt - 1).toOption.map(_ -> name)
+      }.flatten.filter { case (idx, _) => idx >= 0 && idx < arity }
+
+      if (indexedNames.nonEmpty) {
+        val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse("")).toList
+        unapplyNamesMap(syntheticName) = names
       }
     }
   }
