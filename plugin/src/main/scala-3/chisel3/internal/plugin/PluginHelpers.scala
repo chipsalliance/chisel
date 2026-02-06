@@ -176,7 +176,7 @@ object ChiselTypeHelpers {
     t.typeSymbol.fullName.toString.startsWith("scala.Tuple")
   }
 
-  /** Get the arity of a tuple type, or 0 if not a tuple */
+  // Get the arity of a tuple type, or 0 if not a tuple
   def tupleArity(t: Type)(using Context): Int = {
     t match {
       case AppliedType(_, args) if isTupleType(t) => args.length
