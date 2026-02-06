@@ -482,7 +482,17 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
     // Trace views to give better error messages
     // Reifying involves checking against ViewParent which requires being in a Builder context
     // Since we're just printing a String, suppress such errors and use this object
-    val thiz = Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
+    // Use a guard to prevent infinite recursion when reifySingleTarget triggers toString
+    val thiz = if (Data.avoidReifyingViews.get()) {
+      this
+    } else {
+      Data.avoidReifyingViews.set(true)
+      try {
+        Try(reifySingleTarget(this)).toOption.flatten.getOrElse(this)
+      } finally {
+        Data.avoidReifyingViews.set(false)
+      }
+    }
     thiz.topBindingOpt match {
       case None => chiselTypeWithModifier
       // Handle DontCares specially as they are "literal-like" but not actually literals
@@ -895,6 +905,9 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
 object Data {
   // Needed for the `implicit def toConnectableDefault`
   import scala.language.implicitConversions
+
+  // ThreadLocal to prevent infinite recursion in stringAccessor when reifySingleTarget triggers toString
+  private[chisel3] val avoidReifyingViews: ThreadLocal[Boolean] = ThreadLocal.withInitial(() => false)
 
   private[chisel3] case class ProbeInfo(val writable: Boolean, color: Option[layer.Layer])
 
