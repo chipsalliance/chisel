@@ -55,34 +55,24 @@ class ChiselNamingPhase extends PluginPhase {
         vd.name.toString -> ChiselTypeHelpers.tupleArity(vd.tpt.tpe)
     }.toMap
 
-    // Extract the name from a qualifier. Handles both Ident($1$) and
-    // this.$1$ patterns
-    def extractQualifierName(qual: tpd.Tree): Option[String] = qual match {
-      case Ident(name)           => Some(name.toString)
-      case Select(This(_), name) => Some(name.toString)
-      case Select(_, name)       => Some(name.toString)
-      case _                     => None
-    }
-
     // For each synthetic tuple val, find the subsequent selecting ValDefs
+    // that extract tuple elements (e.g., val a = $1$._1 or val a = this.$1$._1)
     syntheticTupleVals.foreach { case (syntheticName, arity) =>
       val names = Array.fill(arity)("")
       stats.foreach {
-        case vd: tpd.ValDef =>
-          vd.rhs match {
-            case Select(qual, selectedName) =>
-              extractQualifierName(qual) match {
-                case Some(qualName) if qualName == syntheticName =>
-                  // Extract the index from _1, _2, etc.
-                  val indexStr = selectedName.toString.stripPrefix("_")
-                  scala.util.Try(indexStr.toInt).foreach { idx =>
-                    if (idx >= 1 && idx <= arity) {
-                      names(idx - 1) = vd.name.toString
-                    }
-                  }
-                case _ =>
-              }
-            case _ =>
+        case vd @ tpd.ValDef(_, _, Select(qual, selectedName)) =>
+          // Extract qualifier name, handling both local (Ident) and member (Select) access
+          val qualName = qual match {
+            case Ident(n)           => n.toString
+            case Select(This(_), n) => n.toString
+            case Select(_, n)       => n.toString
+            case _                  => ""
+          }
+          if (qualName == syntheticName) {
+            for {
+              idx <- scala.util.Try(selectedName.toString.stripPrefix("_").toInt).toOption
+              if idx >= 1 && idx <= arity
+            } names(idx - 1) = vd.name.toString
           }
         case _ =>
       }
