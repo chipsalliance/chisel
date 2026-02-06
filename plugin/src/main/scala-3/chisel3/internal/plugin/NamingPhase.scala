@@ -59,19 +59,17 @@ class ChiselNamingPhase extends PluginPhase {
     // that extract tuple elements (e.g., val a = $1$._1 or val a = this.$1$._1)
     syntheticTupleVals.foreach { case (syntheticName, arity) =>
       // Collect (index, name) pairs from selecting ValDefs
-      val indexedNames = stats.collect {
-        case tpd.ValDef(name, _, Select(qual, selectedName)) =>
-          // Extract qualifier name, handling both local (Ident) and member (Select) access
-          val qualName = qual match {
-            case Ident(n)           => n.toString
-            case Select(This(_), n) => n.toString
-            case Select(_, n)       => n.toString
-            case _                  => ""
-          }
-          (qualName, selectedName.toString, name.toString)
-      }.collect {
-        case (`syntheticName`, sel, name) =>
-          scala.util.Try(sel.stripPrefix("_").toInt - 1).toOption.map(_ -> name)
+      val indexedNames = stats.collect { case tpd.ValDef(name, _, Select(qual, selectedName)) =>
+        // Extract qualifier name, handling both local (Ident) and member (Select) access
+        val qualName = qual match {
+          case Ident(n)           => n.toString
+          case Select(This(_), n) => n.toString
+          case Select(_, n)       => n.toString
+          case _                  => ""
+        }
+        (qualName, selectedName.toString, name.toString)
+      }.collect { case (`syntheticName`, sel, name) =>
+        scala.util.Try(sel.stripPrefix("_").toInt - 1).toOption.map(_ -> name)
       }.flatten.filter { case (idx, _) => idx >= 0 && idx < arity }
 
       if (indexedNames.nonEmpty) {
