@@ -78,13 +78,13 @@ Add the following
 ```scala mdoc:silent
 import circt.stage.ChiselStage
 object VerilogMain extends App {
-  ChiselStage.emitSystemVerilog(new HelloWorld)
+  ChiselStage.emitSystemVerilogFile(new HelloWorld)
 }
 ```
 Now you can get some Verilog. Start sbt:
 ```
 bash> sbt
-> run-main intro.VerilogMain
+> runMain intro.VerilogMain
 [info] Running intro.VerilogMain
 [info] [0.004] Elaborating design...
 [info] [0.100] Done elaborating.
@@ -94,7 +94,7 @@ or as a one-liner:
 ```
 bash> sbt 'runMain intro.VerilogMain'
 ```
-After either of the above there will be a HelloWorld.v file in the current directory:
+After either of the above there will be a HelloWorld.sv file in the current directory:
 ```scala mdoc:invisible
 val verilog = ChiselStage.emitSystemVerilog(new HelloWorld)
 ```
@@ -124,7 +124,7 @@ $ sbt
 Welcome to Scala 2.12.13 (OpenJDK 64-Bit Server VM, Java 1.8.0_275).
 Type in expressions for evaluation. Or try :help.
 
-scala> (new circt.stage.ChiselStage).emitSystemVerilog(new HelloWorld())
+scala> circt.stage.ChiselStage.emitSystemVerilogFile(new HelloWorld())
 chisel3.Driver.execute(Array[String](), () => new HelloWorld)
 Elaborating design...
 Done elaborating.
@@ -136,14 +136,8 @@ res1: String =
 ...
 ```
 
-As before, there should be a HelloWorld.v file in the current directory.
+As before, there should be a HelloWorld.sv file in the current directory.
 
-Note: Using the following, without the `new`,
-will ONLY return the string representation, and will not emit a `.v` file:
-
-```scala mdoc:silent
-ChiselStage.emitSystemVerilog(new HelloWorld())
-```
 
 ### Get me FIRRTL
 
@@ -162,7 +156,7 @@ class MyFirrtlModule extends Module {
 }
 
 object FirrtlMain extends App {
-  ChiselStage.emitCHIRRTL(new MyFirrtlModule)
+  ChiselStage.emitCHIRRTLFile(new MyFirrtlModule)
 }
 ```
 
