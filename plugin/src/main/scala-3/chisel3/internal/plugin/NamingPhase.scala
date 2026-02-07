@@ -55,6 +55,9 @@ class ChiselNamingPhase extends PluginPhase {
         vd.name.toString -> ChiselTypeHelpers.tupleArity(vd.tpt.tpe)
     }.toMap
 
+    // Pattern to match tuple element accessors like _1, _2, etc.
+    val TupleIndex = "_([0-9]+)".r
+
     // For each synthetic tuple val, find the subsequent selecting ValDefs
     // that extract tuple elements (e.g., val a = $1$._1 or val a = this.$1$._1)
     syntheticTupleVals.foreach { case (syntheticName, arity) =>
@@ -68,9 +71,9 @@ class ChiselNamingPhase extends PluginPhase {
           case _                  => ""
         }
         (qualName, selectedName.toString, name.toString)
-      }.collect { case (`syntheticName`, sel, name) =>
-        scala.util.Try(sel.stripPrefix("_").toInt - 1).toOption.map(_ -> name)
-      }.flatten.filter { case (idx, _) => idx >= 0 && idx < arity }
+      }.collect {
+        case (`syntheticName`, TupleIndex(idx), name) => (idx.toInt - 1, name)
+      }.filter { case (idx, _) => idx >= 0 && idx < arity }
 
       if (indexedNames.nonEmpty) {
         val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse("")).toList
