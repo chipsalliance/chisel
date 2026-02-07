@@ -71,8 +71,8 @@ class ChiselNamingPhase extends PluginPhase {
           case _                  => ""
         }
         (qualName, selectedName.toString, name.toString)
-      }.collect {
-        case (`syntheticName`, TupleIndex(idx), name) => (idx.toInt - 1, name)
+      }.collect { case (`syntheticName`, TupleIndex(idx), name) =>
+        (idx.toInt - 1, name)
       }.filter { case (idx, _) => idx >= 0 && idx < arity }
 
       if (indexedNames.nonEmpty) {
