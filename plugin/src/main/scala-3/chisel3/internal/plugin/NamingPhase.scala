@@ -40,7 +40,50 @@ class ChiselNamingPhase extends PluginPhase {
   private var prefixModule:      TermSymbol = _
   private var prefixApplyMethod: TermSymbol = _
 
+  // Map of synthetic unapply temp names like $1$ to list of extracted names
+  private val unapplyNamesMap = mutable.Map[String, List[String]]()
+
+  // Scan a list of statements to find unapply patterns and collect name mappings.
+  // In Scala 3, simple tuple unapply like `val (a, b) = expr` is desugared to:
+  //   val $1$ = expr
+  //   val a = $1$._1
+  //   val b = $1$._2
+  private def collectUnapplyNames(stats: List[tpd.Tree])(using Context): Unit = {
+    // Find all synthetic tuple vals
+    val syntheticTupleVals = stats.collect {
+      case vd: tpd.ValDef if ChiselTypeHelpers.okUnapply(vd) && !vd.rhs.isInstanceOf[Match] =>
+        vd.name.toString -> ChiselTypeHelpers.tupleArity(vd.tpt.tpe)
+    }.toMap
+
+    // Pattern to match tuple element accessors like _1, _2, etc.
+    val TupleIndex = "_([0-9]+)".r
+
+    // For each synthetic tuple val, find the subsequent selecting ValDefs
+    // that extract tuple elements (e.g., val a = $1$._1 or val a = this.$1$._1)
+    syntheticTupleVals.foreach { case (syntheticName, arity) =>
+      // Collect (index, name) pairs from selecting ValDefs
+      val indexedNames = stats.collect { case tpd.ValDef(name, _, Select(qual, selectedName)) =>
+        // Extract qualifier name, handling both local (Ident) and member (Select) access
+        val qualName = qual match {
+          case Ident(n)           => n.toString
+          case Select(This(_), n) => n.toString
+          case Select(_, n)       => n.toString
+          case _                  => ""
+        }
+        (qualName, selectedName.toString, name.toString)
+      }.collect { case (`syntheticName`, TupleIndex(idx), name) =>
+        (idx.toInt - 1, name)
+      }.filter { case (idx, _) => idx >= 0 && idx < arity }
+
+      if (indexedNames.nonEmpty) {
+        val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse("")).toList
+        unapplyNamesMap(syntheticName) = names
+      }
+    }
+  }
+
   override def prepareForUnit(tree: Tree)(using ctx: Context): Context = {
+    unapplyNamesMap.clear() // Clear for new compilation unit
     dataTpe = requiredClassRef("chisel3.Data")
     memBaseTpe = requiredClassRef("chisel3.MemBase")
     verifTpe = requiredClassRef("chisel3.VerificationStatement")
@@ -56,6 +99,16 @@ class ChiselNamingPhase extends PluginPhase {
     withNames = pluginModule.requiredMethod("withNames")
     prefixModule = requiredModule("chisel3.experimental.prefix")
     prefixApplyMethod = prefixModule.requiredMethod("applyString")
+    ctx
+  }
+
+  override def prepareForBlock(tree: tpd.Block)(using Context): Context = {
+    collectUnapplyNames(tree.stats :+ tree.expr)
+    ctx
+  }
+
+  override def prepareForTemplate(tree: tpd.Template)(using Context): Context = {
+    collectUnapplyNames(tree.body)
     ctx
   }
 
@@ -77,7 +130,59 @@ class ChiselNamingPhase extends PluginPhase {
     val isNamedComp = isData || isBoxedData || ChiselTypeHelpers.isNamed(tpt)
     val isPrefixed = isNamedComp || ChiselTypeHelpers.isPrefixed(tpt)
 
-    if (!ChiselTypeHelpers.okVal(tree)) tree // Cannot name this, so skip
+    // Check if this is an unapply pattern (tuple destructuring)
+    val isSyntheticUnapply = ChiselTypeHelpers.okUnapply(tree)
+    val isMatchUnapply = isSyntheticUnapply && rhs.isInstanceOf[Match]
+    val isSimpleUnapply = isSyntheticUnapply && !rhs.isInstanceOf[Match]
+
+    if (isMatchUnapply) {
+      // Handle case class unapply like: val Foo(a, b) = func()
+      // Names are extracted from the Match pattern
+      val fieldsOfInterest = ChiselTypeHelpers.tupleFieldsOfInterest(tpt)
+      if (fieldsOfInterest.nonEmpty && fieldsOfInterest.exists(identity)) {
+        ChiselTypeHelpers.findUnapplyNames(rhs) match {
+          case Some(names) =>
+            // Only name fields that are NamedComponents
+            val onames = fieldsOfInterest.zip(names).map { case (ok, n) => if (ok) n else "" }
+            val newRHS = transformFollowing(rhs)
+            // Create string literals for each name
+            val nameLiterals = onames.map(n => Literal(Constant(n)))
+            val named =
+              tpd
+                .ref(pluginModule)
+                .select(withNames)
+                .appliedToType(tpt)
+                .appliedToVarargs(nameLiterals, tpd.TypeTree(defn.StringType))
+                .appliedTo(newRHS)
+            cpy.ValDef(tree)(rhs = named)
+          case None =>
+            super.transformValDef(tree)
+        }
+      } else {
+        super.transformValDef(tree)
+      }
+    } else if (isSimpleUnapply) {
+      // Handle simple tuple unapply like: val (a, b) = (Wire(...), Wire(...))
+      // Names are collected from subsequent selecting ValDefs via prepareForBlock
+      val fieldsOfInterest = ChiselTypeHelpers.tupleFieldsOfInterest(tpt)
+      unapplyNamesMap.get(valName) match {
+        case Some(names) if fieldsOfInterest.nonEmpty && fieldsOfInterest.exists(identity) =>
+          // Only name fields that are NamedComponents
+          val onames = fieldsOfInterest.zip(names).map { case (ok, n) => if (ok) n else "" }
+          val newRHS = transformFollowing(rhs)
+          val nameLiterals = onames.map(n => Literal(Constant(n)))
+          val named =
+            tpd
+              .ref(pluginModule)
+              .select(withNames)
+              .appliedToType(tpt)
+              .appliedToVarargs(nameLiterals, tpd.TypeTree(defn.StringType))
+              .appliedTo(newRHS)
+          cpy.ValDef(tree)(rhs = named)
+        case _ =>
+          super.transformValDef(tree)
+      }
+    } else if (!ChiselTypeHelpers.okVal(tree)) tree // Cannot name this, so skip
     else if (isData && ChiselTypeHelpers.inBundle(sym)) { // Data in a bundle
       val newRHS = transformFollowing(rhs)
       val named =
