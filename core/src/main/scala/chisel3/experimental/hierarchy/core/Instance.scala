@@ -67,15 +67,8 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
   }
 
   /** Returns the definition of this Instance */
-  override def toDefinition: Definition[A] = {
-    val result = new Definition(Proto(proto))
-    // Because we are creating a new Definition, we should update our Builder.definitions
-    if (Builder.inContext && !Builder.definitions.view.map(_.proto).contains(result.proto)) {
-      Builder.definitions += result
-    }
-    result
-  }
-  override def toInstance: Instance[A] = this
+  override def toDefinition: Definition[A] = new Definition(Proto(proto))
+  override def toInstance:   Instance[A] = this
   private[chisel3] def copy[T](underlying: Underlying[T]) = new Instance(underlying)
 
 }
