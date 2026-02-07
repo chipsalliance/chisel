@@ -53,4 +53,56 @@ class CommandLineSpec extends AnyFlatSpec with Matchers {
     }
   }
 
+  val coverageTests = {
+    import svsim.verilator.Backend.CompilationSettings
+
+    Seq(
+      OptionTest(
+        "line coverage",
+        CompilationSettings.default.withCoverageSettings(new CompilationSettings.CoverageSettings(line = true)),
+        Seq("--coverage-line")
+      ),
+      OptionTest(
+        "toggle coverage",
+        CompilationSettings.default.withCoverageSettings(new CompilationSettings.CoverageSettings(toggle = true)),
+        Seq("--coverage-toggle")
+      ),
+      OptionTest(
+        "user coverage",
+        CompilationSettings.default.withCoverageSettings(new CompilationSettings.CoverageSettings(user = true)),
+        Seq("--coverage-user")
+      )
+    )
+  }
+
+  coverageTests.foreach { case OptionTest(name, settings, expected) =>
+    it should s"support $name options" in {
+      verilatorBackend
+        .generateParameters("bar", "baz", Seq.empty, CommonCompilationSettings(), settings)
+        .compilerInvocation
+        .arguments should contain inOrderElementsOf (expected)
+    }
+  }
+
+  it should "use --coverage when all coverage options are enabled" in {
+    import svsim.verilator.Backend.CompilationSettings
+
+    val args = verilatorBackend
+      .generateParameters(
+        "bar",
+        "baz",
+        Seq.empty,
+        CommonCompilationSettings(),
+        CompilationSettings.default
+          .withCoverageSettings(new CompilationSettings.CoverageSettings(line = true, toggle = true, user = true))
+      )
+      .compilerInvocation
+      .arguments
+
+    args should contain("--coverage")
+    args should not contain "--coverage-line"
+    args should not contain "--coverage-toggle"
+    args should not contain "--coverage-user"
+  }
+
 }

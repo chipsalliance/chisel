@@ -61,6 +61,40 @@ object Backend {
         ).flatten
     }
 
+    /** Settings for controlling Verilator coverage instrumentation.
+      *
+      * These options map to Verilator coverage flags:
+      *
+      *   - `--coverage-line`
+      *   - `--coverage-toggle`
+      *   - `--coverage-user`
+      *
+      * If all coverage types are enabled, `--coverage` is used.
+      *
+      * @param line enable line coverage instrumentation
+      * @param toggle enable toggle coverage instrumentation
+      * @param user enable user coverage instrumentation for `cover` statements
+      */
+    final class CoverageSettings(
+      val line:   Boolean = false,
+      val toggle: Boolean = false,
+      val user:   Boolean = false
+    ) {
+      private[Backend] def any: Boolean = line || toggle || user
+
+      private[Backend] def toCompileFlags: Seq[String] = {
+        if (line && toggle && user) {
+          Seq("--coverage")
+        } else {
+          Seq(
+            Option.when(line)("--coverage-line"),
+            Option.when(toggle)("--coverage-toggle"),
+            Option.when(user)("--coverage-user")
+          ).flatten
+        }
+      }
+    }
+
     object Timing {
       sealed trait Type
       case object TimingEnabled extends Type
@@ -128,6 +162,7 @@ object Backend {
       disabledWarnings,
       disableFatalExitOnWarnings,
       enableAllAssertions,
+      new CompilationSettings.CoverageSettings(),
       timing,
       Some(CompilationSettings.Parallelism.Uniform.default)
     )
@@ -162,6 +197,7 @@ object Backend {
       disabledWarnings = Seq(),
       disableFatalExitOnWarnings = false,
       enableAllAssertions = false,
+      coverageSettings = new CompilationSettings.CoverageSettings(),
       timing = None,
       parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
     )
@@ -175,6 +211,7 @@ object Backend {
     disabledWarnings:           Seq[String],
     disableFatalExitOnWarnings: Boolean,
     enableAllAssertions:        Boolean,
+    coverageSettings:           CompilationSettings.CoverageSettings,
     timing:                     Option[CompilationSettings.Timing.Type],
     parallelism:                Option[CompilationSettings.Parallelism.Type]
   ) extends svsim.Backend.Settings {
@@ -195,6 +232,7 @@ object Backend {
       disabledWarnings,
       disableFatalExitOnWarnings,
       enableAllAssertions,
+      new CompilationSettings.CoverageSettings(),
       timing,
       Some(CompilationSettings.Parallelism.Uniform.default)
     )
@@ -206,6 +244,7 @@ object Backend {
       disabledWarnings:           Seq[String] = this.disabledWarnings,
       disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
       enableAllAssertions:        Boolean = this.enableAllAssertions,
+      coverageSettings:           CompilationSettings.CoverageSettings = this.coverageSettings,
       timing:                     Option[CompilationSettings.Timing.Type] = this.timing,
       parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism
     ): CompilationSettings = CompilationSettings(
@@ -215,6 +254,7 @@ object Backend {
       disabledWarnings = disabledWarnings,
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
+      coverageSettings = coverageSettings,
       timing = timing,
       parallelism = parallelism
     )
@@ -235,6 +275,7 @@ object Backend {
       disabledWarnings = disabledWarnings,
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
+      coverageSettings = this.coverageSettings,
       timing = timing,
       parallelism = this.parallelism
     )
@@ -247,6 +288,7 @@ object Backend {
       disabledWarnings:           Seq[String],
       disableFatalExitOnWarnings: Boolean,
       enableAllAssertions:        Boolean,
+      coverageSettings:           CompilationSettings.CoverageSettings,
       timing:                     Option[CompilationSettings.Timing.Type],
       parallelism:                Option[CompilationSettings.Parallelism.Type]
     ): CompilationSettings = _copy(
@@ -256,6 +298,7 @@ object Backend {
       disabledWarnings = disabledWarnings,
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
+      coverageSettings = coverageSettings,
       timing = timing,
       parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
     )
@@ -272,6 +315,13 @@ object Backend {
       _copy(disableFatalExitOnWarnings = disableFatalExitOnWarnings)
 
     def withEnableAllAssertions(enableAllAssertions: Boolean) = _copy(enableAllAssertions = enableAllAssertions)
+
+    /** Configure coverage instrumentation for Verilator.
+      *
+      * @param coverageSettings coverage kinds to enable during compilation
+      */
+    def withCoverageSettings(coverageSettings: CompilationSettings.CoverageSettings) =
+      _copy(coverageSettings = coverageSettings)
 
     def withTiming(timing: Option[CompilationSettings.Timing.Type]) = _copy(timing = timing)
 
@@ -345,6 +395,8 @@ final class Backend(executablePath: String) extends svsim.Backend {
 
     backendSpecificSettings.traceStyle.foreach { ts => addArg(ts.toCompileFlags) }
 
+    addArg(backendSpecificSettings.coverageSettings.toCompileFlags)
+
     backendSpecificSettings.timing match {
       case Some(Timing.TimingEnabled)  => addArg(Seq("--timing"))
       case Some(Timing.TimingDisabled) => addArg(Seq("--no-timing"))
@@ -378,12 +430,13 @@ final class Backend(executablePath: String) extends svsim.Backend {
       }
       val std = Seq("-std=c++17")
       val inc = additionalHeaderPaths.map(path => s"-I$path")
-      val defs = Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}") ++ (
-        backendSpecificSettings.traceStyle match {
-          case Some(_) => Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorTrace}")
-          case None    => Seq()
-        }
-      )
+      val defs = Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}") ++
+        Option.when(backendSpecificSettings.traceStyle.nonEmpty)(
+          s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorTrace}"
+        ) ++
+        Option.when(backendSpecificSettings.coverageSettings.any)(
+          s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorCoverage}"
+        )
       opt ++ std ++ inc ++ defs
     }
     addArgParts("-CFLAGS", cflagsParts)
