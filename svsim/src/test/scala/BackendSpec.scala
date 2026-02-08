@@ -232,6 +232,41 @@ class VerilatorSpec extends BackendSpec {
       }.getMessage must include("Cannot enable traces as simulator was not compiled to support them")
     }
   }
+
+  describe("Verilator coverage options") {
+
+    it("coverage options should produce a coverage database") {
+      val workspace = new svsim.Workspace(path = s"test_run_dir/${getClass().getSimpleName()}/CoverageSettings")
+
+      import Resources._
+      workspace.reset()
+      workspace.elaborateGCD()
+      workspace.generateAdditionalSources(None)
+      val simulation = workspace.compile(
+        backend
+      )(
+        workingDirectoryTag = "verilator",
+        commonSettings = CommonCompilationSettings(),
+        backendSpecificSettings = compilationSettings.withCoverageSettings(
+          new CoverageSettings(line = true, toggle = true, user = true)
+        ),
+        customSimulationWorkingDirectory = None,
+        verbose = false
+      )
+
+      simulation.run(
+        verbose = false,
+        executionScriptLimit = None
+      ) { _ => }
+
+      val coverageDatCandidates = Seq(
+        Paths.get(workspace.absolutePath, "workdir-verilator", "coverage.dat"),
+        Paths.get(workspace.absolutePath, "workdir-verilator", "logs", "coverage.dat")
+      )
+      info("a Verilator coverage database was created")
+      coverageDatCandidates.exists(_.toFile.exists()) must be(true)
+    }
+  }
 }
 
 class VerilatorFstTraceSpec extends BackendSpec {
