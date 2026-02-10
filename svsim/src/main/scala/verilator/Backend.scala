@@ -61,6 +61,40 @@ object Backend {
         ).flatten
     }
 
+    /** Settings for controlling Verilator coverage instrumentation.
+      *
+      * These options map to Verilator coverage flags:
+      *
+      *   - `--coverage-line`
+      *   - `--coverage-toggle`
+      *   - `--coverage-user`
+      *
+      * If all coverage types are enabled, `--coverage` is used.
+      *
+      * @param line enable line coverage instrumentation
+      * @param toggle enable toggle coverage instrumentation
+      * @param user enable user coverage instrumentation for `cover` statements
+      */
+    final class CoverageSettings(
+      val line:   Boolean = false,
+      val toggle: Boolean = false,
+      val user:   Boolean = false
+    ) {
+      private[Backend] def any: Boolean = line || toggle || user
+
+      private[Backend] def toCompileFlags: Seq[String] = {
+        if (line && toggle && user) {
+          Seq("--coverage")
+        } else {
+          Seq(
+            Option.when(line)("--coverage-line"),
+            Option.when(toggle)("--coverage-toggle"),
+            Option.when(user)("--coverage-user")
+          ).flatten
+        }
+      }
+    }
+
     object Timing {
       sealed trait Type
       case object TimingEnabled extends Type
@@ -129,7 +163,8 @@ object Backend {
       disableFatalExitOnWarnings,
       enableAllAssertions,
       timing,
-      Some(CompilationSettings.Parallelism.Uniform.default)
+      Some(CompilationSettings.Parallelism.Uniform.default),
+      new CompilationSettings.CoverageSettings()
     )
 
     @deprecated("avoid use of unapply", "Chisel 7.1.0")
@@ -163,7 +198,8 @@ object Backend {
       disableFatalExitOnWarnings = false,
       enableAllAssertions = false,
       timing = None,
-      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default),
+      coverageSettings = new CompilationSettings.CoverageSettings()
     )
 
   }
@@ -176,7 +212,8 @@ object Backend {
     disableFatalExitOnWarnings: Boolean,
     enableAllAssertions:        Boolean,
     timing:                     Option[CompilationSettings.Timing.Type],
-    parallelism:                Option[CompilationSettings.Parallelism.Type]
+    parallelism:                Option[CompilationSettings.Parallelism.Type],
+    coverageSettings:           CompilationSettings.CoverageSettings
   ) extends svsim.Backend.Settings {
 
     @deprecated("use 'CompilationSettings.default' and 'with<name>' helpers", "Chisel 7.1.0")
@@ -196,9 +233,33 @@ object Backend {
       disableFatalExitOnWarnings,
       enableAllAssertions,
       timing,
-      Some(CompilationSettings.Parallelism.Uniform.default)
+      Some(CompilationSettings.Parallelism.Uniform.default),
+      new CompilationSettings.CoverageSettings()
     )
 
+    private def copyInternal(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
+      outputSplit:                Option[Int] = this.outputSplit,
+      outputSplitCFuncs:          Option[Int] = this.outputSplitCFuncs,
+      disabledWarnings:           Seq[String] = this.disabledWarnings,
+      disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
+      enableAllAssertions:        Boolean = this.enableAllAssertions,
+      timing:                     Option[CompilationSettings.Timing.Type] = this.timing,
+      parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism,
+      coverageSettings:           CompilationSettings.CoverageSettings = this.coverageSettings
+    ): CompilationSettings = CompilationSettings(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = parallelism,
+      coverageSettings = coverageSettings
+    )
+
+    // Keep this signature stable for binary compatibility with prior releases.
     def _copy(
       traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
       outputSplit:                Option[Int] = this.outputSplit,
@@ -208,7 +269,7 @@ object Backend {
       enableAllAssertions:        Boolean = this.enableAllAssertions,
       timing:                     Option[CompilationSettings.Timing.Type] = this.timing,
       parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism
-    ): CompilationSettings = CompilationSettings(
+    ): CompilationSettings = copyInternal(
       traceStyle = traceStyle,
       outputSplit = outputSplit,
       outputSplitCFuncs = outputSplitCFuncs,
@@ -216,7 +277,8 @@ object Backend {
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
       timing = timing,
-      parallelism = parallelism
+      parallelism = parallelism,
+      coverageSettings = this.coverageSettings
     )
 
     @deprecated("don't use the copy method, use 'with<name>' single setters", "Chisel 7.1.0")
@@ -248,8 +310,9 @@ object Backend {
       disableFatalExitOnWarnings: Boolean,
       enableAllAssertions:        Boolean,
       timing:                     Option[CompilationSettings.Timing.Type],
-      parallelism:                Option[CompilationSettings.Parallelism.Type]
-    ): CompilationSettings = _copy(
+      parallelism:                Option[CompilationSettings.Parallelism.Type],
+      coverageSettings:           CompilationSettings.CoverageSettings
+    ): CompilationSettings = copyInternal(
       traceStyle = traceStyle,
       outputSplit = outputSplit,
       outputSplitCFuncs = outputSplitCFuncs,
@@ -257,7 +320,8 @@ object Backend {
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
       timing = timing,
-      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default),
+      coverageSettings = coverageSettings
     )
 
     def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = _copy(traceStyle = traceStyle)
@@ -272,6 +336,13 @@ object Backend {
       _copy(disableFatalExitOnWarnings = disableFatalExitOnWarnings)
 
     def withEnableAllAssertions(enableAllAssertions: Boolean) = _copy(enableAllAssertions = enableAllAssertions)
+
+    /** Configure coverage instrumentation for Verilator.
+      *
+      * @param coverageSettings coverage kinds to enable during compilation
+      */
+    def withCoverageSettings(coverageSettings: CompilationSettings.CoverageSettings) =
+      copyInternal(coverageSettings = coverageSettings)
 
     def withTiming(timing: Option[CompilationSettings.Timing.Type]) = _copy(timing = timing)
 
@@ -345,6 +416,8 @@ final class Backend(executablePath: String) extends svsim.Backend {
 
     backendSpecificSettings.traceStyle.foreach { ts => addArg(ts.toCompileFlags) }
 
+    addArg(backendSpecificSettings.coverageSettings.toCompileFlags)
+
     backendSpecificSettings.timing match {
       case Some(Timing.TimingEnabled)  => addArg(Seq("--timing"))
       case Some(Timing.TimingDisabled) => addArg(Seq("--no-timing"))
@@ -378,12 +451,13 @@ final class Backend(executablePath: String) extends svsim.Backend {
       }
       val std = Seq("-std=c++17")
       val inc = additionalHeaderPaths.map(path => s"-I$path")
-      val defs = Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}") ++ (
-        backendSpecificSettings.traceStyle match {
-          case Some(_) => Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorTrace}")
-          case None    => Seq()
-        }
-      )
+      val defs = Seq(s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorSupport}") ++
+        Option.when(backendSpecificSettings.traceStyle.nonEmpty)(
+          s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorTrace}"
+        ) ++
+        Option.when(backendSpecificSettings.coverageSettings.any)(
+          s"-D${svsim.Backend.HarnessCompilationFlags.enableVerilatorCoverage}"
+        )
       opt ++ std ++ inc ++ defs
     }
     addArgParts("-CFLAGS", cflagsParts)

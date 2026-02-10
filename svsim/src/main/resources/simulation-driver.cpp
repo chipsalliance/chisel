@@ -987,6 +987,9 @@ int main(int argc, const char *argv[]) {
 
 #ifdef SVSIM_ENABLE_VERILATOR_SUPPORT
 #include "VsvsimTestbench.h"
+#ifdef SVSIM_ENABLE_VERILATOR_COVERAGE_SUPPORT
+#include "verilated_cov.h"
+#endif
 
 extern "C" {
 
@@ -1009,6 +1012,10 @@ void simulation_main(int argc, char const **argv) {
   testbench->eval();
 
   testbench->final();
+
+#ifdef SVSIM_ENABLE_VERILATOR_COVERAGE_SUPPORT
+  context->coveragep()->write();
+#endif
 
   delete testbench;
   delete context;

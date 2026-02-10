@@ -314,6 +314,10 @@ final object Backend {
     val enableVerilatorSupport = "SVSIM_ENABLE_VERILATOR_SUPPORT"
     val enableVerilatorTrace = "SVSIM_VERILATOR_TRACE_ENABLED"
 
+    /** This flag controls whether Verilator coverage data writing support is compiled into the simulation harness.
+      */
+    val enableVerilatorCoverage = "SVSIM_ENABLE_VERILATOR_COVERAGE_SUPPORT"
+
     /** This flag controls if VCS-specifc code is compiled.
       */
     val enableVCSSupport = "SVSIM_ENABLE_VCS_SUPPORT"
