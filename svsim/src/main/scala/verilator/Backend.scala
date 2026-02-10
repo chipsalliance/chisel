@@ -162,9 +162,9 @@ object Backend {
       disabledWarnings,
       disableFatalExitOnWarnings,
       enableAllAssertions,
-      new CompilationSettings.CoverageSettings(),
       timing,
-      Some(CompilationSettings.Parallelism.Uniform.default)
+      Some(CompilationSettings.Parallelism.Uniform.default),
+      new CompilationSettings.CoverageSettings()
     )
 
     @deprecated("avoid use of unapply", "Chisel 7.1.0")
@@ -197,9 +197,9 @@ object Backend {
       disabledWarnings = Seq(),
       disableFatalExitOnWarnings = false,
       enableAllAssertions = false,
-      coverageSettings = new CompilationSettings.CoverageSettings(),
       timing = None,
-      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default),
+      coverageSettings = new CompilationSettings.CoverageSettings()
     )
 
   }
@@ -211,9 +211,9 @@ object Backend {
     disabledWarnings:           Seq[String],
     disableFatalExitOnWarnings: Boolean,
     enableAllAssertions:        Boolean,
-    coverageSettings:           CompilationSettings.CoverageSettings,
     timing:                     Option[CompilationSettings.Timing.Type],
-    parallelism:                Option[CompilationSettings.Parallelism.Type]
+    parallelism:                Option[CompilationSettings.Parallelism.Type],
+    coverageSettings:           CompilationSettings.CoverageSettings
   ) extends svsim.Backend.Settings {
 
     @deprecated("use 'CompilationSettings.default' and 'with<name>' helpers", "Chisel 7.1.0")
@@ -232,21 +232,21 @@ object Backend {
       disabledWarnings,
       disableFatalExitOnWarnings,
       enableAllAssertions,
-      new CompilationSettings.CoverageSettings(),
       timing,
-      Some(CompilationSettings.Parallelism.Uniform.default)
+      Some(CompilationSettings.Parallelism.Uniform.default),
+      new CompilationSettings.CoverageSettings()
     )
 
-    def _copy(
+    private def copyInternal(
       traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
       outputSplit:                Option[Int] = this.outputSplit,
       outputSplitCFuncs:          Option[Int] = this.outputSplitCFuncs,
       disabledWarnings:           Seq[String] = this.disabledWarnings,
       disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
       enableAllAssertions:        Boolean = this.enableAllAssertions,
-      coverageSettings:           CompilationSettings.CoverageSettings = this.coverageSettings,
       timing:                     Option[CompilationSettings.Timing.Type] = this.timing,
-      parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism
+      parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism,
+      coverageSettings:           CompilationSettings.CoverageSettings = this.coverageSettings
     ): CompilationSettings = CompilationSettings(
       traceStyle = traceStyle,
       outputSplit = outputSplit,
@@ -254,9 +254,31 @@ object Backend {
       disabledWarnings = disabledWarnings,
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
-      coverageSettings = coverageSettings,
       timing = timing,
-      parallelism = parallelism
+      parallelism = parallelism,
+      coverageSettings = coverageSettings
+    )
+
+    // Keep this signature stable for binary compatibility with prior releases.
+    def _copy(
+      traceStyle:                 Option[CompilationSettings.TraceStyle] = this.traceStyle,
+      outputSplit:                Option[Int] = this.outputSplit,
+      outputSplitCFuncs:          Option[Int] = this.outputSplitCFuncs,
+      disabledWarnings:           Seq[String] = this.disabledWarnings,
+      disableFatalExitOnWarnings: Boolean = this.disableFatalExitOnWarnings,
+      enableAllAssertions:        Boolean = this.enableAllAssertions,
+      timing:                     Option[CompilationSettings.Timing.Type] = this.timing,
+      parallelism:                Option[CompilationSettings.Parallelism.Type] = this.parallelism
+    ): CompilationSettings = copyInternal(
+      traceStyle = traceStyle,
+      outputSplit = outputSplit,
+      outputSplitCFuncs = outputSplitCFuncs,
+      disabledWarnings = disabledWarnings,
+      disableFatalExitOnWarnings = disableFatalExitOnWarnings,
+      enableAllAssertions = enableAllAssertions,
+      timing = timing,
+      parallelism = parallelism,
+      coverageSettings = this.coverageSettings
     )
 
     @deprecated("don't use the copy method, use 'with<name>' single setters", "Chisel 7.1.0")
@@ -275,7 +297,6 @@ object Backend {
       disabledWarnings = disabledWarnings,
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
-      coverageSettings = this.coverageSettings,
       timing = timing,
       parallelism = this.parallelism
     )
@@ -288,19 +309,19 @@ object Backend {
       disabledWarnings:           Seq[String],
       disableFatalExitOnWarnings: Boolean,
       enableAllAssertions:        Boolean,
-      coverageSettings:           CompilationSettings.CoverageSettings,
       timing:                     Option[CompilationSettings.Timing.Type],
-      parallelism:                Option[CompilationSettings.Parallelism.Type]
-    ): CompilationSettings = _copy(
+      parallelism:                Option[CompilationSettings.Parallelism.Type],
+      coverageSettings:           CompilationSettings.CoverageSettings
+    ): CompilationSettings = copyInternal(
       traceStyle = traceStyle,
       outputSplit = outputSplit,
       outputSplitCFuncs = outputSplitCFuncs,
       disabledWarnings = disabledWarnings,
       disableFatalExitOnWarnings = disableFatalExitOnWarnings,
       enableAllAssertions = enableAllAssertions,
-      coverageSettings = coverageSettings,
       timing = timing,
-      parallelism = Some(CompilationSettings.Parallelism.Uniform.default)
+      parallelism = Some(CompilationSettings.Parallelism.Uniform.default),
+      coverageSettings = coverageSettings
     )
 
     def withTraceStyle(traceStyle: Option[CompilationSettings.TraceStyle]) = _copy(traceStyle = traceStyle)
@@ -321,7 +342,7 @@ object Backend {
       * @param coverageSettings coverage kinds to enable during compilation
       */
     def withCoverageSettings(coverageSettings: CompilationSettings.CoverageSettings) =
-      _copy(coverageSettings = coverageSettings)
+      copyInternal(coverageSettings = coverageSettings)
 
     def withTiming(timing: Option[CompilationSettings.Timing.Type]) = _copy(timing = timing)
 

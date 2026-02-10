@@ -105,4 +105,24 @@ class CommandLineSpec extends AnyFlatSpec with Matchers {
     args should not contain "--coverage-user"
   }
 
+  it should "preserve coverage settings when applying other setters" in {
+    import svsim.verilator.Backend.CompilationSettings
+
+    val args = verilatorBackend
+      .generateParameters(
+        "bar",
+        "baz",
+        Seq.empty,
+        CommonCompilationSettings(),
+        CompilationSettings.default
+          .withCoverageSettings(new CompilationSettings.CoverageSettings(line = true))
+          .withTiming(Some(CompilationSettings.Timing.TimingEnabled))
+      )
+      .compilerInvocation
+      .arguments
+
+    args should contain("--coverage-line")
+    args should contain("--timing")
+  }
+
 }
