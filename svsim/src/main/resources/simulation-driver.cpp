@@ -482,7 +482,8 @@ static uint8_t *scanHexBits(const char **scanCursor, const char *scanEnd,
     isNegative = false;
   }
 
-  int byteCount = (bitCount + 7) / 8;
+  // round to 4 bytes since this gets passed as `int32_t *`
+  int byteCount = (bitCount + 31) / 32 * 4;
   uint8_t *bytes = (uint8_t *)calloc(byteCount, sizeof(uint8_t));
   assert(bytes != NULL);
 
@@ -687,7 +688,8 @@ static bool processCommand() {
     GettablePort port;
     resolveGettablePort(id, &port, "resolving port for GET_BITS command");
 
-    int byteCount = (port.bitWidth + 7) / 8;
+    // round to 4 bytes since this gets passed as `int32_t *`
+    int byteCount = (port.bitWidth + 31) / 32 * 4;
     uint8_t *bytes = (uint8_t *)calloc(byteCount, sizeof(uint8_t));
     assert(bytes != NULL);
     (*port.getter)(bytes);
@@ -767,7 +769,8 @@ static bool processCommand() {
       sentinelValue = scanHexBits(&lineCursor, lineEnd, sentinelPort.bitWidth,
                                   "parsing sentinel value for TICK command");
 
-      sentinelPortByteCount = (sentinelPort.bitWidth + 7) / 8;
+      // round to 4 bytes since this gets passed as `int32_t *`
+      sentinelPortByteCount = (sentinelPort.bitWidth + 31) / 32 * 4;
       sentinelPortValue =
           (uint8_t *)calloc(sentinelPortByteCount, sizeof(uint8_t));
       assert(sentinelPortValue != NULL);
