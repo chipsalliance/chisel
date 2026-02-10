@@ -3,7 +3,6 @@ package build
 import mill._
 import mill.api.{BuildCtx, Result}
 import mill.javalib.SonatypeCentralPublishModule
-import mill.javalib.api.internal.ZincOp
 import mill.scalalib._
 import mill.scalalib.scalafmt._
 import mill.scalalib.publish._
@@ -202,21 +201,18 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
       Seq("-d", javadocDir.toString) ++
       unidocSourceFiles().map(_.path.toString)
 
-    val worker = jvmWorker().internalWorker()
-    worker.apply(
-      ZincOp.ScaladocJar(
+    jvmWorker()
+      .worker()
+      .docJar(
         scalaVersion(),
         scalaOrganization(),
         scalaDocClasspath(),
         scalacPluginClasspath(),
-        scalaCompilerBridge(),
-        fullOptions,
-        workDir = Task.dest
-      ),
-      javaHome().map(_.path)
-    ) match {
-      case true  => PathRef(Task.dest)
-      case false => Task.fail("docJar generation failed")
+        None,
+        fullOptions
+      ) match {
+      case true  => Result.Success(PathRef(createJar(Task.dest / "out.jar", Seq(javadocDir))))
+      case false => Result.Failure("docJar generation failed")
     }
   }
 }
