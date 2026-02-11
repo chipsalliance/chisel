@@ -1057,7 +1057,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
       // Elaborate the design
       val dut = ChiselGeneratorAnnotation(() => {
         new TestHarness
-      }).elaborate(1).asInstanceOf[DesignAnnotation[TestHarness]].design
+      }).elaborate.collectFirst { case d@DesignAnnotation(dut: TestHarness, _) => d }.get.design
 
       // Use Select.definitionsIn and Select.definitionsOf
       val definitionsFromIn = Select.definitionsIn(dut.toDefinition)
