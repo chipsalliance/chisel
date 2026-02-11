@@ -157,7 +157,8 @@ object Select {
           case d: DefInstance =>
             d.id match {
               case p: IsClone[_] =>
-                val d = parent._lookup { x => new Definition(Clone(p)).asInstanceOf[Definition[BaseModule]] }
+                // Use Proto(p.getProto) for consistent Definition equality (same as definitionsIn)
+                val d = parent._lookup { x => new Definition(Proto(p.getProto)).asInstanceOf[Definition[BaseModule]] }
                 if (d.isA[T]) Some(d.asInstanceOf[Definition[T]]) else None
               case other: BaseModule =>
                 val d = parent._lookup { x => other.toDefinition }

@@ -423,4 +423,14 @@ object Examples {
     @public val simple = UserDefinedType("foo", wire, inst0)
     @public val parameterized = ParameterizedUserDefinedType(List(1, 2, 3), inst1)
   }
+
+  // For test 9.c in DefinitionSpec - testing .toDefinition on Instance from imported Definition
+  @instantiable
+  class BarForImport extends RawModule {
+    @public val a = WireInit(false.B)
+  }
+  @instantiable
+  class FooForImport extends RawModule {
+    @public val bar = Module(new BarForImport)
+  }
 }

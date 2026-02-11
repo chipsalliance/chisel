@@ -998,6 +998,79 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
+    it(
+      "(9.c): calling .toDefinition on an Instance of a module that was already imported from another Definition should work"
+    ) {
+      import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+      import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+
+      // First elaboration: Create FooForImport with BarForImport inside
+      val fooElab = ChiselStage.elaborate(new FooForImport)
+      val fooDef = fooElab.topDefinition.asInstanceOf[Definition[FooForImport]]
+      // Also get the Bar definition from the first elaboration
+      val barDef = fooDef.bar.toDefinition
+
+      // Second elaboration: Create Baz that imports Foo's Definition and calls .toDefinition on bar
+      class Baz(importedFooDef: Definition[FooForImport]) extends RawModule {
+        val fooInst = Instance(importedFooDef)
+
+        // This tests calling .toDefinition on an Instance's child module
+        // when that Instance came from an imported Definition
+        val barDefFromInst = importedFooDef.bar.toDefinition
+        val barInst = Instance(barDefFromInst)
+      }
+
+      val annos = (new circt.stage.ChiselStage).execute(
+        Array("--target", "chirrtl"),
+        Seq(
+          ChiselGeneratorAnnotation(() => new Baz(fooDef)),
+          ImportDefinitionAnnotation(fooDef),
+          ImportDefinitionAnnotation(barDef)
+        )
+      )
+
+      // Both FooForImport and BarForImport should be extmodules (imported from previous elaboration)
+      // Baz is the only actual module
+      annos.collectFirst { case a: chisel3.stage.ChiselCircuitAnnotation => a.elaboratedCircuit.serialize }.get
+        .fileCheck()(
+          """|CHECK: extmodule FooForImport
+             |CHECK: extmodule BarForImport
+             |CHECK: module Baz :
+             |CHECK: inst fooInst of FooForImport
+             |CHECK: inst barInst of BarForImport
+             |""".stripMargin
+        )
+    }
+    it("(9.d): Definition equality should work correctly for deduplication") {
+      // This test verifies that Definitions with the same proto are properly deduplicated
+      // in Builder.definitions (which uses LinkedHashSet).
+      //
+      // Both definitionsIn and definitionsOf should create Definitions that can be
+      // properly compared for equality when they reference the same underlying proto.
+      import chisel3.aop.Select
+      import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+
+      class TestHarness extends Module {
+        val addOne = Module(new AddOne)
+      }
+
+      // Elaborate the design
+      val dut = ChiselGeneratorAnnotation(() => {
+        new TestHarness
+      }).elaborate.collectFirst { case d @ DesignAnnotation(dut: TestHarness, _) => d }.get.design
+
+      // Use Select.definitionsIn and Select.definitionsOf
+      val definitionsFromIn = Select.definitionsIn(dut.toDefinition)
+      val definitionsFromOf = Select.definitionsOf[AddOne](dut.toDefinition)
+
+      // Both should find the same AddOne module
+      definitionsFromIn.size should be(1)
+      definitionsFromOf.size should be(1)
+
+      // Both should be equal since they reference the same proto
+      // (Both use Proto wrapper now, ensuring proper equality)
+      (definitionsFromIn.head == definitionsFromOf.head) should be(true)
+    }
   }
 
 }
