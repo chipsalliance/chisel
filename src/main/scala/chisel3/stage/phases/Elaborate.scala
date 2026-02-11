@@ -21,7 +21,7 @@ import firrtl.options.{Dependency, Phase}
 import firrtl.options.Viewer.view
 import logger.{LoggerOptions, LoggerOptionsView}
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 import scala.annotation.nowarn
 
 /** Elaborate all [[chisel3.stage.ChiselGeneratorAnnotation]]s into [[chisel3.stage.ChiselCircuitAnnotation]]s.
@@ -53,7 +53,7 @@ class Elaborate extends Phase {
             chiselOptions.sourceRoots,
             None,
             loggerOptions,
-            ArrayBuffer[Definition[_ <: BaseModule]](),
+            mutable.LinkedHashSet[Definition[_ <: BaseModule]](),
             BuilderContextCache.empty,
             chiselOptions.layerMap,
             chiselOptions.inlineTestIncluder,

@@ -1041,6 +1041,36 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
+    it("(9.d): Definition equality should work correctly for deduplication") {
+      // This test verifies that Definitions with the same proto are properly deduplicated
+      // in Builder.definitions (which uses LinkedHashSet).
+      //
+      // Both definitionsIn and definitionsOf should create Definitions that can be
+      // properly compared for equality when they reference the same underlying proto.
+      import chisel3.aop.Select
+      import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+
+      class TestHarness extends Module {
+        val addOne = Module(new AddOne)
+      }
+
+      // Elaborate the design
+      val dut = ChiselGeneratorAnnotation(() => {
+        new TestHarness
+      }).elaborate(1).asInstanceOf[DesignAnnotation[TestHarness]].design
+
+      // Use Select.definitionsIn and Select.definitionsOf
+      val definitionsFromIn = Select.definitionsIn(dut.toDefinition)
+      val definitionsFromOf = Select.definitionsOf[AddOne](dut.toDefinition)
+
+      // Both should find the same AddOne module
+      definitionsFromIn.size should be(1)
+      definitionsFromOf.size should be(1)
+
+      // Both should be equal since they reference the same proto
+      // (Both use Proto wrapper now, ensuring proper equality)
+      (definitionsFromIn.head == definitionsFromOf.head) should be(true)
+    }
   }
 
 }
