@@ -1005,8 +1005,8 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
       import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 
       // First elaboration: Create FooForImport with BarForImport inside
-      val fooAnnos = ChiselGeneratorAnnotation(() => new FooForImport).elaborate
-      val fooDef = fooAnnos.collectFirst { case DesignAnnotation(d: FooForImport, _) => d.toDefinition }.get
+      val fooElab = ChiselStage.elaborate(new FooForImport)
+      val fooDef = fooElab.topDefinition.asInstanceOf[Definition[FooForImport]]
       // Also get the Bar definition from the first elaboration
       val barDef = fooDef.bar.toDefinition
 
