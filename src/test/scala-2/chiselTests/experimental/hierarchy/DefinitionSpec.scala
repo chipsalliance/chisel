@@ -998,6 +998,49 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
+    it(
+      "(9.c): calling .toDefinition on an Instance of a module that was already imported from another Definition should work"
+    ) {
+      import chisel3.experimental.hierarchy.core.ImportDefinitionAnnotation
+      import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+
+      // First elaboration: Create FooForImport with BarForImport inside
+      val fooAnnos = ChiselGeneratorAnnotation(() => new FooForImport).elaborate
+      val fooDef = fooAnnos.collectFirst { case DesignAnnotation(d: FooForImport, _) => d.toDefinition }.get
+      // Also get the Bar definition from the first elaboration
+      val barDef = fooDef.bar.toDefinition
+
+      // Second elaboration: Create Baz that imports Foo's Definition and calls .toDefinition on bar
+      class Baz(importedFooDef: Definition[FooForImport]) extends RawModule {
+        val fooInst = Instance(importedFooDef)
+
+        // This tests calling .toDefinition on an Instance's child module
+        // when that Instance came from an imported Definition
+        val barDefFromInst = importedFooDef.bar.toDefinition
+        val barInst = Instance(barDefFromInst)
+      }
+
+      val annos = (new circt.stage.ChiselStage).execute(
+        Array("--target", "chirrtl"),
+        Seq(
+          ChiselGeneratorAnnotation(() => new Baz(fooDef)),
+          ImportDefinitionAnnotation(fooDef),
+          ImportDefinitionAnnotation(barDef)
+        )
+      )
+
+      // Both FooForImport and BarForImport should be extmodules (imported from previous elaboration)
+      // Baz is the only actual module
+      annos.collectFirst { case a: chisel3.stage.ChiselCircuitAnnotation => a.elaboratedCircuit.serialize }.get
+        .fileCheck()(
+          """|CHECK: extmodule FooForImport
+             |CHECK: extmodule BarForImport
+             |CHECK: module Baz :
+             |CHECK: inst fooInst of FooForImport
+             |CHECK: inst barInst of BarForImport
+             |""".stripMargin
+        )
+    }
   }
 
 }

@@ -132,6 +132,7 @@ object Definition extends SourceInfoDoc {
     Builder.annotations ++= ir._circuit.annotations
     Builder.layers ++= dynamicContext.layers
     Builder.options ++= dynamicContext.options
+    dynamicContext.definitions.foreach(Builder.addDefinition)
     module._circuit = Builder.currentModule
     module.toDefinition
   }
