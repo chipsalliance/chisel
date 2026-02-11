@@ -598,6 +598,9 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
 
   def asAsyncReset(using SourceInfo): AsyncReset = _asAsyncResetImpl
 
+  /** Reinterprets this $coll as a reset */
+  def asReset(using SourceInfo): Reset = _asResetImpl
+
   /** Logical implication
     *
     * @param that a boolean signal

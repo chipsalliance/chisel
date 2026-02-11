@@ -67,6 +67,7 @@ private[chisel3] object ir {
     val DecreasePrecision = PrimOp("decp")
     val AsClockOp = PrimOp("asClock")
     val AsAsyncResetOp = PrimOp("asAsyncReset")
+    val AsResetOp = PrimOp("asReset")
     val UnsafeDomainCast = PrimOp("unsafe_domain_cast")
   }
 
