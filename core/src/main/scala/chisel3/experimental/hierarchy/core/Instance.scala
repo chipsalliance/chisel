@@ -70,8 +70,8 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
   override def toDefinition: Definition[A] = {
     val result = new Definition(Proto(proto))
     // Because we are creating a new Definition, we should update our Builder.definitions
-    if (Builder.inContext && !Builder.definitions.view.map(_.proto).contains(result.proto)) {
-      Builder.definitions += result
+    if (Builder.inContext && proto.isInstanceOf[BaseModule]) {
+      Builder.addDefinition(result.asInstanceOf[Definition[BaseModule]])
     }
     result
   }

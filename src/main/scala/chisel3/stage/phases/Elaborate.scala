@@ -4,6 +4,7 @@ package chisel3.stage.phases
 
 import chisel3.Module
 import chisel3.experimental.hierarchy.core.Definition
+import chisel3.experimental.BaseModule
 import chisel3.internal.ExceptionHelpers.ThrowableHelpers
 import chisel3.internal.{Builder, BuilderContextCache, DynamicContext, ElaborationTrace}
 import chisel3.internal.firrtl.ir
@@ -52,7 +53,7 @@ class Elaborate extends Phase {
             chiselOptions.sourceRoots,
             None,
             loggerOptions,
-            ArrayBuffer[Definition[_]](),
+            ArrayBuffer[Definition[_ <: BaseModule]](),
             BuilderContextCache.empty,
             chiselOptions.layerMap,
             chiselOptions.inlineTestIncluder,

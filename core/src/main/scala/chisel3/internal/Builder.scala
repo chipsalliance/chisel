@@ -473,7 +473,7 @@ private[chisel3] class DynamicContext(
   val defaultNamespace:    Option[Namespace],
   // Definitions from other scopes in the same elaboration, use allDefinitions below
   val loggerOptions:      LoggerOptions,
-  val definitions:        ArrayBuffer[Definition[_]],
+  val definitions:        ArrayBuffer[Definition[_ <: BaseModule]],
   val contextCache:       BuilderContextCache,
   val layerMap:           Map[layer.Layer, layer.Layer],
   val inlineTestIncluder: InlineTestIncluder,
@@ -599,7 +599,16 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.aliasMap
 
   def components:  ArrayBuffer[Component] = dynamicContext.components
-  def definitions: ArrayBuffer[Definition[_]] = dynamicContext.definitions
+  def definitions: ArrayBuffer[Definition[_ <: BaseModule]] = dynamicContext.definitions
+  def addDefinition(definition: Definition[_ <: BaseModule]): Unit = {
+    // Only add a definition if it doesn't already exist and isn't an imported definition
+    if (
+      !dynamicContext.definitions.map(_.proto).contains(definition.proto) && !dynamicContext.importedDefinitionMap
+        .contains(definition.proto.name)
+    ) {
+      dynamicContext.definitions += definition
+    }
+  }
 
   def annotations: ArrayBuffer[() => Seq[Annotation]] = dynamicContext.annotations
 
