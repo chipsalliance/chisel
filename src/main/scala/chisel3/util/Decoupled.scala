@@ -16,7 +16,13 @@ import chisel3.reflect.DataMirror
   * of ready or valid.
   * @param gen the type of data to be wrapped in DecoupledIO
   */
-class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen) {
+class DecoupledIO[+T <: Data](gen: () => T) extends ReadyValidIO[T](gen) {
+
+  @deprecated(
+    "Use companion object apply to make a Decoupled. Use constructor that takes () => T if extending Decoupled.",
+    "Chisel 7.9.0"
+  )
+  def this(gen: T) = this(() => gen)
 
   /** Applies the supplied functor to the bits of this interface, returning a new
     * typed DecoupledIO interface.
@@ -37,7 +43,7 @@ class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen) {
 object Decoupled {
 
   /** Wraps some Data with a DecoupledIO interface. */
-  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(() => gen)
 
   // TODO: use a proper empty data type, this is a quick and dirty solution
   private final class EmptyBundle extends Bundle
@@ -58,7 +64,7 @@ object Decoupled {
       DataMirror.directionOf(irr.bits) == Direction.Output,
       "Only safe to cast produced Irrevocable bits to Decoupled."
     )
-    val d = Wire(new DecoupledIO(chiselTypeOf(irr.bits)))
+    val d = Wire(new DecoupledIO(() => chiselTypeOf(irr.bits)))
     d.bits := irr.bits
     d.valid := irr.valid
     irr.ready := d.ready

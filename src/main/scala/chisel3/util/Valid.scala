@@ -21,7 +21,13 @@ import chisel3.util.simpleClassName
   * @see [[Valid$ Valid factory]] for concrete examples
   * @groupdesc Signals The actual hardware fields of the Bundle
   */
-class Valid[+T <: Data](gen: T) extends Bundle {
+class Valid[+T <: Data](gen: () => T) extends Bundle {
+
+  @deprecated(
+    "Use companion object apply to make a Valid. Use constructor that takes () => T if extending Valid.",
+    "Chisel 7.9.0"
+  )
+  def this(gen: T) = this(() => gen)
 
   /** A bit that will be asserted when `bits` is valid
     * @group Signals
@@ -31,7 +37,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   /** The data to be transferred, qualified by `valid`
     * @group Signals
     */
-  val bits = Output(gen)
+  val bits = Output(gen())
 
   /** True when `valid` is asserted
     * @return a Chisel [[Bool]] true if `valid` is asserted
@@ -41,7 +47,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   /** A non-ambiguous name of this `Valid` instance for use in generated Verilog names
     * Inserts the parameterized generator's typeName, e.g. Valid_UInt4
     */
-  override def typeName = s"${simpleClassName(this.getClass)}_${gen.typeName}"
+  override def typeName = s"${simpleClassName(this.getClass)}_${bits.typeName}"
 
   /** Applies the supplied functor to the bits of this interface, returning a new typed Valid interface.
     * @param f The function to apply to this Valid's 'bits' with return type B
@@ -94,5 +100,5 @@ object Valid {
     * @param gen the data to wrap
     * @return the wrapped input data
     */
-  def apply[T <: Data](gen: T): Valid[T] = new Valid(gen)
+  def apply[T <: Data](gen: T): Valid[T] = new Valid(() => gen)
 }

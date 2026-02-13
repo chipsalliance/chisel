@@ -16,7 +16,10 @@ import chisel3.util.simpleClassName
   * @param gen the type of data to be wrapped in Ready/Valid
   * @groupdesc Signals The actual hardware fields of the Bundle
   */
-abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
+abstract class ReadyValidIO[+T <: Data](gen: () => T) extends Bundle {
+
+  @deprecated("Use constructor that takes () => T if extending ReadyValidIO.", "Chisel 7.9.0")
+  def this(gen: T) = this(() => gen)
 
   /** Indicates that the consumer is ready to accept the data this cycle
     * @group Signals
@@ -31,12 +34,12 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle {
   /** The data to be transferred when ready and valid are asserted at the same cycle
     * @group Signals
     */
-  val bits = Output(gen)
+  val bits = Output(gen())
 
   /** A stable typeName for this `ReadyValidIO` and any of its implementations
     * using the supplied `Data` generator's `typeName`
     */
-  override def typeName = s"${simpleClassName(this.getClass)}_${gen.typeName}"
+  override def typeName = s"${simpleClassName(this.getClass)}_${bits.typeName}"
 }
 
 object ReadyValidIO {
