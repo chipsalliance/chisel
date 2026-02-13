@@ -29,7 +29,7 @@ object ChiselTypeHelpers {
     Flags.ParamAccessor
   )
 
-  val goodFlagsUnapply = Set(Flags.Synthetic, Flags.Artifact)
+  val goodFlagsUnapply = Set(Flags.Synthetic)
 
   def okVal(dd: tpd.ValDef)(using Context): Boolean = {
     val modsOk = badFlagsVal.forall(f => !dd.symbol.flags.is(f))
@@ -51,8 +51,13 @@ object ChiselTypeHelpers {
 
     val tpe = dd.tpt.tpe
 
-    tpe.typeSymbol.fullName.startsWith("Tuple")
+    // In Scala 3, synthetic unapply temps have names like $1$, $2$, ...
+    val name = dd.name.toString
+    val isSyntheticTempName = name.startsWith("$") && name.endsWith("$") && name.length > 2
+
+    tpe.typeSymbol.fullName.toString.startsWith("scala.Tuple")
     && flagsOk
+    && isSyntheticTempName
     && !isNull
     && !dd.rhs.isEmpty
   }
@@ -105,6 +110,18 @@ object ChiselTypeHelpers {
     val optionClass = getClassIfDefined("scala.Option")
     val iterableClass = getClassIfDefined("scala.collection.Iterable")
 
+    // Check if a type is data or a tuple that contains Data
+    def containsData(t: Type): Boolean = {
+      isData(t) || (isTupleType(t) && tupleHasData(t))
+    }
+
+    // Check if any element of a tuple type is a Data or contains Data
+    def tupleHasData(t: Type): Boolean = t match {
+      case AppliedType(_, args) =>
+        args.exists(arg => isData(arg) || (isTupleType(arg) && tupleHasData(arg)))
+      case _ => false
+    }
+
     // Recursion here is needed only for nested iterables. These
     // nested iterable may or may not have Data in their leaves.
     def rec(tpe: Type): Boolean = {
@@ -115,8 +132,8 @@ object ChiselTypeHelpers {
               val isIterable = tp.symbol.derivesFrom(iterableClass)
               val isOption = tp.symbol == optionClass
 
-              (isOption, isIterable, isData(arg)) match {
-                case (true, false, true)  => true // Option
+              (isOption, isIterable, containsData(arg)) match {
+                case (true, false, true)  => true // Option with Data or tuple containing Data
                 case (false, true, true)  => !ignoreSeq // Iterable with Data
                 case (false, true, false) => rec(arg) // Possibly nested iterable
                 case _                    => false
@@ -155,7 +172,20 @@ object ChiselTypeHelpers {
     t.baseClasses.contains(bundleTpe)
   }
 
-  def isNamed(t: Type)(using Context): Boolean = {
+  def isTupleType(t: Type)(using Context): Boolean = {
+    t.typeSymbol.fullName.toString.startsWith("scala.Tuple")
+  }
+
+  // Get the arity of a tuple type, or 0 if not a tuple
+  def tupleArity(t: Type)(using Context): Int = {
+    t match {
+      case AppliedType(_, args) if isTupleType(t) => args.length
+      case _                                      => 0
+    }
+  }
+
+  // Check if type is directly a NamedComponent (not recursive through tuples)
+  private def isDirectlyNamed(t: Type)(using Context): Boolean = {
     val dataTpe = getClassIfDefined("chisel3.Data")
     val memBaseTpe = getClassIfDefined("chisel3.MemBase")
     val verifTpe = getClassIfDefined("chisel3.VerificationStatement")
@@ -169,6 +199,28 @@ object ChiselTypeHelpers {
     || t.baseClasses.contains(disableTpe)
     || t.baseClasses.contains(affectsTpe)
     || t.baseClasses.contains(dynObjTpe)
+  }
+
+  def isNamed(t: Type)(using Context): Boolean = {
+    isDirectlyNamed(t) || (isTupleType(t) && tupleHasNamed(t))
+  }
+
+  // Check if any element of a tuple type is a NamedComponent
+  def tupleHasNamed(t: Type)(using Context): Boolean = t match {
+    case AppliedType(_, args) =>
+      args.exists { arg =>
+        isDirectlyNamed(arg) || (isTupleType(arg) && tupleHasNamed(arg))
+      }
+    case _ => false
+  }
+
+  // Get per-element naming info for tuple types (true if element should be named)
+  def tupleFieldsOfInterest(t: Type)(using Context): List[Boolean] = t match {
+    case AppliedType(_, args) =>
+      args.map { arg =>
+        isDirectlyNamed(arg) || (isTupleType(arg) && tupleHasNamed(arg))
+      }
+    case _ => Nil
   }
 
   def isModule(t: Type)(using Context): Boolean = {
