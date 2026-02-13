@@ -89,6 +89,15 @@ class ResetSpec extends AnyFlatSpec with Matchers {
     async should include("always @(posedge clk or posedge rst)")
   }
 
+  it should "be able to be derived from Bool" in {
+    val fir = ChiselStage.emitCHIRRTL(new RawModule {
+      val in = IO(Input(Bool()))
+      val out = IO(Output(Reset()))
+      out := in.asReset
+    })
+    fir should include("asReset(in)")
+  }
+
   behavior.of("Users")
 
   they should "be able to force implicit reset to be synchronous" in {

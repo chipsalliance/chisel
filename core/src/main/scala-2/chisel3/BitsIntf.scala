@@ -892,6 +892,12 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
 
+  /** Reinterprets this $coll as a reset */
+  def asReset: Reset = macro SourceInfoTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asReset(implicit sourceInfo: SourceInfo): Reset = _asResetImpl
+
   /** Logical implication
    *
    * @param that a boolean signal
