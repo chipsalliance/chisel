@@ -860,6 +860,8 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"firrtl/options/BareShell.html#","e":false,"i":"","n":"BareShell","t":"BareShell(val applicationName: String)","d":"firrtl.options","k":"class","x":""},
 {"l":"firrtl/options/BareShell.html#applicationName-0","e":false,"i":"","n":"applicationName","t":"applicationName: String","d":"firrtl.options.BareShell","k":"val","x":""},
 {"l":"firrtl/options/BareShell.html#parse-4c1","e":false,"i":"","n":"parse","t":"parse(args: Array[String], initAnnos: AnnotationSeq = ...): AnnotationSeq","d":"firrtl.options.BareShell","k":"def","x":""},
+{"l":"firrtl/options/BareShell.html#parser-0","e":false,"i":"","n":"parser","t":"parser: DuplicateHandling & ExceptOnError","d":"firrtl.options.BareShell","k":"val","x":""},
+{"l":"firrtl/options/BareShell.html#parserSetup-94c","e":false,"i":"","n":"parserSetup","t":"parserSetup(): Unit","d":"firrtl.options.BareShell","k":"def","x":""},
 {"l":"firrtl/options/BufferedCustomFileEmission.html#","e":false,"i":"","n":"BufferedCustomFileEmission","t":"BufferedCustomFileEmission extends CustomFileEmission","d":"firrtl.options","k":"trait","x":""},
 {"l":"firrtl/options/BufferedCustomFileEmission.html#getBytes-0","e":false,"i":"","n":"getBytes","t":"getBytes: Iterable[Byte]","d":"firrtl.options.BufferedCustomFileEmission","k":"def","x":""},
 {"l":"firrtl/options/BufferedCustomFileEmission.html#getBytesBuffered-0","e":false,"i":"","n":"getBytesBuffered","t":"getBytesBuffered: Iterable[Array[Byte]]","d":"firrtl.options.BufferedCustomFileEmission","k":"def","x":""},
