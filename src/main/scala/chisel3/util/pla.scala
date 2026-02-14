@@ -2,7 +2,9 @@
 
 package chisel3.util
 
+import scala.collection.mutable.{Map => MutMap}
 import chisel3._
+import chisel3.experimental._
 
 object pla {
 
@@ -129,4 +131,44 @@ object pla {
 
     (inputs, outputs)
   }
+}
+
+object pla_intrinsic {
+  def apply(table: Seq[(BitPat, BitPat)]): (UInt, UInt) = {
+    require(table.nonEmpty, "pla table must not be empty")
+
+    val (inputTerms, outputTerms) = table.unzip
+    require(
+      inputTerms.map(_.getWidth).distinct.size == 1,
+      "all `BitPat`s in the input part of specified PLA table must have the same width"
+    )
+    require(
+      outputTerms.map(_.getWidth).distinct.size == 1,
+      "all `BitPat`s in the output part of specified PLA table must have the same width"
+    )
+
+    // now all inputs / outputs have the same width
+    val numberOfInputs = inputTerms.head.getWidth
+    val numberOfOutputs = outputTerms.head.getWidth
+
+    val inputs = Wire(UInt(numberOfInputs.W))
+    val outputs = Wire(UInt(numberOfOutputs.W))
+
+    val intrinsic = Module(new PLAIntrinsic(table))
+    intrinsic.input := inputs
+    outputs := intrinsic.output
+    (inputs, outputs)
+  }
+}
+
+private class PLAIntrinsic(table: Seq[(BitPat, BitPat)]) extends IntrinsicModule("circt_pla", {
+  table.zipWithIndex.foldLeft(MutMap.empty[String, Param]) {
+    case (map, ((input, output), i)) =>
+      map(s"input${i + 1}") = input.value
+      map(s"output${i + 1}") = output.value
+      map
+  }.toMap
+}) {
+  val input = IO(Input(UInt()))
+  val output = IO(Output(UInt()))
 }
