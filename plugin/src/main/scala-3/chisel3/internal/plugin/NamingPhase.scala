@@ -8,7 +8,7 @@ import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.ast.Trees
 import dotty.tools.dotc.core.Contexts.*
 import dotty.tools.dotc.core.Symbols.*
-import dotty.tools.dotc.core.Names.TermName
+import dotty.tools.dotc.core.Names.{termName, Name, TermName}
 import dotty.tools.dotc.core.StdNames.*
 import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.typer.TyperPhase
@@ -41,7 +41,10 @@ class ChiselNamingPhase extends PluginPhase {
   private var prefixApplyMethod: TermSymbol = _
 
   // Map of synthetic unapply temp names like $1$ to list of extracted names
-  private val unapplyNamesMap = mutable.Map[String, List[String]]()
+  private val unapplyNamesMap = mutable.Map[Name, List[TermName]]()
+
+  // Empty name constant for missing tuple elements
+  private val EmptyName = termName("")
 
   // Scan a list of statements to find unapply patterns and collect name mappings.
   // In Scala 3, simple tuple unapply like `val (a, b) = expr` is desugared to:
@@ -52,7 +55,7 @@ class ChiselNamingPhase extends PluginPhase {
     // Find all synthetic tuple vals
     val syntheticTupleVals = stats.collect {
       case vd: tpd.ValDef if ChiselTypeHelpers.okUnapply(vd) && !vd.rhs.isInstanceOf[Match] =>
-        vd.name.toString -> ChiselTypeHelpers.tupleArity(vd.tpt.tpe)
+        vd.name -> ChiselTypeHelpers.tupleArity(vd.tpt.tpe)
     }.toMap
 
     // Pattern to match tuple element accessors like _1, _2, etc.
@@ -61,15 +64,17 @@ class ChiselNamingPhase extends PluginPhase {
     val selectsByQualifier = stats.collect {
       case tpd.ValDef(name, _, Select(qual, selectedName)) if ChiselTypeHelpers.isTupleType(qual.tpe) =>
         // Extract qualifier name, handling both local (Ident) and member (Select) access
-        val qualName = qual match {
-          case Ident(n)           => n.toString
-          case Select(This(_), n) => n.toString
-          case Select(_, n)       => n.toString
-          case _                  => ""
+        val qualName: Option[Name] = qual match {
+          case Ident(n)           => Some(n)
+          case Select(This(_), n) => Some(n)
+          case Select(_, n)       => Some(n)
+          case _                  => None
         }
-        selectedName.toString match {
-          case TupleIndex(idx) => Some((qualName, idx.toInt - 1, name.toString))
-          case _               => None
+        qualName.flatMap { qn =>
+          selectedName.toString match {
+            case TupleIndex(idx) => Some((qn, idx.toInt - 1, name))
+            case _               => None
+          }
         }
     }.flatten.groupBy(_._1)
 
@@ -77,7 +82,7 @@ class ChiselNamingPhase extends PluginPhase {
       selectsByQualifier.get(syntheticName).foreach { selects =>
         val indexedNames = selects.map(t => (t._2, t._3)).filter { case (idx, _) => idx >= 0 && idx < arity }
         if (indexedNames.nonEmpty) {
-          val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse("")).toList
+          val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse(EmptyName)).toList
           unapplyNamesMap(syntheticName) = names
         }
       }
@@ -167,12 +172,12 @@ class ChiselNamingPhase extends PluginPhase {
       // Handle simple tuple unapply like: val (a, b) = (Wire(...), Wire(...))
       // Names are collected from subsequent selecting ValDefs via prepareForBlock
       val fieldsOfInterest = ChiselTypeHelpers.tupleFieldsOfInterest(tpt)
-      unapplyNamesMap.get(valName) match {
+      unapplyNamesMap.get(tree.name) match {
         case Some(names) if fieldsOfInterest.nonEmpty && fieldsOfInterest.exists(identity) =>
           // Only name fields that are NamedComponents
-          val onames = fieldsOfInterest.zip(names).map { case (ok, n) => if (ok) n else "" }
+          val onames = fieldsOfInterest.zip(names).map { case (ok, n) => if (ok) n else EmptyName }
           val newRHS = transformFollowing(rhs)
-          val nameLiterals = onames.map(n => Literal(Constant(n)))
+          val nameLiterals = onames.map(n => Literal(Constant(n.toString)))
           val named =
             tpd
               .ref(pluginModule)
