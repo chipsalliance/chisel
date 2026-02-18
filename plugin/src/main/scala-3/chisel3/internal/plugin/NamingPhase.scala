@@ -58,11 +58,8 @@ class ChiselNamingPhase extends PluginPhase {
     // Pattern to match tuple element accessors like _1, _2, etc.
     val TupleIndex = "_([0-9]+)".r
 
-    // For each synthetic tuple val, find the subsequent selecting ValDefs
-    // that extract tuple elements (e.g., val a = $1$._1 or val a = this.$1$._1)
-    syntheticTupleVals.foreach { case (syntheticName, arity) =>
-      // Collect (index, name) pairs from selecting ValDefs
-      val indexedNames = stats.collect { case tpd.ValDef(name, _, Select(qual, selectedName)) =>
+    val selectsByQualifier = stats.collect {
+      case tpd.ValDef(name, _, Select(qual, selectedName)) if ChiselTypeHelpers.isTupleType(qual.tpe) =>
         // Extract qualifier name, handling both local (Ident) and member (Select) access
         val qualName = qual match {
           case Ident(n)           => n.toString
@@ -70,14 +67,19 @@ class ChiselNamingPhase extends PluginPhase {
           case Select(_, n)       => n.toString
           case _                  => ""
         }
-        (qualName, selectedName.toString, name.toString)
-      }.collect { case (`syntheticName`, TupleIndex(idx), name) =>
-        (idx.toInt - 1, name)
-      }.filter { case (idx, _) => idx >= 0 && idx < arity }
+        selectedName.toString match {
+          case TupleIndex(idx) => Some((qualName, idx.toInt - 1, name.toString))
+          case _               => None
+        }
+    }.flatten.groupBy(_._1)
 
-      if (indexedNames.nonEmpty) {
-        val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse("")).toList
-        unapplyNamesMap(syntheticName) = names
+    syntheticTupleVals.foreach { case (syntheticName, arity) =>
+      selectsByQualifier.get(syntheticName).foreach { selects =>
+        val indexedNames = selects.map(t => (t._2, t._3)).filter { case (idx, _) => idx >= 0 && idx < arity }
+        if (indexedNames.nonEmpty) {
+          val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse("")).toList
+          unapplyNamesMap(syntheticName) = names
+        }
       }
     }
   }
