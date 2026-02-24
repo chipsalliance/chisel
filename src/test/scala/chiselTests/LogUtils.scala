@@ -33,7 +33,8 @@ trait LogUtils {
     val baos = new ByteArrayOutputStream()
     val stream = new PrintStream(baos, true, "utf-8")
     val ret = Logger.makeScope(LogLevelAnnotation(level) :: Nil) {
-      Logger.setOutput(stream)
+      Logger.setStandardOutput(stream)
+      Logger.setErrorOutput(stream)
       thunk
     }
     (baos.toString, ret)
