@@ -173,7 +173,7 @@ object ChiselTypeHelpers {
   }
 
   def isTupleType(t: Type)(using Context): Boolean = {
-    t.typeSymbol.fullName.toString.startsWith("scala.Tuple")
+    ctx.definitions.isTupleClass(t.typeSymbol)
   }
 
   // Get the arity of a tuple type, or 0 if not a tuple
