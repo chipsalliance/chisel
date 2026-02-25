@@ -52,35 +52,45 @@ class ChiselNamingPhase extends PluginPhase {
   //   val a = $1$._1
   //   val b = $1$._2
   private def collectUnapplyNames(stats: List[tpd.Tree])(using Context): Unit = {
-    // Find all synthetic tuple vals
-    val syntheticTupleVals = stats.collect {
-      case vd: tpd.ValDef if ChiselTypeHelpers.okUnapply(vd) && !vd.rhs.isInstanceOf[Match] =>
-        vd.name -> ChiselTypeHelpers.tupleArity(vd.tpt.tpe)
-    }.toMap
-
     // Pattern to match tuple element accessors like _1, _2, etc.
     val TupleIndex = "_([0-9]+)".r
 
-    val selectsByQualifier = stats.collect {
-      case tpd.ValDef(name, _, Select(qual, selectedName)) if ChiselTypeHelpers.isTupleType(qual.tpe) =>
-        // Extract qualifier name, handling both local (Ident) and member (Select) access
-        val qualName: Option[Name] = qual match {
-          case Ident(n)           => Some(n)
-          case Select(This(_), n) => Some(n)
-          case Select(_, n)       => Some(n)
-          case _                  => None
-        }
-        qualName.flatMap { qn =>
-          selectedName.toString match {
-            case TupleIndex(idx) => Some((qn, idx.toInt - 1, name))
-            case _               => None
+    val syntheticTupleVals = mutable.Map[Name, Int]()
+    val selectsByQualifier = mutable.Map[Name, mutable.ListBuffer[(Int, TermName)]]()
+
+    stats.foreach {
+      case vd: tpd.ValDef =>
+        if (ChiselTypeHelpers.okUnapply(vd) && !vd.rhs.isInstanceOf[Match]) {
+          // Synthetic tuple val from unapply
+          syntheticTupleVals(vd.name) = ChiselTypeHelpers.tupleArity(vd.tpt.tpe)
+        } else {
+          // Check for tuple element select like: val a = $1$._1
+          vd.rhs match {
+            // Extract qualifier name, handling both local (Ident) and member (Select) access
+            case Select(qual, selectedName) if ChiselTypeHelpers.isTupleType(qual.tpe) =>
+              val qualName: Option[Name] = qual match {
+                case Ident(n)           => Some(n)
+                case Select(This(_), n) => Some(n)
+                case Select(_, n)       => Some(n)
+                case _                  => None
+              }
+              qualName.foreach { qn =>
+                selectedName.toString match {
+                  case TupleIndex(idx) =>
+                    selectsByQualifier.getOrElseUpdate(qn, mutable.ListBuffer()) += ((idx.toInt - 1, vd.name))
+                  case _ =>
+                }
+              }
+            case _ =>
           }
         }
-    }.flatten.groupBy(_._1)
+      case _ =>
+    }
 
+    // Build unapplyNamesMap from collected data
     syntheticTupleVals.foreach { case (syntheticName, arity) =>
       selectsByQualifier.get(syntheticName).foreach { selects =>
-        val indexedNames = selects.map(t => (t._2, t._3)).filter { case (idx, _) => idx >= 0 && idx < arity }
+        val indexedNames = selects.filter { case (idx, _) => idx >= 0 && idx < arity }
         if (indexedNames.nonEmpty) {
           val names = (0 until arity).map(i => indexedNames.find(_._1 == i).map(_._2).getOrElse(EmptyName)).toList
           unapplyNamesMap(syntheticName) = names
