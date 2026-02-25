@@ -55,7 +55,7 @@ object ChiselTypeHelpers {
     val name = dd.name.toString
     val isSyntheticTempName = name.startsWith("$") && name.endsWith("$") && name.length > 2
 
-    tpe.typeSymbol.fullName.toString.startsWith("scala.Tuple")
+    isTupleType(tpe)
     && flagsOk
     && isSyntheticTempName
     && !isNull
