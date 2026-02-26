@@ -1,4 +1,4 @@
-// RUN: JDK_JAVA_OPTIONS='-Dchisel.project.root=' not scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" %s | FileCheck %s
+// RUN: JDK_JAVA_OPTIONS='-Dchisel.project.root=' not scala-cli --server=false --java-home=%JAVAHOME --extra-jars=%RUNCLASSPATH --scala-version=%SCALAVERSION --scala-option="-Xplugin:%SCALAPLUGINJARS" %s 2>&1 | FileCheck %s
 // SPDX-License-Identifier: Apache-2.0
 
 import chisel3._

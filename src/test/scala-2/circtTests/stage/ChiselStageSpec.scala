@@ -615,7 +615,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
         }
       }
 
-      val lines = stdout.split("\n")
+      val lines = stderr.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include(
         "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 122:9: Negative shift amounts are illegal (got -1)"
@@ -635,7 +635,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
         }
       }
 
-      val lines = stdout.split("\n")
+      val lines = stderr.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
       lines(0) should include(
@@ -662,7 +662,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
         }
       }
 
-      val lines = stdout.split("\n")
+      val lines = stderr.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include("Foo 3:10: Negative shift amounts are illegal (got -1)")
       lines(1) should include("I am the file in sourceroot1")
@@ -687,7 +687,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
         }
       }
 
-      val lines = stdout.split("\n")
+      val lines = stderr.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines(0) should include("Foo 3:10: Negative shift amounts are illegal (got -1)")
       lines(1) should include("I am the file in sourceroot2")
