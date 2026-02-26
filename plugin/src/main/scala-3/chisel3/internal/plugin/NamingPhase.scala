@@ -78,13 +78,13 @@ class ChiselNamingPhase extends PluginPhase {
                 selectedName.toString match {
                   case TupleIndex(idx) =>
                     selectsByQualifier.getOrElseUpdate(qn, mutable.ListBuffer()) += ((idx.toInt - 1, vd.name))
-                  case _ =>
+                  case _ => ()
                 }
               }
-            case _ =>
+            case _ => ()
           }
         }
-      case _ =>
+      case _ => ()
     }
 
     // Build unapplyNamesMap from collected data
