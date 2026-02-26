@@ -28,10 +28,10 @@ class PortSpec extends AnyFlatSpec with Matchers with FileCheck {
       .emitCHIRRTL(new Dummy)
       .fileCheck()(
         """|CHECK:      public module Dummy :
-           |CHECK-NEXT:   input clock : Clock @[src/test/scala-2/chiselTests/PortSpec.scala 16:9
-           |CHECK-NEXT:   input reset : UInt<1> @[src/test/scala-2/chiselTests/PortSpec.scala 16:9
-           |CHECK-NEXT:   output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[src/test/scala-2/chiselTests/PortSpec.scala 17:16
-           |CHECK-NEXT:   output out : UInt<1> @[src/test/scala-2/chiselTests/PortSpec.scala 18:17
+           |CHECK-NEXT:   input clock : Clock @[src/test/scala/chiselTests/PortSpec.scala 16:
+           |CHECK-NEXT:   input reset : UInt<1> @[src/test/scala/chiselTests/PortSpec.scala 16:
+           |CHECK-NEXT:   output in : { flip foo : UInt<1>, flip bar : UInt<8>} @[src/test/scala/chiselTests/PortSpec.scala 17:
+           |CHECK-NEXT:   output out : UInt<1> @[src/test/scala/chiselTests/PortSpec.scala 18:
            |""".stripMargin
       )
   }
