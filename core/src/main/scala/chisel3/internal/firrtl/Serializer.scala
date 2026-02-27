@@ -37,9 +37,10 @@ private[chisel3] object Serializer {
 
   /** Generate a legal FIRRTL name. */
   private def legalize(name: String): String = name match {
-    // If the name starts with a digit, then escape it with backticks.
+    // If the name starts with a digit, escape it with backticks.
     case _ if name.head.isDigit => s"`$name`"
-    case _                      => name
+    // Otherwise, use the common keyword legalization
+    case _ => fir.Keywords.legalize(name)
   }
 
   /** create a new line with the appropriate indent */
@@ -115,7 +116,7 @@ private[chisel3] object Serializer {
 
   private def serialize(arg: Arg, ctx: Component, info: SourceInfo)(implicit b: StringBuilder): Unit = arg match {
     case Node(id)  => serialize(getRef(id, info), ctx, info)
-    case Ref(name) => b ++= name
+    case Ref(name) => b ++= legalize(name)
     // We don't need to legalize Slot names, firtool can parse subfields starting with digits
     case Slot(imm, name) => serialize(imm, ctx, info); b += '.'; b ++= legalize(name)
     case OpaqueSlot(imm) => serialize(imm, ctx, info)
@@ -126,11 +127,11 @@ private[chisel3] object Serializer {
     case Index(imm, value) =>
       serialize(imm, ctx, info); b += '['; serialize(value, ctx, info); b += ']'
     case ModuleIO(mod, name) =>
-      if (mod eq ctx.id) { b ++= name }
-      else { b ++= getRef(mod, info).name; b += '.'; b ++= name }
+      if (mod eq ctx.id) { b ++= legalize(name) }
+      else { b ++= getRef(mod, info).name; b += '.'; b ++= legalize(name) }
     case ModuleCloneIO(mod, name) =>
       if (mod eq ctx.id) clonedModuleIOError(mod, name, info)
-      else { b ++= name }
+      else { b ++= legalize(name) }
     case u @ ULit(n, w) =>
       val width = w match {
         case UnknownWidth => u.minWidth
@@ -518,7 +519,7 @@ private[chisel3] object Serializer {
             b ++= "flip "
           case _ => ()
         }
-        b ++= legalize(getRef(elt, info).name); b ++= " : "
+        b ++= getRef(elt, info).name; b ++= " : "
         serializeType(elt, childClearDir, info, checkProbe, true, typeAliases)
       }
       if (!t._isOpaqueType) {

@@ -58,10 +58,10 @@ class BulkConnectSpec extends AnyPropSpec with Matchers {
       deq <> enq
     })
 
-    chirrtl shouldNot include("connect wire, enq")
-    chirrtl should include("connect wire.bits, enq.bits")
-    chirrtl should include("connect wire.valid, enq.valid")
-    chirrtl should include("connect wire.ready, enq.ready")
+    chirrtl shouldNot include("connect `wire`, enq")
+    chirrtl should include("connect `wire`.`bits`, enq.`bits`")
+    chirrtl should include("connect `wire`.valid, enq.valid")
+    chirrtl should include("connect `wire`.ready, enq.ready")
     chirrtl should include("connect deq, enq")
   }
 
