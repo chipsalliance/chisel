@@ -43,7 +43,7 @@ class FlatIOSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new MyModule)
       .fileCheck()(
-        """|CHECK:      connect out.bits, bits
+        """|CHECK:      connect out.`bits`, `bits`
            |CHECK-NEXT: connect out.valid, valid
            |"""".stripMargin
       )

@@ -17,10 +17,10 @@ class ValidSpec extends AnyFlatSpec with Matchers {
     })
 
     // Check for data assignment
-    chirrtl should include("""node _out_map_bits_T = add(in.bits, UInt<1>(0h1))""")
+    chirrtl should include("""node _out_map_bits_T = add(in.`bits`, UInt<1>(0h1))""")
     chirrtl should include("""node _out_map_bits = tail(_out_map_bits_T, 1)""")
-    chirrtl should include("""connect _out_map.bits, _out_map_bits""")
-    chirrtl should include("""connect out.bits, _out_map.bits""")
+    chirrtl should include("""connect _out_map.`bits`, _out_map_bits""")
+    chirrtl should include("""connect out.`bits`, _out_map.`bits`""")
 
     // Check for valid assignment
     chirrtl should include("""connect _out_map.valid, in.valid""")
@@ -57,20 +57,20 @@ class ValidSpec extends AnyFlatSpec with Matchers {
     // Check for data assignment
     chirrtl should include("""wire _out_map_bits : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
 
-    chirrtl should include("""node _out_map_bits_res_foo_T = add(in.bits.foo, UInt<1>(0h1)""")
+    chirrtl should include("""node _out_map_bits_res_foo_T = add(in.`bits`.foo, UInt<1>(0h1)""")
     chirrtl should include("""node _out_map_bits_res_foo_T_1 = tail(_out_map_bits_res_foo_T, 1)""")
     chirrtl should include("""connect _out_map_bits.foo, _out_map_bits_res_foo_T_1""")
 
-    chirrtl should include("""node _out_map_bits_res_bar_T = sub(in.bits.bar, UInt<1>(0h1)""")
+    chirrtl should include("""node _out_map_bits_res_bar_T = sub(in.`bits`.bar, UInt<1>(0h1)""")
     chirrtl should include("""node _out_map_bits_res_bar_T_1 = tail(_out_map_bits_res_bar_T, 1)""")
     chirrtl should include("""connect _out_map_bits.bar, _out_map_bits_res_bar_T_1""")
 
     chirrtl should include("""connect _out_map_bits.fizz, UInt<1>(0h0)""")
     chirrtl should include("""connect _out_map_bits.buzz, UInt<1>(0h1)""")
 
-    chirrtl should include("""connect _out_map.bits, _out_map_bits""")
+    chirrtl should include("""connect _out_map.`bits`, _out_map_bits""")
     for ((field, _) <- (new TestBundle).elements) {
-      chirrtl should include(s"""connect out.bits.$field, _out_map.bits.$field""")
+      chirrtl should include(s"""connect out.`bits`.$field, _out_map.`bits`.$field""")
     }
 
     // Check for valid assignment
@@ -95,9 +95,9 @@ class ValidSpec extends AnyFlatSpec with Matchers {
     chirrtl should include("""wire _out_map : { valid : UInt<1>, bits : UInt<8>}""")
 
     // Check for data assignment
-    chirrtl should include("""node _out_map_bits = and(in.bits.foo, in.bits.bar)""")
-    chirrtl should include("""connect _out_map.bits, _out_map_bits""")
-    chirrtl should include("""connect out.bits, _out_map.bits""")
+    chirrtl should include("""node _out_map_bits = and(in.`bits`.foo, in.`bits`.bar)""")
+    chirrtl should include("""connect _out_map.`bits`, _out_map_bits""")
+    chirrtl should include("""connect out.`bits`, _out_map.`bits`""")
 
     // Check for valid assignment
     chirrtl should include("""connect _out_map.valid, in.valid""")
