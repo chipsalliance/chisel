@@ -331,7 +331,7 @@ class FixedIOModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
       .fileCheck()(
         """| CHECK: module Foo :
            | CHECK:   input clock : Clock
-           | CHECK:   input reset : UInt<1>
+           | CHECK:   input `reset` : UInt<1>
            | CHECK:   output io : UInt<8>
            |""".stripMargin
       )

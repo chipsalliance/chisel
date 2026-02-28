@@ -190,7 +190,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       | CHECK:        inst dut of ModuleWithTests
       | CHECK:        inst monitor of ProtocolMonitor
       | CHECK-NEXT:   connect monitor.clock, clock
-      | CHECK-NEXT:   connect monitor.reset, init
+      | CHECK-NEXT:   connect monitor.`reset`, init
       | CHECK-NEXT:   connect monitor.io.out, read(dut.monProbe).out
       | CHECK-NEXT:   connect monitor.io.in, read(dut.monProbe).in
       |
@@ -345,7 +345,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       s"""
       | CHECK:      module ModuleWithTests
       | CHECK-NEXT:   input clock : Clock
-      | CHECK-NEXT:   input reset : ${resetType}
+      | CHECK-NEXT:   input `reset` : ${resetType}
       |
       | CHECK:      public module test_ModuleWithTests_check1
       | CHECK-NEXT:   input clock : Clock

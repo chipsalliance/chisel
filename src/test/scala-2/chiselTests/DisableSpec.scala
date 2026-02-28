@@ -33,7 +33,7 @@ class DisableSpec extends AnyFlatSpec with Matchers {
       val doDisable = Module.disableOption
     })
     chirrtl should include("module Top :")
-    chirrtl should include("node doDisable_has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
+    chirrtl should include("node doDisable_has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, `reset`)")
     chirrtl should include("node doDisable = eq(doDisable_has_been_reset, UInt<1>(0h0))")
   }
 
