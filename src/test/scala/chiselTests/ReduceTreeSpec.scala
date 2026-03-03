@@ -5,13 +5,13 @@ package chiselTests
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.util.{is, switch, DecoupledIO, Enum}
+import chisel3.util.{is, switch, Decoupled, DecoupledIO, Enum}
 import org.scalatest.propspec.AnyPropSpec
 
 class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
   val io = IO(new Bundle {
-    val in = Flipped(Vec(n, new DecoupledIO(gen)))
-    val out = new DecoupledIO(gen)
+    val in = Flipped(Vec(n, Decoupled(gen)))
+    val out = Decoupled(gen)
   })
 
   def arbitrateTwo(a: DecoupledIO[T], b: DecoupledIO[T]) = {
@@ -19,7 +19,7 @@ class Arbiter[T <: Data: Manifest](n: Int, private val gen: T) extends Module {
     val idleA :: idleB :: hasA :: hasB :: Nil = Enum(4)
     val regData = Reg(gen)
     val regState = RegInit(idleA)
-    val out = Wire(new DecoupledIO(gen))
+    val out = Wire(Decoupled(gen))
 
     a.ready := regState === idleA
     b.ready := regState === idleB

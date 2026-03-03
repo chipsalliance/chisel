@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.testing.scalatest.FileCheck
-import chisel3.util.{DecoupledIO, Valid}
+import chisel3.util.{Decoupled, DecoupledIO, Valid}
 import chisel3.experimental.{attach, Analog}
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import circt.stage.ChiselStage
@@ -1049,6 +1049,7 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
     ignore("(7.b): should work on Aggregate Views") {
       import chiselTests.experimental.FlatDecoupledDataView._
       type RegDecoupled = DecoupledIO[FizzBuzz]
+      val RegDecoupled = Decoupled
       @instantiable
       class MyModule extends RawModule {
         private val a = IO(Flipped(new FlatDecoupled))
@@ -1059,8 +1060,8 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
         deq <> enq
       }
       class Top extends RawModule {
-        val foo = IO(Flipped(new RegDecoupled(new FizzBuzz)))
-        val bar = IO(new RegDecoupled(new FizzBuzz))
+        val foo = IO(Flipped(RegDecoupled(new FizzBuzz)))
+        val bar = IO(RegDecoupled(new FizzBuzz))
         val i = Instance(Definition(new MyModule))
         i.enq <> foo
         i.enq_valid := foo.valid // Make sure connections also work for @public on elements of a larger Aggregate
