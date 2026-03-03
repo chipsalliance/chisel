@@ -454,12 +454,12 @@ SystemVerilog may be difficult for you to use FileCheck with due to the default
 SystemVerilog lowering, emission, and pretty printing used by `firtool`.  To
 make it easier to write your tests, we suggest using the following options:
 
-- `-loweringOptions=emittedLineLength=160` to increase the allowable line
+- `--lowering-options=emittedLineLength=160` to increase the allowable line
   length.  By default, `firtool` will wrap lines that exceed 80 characters.  You
   may consider using a _very long_ line length (e.g., 8192) to avoid this
   problem altogether.
 
-- `-loweringOptions=disallowLocalVariables` to disable generation of `automatic
+- `--lowering-options=disallowLocalVariables` to disable generation of `automatic
   logic` temporaries in always blocks.  This can cause temporaries to spill
   within an always block which may be slightly unexpected.
 
