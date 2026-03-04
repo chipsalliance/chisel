@@ -40,7 +40,7 @@ object v extends Module {
   val pluginScalaCrossVersions = {
     val scala213: Seq[String] = 0.to(18).map("2.13." + _)
     val scala33:  Seq[String] = 7.to(7).map("3.3." + _)
-    val scala38:  Seq[String] = 0.to(1).map("3.8." + _)
+    val scala38:  Seq[String] = 0.to(2).map("3.8." + _)
     scala213 ++ scala33 ++ scala38
   }
 
