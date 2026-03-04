@@ -171,6 +171,122 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       thrown.getMessage must include("observed value UInt<32>(3) != UInt<3>(5)")
     }
 
+    it("should support hex formatting for failed expect values") {
+      val thrown = the[FailedExpectationException[_]] thrownBy {
+        simulate(new PeekPokeTestModule(w)) { dut =>
+          val vecDim = dut.vecDim
+          setExpectFailureValueFormat(ExpectationValueFormat.Hex)
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> 1.U,
+              _.b -> 2.U,
+              _.v1 -> Vec.Lit(Seq.fill(vecDim)(3.U(w.W)): _*),
+              _.v2 -> Vec.Lit(Seq.fill(vecDim)(4.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(TestOp.Add)
+          dut.clock.step()
+
+          dut.io.out.bits.c.expect(5.U)
+        }
+      }
+      thrown.getMessage must include("Observed value: 'UInt<32>(0x3)'")
+      thrown.getMessage must include("Expected value: 'UInt<3>(0x5)'")
+      thrown.getMessage must include("observed value UInt<32>(0x3) != UInt<3>(0x5)")
+    }
+
+    it("should support binary formatting for failed expect values") {
+      val thrown = the[FailedExpectationException[_]] thrownBy {
+        simulate(new PeekPokeTestModule(w)) { dut =>
+          val vecDim = dut.vecDim
+          setExpectFailureValueFormat(ExpectationValueFormat.Bin)
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> 1.U,
+              _.b -> 2.U,
+              _.v1 -> Vec.Lit(Seq.fill(vecDim)(3.U(w.W)): _*),
+              _.v2 -> Vec.Lit(Seq.fill(vecDim)(4.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(TestOp.Add)
+          dut.clock.step()
+
+          dut.io.out.bits.c.expect(5.U)
+        }
+      }
+      thrown.getMessage must include("Observed value: 'UInt<32>(0b11)'")
+      thrown.getMessage must include("Expected value: 'UInt<3>(0b101)'")
+      thrown.getMessage must include("observed value UInt<32>(0b11) != UInt<3>(0b101)")
+    }
+
+    it("should support custom formatting for failed expect values") {
+      val customFormat = ExpectationValueFormat.Custom { value =>
+        s"${value.chiselType}(custom:${value.signedValue};w:${value.bitWidth})"
+      }
+      val thrown = the[FailedExpectationException[_]] thrownBy {
+        simulate(new PeekPokeTestModule(w)) { dut =>
+          val vecDim = dut.vecDim
+          setExpectFailureValueFormat(customFormat)
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> 1.U,
+              _.b -> 2.U,
+              _.v1 -> Vec.Lit(Seq.fill(vecDim)(3.U(w.W)): _*),
+              _.v2 -> Vec.Lit(Seq.fill(vecDim)(4.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(TestOp.Add)
+          dut.clock.step()
+
+          dut.io.out.bits.c.expect(5.U)
+        }
+      }
+      thrown.getMessage must include("Observed value: 'UInt<32>(custom:3;w:32)'")
+      thrown.getMessage must include("Expected value: 'UInt<3>(custom:5;w:3)'")
+      thrown.getMessage must include("observed value UInt<32>(custom:3;w:32) != UInt<3>(custom:5;w:3)")
+    }
+
+    it("should preserve default formatting for expect(BigInt, message)") {
+      val thrown = the[FailedExpectationException[_]] thrownBy {
+        simulate(new PeekPokeTestModule(w)) { dut =>
+          val vecDim = dut.vecDim
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> 1.U,
+              _.b -> 2.U,
+              _.v1 -> Vec.Lit(Seq.fill(vecDim)(3.U(w.W)): _*),
+              _.v2 -> Vec.Lit(Seq.fill(vecDim)(4.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(TestOp.Add)
+          dut.clock.step()
+
+          dut.io.out.bits.c.expect(BigInt(5), "bigint message")
+        }
+      }
+      thrown.getMessage must include("Observed value: 'UInt<32>(3)'")
+      thrown.getMessage must include("Expected value: '5'")
+      thrown.getMessage must include("bigint message")
+    }
+
+    it("should scope expect failure format overrides with withExpectFailureValueFormat") {
+      simulate(new PeekPokeTestModule(w)) { _ =>
+        getExpectFailureValueFormat must be(ExpectationValueFormat.Default)
+        withExpectFailureValueFormat(ExpectationValueFormat.Hex) {
+          getExpectFailureValueFormat must be(ExpectationValueFormat.Hex)
+        }
+        getExpectFailureValueFormat must be(ExpectationValueFormat.Default)
+      }
+    }
+
     it("should correctly report failed expect() on a Record") {
       val thrown = the[FailedExpectationException[_]] thrownBy {
         simulate(new PeekPokeTestModule(w)) { dut =>

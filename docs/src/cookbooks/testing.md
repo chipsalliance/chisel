@@ -59,6 +59,30 @@ This enables Verilator coverage instrumentation and writes `coverage.dat` at
 the end of simulation. You can convert it to LCOV info with `verilator_coverage`
 for downstream reporting tools.
 
+## How do I customize `expect` failure value formatting?
+
+Inside a simulation body, use `setExpectFailureValueFormat` or
+`withExpectFailureValueFormat`.
+
+```scala
+import chisel3.simulator.ExpectationValueFormat
+
+simulate(new Foo) { dut =>
+  setExpectFailureValueFormat(ExpectationValueFormat.Hex)
+  dut.io.out.expect(0xfe.U)
+
+  withExpectFailureValueFormat(ExpectationValueFormat.Bin) {
+    dut.io.out.expect(0xff.U)
+  }
+
+  val custom = ExpectationValueFormat.Custom { value =>
+    s"${value.chiselType}(unsigned=0x${value.unsignedValue.toString(16)})"
+  }
+  setExpectFailureValueFormat(custom)
+  dut.io.out.expect(0xff.U)
+}
+```
+
 ## How do I see what options a ChiselSim Scalatest test supports?
 
 Pass `-Dhelp=1` to Scalatest, e.g.:

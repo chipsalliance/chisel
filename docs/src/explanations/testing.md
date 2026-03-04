@@ -103,6 +103,63 @@ These APIs are summarized below:
 - `step` toggles a clock for a number of cycles
 - `stepUntil` toggles a clock until a condition occurs on another port
 
+#### Formatting `expect` Failure Values
+
+When `expect` fails, ChiselSim throws a `FailedExpectationException` that
+prints observed and expected values.  You can configure how these values are
+rendered during a simulation.
+
+Available formats are:
+
+- `ExpectationValueFormat.Default` (existing behavior)
+- `ExpectationValueFormat.Hex` (numeric part printed as `0x...`)
+- `ExpectationValueFormat.Bin` (numeric part printed as `0b...`)
+- `ExpectationValueFormat.Custom(fn)` (user-defined formatting function)
+
+Format control APIs are:
+
+- `setExpectFailureValueFormat(format)` sets the format for subsequent
+  `expect`s until changed again
+- `withExpectFailureValueFormat(format) { ... }` temporarily overrides the
+  format for a lexical block, then restores the previous value
+- `getExpectFailureValueFormat` returns the current format
+
+These APIs are only valid inside an active simulation body, e.g., inside
+`simulate { ... }` or `simulateRaw { ... }`.
+
+```scala
+import chisel3._
+import chisel3.simulator._
+import chisel3.simulator.scalatest.ChiselSim
+import org.scalatest.funspec.AnyFunSpec
+
+class ExpectFormatExample extends AnyFunSpec with ChiselSim {
+  class Foo extends Module {
+    val in = IO(Input(UInt(8.W)))
+    val out = IO(Output(UInt(8.W)))
+    out := in
+  }
+
+  it("formats failed expect values") {
+    simulate(new Foo) { dut =>
+      setExpectFailureValueFormat(ExpectationValueFormat.Hex)
+      dut.in.poke(3.U)
+      dut.out.expect(5.U) // failure shows UInt<8>(0x3) vs UInt<3>(0x5)
+
+      withExpectFailureValueFormat(ExpectationValueFormat.Bin) {
+        dut.out.expect(5.U) // failure shows UInt<8>(0b11) vs UInt<3>(0b101)
+      }
+
+      val custom = ExpectationValueFormat.Custom { value =>
+        s"${value.chiselType}(signed=${value.signedValue}, unsigned=0x${value.unsignedValue.toString(16)})"
+      }
+      setExpectFailureValueFormat(custom)
+      dut.out.expect(5.U)
+    }
+  }
+}
+```
+
 For more information see the [Chisel API
 documentation](https://www.chisel-lang.org/api) for
 `chisel3.simulator.PeekPokeAPI`.
