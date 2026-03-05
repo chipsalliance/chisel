@@ -27,8 +27,7 @@ trait Peekable[T <: Data] {
       * @param expected the expected value
       * @throws FailedExpectationException if the observed value does not match the expected value
       */
-  def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, "", ExpectationValueFormat.Default)
+  def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = expect(expected, "")
 
   /**
   * Expect the value of a data port to be equal to the expected value.
@@ -37,8 +36,7 @@ trait Peekable[T <: Data] {
   * @param message a message for the failure case
   * @throws FailedExpectationException if the observed value does not match the expected value
   */
-  def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, message, ExpectationValueFormat.Default)
+  def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit
 
   /**
   * Expect the value of a data port to be equal to the expected value.
@@ -58,7 +56,8 @@ trait Peekable[T <: Data] {
   * @param format formatting strategy for rendered values in failure output
   * @throws FailedExpectationException if the observed value does not match the expected value
   */
-  def expect(expected: T, message: String, format: ExpectationValueFormat.Type)(implicit sourceInfo: SourceInfo): Unit
+  def expect(expected: T, message: String, format: ExpectationValueFormat.Type)(implicit sourceInfo: SourceInfo): Unit =
+    expect(expected, message)
 
   private[simulator] def dataToString(value: Data): String = {
     value match {
@@ -228,14 +227,14 @@ sealed trait TestableAggregate[T <: Aggregate] extends PeekPokable[T] {
    *  @param message a message for the failure case
    * @throws FailedExpectationException if the observed value does not match the expected value
    */
+  def expectPartial(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit
+
   def expectPartial(
     expected: T,
     message:  String,
     format:   ExpectationValueFormat.Type
-  )(implicit sourceInfo: SourceInfo): Unit
-
-  def expectPartial(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-    expectPartial(expected, message, ExpectationValueFormat.Default)
+  )(implicit sourceInfo: SourceInfo): Unit =
+    expectPartial(expected, message)
 
   def expectPartial(expected: T, format: ExpectationValueFormat.Type)(implicit sourceInfo: SourceInfo): Unit =
     expectPartial(expected, "", format)
@@ -281,10 +280,10 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
   private def portBitWidth: Int = if (data.widthKnown) data.getWidth else 0
 
   protected final def formatLiteralForExpectFailure(
-    literal:    Data,
+    literal:     Data,
     signedValue: BigInt,
-    bitWidth:   Int,
-    format:     ExpectationValueFormat.Type
+    bitWidth:    Int,
+    format:      ExpectationValueFormat.Type
   ): String = {
     format match {
       case ExpectationValueFormat.Default =>
@@ -313,9 +312,9 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     formatLiteralForExpectFailure(expected, expected.litValue, expected.getWidth, format)
 
   protected final def formatRawForExpectFailure(
-    value:   BigInt,
+    value:    BigInt,
     bitWidth: Int,
-    format:  ExpectationValueFormat.Type
+    format:   ExpectationValueFormat.Type
   ): String = {
     format match {
       case ExpectationValueFormat.Default =>
@@ -416,10 +415,15 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
   * @param buildMessage a function taking (observedValue: T, expectedValue: T) and returning a String message for the failure case
   * @throws FailedExpectationException if the observed value does not match the expected value
   */
+  def expect(expected: T, buildMessage: (T, T) => String)(
+    implicit sourceInfo: SourceInfo
+  ): Unit =
+    expect(expected, buildMessage, ExpectationValueFormat.Default)
+
   def expect(
-    expected:    T,
+    expected:     T,
     buildMessage: (T, T) => String,
-    format:      ExpectationValueFormat.Type = ExpectationValueFormat.Default
+    format:       ExpectationValueFormat.Type
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -433,6 +437,9 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
       sourceInfo = sourceInfo
     )
   }
+
+  override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
+    expect(expected, (_: T, _: T) => message, ExpectationValueFormat.Default)
 
   override def expect(
     expected: T,
@@ -481,8 +488,17 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     )
   }
 
-  override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, ExpectationValueFormat.Default)
+  override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
+    require(expected.isLit, s"Expected value: $expected must be a literal")
+    expect(
+      expected,
+      (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
+      formatObserved =
+        (obs: Simulation.Value) => formatObservedLiteralForExpectFailure(obs, ExpectationValueFormat.Default),
+      formatExpected = (exp: T) => formatExpectedLiteralForExpectFailure(exp, ExpectationValueFormat.Default),
+      sourceInfo = sourceInfo
+    )
+  }
 }
 
 object PeekPokeAPI {
@@ -600,10 +616,19 @@ object PeekPokeAPI {
     }
 
     def expect(
-      expected:    T,
+      expected:     T,
       buildMessage: (T, T, String) => String,
-      format:      ExpectationValueFormat.Type = ExpectationValueFormat.Default,
       allowPartial: Boolean = false
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
+      expect(expected, buildMessage, ExpectationValueFormat.Default, allowPartial)
+
+    def expect(
+      expected:     T,
+      buildMessage: (T, T, String) => String,
+      format:       ExpectationValueFormat.Type,
+      allowPartial: Boolean
     )(
       implicit sourceInfo: SourceInfo
     ): Unit = {
@@ -644,12 +669,18 @@ object PeekPokeAPI {
     ): String = (if (userMessage.nonEmpty) s"$userMessage\n" else "") +
       s"Expectation failed for element '$elName': observed value ${dataToString(observed.elements(elName))} != expected value ${dataToString(expected.elements(elName))}"
 
+    override def expectPartial(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = true)
+
     override def expectPartial(
       expected: T,
       message:  String,
       format:   ExpectationValueFormat.Type
     )(implicit sourceInfo: SourceInfo): Unit =
       expect(expected, defaultMessageBuilder(_, _, _, message), format = format, allowPartial = true)
+
+    override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = false)
 
     override def expect(
       expected: T,
@@ -694,12 +725,18 @@ object PeekPokeAPI {
     ): String = (if (userMessage.nonEmpty) s"$userMessage\n" else "") +
       s"Expectation failed for Vec element at index $elIndex: observed value ${dataToString(observed(elIndex))} != expected value ${dataToString(expected(elIndex))}"
 
+    override def expectPartial(expected: Vec[T], message: String)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = true)
+
     override def expectPartial(
       expected: Vec[T],
       message:  String,
       format:   ExpectationValueFormat.Type
     )(implicit sourceInfo: SourceInfo): Unit =
       expect(expected, defaultMessageBuilder(_, _, _, message), format = format, allowPartial = true)
+
+    override def expect(expected: Vec[T], message: String)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, defaultMessageBuilder(_, _, _, message), allowPartial = false)
 
     override def expect(
       expected: Vec[T],
@@ -709,10 +746,19 @@ object PeekPokeAPI {
       expect(expected, defaultMessageBuilder(_, _, _, message), format = format, allowPartial = false)
 
     def expect(
-      expected:    Vec[T],
+      expected:     Vec[T],
       buildMessage: (Vec[T], Vec[T], Int) => String,
-      format:      ExpectationValueFormat.Type = ExpectationValueFormat.Default,
       allowPartial: Boolean = false
+    )(
+      implicit sourceInfo: SourceInfo
+    ): Unit =
+      expect(expected, buildMessage, ExpectationValueFormat.Default, allowPartial)
+
+    def expect(
+      expected:     Vec[T],
+      buildMessage: (Vec[T], Vec[T], Int) => String,
+      format:       ExpectationValueFormat.Type,
+      allowPartial: Boolean
     )(
       implicit sourceInfo: SourceInfo
     ): Unit = {
@@ -755,6 +801,9 @@ object PeekPokeAPI {
     }
 
     def peek()(implicit sourceInfo: SourceInfo): T = toPeekable.peek().asInstanceOf[T]
+
+    override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
+      expect(expected, message, ExpectationValueFormat.Default)
 
     override def expect(
       expected: T,
