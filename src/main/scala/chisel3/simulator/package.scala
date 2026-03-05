@@ -101,26 +101,6 @@ package object simulator {
       }
     }
 
-    // -- Expect Failure Formatting
-
-    private var expectFailureValueFormat: ExpectationValueFormat.Type = ExpectationValueFormat.Default
-
-    private[simulator] def getExpectFailureValueFormat: ExpectationValueFormat.Type =
-      expectFailureValueFormat
-
-    private[simulator] def setExpectFailureValueFormat(format: ExpectationValueFormat.Type): Unit = {
-      expectFailureValueFormat = format
-    }
-
-    private[simulator] def withExpectFailureValueFormat[T](format: ExpectationValueFormat.Type)(body: => T): T = {
-      val previous = expectFailureValueFormat
-      expectFailureValueFormat = format
-      try {
-        body
-      } finally {
-        expectFailureValueFormat = previous
-      }
-    }
   }
   private[simulator] object AnySimulatedModule {
     private val dynamicVariable = new scala.util.DynamicVariable[Option[AnySimulatedModule]](None)

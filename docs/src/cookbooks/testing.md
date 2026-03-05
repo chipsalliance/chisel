@@ -61,25 +61,26 @@ for downstream reporting tools.
 
 ## How do I customize `expect` failure value formatting?
 
-Inside a simulation body, use `setExpectFailureValueFormat` or
-`withExpectFailureValueFormat`.
+Pass a format directly to `expect`.
 
 ```scala
 import chisel3.simulator.ExpectationValueFormat
 
 simulate(new Foo) { dut =>
-  setExpectFailureValueFormat(ExpectationValueFormat.Hex)
-  dut.io.out.expect(0xfe.U)
+  dut.io.out.expect(0xfe.U, ExpectationValueFormat.Hex)
+  dut.io.out.expect(0xff.U, ExpectationValueFormat.Bin)
 
-  withExpectFailureValueFormat(ExpectationValueFormat.Bin) {
-    dut.io.out.expect(0xff.U)
-  }
-
+  val jumpInst = BigInt("0000006f", 16) // jal x0, 0
+  val retInst = BigInt("00008067", 16) // jalr x0, x1, 0 (ret)
   val custom = ExpectationValueFormat.Custom { value =>
-    s"${value.chiselType}(unsigned=0x${value.unsignedValue.toString(16)})"
+    val mnemonic = value.unsignedValue match {
+      case `jumpInst` => "jump"
+      case `retInst`  => "ret"
+      case inst       => s"unknown(0x${inst.toString(16)})"
+    }
+    s"riscv($mnemonic)"
   }
-  setExpectFailureValueFormat(custom)
-  dut.io.out.expect(0xff.U)
+  dut.io.out.expect(jumpInst.U(32.W), custom)
 }
 ```
 

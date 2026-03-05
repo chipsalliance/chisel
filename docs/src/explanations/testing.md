@@ -107,7 +107,7 @@ These APIs are summarized below:
 
 When `expect` fails, ChiselSim throws a `FailedExpectationException` that
 prints observed and expected values.  You can configure how these values are
-rendered during a simulation.
+rendered for each `expect` call.
 
 Available formats are:
 
@@ -116,16 +116,10 @@ Available formats are:
 - `ExpectationValueFormat.Bin` (numeric part printed as `0b...`)
 - `ExpectationValueFormat.Custom(fn)` (user-defined formatting function)
 
-Format control APIs are:
+Format is selected per call by passing an extra argument to `expect`:
 
-- `setExpectFailureValueFormat(format)` sets the format for subsequent
-  `expect`s until changed again
-- `withExpectFailureValueFormat(format) { ... }` temporarily overrides the
-  format for a lexical block, then restores the previous value
-- `getExpectFailureValueFormat` returns the current format
-
-These APIs are only valid inside an active simulation body, e.g., inside
-`simulate { ... }` or `simulateRaw { ... }`.
+- `expect(expected, format)`
+- `expect(expected, message, format)`
 
 ```scala
 import chisel3._
@@ -135,26 +129,29 @@ import org.scalatest.funspec.AnyFunSpec
 
 class ExpectFormatExample extends AnyFunSpec with ChiselSim {
   class Foo extends Module {
-    val in = IO(Input(UInt(8.W)))
-    val out = IO(Output(UInt(8.W)))
+    val in = IO(Input(UInt(32.W)))
+    val out = IO(Output(UInt(32.W)))
     out := in
   }
 
   it("formats failed expect values") {
     simulate(new Foo) { dut =>
-      setExpectFailureValueFormat(ExpectationValueFormat.Hex)
       dut.in.poke(3.U)
-      dut.out.expect(5.U) // failure shows UInt<8>(0x3) vs UInt<3>(0x5)
+      dut.out.expect(5.U, ExpectationValueFormat.Hex) // failure shows UInt<32>(0x3) vs UInt<3>(0x5)
+      dut.out.expect(5.U, ExpectationValueFormat.Bin) // failure shows UInt<32>(0b11) vs UInt<3>(0b101)
 
-      withExpectFailureValueFormat(ExpectationValueFormat.Bin) {
-        dut.out.expect(5.U) // failure shows UInt<8>(0b11) vs UInt<3>(0b101)
-      }
-
+      val jumpInst = BigInt("0000006f", 16) // jal x0, 0
+      val retInst = BigInt("00008067", 16) // jalr x0, x1, 0 (ret)
       val custom = ExpectationValueFormat.Custom { value =>
-        s"${value.chiselType}(signed=${value.signedValue}, unsigned=0x${value.unsignedValue.toString(16)})"
+        val mnemonic = value.unsignedValue match {
+          case `jumpInst` => "jump"
+          case `retInst`  => "ret"
+          case inst       => s"unknown(0x${inst.toString(16)})"
+        }
+        s"riscv($mnemonic)"
       }
-      setExpectFailureValueFormat(custom)
-      dut.out.expect(5.U)
+      dut.in.poke(retInst.U(32.W))
+      dut.out.expect(jumpInst.U(32.W), custom)
     }
   }
 }
