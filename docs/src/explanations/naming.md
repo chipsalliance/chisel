@@ -8,7 +8,7 @@ section: "chisel3"
 Historically, Chisel has had trouble reliably capturing the names of signals. The reasons for this are due to (1)
 primarily relying on reflection to find names, (2) using `@chiselName` macro which had unreliable behavior.
 
-Chisel 3.4 introduced a custom Scala compiler plugin which enables reliabe and automatic capturing of signal names, when
+Chisel 3.4 introduced a custom Scala compiler plugin which enables reliable and automatic capturing of signal names, when
 they are declared. In addition, this release includes prolific use of a new prefixing API which enables more stable
 naming of signals programmatically generated from function calls.
 
