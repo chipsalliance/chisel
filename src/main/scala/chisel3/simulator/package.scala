@@ -228,7 +228,7 @@ package object simulator {
       // likley should be included:
       //   - Verilog files: '*.v', '*.sv', or '*.vh'.
       //   - C++ files: '.cc', '.cpp', '.h'
-      val include_re = "^.*\\.(s?v|vh?|cc|cpp|h)$".r
+      val include_re = "^.*\\.(s?v|vh?|cc|cpp|svh|h)$".r
       Files
         .walk(supportArtifactsPath)
         .filter(_.toFile.isFile)

@@ -441,6 +441,17 @@ final class Workspace(
       Files.walkFileTree(Paths.get(dir), new DirectoryVisitor)
     }
 
+    // Sort source files to ensure targets-*.svh headers come before RTL sources
+    // This is necessary for instance choice macro headers to be elaborated before use
+    val sortedSourceFiles = sourceFiles.sortWith { (a, b) =>
+      val isTargetsHeaderA = a.matches(".*targets-.*\\.svh$")
+      val isTargetsHeaderB = b.matches(".*targets-.*\\.svh$")
+
+      if (isTargetsHeaderA && !isTargetsHeaderB) true // targets-*.svh headers come first
+      else if (!isTargetsHeaderA && isTargetsHeaderB) false // Other files come after
+      else a.compareTo(b) < 0 // Same type: alphabetical order
+    }
+
     val traceFileStem = commonSettings.simulationSettings.traceFileStem
     val simulationEnvironment = Seq(
       "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
@@ -451,7 +462,7 @@ final class Workspace(
     val sourceFilesFilelistWriter = new LineWriter(s"$workingDirectoryPath/sourceFiles.F")
     try {
       val l = sourceFilesFilelistWriter
-      sourceFiles.foreach(l(_))
+      sortedSourceFiles.foreach(l(_))
       l()
     } finally {
       sourceFilesFilelistWriter.close()

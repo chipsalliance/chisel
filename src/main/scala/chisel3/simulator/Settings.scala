@@ -98,6 +98,10 @@ object MacroText {
   * environment variable and `chiselsim.libraries` Java property.
   * @param libraryPaths Paths to libraries to include in simulation. Use this to
   * provide implementations for DPI functions, for example.
+  * @param instanceChoices Instance choice selections as (specializationTime, option, case) tuples.
+  * Use SpecializationTime.FirtoolCompilationTime to specialize during FIRRTL compilation,
+  * or SpecializationTime.VerilogElaborationTime to defer to Verilog elaboration time.
+  * Use this to select specific implementations for instance_choice operations.
   */
 final class Settings[A <: RawModule] private[simulator] (
   /** Layers to turn on/off during Verilog elaboration */
@@ -109,7 +113,8 @@ final class Settings[A <: RawModule] private[simulator] (
   val enableWavesAtTimeZero: Boolean,
   val randomization:         Randomization,
   val libraries:             Seq[String],
-  val libraryPaths:          Seq[String]
+  val libraryPaths:          Seq[String],
+  val instanceChoices:       InstanceChoiceControl.Type = InstanceChoiceControl(Seq.empty)
 ) {
 
   def copy(
@@ -119,7 +124,10 @@ final class Settings[A <: RawModule] private[simulator] (
     stopCond:              Option[MacroText.Type[A]] = stopCond,
     plusArgs:              Seq[svsim.PlusArg] = plusArgs,
     enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
-    randomization:         Randomization = randomization
+    randomization:         Randomization = randomization,
+    libraries:             Seq[String] = libraries,
+    libraryPaths:          Seq[String] = libraryPaths,
+    instanceChoices:       InstanceChoiceControl.Type = instanceChoices
   ) =
     new Settings(
       verilogLayers,
@@ -130,7 +138,8 @@ final class Settings[A <: RawModule] private[simulator] (
       enableWavesAtTimeZero,
       randomization,
       libraries,
-      libraryPaths
+      libraryPaths,
+      instanceChoices
     )
 
   def withLibraries(libraries: Seq[String]): Settings[A] =
@@ -143,7 +152,8 @@ final class Settings[A <: RawModule] private[simulator] (
       enableWavesAtTimeZero,
       randomization,
       libraries,
-      libraryPaths
+      libraryPaths,
+      instanceChoices
     )
 
   def withLibraryPaths(libraryPaths: Seq[String]): Settings[A] =
@@ -156,7 +166,22 @@ final class Settings[A <: RawModule] private[simulator] (
       enableWavesAtTimeZero,
       randomization,
       libraries,
-      libraryPaths
+      libraryPaths,
+      instanceChoices
+    )
+
+  def withInstanceChoices(instanceChoices: InstanceChoiceControl.Type): Settings[A] =
+    new Settings(
+      verilogLayers,
+      assertVerboseCond,
+      printfCond,
+      stopCond,
+      plusArgs,
+      enableWavesAtTimeZero,
+      randomization,
+      libraries,
+      libraryPaths,
+      instanceChoices
     )
 
   private[simulator] def preprocessorDefines(
@@ -207,7 +232,8 @@ object Settings {
     enableWavesAtTimeZero = false,
     randomization = Randomization.random,
     libraries = Seq.empty,
-    libraryPaths = Seq.empty
+    libraryPaths = Seq.empty,
+    instanceChoices = InstanceChoiceControl(Seq.empty)
   )
 
   /** Return a default [[Settings]] for a [[RawModule]].
@@ -238,7 +264,8 @@ object Settings {
     enableWavesAtTimeZero = false,
     randomization = Randomization.random,
     libraries = Seq.empty,
-    libraryPaths = Seq.empty
+    libraryPaths = Seq.empty,
+    instanceChoices = InstanceChoiceControl(Seq.empty)
   )
 
   /** Return a default [[Settings]] for a [[SimulationTestHarnessInterface]].  Macros will be set to
@@ -267,7 +294,8 @@ object Settings {
     enableWavesAtTimeZero = false,
     randomization = Randomization.random,
     libraries = Seq.empty,
-    libraryPaths = Seq.empty
+    libraryPaths = Seq.empty,
+    instanceChoices = InstanceChoiceControl(Seq.empty)
   )
 
   /** Simple factory for construcing a [[Settings]] from arguments.
@@ -306,7 +334,8 @@ object Settings {
     enableWavesAtTimeZero = enableWavesAtTimeZero,
     randomization = randomization,
     libraries = Seq.empty,
-    libraryPaths = Seq.empty
+    libraryPaths = Seq.empty,
+    instanceChoices = InstanceChoiceControl(Seq.empty)
   )
 
 }
