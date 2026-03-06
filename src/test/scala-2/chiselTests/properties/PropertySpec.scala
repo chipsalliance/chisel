@@ -521,11 +521,11 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
     }.fileCheck()(
       """|CHECK: output outgoing : { foo : String, flip bar : Integer}
          |CHECK: input incoming : { foo : String, flip bar : Integer}
-         |CHECK: wire wire : { foo : String, flip bar : Integer}
-         |CHECK: propassign incoming.bar, wire.bar
-         |CHECK: propassign wire.foo, incoming.foo
-         |CHECK: propassign wire.bar, outgoing.bar
-         |CHECK: propassign outgoing.foo, wire.foo
+         |CHECK: wire `wire` : { foo : String, flip bar : Integer}
+         |CHECK: propassign incoming.bar, `wire`.bar
+         |CHECK: propassign `wire`.foo, incoming.foo
+         |CHECK: propassign `wire`.bar, outgoing.bar
+         |CHECK: propassign outgoing.foo, `wire`.foo
          |""".stripMargin
     )
   }

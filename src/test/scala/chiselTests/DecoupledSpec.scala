@@ -28,9 +28,9 @@ class DecoupledSpec extends AnyFlatSpec with Matchers with FileCheck {
         val deq = IO(Decoupled(UInt(8.W)))
         deq <> enq.map(_ + 1.U)
       })
-      .fileCheck()("""|CHECK: node [[node1:[a-zA-Z0-9_]+]] = add(enq.bits, UInt<1>(0h1))
+      .fileCheck()("""|CHECK: node [[node1:[a-zA-Z0-9_]+]] = add(enq.`bits`, UInt<1>(0h1))
                       |CHECK: node [[node2:[a-zA-Z0-9_]+]] = tail([[node1]], 1)
-                      |CHECK: connect [[result:[a-zA-Z0-9_]+]].bits, [[node2]]
+                      |CHECK: connect [[result:[a-zA-Z0-9_]+]].`bits`, [[node2]]
                       |# Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
                       |CHECK: connect enq.ready, [[result]].ready
                       |CHECK: connect deq, [[result]]
@@ -67,18 +67,18 @@ class DecoupledSpec extends AnyFlatSpec with Matchers with FileCheck {
     // Check for data assignment
     chirrtl should include("""wire _deq_map_bits : { foo : UInt<8>, bar : UInt<8>, fizz : UInt<1>, buzz : UInt<1>}""")
 
-    chirrtl should include("""node _deq_map_bits_res_foo_T = add(enq.bits.foo, UInt<1>(0h1)""")
+    chirrtl should include("""node _deq_map_bits_res_foo_T = add(enq.`bits`.foo, UInt<1>(0h1)""")
     chirrtl should include("""node _deq_map_bits_res_foo_T_1 = tail(_deq_map_bits_res_foo_T, 1)""")
     chirrtl should include("""connect _deq_map_bits.foo, _deq_map_bits_res_foo_T_1""")
 
-    chirrtl should include("""node _deq_map_bits_res_bar_T = sub(enq.bits.bar, UInt<1>(0h1)""")
+    chirrtl should include("""node _deq_map_bits_res_bar_T = sub(enq.`bits`.bar, UInt<1>(0h1)""")
     chirrtl should include("""node _deq_map_bits_res_bar_T_1 = tail(_deq_map_bits_res_bar_T, 1)""")
     chirrtl should include("""connect _deq_map_bits.bar, _deq_map_bits_res_bar_T_1""")
 
     chirrtl should include("""connect _deq_map_bits.fizz, UInt<1>(0h0)""")
     chirrtl should include("""connect _deq_map_bits.buzz, UInt<1>(0h1)""")
 
-    chirrtl should include("""connect _deq_map.bits, _deq_map_bits""")
+    chirrtl should include("""connect _deq_map.`bits`, _deq_map_bits""")
     chirrtl should include("""connect deq, _deq_map""")
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)
@@ -102,8 +102,8 @@ class DecoupledSpec extends AnyFlatSpec with Matchers with FileCheck {
     chirrtl should include("""wire _deq_map : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<8>}""")
 
     // Check for data assignment
-    chirrtl should include("""node _deq_map_bits = and(enq.bits.foo, enq.bits.bar)""")
-    chirrtl should include("""connect _deq_map.bits, _deq_map_bits""")
+    chirrtl should include("""node _deq_map_bits = and(enq.`bits`.foo, enq.`bits`.bar)""")
+    chirrtl should include("""connect _deq_map.`bits`, _deq_map_bits""")
     chirrtl should include("""connect deq, _deq_map""")
 
     // Check for back-pressure (ready signal is driven in the opposite direction of bits + valid)

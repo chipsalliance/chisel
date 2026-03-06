@@ -371,7 +371,7 @@ class MemorySpec extends AnyPropSpec with Matchers with ChiselSim {
   property("SyncReadMems should be able to have an explicit number of read-write ports") {
     // Check if there is exactly one MemReadWrite port (TODO: extend to Nr/Nw?)
     val chirrtl = ChiselStage.emitCHIRRTL(new MemReadWriteTester)
-    chirrtl should include(s"rdwr mport rdata = mem[_rdata_T_1], clock")
+    chirrtl should include(s"rdwr mport rdata = `mem`[_rdata_T_1], clock")
 
     // Check read/write logic
     simulate(new MemReadWriteTester)(RunUntilFinished(7))
@@ -380,7 +380,7 @@ class MemorySpec extends AnyPropSpec with Matchers with ChiselSim {
   property("SyncReadMem masked read-writes should work") {
     // Check if there is exactly one MemReadWrite port (TODO: extend to Nr/Nw?)
     val chirrtl = ChiselStage.emitCHIRRTL(new MemMaskedReadWriteTester)
-    chirrtl should include(s"rdwr mport rdata = mem[_rdata_T_1], clock")
+    chirrtl should include(s"rdwr mport rdata = `mem`[_rdata_T_1], clock")
 
     // Check read/write logic
     simulate(new MemMaskedReadWriteTester)(RunUntilFinished(12))
@@ -390,9 +390,9 @@ class MemorySpec extends AnyPropSpec with Matchers with ChiselSim {
     val addrWidth = 65
     val size = BigInt(1) << addrWidth
     val smem = ChiselStage.emitCHIRRTL(new HugeSMemTester(size))
-    smem should include(s"smem mem : UInt<8>[$size]")
+    smem should include(s"smem `mem` : UInt<8>[$size]")
     val cmem = ChiselStage.emitCHIRRTL(new HugeCMemTester(size))
-    cmem should include(s"cmem mem : UInt<8>[$size]")
+    cmem should include(s"cmem `mem` : UInt<8>[$size]")
   }
 
   property("Implicit conversions with Mem indices should work") {
@@ -493,24 +493,24 @@ class SRAMSpec extends AnyFunSpec with Matchers {
         // Check that the chirrtl ports actually exist and the signals
         // are properly connected
         for (rd <- 0 until numRD) {
-          chirrtl should include(s"connect mem_sram.R$rd.addr, mem.readPorts[$rd].address")
-          chirrtl should include(s"connect mem.readPorts[$rd].data, mem_sram.R$rd.data")
-          chirrtl should include(s"connect mem_sram.R$rd.en, mem.readPorts[$rd].enable")
+          chirrtl should include(s"connect mem_sram.R$rd.addr, `mem`.readPorts[$rd].address")
+          chirrtl should include(s"connect `mem`.readPorts[$rd].data, mem_sram.R$rd.data")
+          chirrtl should include(s"connect mem_sram.R$rd.en, `mem`.readPorts[$rd].enable")
         }
 
         for (wr <- 0 until numWR) {
-          chirrtl should include(s"connect mem_sram.W$wr.addr, mem.writePorts[$wr].address")
-          chirrtl should include(s"connect mem_sram.W$wr.data, mem.writePorts[$wr].data")
-          chirrtl should include(s"connect mem_sram.W$wr.en, mem.writePorts[$wr].enable")
+          chirrtl should include(s"connect mem_sram.W$wr.addr, `mem`.writePorts[$wr].address")
+          chirrtl should include(s"connect mem_sram.W$wr.data, `mem`.writePorts[$wr].data")
+          chirrtl should include(s"connect mem_sram.W$wr.en, `mem`.writePorts[$wr].enable")
           chirrtl should include(s"connect mem_sram.W$wr.mask, UInt<1>(0h1)")
         }
 
         for (rw <- 0 until numRW) {
-          chirrtl should include(s"connect mem_sram.RW$rw.addr, mem.readwritePorts[$rw].address")
-          chirrtl should include(s"connect mem_sram.RW$rw.en, mem.readwritePorts[$rw].enable")
-          chirrtl should include(s"connect mem.readwritePorts[$rw].readData, mem_sram.RW$rw.rdata")
-          chirrtl should include(s"connect mem_sram.RW$rw.wdata, mem.readwritePorts[$rw].writeData")
-          chirrtl should include(s"connect mem_sram.RW$rw.wmode, mem.readwritePorts[$rw].isWrite")
+          chirrtl should include(s"connect mem_sram.RW$rw.addr, `mem`.readwritePorts[$rw].address")
+          chirrtl should include(s"connect mem_sram.RW$rw.en, `mem`.readwritePorts[$rw].enable")
+          chirrtl should include(s"connect `mem`.readwritePorts[$rw].readData, mem_sram.RW$rw.rdata")
+          chirrtl should include(s"connect mem_sram.RW$rw.wdata, `mem`.readwritePorts[$rw].writeData")
+          chirrtl should include(s"connect mem_sram.RW$rw.wmode, `mem`.readwritePorts[$rw].isWrite")
           chirrtl should include(s"connect mem_sram.RW$rw.wmask, UInt<1>(0h1)")
 
         }
@@ -540,8 +540,8 @@ class SRAMSpec extends AnyFunSpec with Matchers {
       )
 
       for (i <- 0 until 3) {
-        chirrtl should include(s"connect mem_sram.W0.mask[$i], mem.writePorts[0].mask[$i]")
-        chirrtl should include(s"connect mem_sram.RW0.wmask[$i], mem.readwritePorts[0].mask[$i]")
+        chirrtl should include(s"connect mem_sram.W0.mask[$i], `mem`.writePorts[0].mask[$i]")
+        chirrtl should include(s"connect mem_sram.RW0.wmask[$i], `mem`.readwritePorts[0].mask[$i]")
       }
     }
 

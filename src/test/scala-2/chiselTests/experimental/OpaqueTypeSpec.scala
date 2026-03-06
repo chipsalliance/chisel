@@ -255,7 +255,7 @@ class OpaqueTypeSpec extends AnyFlatSpec with Matchers {
     }
     // First check that it works when it should
     val chirrtl = ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(false)))
-    chirrtl should include("cat(in.valid, in.bits)")
+    chirrtl should include("cat(in.valid, in.`bits`)")
 
     val e1 = the[ChiselException] thrownBy {
       ChiselStage.emitCHIRRTL(new AsUIntTester(new MaybeNoAsUInt(true)), Array("--throw-on-first-error"))

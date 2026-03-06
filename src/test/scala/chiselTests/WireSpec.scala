@@ -32,7 +32,7 @@ class WireSpec extends AnyFlatSpec with Matchers {
     }
 
     val chirrtl = ChiselStage.emitCHIRRTL(new Dummy)
-    chirrtl should include("wire wire : UInt<1>")
+    chirrtl should include("wire `wire` : UInt<1>")
     chirrtl should include("wire wire2 : UInt<1>")
   }
 }

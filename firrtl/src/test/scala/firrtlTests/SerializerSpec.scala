@@ -428,6 +428,40 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
       )
     ) should include("""assert(`42_clock`, `42_predicate`, `42_enable`, "message %d", `42_arg`) : `42_label`""")
     info("fprintf okay!")
+  }
+
+  it should "escape FIRRTL keywords when used as identifiers" in {
+    info("type keywords okay!")
+    Seq("UInt", "Clock", "Reset").foreach { keyword =>
+      Serializer.serialize(Port(NoInfo, keyword, Input, UIntType(IntWidth(1)), Seq.empty)) should include(
+        s"input `$keyword`"
+      )
+    }
+
+    info("statement keywords okay!")
+    Seq("wire", "reg", "node", "skip", "when", "inst").foreach { keyword =>
+      Serializer.serialize(DefWire(NoInfo, keyword, UIntType(IntWidth(1)))) should include(s"wire `$keyword`")
+    }
+
+    info("primop keywords okay!")
+    Seq("add", "sub", "mul", "and", "or", "xor", "mux").foreach { keyword =>
+      Serializer.serialize(DefWire(NoInfo, keyword, UIntType(IntWidth(1)))) should include(s"wire `$keyword`")
+    }
+
+    info("module keywords okay!")
+    Seq("module", "circuit", "input", "output").foreach { keyword =>
+      Serializer.serialize(DefWire(NoInfo, keyword, UIntType(IntWidth(1)))) should include(s"wire `$keyword`")
+    }
+
+    info("connect keywords okay!")
+    Seq("connect", "invalidate", "attach").foreach { keyword =>
+      Serializer.serialize(DefWire(NoInfo, keyword, UIntType(IntWidth(1)))) should include(s"wire `$keyword`")
+    }
+
+    info("command keywords okay!")
+    Seq("printf", "assert", "assume", "cover").foreach { keyword =>
+      Serializer.serialize(DefWire(NoInfo, keyword, UIntType(IntWidth(1)))) should include(s"wire `$keyword`")
+    }
     Serializer.serialize(
       Fprint(
         NoInfo,

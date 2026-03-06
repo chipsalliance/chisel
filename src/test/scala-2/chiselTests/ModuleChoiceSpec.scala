@@ -50,7 +50,7 @@ class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
         """|CHECK: option Platform :
            |CHECK-NEXT: FPGA
            |CHECK-NEXT: ASIC
-           |CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK: instchoice `inst` of VerifTarget, Platform :
            |CHECK-NEXT: FPGA => FPGATarget
            |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
       )
@@ -69,7 +69,7 @@ class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
         """|CHECK: option Platform :
            |CHECK-NEXT: FPGA
            |CHECK-NEXT: ASIC
-           |CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK: instchoice `inst` of VerifTarget, Platform :
            |CHECK-NEXT: FPGA => FPGATarget
            |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
       )
@@ -115,7 +115,7 @@ class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
       .fileCheck()(
         """|CHECK: option Platform :
            |CHECK-NEXT: FPGA
-           |CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK: instchoice `inst` of VerifTarget, Platform :
            |CHECK-NEXT: FPGA => FPGATarget""".stripMargin
       )
   }

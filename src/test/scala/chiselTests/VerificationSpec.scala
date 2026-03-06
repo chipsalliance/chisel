@@ -30,7 +30,7 @@ class VerificationSpec extends AnyPropSpec with FileCheck {
          |CHECK:      node _T_3 = neq(io.in, UInt<2>(0h2))
          |CHECK:      assume(clock, _T_3, UInt<1>(0h1), "Assumption failed at
          |CHECK:      node _T_5 = eq(io.out, io.in)
-         |CHECK:      node _T_6 = eq(reset, UInt<1>(0h0))
+         |CHECK:      node _T_6 = eq(`reset`, UInt<1>(0h0))
          |CHECK:      intrinsic(circt_chisel_ifelsefatal<format = "Assertion failed: io.in:%d is equal to io.out:%d\n", label = "chisel3_builtin">, clock, _T_5, _T_6, io.in, io.out)
          |""".stripMargin
     }

@@ -11,7 +11,7 @@ class FooBundle extends Bundle {
 // FIRRTL-LABEL: circuit FooModule :
 // FIRRTL:         public module FooModule :
 // FIRRTL-NEXT:      input clock : Clock
-// FIRRTL-NEXT:      input reset : UInt<1>
+// FIRRTL-NEXT:      input `reset` : UInt<1>
 // FIRRTL-NEXT:      output io : { flip foo : UInt<3>}
 // FIRRTL:           skip
 

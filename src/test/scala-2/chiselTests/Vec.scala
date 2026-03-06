@@ -407,7 +407,7 @@ class VecSpec extends AnyPropSpec with Matchers with LogUtils with FileCheck {
     for (gen <- List(new EmptyBundle, new EmptyRecord)) {
       val chirrtl = ChiselStage.emitCHIRRTL(new MyModule(gen))
       chirrtl should include("input in : { }")
-      chirrtl should include("regreset reg : { }[4]")
+      chirrtl should include("regreset `reg` : { }[4]")
     }
   }
 
@@ -517,7 +517,7 @@ class VecSpec extends AnyPropSpec with Matchers with LogUtils with FileCheck {
     ChiselStage
       .emitCHIRRTL(new Top)
       .fileCheck()(
-        """|CHECK: read mport port = mem[_port_WIRE], clock
+        """|CHECK: read mport port = `mem`[_port_WIRE], clock
            |CHECK: connect out, port[jdx]
            |""".stripMargin
       )

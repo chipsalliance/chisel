@@ -490,7 +490,7 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
         val inst = Instantiate(new OneArg(3))
       })
       // Exact check simpler without FileCheck
-      chirrtl should include(s"inst inst of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
+      chirrtl should include(s"inst `inst` of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
     }
 
     it("should support BlackBoxes") {

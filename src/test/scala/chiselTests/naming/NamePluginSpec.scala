@@ -455,7 +455,7 @@ class NamePluginSpec extends AnyFlatSpec with Matchers with FileCheck {
       )
       .fileCheck("--implicit-check-not=wire")(
         """|CHECK: input clock :
-           |CHECK: input reset :
+           |CHECK: input `reset` :
            |CHECK: output foo_1 :
            |CHECK: input foo_in :
            |CHECK: reg foo_out_REG :
