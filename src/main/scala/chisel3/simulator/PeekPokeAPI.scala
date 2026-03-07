@@ -105,8 +105,15 @@ object ExpectationValueFormat {
     * @param signedValue Numeric value as observed by the simulator for this data type
     * @param bitWidth Bit width of the rendered value
     * @param isSigned Whether the data type is signed
+    * @param displayString Value rendered using the decimal display for this context
     */
-  final case class Value(chiselType: String, signedValue: BigInt, bitWidth: Int, isSigned: Boolean) {
+  final case class Value(
+    chiselType:    String,
+    signedValue:   BigInt,
+    bitWidth:      Int,
+    isSigned:      Boolean,
+    displayString: String
+  ) {
 
     /** Value interpreted as an unsigned integer with `bitWidth` bits. */
     val unsignedValue: BigInt = {
@@ -119,45 +126,100 @@ object ExpectationValueFormat {
     }
   }
 
+  /** Raw failure context passed to formatters. */
+  final case class Failure(observed: Value, expected: Value)
+
+  /** Fully rendered failure output. */
+  final case class Rendered(observed: String, expected: String, message: String)
+
   /** Value format type. */
-  sealed trait Type extends Product with Serializable {
-    private[simulator] def format(value: Value): String
+  sealed trait Type {
+    private[simulator] def render(failure: Failure): Rendered
   }
 
-  /** Keep existing behavior. */
-  case object Default extends Type {
-    override private[simulator] def format(value: Value): String =
-      withType(value.chiselType, value.signedValue.toString)
+  /** Render values using their decimal display. */
+  object Dec extends Type {
+    override private[simulator] def render(failure: Failure): Rendered =
+      renderValues(failure)(_.displayString)
   }
 
-  /** Render the numeric part as hexadecimal (prefixed with `0x`). */
-  case object Hex extends Type {
-    override private[simulator] def format(value: Value): String =
-      withType(value.chiselType, s"0x${value.unsignedValue.toString(16)}")
+  /** Render the numeric part as hexadecimal (prefixed with `0x`) and grouped by bytes. */
+  object Hex extends Type {
+    override private[simulator] def render(failure: Failure): Rendered =
+      renderValues(failure)(value => withType(value.chiselType, s"0x${formatGroupedHexDigits(value)}"))
   }
 
   /** Render the numeric part as binary (prefixed with `0b`). */
-  case object Bin extends Type {
-    override private[simulator] def format(value: Value): String =
-      withType(value.chiselType, s"0b${value.unsignedValue.toString(2)}")
+  object Bin extends Type {
+    override private[simulator] def render(failure: Failure): Rendered =
+      renderValues(failure)(value => withType(value.chiselType, s"0b${formatGroupedBinaryDigits(value)}"))
   }
 
-  /** Use a user-provided formatter. */
-  final case class Custom(formatFn: Value => String) extends Type {
-    override private[simulator] def format(value: Value): String = formatFn(value)
+  object Custom {
+
+    /** Use a user-provided formatter for each rendered value. */
+    def apply(formatValue: Value => String): Type = values(formatValue)
+
+    /** Use a user-provided formatter for the failure message. */
+    def apply(buildMessage: (Value, Value) => String): Type = message(buildMessage)
+
+    /** Use a user-provided formatter for each rendered value. */
+    def values(formatValue: Value => String): Type =
+      customType { failure =>
+        val observed = formatValue(failure.observed)
+        val expected = formatValue(failure.expected)
+        Rendered(observed, expected, defaultMessage(observed, expected))
+      }
+
+    /** Use a user-provided formatter for the failure message while keeping the rendered values. */
+    def message(buildMessage: (Value, Value) => String): Type = message(Dec)(buildMessage)
+
+    /** Use a user-provided formatter for the failure message on top of a base value format. */
+    def message(base: Type)(buildMessage: (Value, Value) => String): Type =
+      customType { failure =>
+        val rendered = base.render(failure)
+        rendered.copy(message = buildMessage(failure.observed, failure.expected))
+      }
+
+    private def customType(renderFailure: Failure => Rendered): Type = new CustomType(renderFailure)
   }
+
+  private final class CustomType(renderFailure: Failure => Rendered) extends Type {
+    override private[simulator] def render(failure: Failure): Rendered = renderFailure(failure)
+  }
+
+  private def renderValues(failure: Failure)(formatValue: Value => String): Rendered = {
+    val observed = formatValue(failure.observed)
+    val expected = formatValue(failure.expected)
+    Rendered(observed, expected, defaultMessage(observed, expected))
+  }
+
+  private def defaultMessage(observed: String, expected: String): String =
+    s"Expectation failed: observed value $observed != $expected"
+
+  private def formatGroupedHexDigits(value: Value): String = {
+    val minimumDigits = if (value.bitWidth > 0) (value.bitWidth + 3) / 4 else 0
+    groupDigits(padLeft(value.unsignedValue.toString(16), minimumDigits), 2)
+  }
+
+  private def formatGroupedBinaryDigits(value: Value): String = {
+    val minimumDigits = if (value.bitWidth > 0) value.bitWidth else 0
+    groupDigits(padLeft(value.unsignedValue.toString(2), minimumDigits), 4)
+  }
+
+  private def padLeft(digits: String, minimumWidth: Int): String = {
+    if (minimumWidth > digits.length) {
+      ("0" * (minimumWidth - digits.length)) + digits
+    } else {
+      digits
+    }
+  }
+
+  private def groupDigits(digits: String, groupSize: Int): String =
+    digits.reverse.grouped(groupSize).map(_.reverse).toSeq.reverse.mkString(" ")
 
   private def withType(chiselType: String, value: String): String = {
     if (chiselType.nonEmpty) s"$chiselType($value)" else value
-  }
-
-  private[simulator] def literalType(literalString: String): String = {
-    val openParen = literalString.indexOf('(')
-    if (openParen >= 0) {
-      literalString.substring(0, openParen)
-    } else {
-      literalString
-    }
   }
 }
 
@@ -246,7 +308,7 @@ sealed trait TestableAggregate[T <: Aggregate] extends PeekPokable[T] {
    * @throws FailedExpectationException if the observed value does not match the expected value
    */
   def expectPartial(expected: T)(implicit sourceInfo: SourceInfo): Unit =
-    expectPartial(expected, "", ExpectationValueFormat.Default)
+    expectPartial(expected, "", ExpectationValueFormat.Dec)
 }
 
 sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
@@ -279,89 +341,125 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
 
   private def portBitWidth: Int = if (data.widthKnown) data.getWidth else 0
 
-  protected final def formatLiteralForExpectFailure(
+  private def dataTypeString: String = chiselTypeOf(data).toString
+
+  private def valueContext(
+    chiselType:    String,
+    signedValue:   BigInt,
+    bitWidth:      Int,
+    displayString: String
+  ): ExpectationValueFormat.Value =
+    ExpectationValueFormat.Value(
+      chiselType = chiselType,
+      signedValue = signedValue,
+      bitWidth = bitWidth,
+      isSigned = isSigned,
+      displayString = displayString
+    )
+
+  protected final def valueContextForLiteral(
     literal:     Data,
     signedValue: BigInt,
-    bitWidth:    Int,
-    format:      ExpectationValueFormat.Type
-  ): String = {
-    format match {
-      case ExpectationValueFormat.Default =>
-        literal.toString
-      case format =>
-        format.format(
-          ExpectationValueFormat.Value(
-            chiselType = ExpectationValueFormat.literalType(literal.toString),
-            signedValue = signedValue,
-            bitWidth = bitWidth,
-            isSigned = isSigned
-          )
-        )
-    }
-  }
+    bitWidth:    Int
+  ): ExpectationValueFormat.Value =
+    valueContext(chiselTypeOf(literal).toString, signedValue, bitWidth, literal.toString)
 
-  protected final def formatObservedLiteralForExpectFailure(
-    observed: Simulation.Value,
-    format:   ExpectationValueFormat.Type
-  ): String = {
+  protected final def valueContextForObservedLiteral(observed: Simulation.Value): ExpectationValueFormat.Value = {
     val encoded = encode(observed)
-    formatLiteralForExpectFailure(encoded, observed.asBigInt, observed.bitCount, format)
+    valueContextForLiteral(encoded, observed.asBigInt, observed.bitCount)
   }
 
-  protected final def formatExpectedLiteralForExpectFailure(expected: T, format: ExpectationValueFormat.Type): String =
-    formatLiteralForExpectFailure(expected, expected.litValue, expected.getWidth, format)
+  protected final def valueContextForExpectedLiteral(
+    expected:         T,
+    observedBitWidth: Int
+  ): ExpectationValueFormat.Value = {
+    val effectiveBitWidth = if (portBitWidth > 0) portBitWidth else observedBitWidth
+    valueContextForRawValue(expected.litValue, effectiveBitWidth)
+  }
 
-  protected final def formatRawForExpectFailure(
-    value:    BigInt,
-    bitWidth: Int,
+  private def displayStringForRawValue(value: BigInt, bitWidth: Int): String = {
+    try {
+      encode(bitWidth, value).toString
+    } catch {
+      case _: Exception =>
+        if (dataTypeString.nonEmpty) s"$dataTypeString(${value.toString})" else value.toString
+    }
+  }
+
+  protected final def valueContextForRawValue(value: BigInt, bitWidth: Int): ExpectationValueFormat.Value =
+    valueContext(dataTypeString, value, bitWidth, displayStringForRawValue(value, bitWidth))
+
+  protected final def valueContextForRawValue(
+    value:         BigInt,
+    bitWidth:      Int,
+    displayString: String
+  ): ExpectationValueFormat.Value =
+    valueContext(dataTypeString, value, bitWidth, displayString)
+
+  protected final def valueContextForObservedRaw(observed: Simulation.Value): ExpectationValueFormat.Value =
+    valueContextForRawValue(observed.asBigInt, observed.bitCount)
+
+  protected final def valueContextForExpectedRaw(
+    expected:         BigInt,
+    observedBitWidth: Int
+  ): ExpectationValueFormat.Value = {
+    val effectiveBitWidth = if (portBitWidth > 0) portBitWidth else observedBitWidth
+    valueContextForRawValue(expected, effectiveBitWidth)
+  }
+
+  protected final def renderFailureWithFormat(
+    observed: ExpectationValueFormat.Value,
+    expected: ExpectationValueFormat.Value,
     format:   ExpectationValueFormat.Type
-  ): String = {
-    format match {
-      case ExpectationValueFormat.Default =>
-        value.toString
-      case format =>
-        format.format(
-          ExpectationValueFormat.Value(
-            chiselType = chiselTypeOf(data).toString,
-            signedValue = value,
-            bitWidth = bitWidth,
-            isSigned = isSigned
-          )
+  ): ExpectationValueFormat.Rendered =
+    format.render(ExpectationValueFormat.Failure(observed, expected))
+
+  protected final def rawFailureMessage(observed: BigInt, expected: BigInt): String =
+    s"Expectation failed: observed value ${observed.toString} != ${expected.toString}"
+
+  protected final def expect[U](
+    expected:      U,
+    sameValue:     (Simulation.Value, U) => Boolean,
+    renderFailure: (Simulation.Value, U) => ExpectationValueFormat.Rendered,
+    buildMessage:  (Simulation.Value, U) => String,
+    sourceInfo:    SourceInfo
+  ): Unit = {
+    check(observedValue =>
+      if (!sameValue(observedValue, expected)) {
+        val rendered = renderFailure(observedValue, expected)
+        throw FailedExpectationException(
+          rendered.observed,
+          rendered.expected,
+          buildMessage(observedValue, expected),
+          sourceInfo
         )
-    }
+      }
+    )
   }
 
-  protected final def formatRawForExpectFailure(value: BigInt, format: ExpectationValueFormat.Type): String =
-    formatRawForExpectFailure(value, portBitWidth, format)
-
-  private def formatObservedForBigIntMessageExpectFailure(
-    observed: Simulation.Value,
-    format:   ExpectationValueFormat.Type
-  ): String = {
-    format match {
-      case ExpectationValueFormat.Default =>
-        encode(observed).toString
-      case _ =>
-        formatRawForExpectFailure(observed.asBigInt, observed.bitCount, format)
-    }
-  }
-
-  private def formatExpectedForBigIntMessageExpectFailure(
-    expected: BigInt,
-    format:   ExpectationValueFormat.Type
-  ): String = {
-    format match {
-      case ExpectationValueFormat.Default =>
-        expected.toString
-      case _ =>
-        formatRawForExpectFailure(expected, format)
-    }
+  protected final def expect[U](
+    expected:      U,
+    sameValue:     (Simulation.Value, U) => Boolean,
+    renderFailure: (Simulation.Value, U) => ExpectationValueFormat.Rendered,
+    sourceInfo:    SourceInfo
+  ): Unit = {
+    check(observedValue =>
+      if (!sameValue(observedValue, expected)) {
+        val rendered = renderFailure(observedValue, expected)
+        throw FailedExpectationException(
+          rendered.observed,
+          rendered.expected,
+          rendered.message,
+          sourceInfo
+        )
+      }
+    )
   }
 
   protected final def expect[U](
     expected:       U,
     sameValue:      (Simulation.Value, U) => Boolean,
-    formatObserved: (Simulation.Value) => String,
+    formatObserved: Simulation.Value => String,
     formatExpected: U => String,
     buildMessage:   (Simulation.Value, U) => String,
     sourceInfo:     SourceInfo
@@ -381,32 +479,23 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
   protected final def expect[U](
     expected:       U,
     sameValue:      (Simulation.Value, U) => Boolean,
-    formatObserved: (Simulation.Value) => String,
+    formatObserved: Simulation.Value => String,
     formatExpected: U => String,
     sourceInfo:     SourceInfo
-  ): Unit = expect[U](
-    expected,
-    sameValue,
-    formatObserved,
-    formatExpected,
-    (observedValue: Simulation.Value, expected: U) =>
-      s"Expectation failed: observed value ${formatObserved(observedValue)} != ${formatExpected(expected)}",
-    sourceInfo
-  )
-
-  protected final def expect[U](
-    expected:     U,
-    sameValue:    (Simulation.Value, U) => Boolean,
-    buildMessage: (Simulation.Value, U) => String,
-    sourceInfo:   SourceInfo
-  ): Unit = expect[U](
-    expected,
-    sameValue,
-    (observedValue: Simulation.Value) => encode(observedValue).toString,
-    (expected: U) => expected.toString,
-    buildMessage,
-    sourceInfo
-  )
+  ): Unit = {
+    check(observedValue =>
+      if (!sameValue(observedValue, expected)) {
+        val observed = formatObserved(observedValue)
+        val expectedValue = formatExpected(expected)
+        throw FailedExpectationException(
+          observed,
+          expectedValue,
+          s"Expectation failed: observed value $observed != $expectedValue",
+          sourceInfo
+        )
+      }
+    )
+  }
 
   /**
   * Expect the value of a data port to be equal to the expected value.
@@ -418,7 +507,7 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
   def expect(expected: T, buildMessage: (T, T) => String)(
     implicit sourceInfo: SourceInfo
   ): Unit =
-    expect(expected, buildMessage, ExpectationValueFormat.Default)
+    expect(expected, buildMessage, ExpectationValueFormat.Dec)
 
   def expect(
     expected:     T,
@@ -431,15 +520,19 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     expect[T](
       expected,
       (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
+      renderFailure = (obs: Simulation.Value, exp: T) =>
+        renderFailureWithFormat(
+          valueContextForObservedLiteral(obs),
+          valueContextForExpectedLiteral(exp, obs.bitCount),
+          format
+        ),
       buildMessage = (obs: Simulation.Value, exp: T) => buildMessage(encode(obs), exp),
-      formatObserved = (obs: Simulation.Value) => formatObservedLiteralForExpectFailure(obs, format),
-      formatExpected = (exp: T) => formatExpectedLiteralForExpectFailure(exp, format),
       sourceInfo = sourceInfo
     )
   }
 
   override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, (_: T, _: T) => message, ExpectationValueFormat.Default)
+    expect(expected, (_: T, _: T) => message, ExpectationValueFormat.Dec)
 
   override def expect(
     expected: T,
@@ -449,19 +542,31 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     expect(expected, (_: T, _: T) => message, format)
 
   final def expect(expected: BigInt)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, ExpectationValueFormat.Default)
+    expect[BigInt](
+      expected,
+      (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
+      renderFailure = (obs: Simulation.Value, exp: BigInt) => {
+        val rendered = renderFailureWithFormat(
+          valueContextForObservedRaw(obs),
+          valueContextForExpectedRaw(exp, obs.bitCount),
+          ExpectationValueFormat.Dec
+        )
+        rendered.copy(message = rawFailureMessage(obs.asBigInt, exp))
+      },
+      sourceInfo = sourceInfo
+    )
 
   final def expect(expected: BigInt, format: ExpectationValueFormat.Type)(implicit sourceInfo: SourceInfo): Unit =
     expect[BigInt](
       expected,
       (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
-      formatObserved = (obs: Simulation.Value) => formatRawForExpectFailure(obs.asBigInt, obs.bitCount, format),
-      formatExpected = (exp: BigInt) => formatRawForExpectFailure(exp, format),
+      renderFailure = (obs: Simulation.Value, exp: BigInt) =>
+        renderFailureWithFormat(valueContextForObservedRaw(obs), valueContextForExpectedRaw(exp, obs.bitCount), format),
       sourceInfo = sourceInfo
     )
 
   final def expect(expected: BigInt, message: String)(implicit sourceInfo: SourceInfo): Unit =
-    expect(expected, message, ExpectationValueFormat.Default)
+    expect(expected, message, ExpectationValueFormat.Dec)
 
   final def expect(
     expected: BigInt,
@@ -471,8 +576,8 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     expect[BigInt](
       expected,
       (obs: Simulation.Value, exp: BigInt) => obs.asBigInt == exp,
-      formatObserved = (obs: Simulation.Value) => formatObservedForBigIntMessageExpectFailure(obs, format),
-      formatExpected = (exp: BigInt) => formatExpectedForBigIntMessageExpectFailure(exp, format),
+      renderFailure = (obs: Simulation.Value, exp: BigInt) =>
+        renderFailureWithFormat(valueContextForObservedRaw(obs), valueContextForExpectedRaw(exp, obs.bitCount), format),
       buildMessage = (_: Simulation.Value, _: BigInt) => message,
       sourceInfo = sourceInfo
     )
@@ -482,23 +587,17 @@ sealed trait TestableElement[T <: Element] extends PeekPokable[T] {
     expect(
       expected,
       (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
-      formatObserved = (obs: Simulation.Value) => formatObservedLiteralForExpectFailure(obs, format),
-      formatExpected = (exp: T) => formatExpectedLiteralForExpectFailure(exp, format),
+      renderFailure = (obs: Simulation.Value, exp: T) =>
+        renderFailureWithFormat(
+          valueContextForObservedLiteral(obs),
+          valueContextForExpectedLiteral(exp, obs.bitCount),
+          format
+        ),
       sourceInfo = sourceInfo
     )
   }
 
-  override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = {
-    require(expected.isLit, s"Expected value: $expected must be a literal")
-    expect(
-      expected,
-      (observed: Simulation.Value, expected: T) => observed.asBigInt == expected.litValue,
-      formatObserved =
-        (obs: Simulation.Value) => formatObservedLiteralForExpectFailure(obs, ExpectationValueFormat.Default),
-      formatExpected = (exp: T) => formatExpectedLiteralForExpectFailure(exp, ExpectationValueFormat.Default),
-      sourceInfo = sourceInfo
-    )
-  }
+  override def expect(expected: T)(implicit sourceInfo: SourceInfo): Unit = expect(expected, ExpectationValueFormat.Dec)
 }
 
 object PeekPokeAPI {
@@ -573,18 +672,25 @@ object PeekPokeAPI {
     def peekBoolean(): Boolean = peekValue().asBigInt == 1
 
     override def expect(expected: Bool)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, ExpectationValueFormat.Default)
+      expect(expected, ExpectationValueFormat.Dec)
 
     override def expect(
       expected: Bool,
       format:   ExpectationValueFormat.Type
-    )(implicit sourceInfo: SourceInfo): Unit = expect[Bool](
-      expected,
-      (obs: Simulation.Value, exp: Bool) => obs.asBigInt == exp.litValue,
-      formatObserved = (obs: Simulation.Value) => formatRawForExpectFailure(obs.asBigInt, obs.bitCount, format),
-      formatExpected = (exp: Bool) => formatRawForExpectFailure(exp.litValue, exp.getWidth, format),
-      sourceInfo = sourceInfo
-    )
+    )(implicit sourceInfo: SourceInfo): Unit = {
+      require(expected.isLit, s"Expected value: $expected must be a literal")
+      expect(
+        expected,
+        (observed: Simulation.Value, expected: Bool) => observed.asBigInt == expected.litValue,
+        renderFailure = (observed: Simulation.Value, expected: Bool) =>
+          renderFailureWithFormat(
+            valueContextForRawValue(observed.asBigInt, observed.bitCount, observed.asBigInt.toString),
+            valueContextForRawValue(expected.litValue, expected.getWidth, expected.litValue.toString),
+            format
+          ),
+        sourceInfo = sourceInfo
+      )
+    }
 
     def expect(value: Boolean)(implicit sourceInfo: SourceInfo): Unit = expect(value.B)
 
@@ -622,7 +728,7 @@ object PeekPokeAPI {
     )(
       implicit sourceInfo: SourceInfo
     ): Unit =
-      expect(expected, buildMessage, ExpectationValueFormat.Default, allowPartial)
+      expect(expected, buildMessage, ExpectationValueFormat.Dec, allowPartial)
 
     def expect(
       expected:     T,
@@ -752,7 +858,7 @@ object PeekPokeAPI {
     )(
       implicit sourceInfo: SourceInfo
     ): Unit =
-      expect(expected, buildMessage, ExpectationValueFormat.Default, allowPartial)
+      expect(expected, buildMessage, ExpectationValueFormat.Dec, allowPartial)
 
     def expect(
       expected:     Vec[T],
@@ -803,7 +909,7 @@ object PeekPokeAPI {
     def peek()(implicit sourceInfo: SourceInfo): T = toPeekable.peek().asInstanceOf[T]
 
     override def expect(expected: T, message: String)(implicit sourceInfo: SourceInfo): Unit =
-      expect(expected, message, ExpectationValueFormat.Default)
+      expect(expected, message, ExpectationValueFormat.Dec)
 
     override def expect(
       expected: T,

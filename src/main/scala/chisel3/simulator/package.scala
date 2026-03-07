@@ -100,7 +100,6 @@ package object simulator {
         controller.run(0)
       }
     }
-
   }
   private[simulator] object AnySimulatedModule {
     private val dynamicVariable = new scala.util.DynamicVariable[Option[AnySimulatedModule]](None)

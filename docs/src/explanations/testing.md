@@ -106,55 +106,64 @@ These APIs are summarized below:
 #### Formatting `expect` Failure Values
 
 When `expect` fails, ChiselSim throws a `FailedExpectationException` that
-prints observed and expected values.  You can configure how these values are
-rendered for each `expect` call.
+prints observed and expected values in decimal by default. You can override
+that per call with `ExpectationValueFormat.Dec`, `Hex`, `Bin`, or a custom
+formatter. `Hex` groups pairs of digits by byte, and `Bin` groups bits in fours. A custom formatter can either render each value independently or
+build a message from both observed and expected values.
 
-Available formats are:
-
-- `ExpectationValueFormat.Default` (existing behavior)
-- `ExpectationValueFormat.Hex` (numeric part printed as `0x...`)
-- `ExpectationValueFormat.Bin` (numeric part printed as `0b...`)
-- `ExpectationValueFormat.Custom(fn)` (user-defined formatting function)
-
-Format is selected per call by passing an extra argument to `expect`:
-
-- `expect(expected, format)`
-- `expect(expected, message, format)`
+Inside a `simulate { dut => ... }` block, for example:
 
 ```scala
-import chisel3._
-import chisel3.simulator._
-import chisel3.simulator.scalatest.ChiselSim
-import org.scalatest.funspec.AnyFunSpec
+dut.in.poke(3.U)
+// failure shows UInt<32>(0x00 00 00 03) vs UInt<32>(0x00 00 00 05)
+dut.out.expect(5.U, ExpectationValueFormat.Hex)
+// failure shows UInt<32>(0b0000 0000 0000 0000 0000 0000 0000 0011) vs UInt<32>(0b0000 0000 0000 0000 0000 0000 0000 0101)
+dut.out.expect(5.U, ExpectationValueFormat.Bin)
 
-class ExpectFormatExample extends AnyFunSpec with ChiselSim {
-  class Foo extends Module {
-    val in = IO(Input(UInt(32.W)))
-    val out = IO(Output(UInt(32.W)))
-    out := in
-  }
-
-  it("formats failed expect values") {
-    simulate(new Foo) { dut =>
-      dut.in.poke(3.U)
-      dut.out.expect(5.U, ExpectationValueFormat.Hex) // failure shows UInt<32>(0x3) vs UInt<3>(0x5)
-      dut.out.expect(5.U, ExpectationValueFormat.Bin) // failure shows UInt<32>(0b11) vs UInt<3>(0b101)
-
-      val jumpInst = BigInt("0000006f", 16) // jal x0, 0
-      val retInst = BigInt("00008067", 16) // jalr x0, x1, 0 (ret)
-      val custom = ExpectationValueFormat.Custom { value =>
-        val mnemonic = value.unsignedValue match {
-          case `jumpInst` => "jump"
-          case `retInst`  => "ret"
-          case inst       => s"unknown(0x${inst.toString(16)})"
-        }
-        s"riscv($mnemonic)"
-      }
-      dut.in.poke(retInst.U(32.W))
-      dut.out.expect(jumpInst.U(32.W), custom)
-    }
-  }
+val jumpInst = BigInt("0000006f", 16) // jal x0, 0
+val retInst = BigInt("00008067", 16) // jalr x0, x1, 0 (ret)
+def decode(value: ExpectationValueFormat.Value): String = value.unsignedValue match {
+  case `jumpInst` => "jump"
+  case `retInst`  => "ret"
+  case inst       => s"unknown(0x${inst.toString(16)})"
 }
+val riscv = ExpectationValueFormat.Custom { value =>
+  s"riscv(${decode(value)})"
+}
+dut.in.poke(retInst.U(32.W))
+// failure shows riscv(ret) vs riscv(jump)
+dut.out.expect(jumpInst.U(32.W), riscv)
+```
+
+```scala
+def bits(value: ExpectationValueFormat.Value): String =
+  value.unsignedValue.toString(2).reverse.padTo(value.bitWidth, '0').reverse.mkString
+
+val bitDiff = ExpectationValueFormat.Custom.message(
+  ExpectationValueFormat.Custom.values(bits)
+) { (observed, expected) =>
+  val observedBits = bits(observed)
+  val expectedBits = bits(expected)
+  val markers = observedBits.zip(expectedBits).map {
+    case (observedBit, expectedBit) => if (observedBit == expectedBit) ' ' else '^'
+  }.mkString
+  val diffBits = observedBits.zip(expectedBits).zipWithIndex.collect {
+    case ((observedBit, expectedBit), idx) if observedBit != expectedBit =>
+      observedBits.length - 1 - idx
+  }.sorted
+  val indent = " " * "Observed value: '".length
+
+  s"""|$indent$markers
+      |Diff Bit: ${diffBits.mkString(",")}""".stripMargin
+}
+
+dut.in.poke("b101111".U)
+// failure shows:
+// Observed value: '101111'
+// Expected value: '100101'
+//                    ^ ^
+// Diff Bit: 1,3
+dut.out.expect("b100101".U, bitDiff)
 ```
 
 For more information see the [Chisel API
