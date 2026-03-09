@@ -50,7 +50,7 @@ object InstanceChoiceControl {
     *
     * @param choices sequence of (specializationTime, option, case) tuples
     */
-  case class Choices(choices: Seq[(SpecializationTime, String, String)]) extends Type {
+  private case class Choices(choices: Seq[(SpecializationTime, String, String)]) extends Type {
 
     override protected def getVerilogElaborationTimeChoices: Seq[(String, String)] = {
       choices.collect { case (SpecializationTime.VerilogElaborationTime, option, value) =>

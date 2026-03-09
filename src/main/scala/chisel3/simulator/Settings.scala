@@ -124,10 +124,7 @@ final class Settings[A <: RawModule] private[simulator] (
     stopCond:              Option[MacroText.Type[A]] = stopCond,
     plusArgs:              Seq[svsim.PlusArg] = plusArgs,
     enableWavesAtTimeZero: Boolean = enableWavesAtTimeZero,
-    randomization:         Randomization = randomization,
-    libraries:             Seq[String] = libraries,
-    libraryPaths:          Seq[String] = libraryPaths,
-    instanceChoices:       InstanceChoiceControl.Type = instanceChoices
+    randomization:         Randomization = randomization
   ) =
     new Settings(
       verilogLayers,
