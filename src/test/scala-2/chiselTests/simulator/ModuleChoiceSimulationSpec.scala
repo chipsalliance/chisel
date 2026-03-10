@@ -35,7 +35,7 @@ class ModuleChoiceTestModule extends Module {
     io.out := 1.U
   }
   class Return2 extends FixedIORawModule[TargetIO](new TargetIO) {
-    io.out := 1.U
+    io.out := 2.U
   }
 
   val choiceOut1 = ModuleChoice(new Return0)(
