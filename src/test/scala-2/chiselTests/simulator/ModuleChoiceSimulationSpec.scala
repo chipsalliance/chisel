@@ -3,7 +3,7 @@
 package chiselTests.simulator
 
 import chisel3._
-import chisel3.choice.{Case, Group, ModuleChoice}
+import chisel3.choice.{Case, Group, ModuleChoice, DynamicGroup}
 import chisel3.simulator.{InstanceChoiceControl, Settings}
 import chisel3.simulator.InstanceChoiceControl.SpecializationTime
 import chisel3.simulator.scalatest.ChiselSim
@@ -14,10 +14,6 @@ import org.scalatest.matchers.should.Matchers
 object Platform extends Group {
   object FPGA extends Case
   object ASIC extends Case
-}
-
-object Opt extends Group {
-  object Fast extends Case
 }
 
 class TargetIO extends Bundle {
@@ -47,9 +43,11 @@ class ModuleChoiceTestModule extends Module {
 
   out1 := choiceOut1.out
 
+  // Use a dynamic group
+  val group = new DynamicGroup("Opt", Seq("Fast"))
   val choiceOut2 = ModuleChoice(new Return0)(
     Seq(
-      Opt.Fast -> new Return1
+      group("Fast") -> new Return1
     )
   )
 

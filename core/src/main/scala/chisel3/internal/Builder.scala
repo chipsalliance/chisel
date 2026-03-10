@@ -535,6 +535,8 @@ private[chisel3] class DynamicContext(
   val layers = mutable.LinkedHashSet[layer.Layer]()
   val options = mutable.LinkedHashSet[choice.Case]()
   val domains = mutable.LinkedHashSet[domain.Domain]()
+  val dynamicGroupsByName = mutable.HashMap[String, (choice.Group, Seq[String])]()
+  val dynamicCasesByGroupAndName = mutable.HashMap[(choice.Group, String), choice.Case]()
   var currentModule: Option[BaseModule] = None
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
@@ -613,6 +615,9 @@ private[chisel3] object Builder extends LazyLogging {
   def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
   def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
   def domains: mutable.LinkedHashSet[domain.Domain] = dynamicContext.domains
+
+  def dynamicGroupsByName: mutable.HashMap[String, (choice.Group, Seq[String])] = dynamicContext.dynamicGroupsByName
+  def dynamicCasesByGroupAndName: mutable.HashMap[(choice.Group, String), choice.Case] = dynamicContext.dynamicCasesByGroupAndName
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -863,6 +868,31 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def elaborationTrace: ElaborationTrace = dynamicContext.elaborationTrace
+
+  def getOrCreateDynamicGroup(name: String, caseNames: Seq[String], groupFactory: () => choice.Group): choice.Group = {
+    if (!inContext) return groupFactory()
+
+    dynamicGroupsByName.get(name) match {
+      case Some((existingGroup, existingCaseNames)) =>
+        if (existingCaseNames != caseNames) {
+          throw new IllegalArgumentException(
+            s"DynamicGroup '$name' already exists with different case names.\n" +
+            s"  Existing: ${existingCaseNames.mkString(", ")}\n" +
+            s"  New: ${caseNames.mkString(", ")}"
+          )
+        }
+        existingGroup
+      case None =>
+        val newGroup = groupFactory()
+        dynamicGroupsByName(name) = (newGroup, caseNames)
+        newGroup
+    }
+  }
+
+  def getOrCreateDynamicCase(group: choice.Group, name: String, caseFactory: () => choice.Case): choice.Case = {
+    if (!inContext) return caseFactory()
+    dynamicCasesByGroupAndName.getOrElseUpdate((group, name), caseFactory())
+  }
 
   def forcedClock: Clock = currentClock.getOrElse(
     // TODO add implicit clock change to Builder.exception

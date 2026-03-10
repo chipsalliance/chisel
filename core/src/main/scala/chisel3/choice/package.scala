@@ -30,6 +30,41 @@ package object choice {
     final implicit def group: Group = this
   }
 
+  /** Dynamic option group that accepts a name and case names as runtime parameters.
+    * @example {{{ val platform = new DynamicGroup("Platform", Seq("FPGA", "ASIC")) }}}
+    */
+  class DynamicGroup(val groupName: String, caseNames: Seq[String])(implicit _sourceInfo: SourceInfo) {
+    import chisel3.internal.Builder
+
+    private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
+    private[chisel3] def name: String = groupName
+
+    private val _group: Group = Builder.getOrCreateDynamicGroup(groupName, caseNames, () => {
+      object DynamicGroupSingleton extends Group()(_sourceInfo) {
+        override private[chisel3] def name = groupName
+      }
+      DynamicGroupSingleton
+    })
+
+    final implicit def group: Group = _group
+
+    private val _cases: Map[String, Case] = caseNames.map { caseName =>
+      caseName -> Builder.getOrCreateDynamicCase(_group, caseName, () => {
+        object DynamicCaseSingleton extends Case()(_group, _sourceInfo) {
+          override private[chisel3] def name = caseName
+        }
+        DynamicCaseSingleton
+      })
+    }.toMap
+
+    def cases: Map[String, Case] = _cases
+
+    def apply(caseName: String): Case = _cases.getOrElse(
+      caseName,
+      throw new NoSuchElementException(s"Case '$caseName' not found in group '$groupName'. Available cases: ${_cases.keys.mkString(", ")}")
+    )
+  }
+
   /** An option case declaration.
     */
   abstract class Case(implicit val group: Group, _sourceInfo: SourceInfo) {
