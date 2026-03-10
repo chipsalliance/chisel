@@ -443,7 +443,8 @@ final class Workspace(
 
     // Reorder source files so that targets-*.svh headers come before RTL sources
     // This is necessary for instance choice macro headers to be elaborated before use
-    val targetHeadersFirst = sourceFiles.sortBy(f => (!f.matches(".*targets-.*\\.svh$"), f))
+    val (targetHeaders, otherFiles) = sourceFiles.partition(_.matches(".*targets-.*\\.svh$"))
+    val targetHeadersFirst = targetHeaders ++ otherFiles
 
     val traceFileStem = commonSettings.simulationSettings.traceFileStem
     val simulationEnvironment = Seq(
