@@ -125,3 +125,45 @@ println("`"*3)
 <!-- KEEP THE CODE BLOCKS ABOVE IN SYNC -->
 
 ChiselSim also does not currently have any support for `fork`-`join`, so any tests using those constructs will need to be rewritten in a single-threaded manner.
+
+## ChiselTest Compatibility Layer
+
+For projects with a large test suite, Chisel now includes a **ChiselTest compatibility layer** at `chiseltest.*` that provides a drop-in replacement for most ChiselTest APIs. This allows you to keep your existing test code while running on ChiselSim.
+
+### Using the Compatibility Layer
+
+Simply keep your existing imports and test structure:
+
+```scala
+import chisel3._
+import chiseltest._
+import org.scalatest.flatspec.AnyFlatSpec
+
+class MyModuleSpec extends AnyFlatSpec with ChiselScalatestTester {
+  behavior of "MyModule"
+  it should "do something" in {
+    test(new MyModule) { c =>
+      c.io.in.poke(42.U)
+      c.clock.step()
+      c.io.out.expect(42.U)
+    }
+  }
+}
+```
+
+The compatibility layer provides:
+- `poke`, `peek`, `expect` methods on Data types
+- `step()` methods on Clock
+- `ChiselScalatestTester` trait for ScalaTest integration
+- Automatic reset before each test (mimicking ChiselTest behavior)
+- Decoupled interface utilities (`enqueueNow`, `expectDequeueNow`, etc.)
+- Annotation stubs (`WriteVcdAnnotation`, etc.) for compatibility
+
+### Limitations
+
+- Annotations are ignored (waveforms always generated with Verilator)
+- Formal verification support is limited to stubs
+- `fork`/`join` patterns execute sequentially
+- Some advanced features may require migration to ChiselSim APIs
+
+For full details, see `src/main/scala/chiseltest/README.md` in the Chisel repository.
