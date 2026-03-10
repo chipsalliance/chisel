@@ -103,6 +103,69 @@ These APIs are summarized below:
 - `step` toggles a clock for a number of cycles
 - `stepUntil` toggles a clock until a condition occurs on another port
 
+#### Formatting `expect` Failure Values
+
+When `expect` fails, ChiselSim throws a `FailedExpectationException` that
+prints observed and expected values in decimal by default. You can override
+that per call with `ExpectationValueFormat.Dec`, `Hex`, `Bin`, or a custom
+formatter. `Hex` groups pairs of digits by byte, and `Bin` groups bits in fours. A custom formatter can either render each value independently or
+build a message from both observed and expected values.
+
+Inside a `simulate { dut => ... }` block, for example:
+
+```scala
+dut.in.poke(3.U)
+// failure shows UInt<32>(0x00 00 00 03) vs UInt<32>(0x00 00 00 05)
+dut.out.expect(5.U, ExpectationValueFormat.Hex)
+// failure shows UInt<32>(0b0000 0000 0000 0000 0000 0000 0000 0011) vs UInt<32>(0b0000 0000 0000 0000 0000 0000 0000 0101)
+dut.out.expect(5.U, ExpectationValueFormat.Bin)
+
+val jumpInst = BigInt("0000006f", 16) // jal x0, 0
+val retInst = BigInt("00008067", 16) // jalr x0, x1, 0 (ret)
+def decode(value: ExpectationValueFormat.Value): String = value.unsignedValue match {
+  case `jumpInst` => "jump"
+  case `retInst`  => "ret"
+  case inst       => s"unknown(0x${inst.toString(16)})"
+}
+val riscv = ExpectationValueFormat.Custom { value =>
+  s"riscv(${decode(value)})"
+}
+dut.in.poke(retInst.U(32.W))
+// failure shows riscv(ret) vs riscv(jump)
+dut.out.expect(jumpInst.U(32.W), riscv)
+```
+
+```scala
+def bits(value: ExpectationValueFormat.Value): String =
+  value.unsignedValue.toString(2).reverse.padTo(value.bitWidth, '0').reverse.mkString
+
+val bitDiff = ExpectationValueFormat.Custom.message(
+  ExpectationValueFormat.Custom.values(bits)
+) { (observed, expected) =>
+  val observedBits = bits(observed)
+  val expectedBits = bits(expected)
+  val markers = observedBits.zip(expectedBits).map {
+    case (observedBit, expectedBit) => if (observedBit == expectedBit) ' ' else '^'
+  }.mkString
+  val diffBits = observedBits.zip(expectedBits).zipWithIndex.collect {
+    case ((observedBit, expectedBit), idx) if observedBit != expectedBit =>
+      observedBits.length - 1 - idx
+  }.sorted
+  val indent = " " * "Observed value: '".length
+
+  s"""|$indent$markers
+      |Diff Bit: ${diffBits.mkString(",")}""".stripMargin
+}
+
+dut.in.poke("b101111".U)
+// failure shows:
+// Observed value: '101111'
+// Expected value: '100101'
+//                    ^ ^
+// Diff Bit: 1,3
+dut.out.expect("b100101".U, bitDiff)
+```
+
 For more information see the [Chisel API
 documentation](https://www.chisel-lang.org/api) for
 `chisel3.simulator.PeekPokeAPI`.
