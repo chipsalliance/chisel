@@ -441,6 +441,11 @@ final class Workspace(
       Files.walkFileTree(Paths.get(dir), new DirectoryVisitor)
     }
 
+    // Reorder source files so that targets-*.svh headers come before RTL sources
+    // This is necessary for instance choice macro headers to be elaborated before use
+    val (targetHeaders, otherFiles) = sourceFiles.partition(_.matches(".*targets-.*\\.svh$"))
+    val targetHeadersFirst = targetHeaders ++ otherFiles
+
     val traceFileStem = commonSettings.simulationSettings.traceFileStem
     val simulationEnvironment = Seq(
       "SVSIM_SIMULATION_LOG" -> s"$workingDirectoryPath/simulation-log.txt",
@@ -451,7 +456,7 @@ final class Workspace(
     val sourceFilesFilelistWriter = new LineWriter(s"$workingDirectoryPath/sourceFiles.F")
     try {
       val l = sourceFilesFilelistWriter
-      sourceFiles.foreach(l(_))
+      targetHeadersFirst.foreach(l(_))
       l()
     } finally {
       sourceFilesFilelistWriter.close()

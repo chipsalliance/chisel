@@ -225,14 +225,18 @@ package object simulator {
       }
 
       // Move all files from the build flow that have file extensions that
-      // likley should be included:
-      //   - Verilog files: '*.v', '*.sv', or '*.vh'.
-      //   - C++ files: '.cc', '.cpp', '.h'
-      val include_re = "^.*\\.(s?v|vh?|cc|cpp|h)$".r
+      // should be included:
+      //   - Verilog files: .v, .sv, .vh, .svh
+      //   - C++ files: .cc, .cpp, .h
+      val includedExtensions = Set("v", "sv", "vh", "svh", "cc", "cpp", "h")
       Files
         .walk(supportArtifactsPath)
         .filter(_.toFile.isFile)
-        .filter(f => include_re.matches(f.getFileName.toString))
+        .filter { f =>
+          val filename = f.getFileName.toString
+          val dotIndex = filename.lastIndexOf('.')
+          dotIndex >= 0 && includedExtensions.contains(filename.substring(dotIndex + 1))
+        }
         .forEach(moveFile)
 
       GeneratedWorkspaceInfo(
