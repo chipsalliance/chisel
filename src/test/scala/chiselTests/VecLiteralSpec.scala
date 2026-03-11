@@ -86,7 +86,7 @@ class VecLiteralSpec extends AnyFreeSpec with Matchers with ChiselSim {
     firrtl should include("""connect _y_WIRE[1], UInt<8>(0hcd)""")
     firrtl should include("""connect _y_WIRE[2], UInt<8>(0hef)""")
     firrtl should include("""connect _y_WIRE[3], UInt<8>(0hff)""")
-    firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
+    firrtl should include("""regreset y : UInt<8>[4], clock, `reset`, _y_WIRE""".stripMargin)
   }
 
   // NOTE: I had problems where this would not work if this class declaration was inside test scope
@@ -101,7 +101,7 @@ class VecLiteralSpec extends AnyFreeSpec with Matchers with ChiselSim {
     firrtl should include("""invalidate _y_WIRE[1]""")
     firrtl should include("""connect _y_WIRE[2], UInt<8>(0hef)""")
     firrtl should include("""connect _y_WIRE[3], UInt<8>(0hff)""")
-    firrtl should include("""regreset y : UInt<8>[4], clock, reset, _y_WIRE""".stripMargin)
+    firrtl should include("""regreset y : UInt<8>[4], clock, `reset`, _y_WIRE""".stripMargin)
   }
 
   class ResetRegWithPartialVecLiteral extends Module {

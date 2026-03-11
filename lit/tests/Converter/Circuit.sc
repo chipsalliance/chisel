@@ -17,7 +17,7 @@ class FooBlackbox extends BlackBox {
 
 // CHECK: public module FooModule :
 // CHECK-NEXT: input clock : Clock
-// CHECK-NEXT: input reset : UInt<1>
+// CHECK-NEXT: input `reset` : UInt<1>
 // CHECK-NEXT: output o : UInt<1>
 class FooModule extends Module {
   val o = IO(Output(Bool()))

@@ -184,12 +184,12 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     chirrtl should include("connect deq.valid, enq.valid")
     chirrtl should include("connect enq.ready, deq.ready")
-    chirrtl should include("connect deq.fizz, enq.bits.fizz")
-    chirrtl should include("connect deq.buzz, enq.bits.buzz")
+    chirrtl should include("connect deq.fizz, enq.`bits`.fizz")
+    chirrtl should include("connect deq.buzz, enq.`bits`.buzz")
     chirrtl should include("connect deq2.valid, enq.valid")
     chirrtl should include("connect enq.ready, deq2.ready")
-    chirrtl should include("connect deq2.fizz, enq.bits.fizz")
-    chirrtl should include("connect deq2.buzz, enq.bits.buzz")
+    chirrtl should include("connect deq2.fizz, enq.`bits`.fizz")
+    chirrtl should include("connect deq2.buzz, enq.`bits`.buzz")
   }
 
   it should "support viewing a Bundle as a Parent Bundle type" in {
@@ -274,7 +274,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       ifcMon.viewAsSupertype(chiselTypeOf(ifc)) :>= ifc
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("invalidate ifc.foo.bits")
+    chirrtl should include("invalidate ifc.foo.`bits`")
     chirrtl should include("connect ifc.foo.ready, ifcMon.foo.ready")
   }
 
@@ -493,9 +493,9 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val expected = List(
       "node x = and(a, b.value)",
-      "connect and, x",
+      "connect `and`, x",
       "node y = mux(cond, a, b.value)",
-      "connect mux, y",
+      "connect `mux`, y",
       "node aBits = bits(a, 3, 0)",
       "node bBits = bits(b.value, 3, 0)",
       "node abCat = cat(aBits, bBits)",
@@ -515,8 +515,8 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       fooOut := cat
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
-    chirrtl should include("node cat = cat(barIn.foo, barIn.bar)")
-    chirrtl should include("connect fooOut, cat")
+    chirrtl should include("node `cat` = cat(barIn.foo, barIn.bar)")
+    chirrtl should include("connect fooOut, `cat`")
   }
 
   it should "be composable" in {
@@ -994,7 +994,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     for (i <- 0 until 5) {
-      chirrtl should include(s"connect out$i.bits, in$i")
+      chirrtl should include(s"connect out$i.`bits`, in$i")
       chirrtl should include(s"connect out$i.valid, UInt<1>(0h1)")
     }
   }

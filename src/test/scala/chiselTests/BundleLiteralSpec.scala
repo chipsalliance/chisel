@@ -410,7 +410,7 @@ class BundleLiteralSpec extends AnyFlatSpec with Matchers with ChiselSim with Lo
       lit.b.getWidth should be(4)
       val cat = Cat(lit.a, lit.b)
     })
-    chirrtl should include("node cat = cat(UInt<4>(0h3), UInt<4>(0h3))")
+    chirrtl should include("node `cat` = cat(UInt<4>(0h3), UInt<4>(0h3))")
   }
 
   "Calling .asUInt on a Bundle literal" should "return a UInt literal and work outside of elaboration" in {
