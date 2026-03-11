@@ -191,7 +191,7 @@ object Queue {
     flush:          Option[Bool] = None
   ): DecoupledIO[T] = {
     if (entries == 0) {
-      val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
+      val deq = Wire(Decoupled(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
       deq.bits := enq.bits
       enq.ready := deq.ready
@@ -325,7 +325,7 @@ object Queue {
   ): IrrevocableIO[T] = {
     val deq = apply(enq, entries, pipe, flow, useSyncReadMem, flush)
     require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
-    val irr = Wire(new IrrevocableIO(chiselTypeOf(deq.bits)))
+    val irr = Wire(Irrevocable(chiselTypeOf(deq.bits)))
     irr.bits := deq.bits
     irr.valid := deq.valid
     deq.ready := irr.ready
