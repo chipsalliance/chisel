@@ -34,38 +34,44 @@ package object choice {
   /** Dynamic option group that accepts a name and case names as runtime parameters.
     * @example {{{ val platform = new DynamicGroup("Platform", Seq("FPGA", "ASIC")) }}}
     */
-  class DynamicGroup(val groupName: String, caseNames: Seq[String])(implicit _sourceInfo: SourceInfo) {
+  class DynamicGroup(val groupName: String, caseNames: Seq[String])(implicit sourceInfo: SourceInfo) {
 
-    private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
-    private[chisel3] def name: String = groupName
+    private val normalizedCaseNames = caseNames.toVector
+    private val cachedGroup = Builder.getOrCreateDynamicGroup(
+      groupName,
+      normalizedCaseNames,
+      DynamicGroup.groupFactory(groupName)
+    )
 
-    private val _group: Group = Builder.getOrCreateDynamicGroup(groupName, caseNames, () => {
-      object DynamicGroupSingleton extends Group()(_sourceInfo) {
-        override private[chisel3] def name = groupName
-      }
-      DynamicGroupSingleton
-    })
+    final implicit def group: Group = cachedGroup
 
-    final implicit def group: Group = _group
-
-    private val _cases: Map[String, Case] = caseNames.map { caseName =>
-      caseName -> Builder.getOrCreateDynamicCase(_group, caseName, () => {
-        object DynamicCaseSingleton extends Case()(_group, _sourceInfo) {
-          override private[chisel3] def name = caseName
-        }
-        DynamicCaseSingleton
-      })
+    val cases: Map[String, Case] = normalizedCaseNames.iterator.map { caseName =>
+      caseName -> Builder.getOrCreateDynamicCase(cachedGroup, caseName, DynamicGroup.caseFactory(cachedGroup, caseName))
     }.toMap
 
-    def cases: Map[String, Case] = _cases
-
-    def apply(caseName: String): Case = _cases.getOrElse(
+    def apply(caseName: String): Case = cases.getOrElse(
       caseName,
-      throw new NoSuchElementException(s"Case '$caseName' not found in group '$groupName'. Available cases: ${_cases.keys.mkString(", ")}")
+      throw new NoSuchElementException(
+        s"Case '$caseName' not found in group '$groupName'. Available cases: ${cases.keys.mkString(", ")}"
+      )
     )
   }
 
   object DynamicGroup {
+    private def groupFactory(groupName: String)(implicit sourceInfo: SourceInfo): () => Group = () => {
+      object DynamicGroupSingleton extends Group()(sourceInfo) {
+        override private[chisel3] def name = groupName
+      }
+      DynamicGroupSingleton
+    }
+
+    private def caseFactory(group: Group, caseName: String)(implicit sourceInfo: SourceInfo): () => Case = () => {
+      object DynamicCaseSingleton extends Case()(group, sourceInfo) {
+        override private[chisel3] def name = caseName
+      }
+      DynamicCaseSingleton
+    }
+
     /** Create a DynamicGroup with the given name and case names.
       * If a group with this name already exists in the elaboration context,
       * the returned DynamicGroup will share the same underlying Group singleton.
@@ -75,9 +81,8 @@ package object choice {
       * @param sourceInfo Source location information
       * @return A DynamicGroup with the given name
       */
-    def apply(name: String, caseNames: Seq[String])(implicit sourceInfo: SourceInfo): DynamicGroup = {
+    def apply(name: String, caseNames: Seq[String])(implicit sourceInfo: SourceInfo): DynamicGroup =
       new DynamicGroup(name, caseNames)
-    }
 
     /** Create a DynamicGroup with a builder function that provides a trait-like interface.
       * This allows you to define a type-safe interface for accessing cases.
@@ -104,10 +109,8 @@ package object choice {
       * platform.FPGA // Type-safe access
       * }}}
       */
-    def apply[T](name: String, caseNames: Seq[String])(builder: DynamicGroup => T)(implicit sourceInfo: SourceInfo): T = {
-      val group = new DynamicGroup(name, caseNames)
-      builder(group)
-    }
+    def apply[T](name: String, caseNames: Seq[String])(builder: DynamicGroup => T)(implicit sourceInfo: SourceInfo): T =
+      builder(apply(name, caseNames))
   }
 
   /** An option case declaration.
