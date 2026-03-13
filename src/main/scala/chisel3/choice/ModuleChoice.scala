@@ -26,11 +26,11 @@ object ModuleChoice extends ModuleChoice$Intf {
       if (!instModule.io.typeEquivalent(instDefaultModule.io)) {
         Builder.error("Error: choice module IO bundles are not type equivalent")
       }
-      Builder.options += choice
+      Builder.addOption(choice)
       (choice, instModule)
     }
 
-    groupByIntoSeq(choiceModules.map(_._1))(opt => opt).foreach { case (_, group) =>
+    groupByIntoSeq(choiceModules.map(_._1))(opt => (opt.group, opt.name)).foreach { case (_, group) =>
       if (group.size != 1) {
         throw new IllegalArgumentException(s"Error: duplicate case '${group.head.name}'")
       }

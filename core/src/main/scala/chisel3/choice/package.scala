@@ -31,86 +31,87 @@ package object choice {
     final implicit def group: Group = this
   }
 
-  /** Dynamic option group that accepts a name and case names as runtime parameters.
-    * @example {{{ val platform = new DynamicGroup("Platform", Seq("FPGA", "ASIC")) }}}
+  /** Schema-style dynamic option group.
+    *
+    * This allows trait-based declarations of cases without requiring a singleton [[Group]] object.
+    *
+    * @example
+    * {{{
+    * trait PlatformType extends DynamicGroup {
+    *   object FPGA extends Case
+    *   object ASIC extends Case
+    * }
+    * }}}
     */
-  class DynamicGroup(val groupName: String, caseNames: Seq[String])(implicit sourceInfo: SourceInfo) {
+  trait DynamicGroup {
+    private var initializedName:       Option[String] = None
+    private var initializedCaseNames:  Option[Seq[String]] = None
+    private var initializedSourceInfo: Option[SourceInfo] = None
 
-    private val normalizedCaseNames = caseNames.toVector
-    private val cachedGroup = Builder.getOrCreateDynamicGroup(
+    private def groupName: String = initializedName.getOrElse(
+      throw new IllegalStateException("DynamicGroup was used before it was initialized")
+    )
+
+    private def caseNames: Seq[String] = initializedCaseNames.getOrElse(
+      throw new IllegalStateException("DynamicGroup was used before it was initialized")
+    )
+
+    private implicit def sourceInfo: SourceInfo = initializedSourceInfo.getOrElse(
+      throw new IllegalStateException("DynamicGroup was used before it was initialized")
+    )
+
+    private[chisel3] def initialize(name: String, caseNames: Seq[String], sourceInfo: SourceInfo): this.type = {
+      initializedName = Some(name)
+      initializedCaseNames = Some(caseNames.toVector)
+      initializedSourceInfo = Some(sourceInfo)
+      this
+    }
+
+    private lazy val cachedGroup = Builder.getOrCreateDynamicGroup(
       groupName,
-      normalizedCaseNames,
+      caseNames.toVector,
       DynamicGroup.groupFactory(groupName)
     )
 
     final implicit def group: Group = cachedGroup
-
-    val cases: Map[String, Case] = normalizedCaseNames.iterator.map { caseName =>
-      caseName -> Builder.getOrCreateDynamicCase(cachedGroup, caseName, DynamicGroup.caseFactory(cachedGroup, caseName))
-    }.toMap
-
-    def apply(caseName: String): Case = cases.getOrElse(
-      caseName,
-      throw new NoSuchElementException(
-        s"Case '$caseName' not found in group '$groupName'. Available cases: ${cases.keys.mkString(", ")}"
-      )
-    )
   }
-
   object DynamicGroup {
-    private def groupFactory(groupName: String)(implicit sourceInfo: SourceInfo): () => Group = () => {
+    private[chisel3] def groupFactory(groupName: String)(implicit sourceInfo: SourceInfo): () => Group = () => {
       object DynamicGroupSingleton extends Group()(sourceInfo) {
         override private[chisel3] def name = groupName
       }
       DynamicGroupSingleton
     }
 
-    private def caseFactory(group: Group, caseName: String)(implicit sourceInfo: SourceInfo): () => Case = () => {
-      object DynamicCaseSingleton extends Case()(group, sourceInfo) {
-        override private[chisel3] def name = caseName
-      }
-      DynamicCaseSingleton
-    }
-
-    /** Create a DynamicGroup with the given name and case names.
-      * If a group with this name already exists in the elaboration context,
-      * the returned DynamicGroup will share the same underlying Group singleton.
-      *
-      * @param name The name of the group
-      * @param caseNames List of case names for this group
-      * @param sourceInfo Source location information
-      * @return A DynamicGroup with the given name
+    /** Typeclass for constructing trait-based [[DynamicGroup]] instances.
       */
-    def apply(name: String, caseNames: Seq[String])(implicit sourceInfo: SourceInfo): DynamicGroup =
-      new DynamicGroup(name, caseNames)
+    trait Factory[T <: DynamicGroup] {
+      def caseNames:                                 Seq[String]
+      def create()(implicit sourceInfo: SourceInfo): T
+    }
+    object Factory extends DynamicGroupFactoryIntf
 
-    /** Create a DynamicGroup with a builder function that provides a trait-like interface.
-      * This allows you to define a type-safe interface for accessing cases.
+    /** Create a trait-based [[DynamicGroup]] using an implicit factory.
       *
       * @tparam T The trait type that defines the case structure
-      * @param name The name of the group
-      * @param caseNames List of case names for this group (must match trait method names)
-      * @param builder A function that takes the DynamicGroup and returns an instance of T
+      * @param groupName The name of the group
       * @param sourceInfo Source location information
-      * @return An instance of T that provides access to the cases
+      * @return An instance of T that provides type-safe access to the cases
       *
       * @example
       * {{{
-      * trait PlatformType {
-      *   def FPGA: Case
-      *   def ASIC: Case
+      * trait PlatformType extends DynamicGroup {
+      *   object FPGA extends Case
+      *   object ASIC extends Case
       * }
-      * val platform = DynamicGroup[PlatformType]("Platform", Seq("FPGA", "ASIC")) { group =>
-      *   new PlatformType {
-      *     def FPGA = group("FPGA")
-      *     def ASIC = group("ASIC")
-      *   }
-      * }
-      * platform.FPGA // Type-safe access
+      * val platform = DynamicGroup[PlatformType]("Platform")
       * }}}
       */
-    def apply[T](name: String, caseNames: Seq[String])(builder: DynamicGroup => T)(implicit sourceInfo: SourceInfo): T =
-      builder(apply(name, caseNames))
+    def apply[T <: DynamicGroup](groupName: String)(implicit factory: Factory[T], sourceInfo: SourceInfo): T = {
+      val instance = factory.create().initialize(groupName, factory.caseNames, sourceInfo)
+      instance.group
+      instance
+    }
   }
 
   /** An option case declaration.

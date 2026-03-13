@@ -533,7 +533,7 @@ private[chisel3] class DynamicContext(
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[() => Seq[Annotation]]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
-  val options = mutable.LinkedHashSet[choice.Case]()
+  val options = mutable.LinkedHashMap[(choice.Group, String), choice.Case]()
   val domains = mutable.LinkedHashSet[domain.Domain]()
   val dynamicGroupsByName = mutable.HashMap[String, (choice.Group, Seq[String])]()
   val dynamicCasesByGroupAndName = mutable.HashMap[(choice.Group, String), choice.Case]()
@@ -613,11 +613,16 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations: ArrayBuffer[() => Seq[Annotation]] = dynamicContext.annotations
 
   def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
-  def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
-  def domains: mutable.LinkedHashSet[domain.Domain] = dynamicContext.domains
+  def options: mutable.LinkedHashMap[(choice.Group, String), choice.Case] = dynamicContext.options
+  def addOption(option: choice.Case): Unit = {
+    dynamicContext.options.getOrElseUpdate((option.group, option.name), option)
+  }
+  def addOptions(options: Iterable[choice.Case]): Unit = options.foreach(addOption)
+  def domains:                                    mutable.LinkedHashSet[domain.Domain] = dynamicContext.domains
 
   def dynamicGroupsByName: mutable.HashMap[String, (choice.Group, Seq[String])] = dynamicContext.dynamicGroupsByName
-  def dynamicCasesByGroupAndName: mutable.HashMap[(choice.Group, String), choice.Case] = dynamicContext.dynamicCasesByGroupAndName
+  def dynamicCasesByGroupAndName: mutable.HashMap[(choice.Group, String), choice.Case] =
+    dynamicContext.dynamicCasesByGroupAndName
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -877,8 +882,8 @@ private[chisel3] object Builder extends LazyLogging {
         if (existingCaseNames != caseNames) {
           throw new IllegalArgumentException(
             s"DynamicGroup '$name' already exists with different case names.\n" +
-            s"  Existing: ${existingCaseNames.mkString(", ")}\n" +
-            s"  New: ${caseNames.mkString(", ")}"
+              s"  Existing: ${existingCaseNames.mkString(", ")}\n" +
+              s"  New: ${caseNames.mkString(", ")}"
           )
         }
         existingGroup
@@ -1139,7 +1144,7 @@ private[chisel3] object Builder extends LazyLogging {
         Layer(l.sourceInfo, l.name, config, children.map(foldLayers).toSeq, l)
       }
 
-      val optionDefs = groupByIntoSeq(options)(opt => opt.group).map { case (optGroup, cases) =>
+      val optionDefs = groupByIntoSeq(options.values)(opt => opt.group).map { case (optGroup, cases) =>
         DefOption(
           optGroup.sourceInfo,
           optGroup.name,
