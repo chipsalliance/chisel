@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.util.simpleClassName
+import chisel3.internal.Builder
 
 /** This package contains Chisel language definitions for describing configuration options and their accepted values.
   */
@@ -34,7 +35,6 @@ package object choice {
     * @example {{{ val platform = new DynamicGroup("Platform", Seq("FPGA", "ASIC")) }}}
     */
   class DynamicGroup(val groupName: String, caseNames: Seq[String])(implicit _sourceInfo: SourceInfo) {
-    import chisel3.internal.Builder
 
     private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
     private[chisel3] def name: String = groupName
@@ -63,6 +63,51 @@ package object choice {
       caseName,
       throw new NoSuchElementException(s"Case '$caseName' not found in group '$groupName'. Available cases: ${_cases.keys.mkString(", ")}")
     )
+  }
+
+  object DynamicGroup {
+    /** Create a DynamicGroup with the given name and case names.
+      * If a group with this name already exists in the elaboration context,
+      * the returned DynamicGroup will share the same underlying Group singleton.
+      *
+      * @param name The name of the group
+      * @param caseNames List of case names for this group
+      * @param sourceInfo Source location information
+      * @return A DynamicGroup with the given name
+      */
+    def apply(name: String, caseNames: Seq[String])(implicit sourceInfo: SourceInfo): DynamicGroup = {
+      new DynamicGroup(name, caseNames)
+    }
+
+    /** Create a DynamicGroup with a builder function that provides a trait-like interface.
+      * This allows you to define a type-safe interface for accessing cases.
+      *
+      * @tparam T The trait type that defines the case structure
+      * @param name The name of the group
+      * @param caseNames List of case names for this group (must match trait method names)
+      * @param builder A function that takes the DynamicGroup and returns an instance of T
+      * @param sourceInfo Source location information
+      * @return An instance of T that provides access to the cases
+      *
+      * @example
+      * {{{
+      * trait PlatformType {
+      *   def FPGA: Case
+      *   def ASIC: Case
+      * }
+      * val platform = DynamicGroup[PlatformType]("Platform", Seq("FPGA", "ASIC")) { group =>
+      *   new PlatformType {
+      *     def FPGA = group("FPGA")
+      *     def ASIC = group("ASIC")
+      *   }
+      * }
+      * platform.FPGA // Type-safe access
+      * }}}
+      */
+    def apply[T](name: String, caseNames: Seq[String])(builder: DynamicGroup => T)(implicit sourceInfo: SourceInfo): T = {
+      val group = new DynamicGroup(name, caseNames)
+      builder(group)
+    }
   }
 
   /** An option case declaration.

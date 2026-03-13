@@ -105,5 +105,39 @@ class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
     exception.getMessage should include("FPGA")
     exception.getMessage should include("ASIC")
   }
+
+  it should "work with trait-based API" in {
+    trait PlatformType {
+      def FPGA: Case
+      def ASIC: Case
+    }
+
+    val platform = DynamicGroup[PlatformType]("Platform", Seq("FPGA", "ASIC")) { group =>
+      new PlatformType {
+        def FPGA = group("FPGA")
+        def ASIC = group("ASIC")
+      }
+    }
+
+    class ModuleWithTraitAPI extends Module {
+      val inst = ModuleChoice(new VerifTarget)(Seq(
+        platform.FPGA -> new FPGATarget,
+        platform.ASIC -> new ASICTarget
+      ))
+      val io = IO(inst.cloneType)
+      io <> inst
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new ModuleWithTraitAPI)
+      .fileCheck()(
+        """|CHECK: option Platform :
+           |CHECK-NEXT: FPGA
+           |CHECK-NEXT: ASIC
+           |CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK-NEXT: FPGA => FPGATarget
+           |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
+      )
+  }
 }
 
