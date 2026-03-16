@@ -12,8 +12,9 @@ This compatibility layer bridges that gap by providing the familiar ChiselTest A
 
 ## Key Features
 
-✅ **Automatic Reset** - Just like ChiselTest in Chisel 6, modules are automatically reset before each test  
+✅ **Optional Auto Reset** - Disabled by default; enable per test suite and configure reset cycles  
 ✅ **Drop-in Replacement** - Same imports, same API, works immediately  
+✅ **VCD Support** - `WriteVcdAnnotation` enables VCD waveform generation  
 ✅ **Configurable** - Override `autoResetEnabled` or `resetCycles` to customize behavior
 
 ## Components
@@ -34,10 +35,11 @@ Core compatibility layer providing implicit conversions and extension methods:
 ScalaTest integration trait that provides the test runner:
 
 - **`ChiselScalatestTester`** trait - Mix into your test class to enable `test()` method
-- **Automatic reset** - Automatically applies reset before each test (like ChiselTest in Chisel 6)
+- **Optional auto reset** - Applies reset only when enabled
 - **`TestBuilder`** - Enables method chaining with `.withAnnotations()`
 - **`TestRunner`** - Executes the actual test via `simulate()`
 - **Configurable reset** - Override `autoResetEnabled` or `resetCycles` to customize behavior
+- **VCD waveform generation** - Enabled with `WriteVcdAnnotation`
 
 ### 3. **formal/package.scala**
 Formal verification stubs (limited support):
@@ -58,7 +60,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 class MyModuleTest extends AnyFlatSpec with ChiselScalatestTester {
   "MyModule" should "work" in {
     test(new MyModule) { dut =>
-      // Module is automatically reset before this point (like ChiselTest)
+      // Auto-reset is disabled by default, so reset manually if needed
+      dut.reset.poke(true.B)
+      dut.clock.step(1)
+      dut.reset.poke(false.B)
+
       dut.io.input.poke(42.U)
       dut.clock.step()
       dut.io.output.expect(42.U)
@@ -67,22 +73,19 @@ class MyModuleTest extends AnyFlatSpec with ChiselScalatestTester {
 }
 ```
 
-### Disable Automatic Reset
+### Enable Automatic Reset
 
-If you need to control reset manually:
+If you want ChiselTest-style reset behavior:
 
 ```scala
 class MyModuleTest extends AnyFlatSpec with ChiselScalatestTester {
-  // Disable automatic reset
-  override def autoResetEnabled: Boolean = false
+  // Enable automatic reset
+  override def autoResetEnabled: Boolean = true
+  override def resetCycles: Int = 5
   
   "MyModule" should "work" in {
     test(new MyModule) { dut =>
-      // Manually control reset
-      dut.reset.poke(true.B)
-      dut.clock.step()
-      dut.reset.poke(false.B)
-      
+      // Module has been reset automatically for 5 cycles
       dut.io.input.poke(42.U)
       dut.clock.step()
       dut.io.output.expect(42.U)
@@ -109,13 +112,15 @@ class MyModuleTest extends AnyFlatSpec with ChiselScalatestTester {
 }
 ```
 
-### With Annotations (Ignored but Supported)
+### With Annotations (VCD Supported)
 
 ```scala
 test(new MyModule).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-  // Test code
+  // Test code; VCD trace is generated
 }
 ```
+
+`WriteVcdAnnotation` generates `trace.vcd` in the simulation work directory under `build/chiselsim/...`.
 
 ### Decoupled Interface Testing
 

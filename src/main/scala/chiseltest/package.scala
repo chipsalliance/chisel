@@ -62,14 +62,41 @@ package object chiseltest {
 
     // Add pokePartial for Bundle Lit values
     def pokePartial(litBundle: T): Unit = {
-      // When given a Lit bundle, poke it directly
-      toTestableData(x).poke(litBundle)
+      // For partial bundle literals, only poke fields that have been set
+      (x, litBundle) match {
+        case (dut: Record, lit: Record) =>
+          dut.elements.foreach { case (name, dutField) =>
+            lit.elements.get(name).foreach { litField =>
+              // Only poke if the literal field has a value set
+              if (litField.litOption.isDefined) {
+                toTestableData(dutField).poke(litField)
+              }
+            }
+          }
+        case _ =>
+          // For non-bundle types, just poke directly
+          toTestableData(x).poke(litBundle)
+      }
     }
 
     // Add expectPartial for Bundle Lit values
     def expectPartial(litBundle: T): Unit = {
       implicit val si: chisel3.experimental.SourceInfo = chisel3.experimental.SourceInfo.materialize
-      toTestableData(x).expect(litBundle)
+      // For partial bundle literals, only check fields that have been set
+      (x, litBundle) match {
+        case (dut: Record, lit: Record) =>
+          dut.elements.foreach { case (name, dutField) =>
+            lit.elements.get(name).foreach { litField =>
+              // Only expect if the literal field has a value set
+              if (litField.litOption.isDefined) {
+                toTestableData(dutField).expect(litField)
+              }
+            }
+          }
+        case _ =>
+          // For non-bundle types, just expect directly
+          toTestableData(x).expect(litBundle)
+      }
     }
   }
 

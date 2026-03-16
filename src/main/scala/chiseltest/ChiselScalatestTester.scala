@@ -3,8 +3,10 @@
 package chiseltest
 
 import chisel3._
-// Keep EphemeralSimulator imports for implicit toTestable* conversions
 import chisel3.simulator.EphemeralSimulator._
+import chisel3.simulator.ChiselSim
+import svsim._
+import svsim.verilator.Backend.CompilationSettings.{TraceStyle, TraceKind}
 import scala.language.implicitConversions
 
 /**
@@ -13,12 +15,15 @@ import scala.language.implicitConversions
  * This trait provides the ChiselTest API that users are familiar with from Chisel 6,
  * but internally uses ChiselSim from Chisel 7 to perform the actual testing.
  *
- * AUTOMATIC RESET FEATURE:
- * This trait automatically resets the module before running tests,
- * mimicking ChiselTest's behavior from Chisel 6. This helps prevent issues with
- * uninitialized registers that can cause tests to fail.
+ * VCD GENERATION SUPPORT:
+ * This compatibility layer supports VCD generation when WriteVcdAnnotation is used.
+ * VCD files are generated in: build/chiselsim/<timestamp>/workdir-verilator/trace.vcd
  *
- * To enable/disable auto-reset or customize the reset duration:
+ * AUTOMATIC RESET FEATURE:
+ * By default, this trait automatically resets the module before running tests,
+ * mimicking ChiselTest's behavior from Chisel 6.
+ *
+ * To disable auto-reset or customize the reset duration:
  * {{{
  * class MyTest extends AnyFlatSpec with ChiselScalatestTester {
  *   override def autoResetEnabled: Boolean = false  // Disable auto-reset
@@ -26,7 +31,7 @@ import scala.language.implicitConversions
  * }
  * }}}
  *
- * Example usage:
+ * Example usage with VCD:
  * {{{
  * import chiseltest._
  * import org.scalatest.flatspec.AnyFlatSpec
@@ -34,13 +39,13 @@ import scala.language.implicitConversions
  * class MyModuleSpec extends AnyFlatSpec with ChiselScalatestTester {
  *   behavior of "MyModule"
  *
- *   it should "work correctly" in {
- *     test(new MyModule) { dut =>
- *       // Module is already reset at this point
+ *   it should "generate waveforms" in {
+ *     test(new MyModule).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
  *       dut.io.in.poke(42.U)
  *       dut.clock.step()
  *       dut.io.out.expect(42.U)
  *     }
+ *     // VCD file: build/chiselsim/<timestamp>/workdir-verilator/trace.vcd
  *   }
  * }
  * }}}
@@ -72,16 +77,31 @@ trait ChiselScalatestTester {
 
   /**
    * Builder class to support .withAnnotations() chaining
+   *
+   * @param dutGen Generator for the device under test
+   * @param autoReset Whether automatic reset is enabled
+   * @param resetCyc Number of reset cycles to apply
    */
   class TestBuilder[T <: Module](dutGen: => T, autoReset: Boolean, resetCyc: Int) {
+    /**
+     * Attach ChiselTest-style annotations before running the test.
+     *
+     * @param annotations Annotation list (for example WriteVcdAnnotation)
+     * @return A runner that executes the test with the provided annotations
+     */
     def withAnnotations(annotations: Seq[Any]): TestRunner[T] = {
-      // Annotations are ignored in Chisel 7 (for compatibility only)
-      new TestRunner(dutGen, autoReset, resetCyc)
+      new TestRunner(dutGen, autoReset, resetCyc, annotations)
     }
 
+    /**
+     * Run the test body without explicit annotations.
+     *
+     * @param body User-defined test body operating on the DUT instance
+     */
     // Allow direct execution without annotations
     def apply(body: T => Unit): Unit = {
-      simulate(dutGen) { dut =>
+      val chiselSim = new ChiselSim {}
+      chiselSim.simulate(dutGen) { dut =>
         if (autoReset) {
           applyReset(dut, resetCyc)
         }
@@ -91,24 +111,76 @@ trait ChiselScalatestTester {
   }
 
   /**
-   * Runner class that executes the test
+   * Runner class that executes the test with VCD support
+   *
+   * @param dutGen Generator for the device under test
+   * @param autoReset Whether automatic reset is enabled
+   * @param resetCyc Number of reset cycles to apply
+   * @param annotations Annotation list used to configure execution behavior
    */
-  class TestRunner[T <: Module](dutGen: => T, autoReset: Boolean, resetCyc: Int) {
+  class TestRunner[T <: Module](dutGen: => T, autoReset: Boolean, resetCyc: Int, annotations: Seq[Any] = Seq()) {
+    /**
+     * Execute the configured test run.
+     *
+     * @param body User-defined test body operating on the DUT instance
+     */
     def apply(body: T => Unit): Unit = {
-      simulate(dutGen) { dut =>
-        if (autoReset) {
-          applyReset(dut, resetCyc)
+      // Check if WriteVcdAnnotation is present
+      val hasVcd = annotations.exists {
+        case _: chiseltest.WriteVcdAnnotation.type => true
+        case _ => false
+      }
+
+      val chiselSim = new ChiselSim {}
+
+      if (hasVcd) {
+        println("[ChiselTest Compat] WriteVcdAnnotation detected, enabling VCD trace generation...")
+        
+        // Create backend modification to enable VCD tracing
+        implicit val backendMod: BackendSettingsModifications = 
+          (settings: Backend.Settings) => settings match {
+            case vs: verilator.Backend.CompilationSettings =>
+              val vcdStyle = TraceStyle(
+                kind = TraceKind.Vcd,
+                traceUnderscore = false,
+                traceStructs = true,
+                traceParams = true,
+                maxWidth = None,
+                maxArraySize = None,
+                traceDepth = None
+              )
+              vs.withTraceStyle(Some(vcdStyle))
+            case other => other
+          }
+        
+        // Simulate with VCD enabled
+        chiselSim.simulate(dutGen) { dut =>
+          chiselSim.enableWaves()
+          
+          if (autoReset) {
+            applyReset(dut, resetCyc)
+          }
+          body(dut)
         }
-        body(dut)
+      } else {
+        // Simulate without VCD
+        chiselSim.simulate(dutGen) { dut =>
+          if (autoReset) {
+            applyReset(dut, resetCyc)
+          }
+          body(dut)
+        }
       }
     }
   }
 
   /**
    * Apply reset sequence to the DUT
+   *
+   * @param dut Device under test
+   * @param cycles Number of cycles reset stays asserted
    */
   private def applyReset[T <: Module](dut: T, cycles: Int): Unit = {
-    // Use ChiselSim testable helpers directly to avoid implicit ambiguity
     toTestableReset(dut.reset).poke(true.B)
     toTestableClock(dut.clock).step(cycles)
     toTestableReset(dut.reset).poke(false.B)
@@ -121,73 +193,49 @@ object ChiselTestCompat {
 
   /**
    * Implicit class to add ChiselTest-style operations to Data types
-   *
-   * This provides the `poke`, `peek`, `expect` methods that ChiselTest users
-   * are familiar with.
    */
   implicit class testableData[T <: Data](val x: T) extends AnyVal {
 
     /**
      * Poke a value onto a port
      *
-     * @param value The value to poke (as a Chisel literal)
+     * @param value The value to drive on the target signal
      */
-    def poke(value: T): Unit =
+    def poke(value: T): Unit = {
       toTestableData(x).poke(value)
+    }
 
     /**
      * Peek the current value of a port
      *
-     * @return The current value as a Chisel literal
+     * @return The current sampled value of the target signal
      */
     def peek(): T = {
-      implicit val si: chisel3.experimental.SourceInfo = chisel3.experimental.SourceInfo.materialize
       toTestableData(x).peek()
     }
 
     /**
-     * Expect a specific value on a port
+     * Assert that a port has an expected value
      *
-     * @param value The expected value
+     * @param expected The value expected on the target signal
      */
-    def expect(value: T): Unit = {
-      implicit val si: chisel3.experimental.SourceInfo = chisel3.experimental.SourceInfo.materialize
-      toTestableData(x).expect(value)
-    }
-
-    /**
-     * Expect a specific value on a port with a custom message
-     *
-     * @param value The expected value
-     * @param message Custom error message if expectation fails
-     */
-    def expect(value: T, message: String): Unit = {
-      implicit val si: chisel3.experimental.SourceInfo = chisel3.experimental.SourceInfo.materialize
-      toTestableData(x).expect(value, message)
+    def expect(expected: T): Unit = {
+      toTestableData(x).expect(expected)
     }
   }
 
-  /** Implicit class to add clock stepping operations */
-  implicit class testableClock(val x: Clock) extends AnyVal {
-
-    /** Step the clock by one cycle */
-    def step(): Unit =
-      toTestableClock(x).step(1)
+  /**
+   * Implicit class to add ChiselTest-style operations to Clock types
+   */
+  implicit class testableClock(val clock: Clock) extends AnyVal {
 
     /**
-     * Step the clock by a specified number of cycles
+     * Step the clock forward by a number of cycles
      *
-     * @param cycles Number of cycles to step
+     * @param cycles Number of clock cycles to advance (default: 1)
      */
-    def step(cycles: Int): Unit =
-      toTestableClock(x).step(cycles)
-  }
-
-  /** Implicit class to add reset operations */
-  implicit class testableReset(val x: Reset) extends AnyVal {
-
-    /** Poke a value onto the reset signal */
-    def poke(value: Bool): Unit =
-      toTestableReset(x).poke(value.asInstanceOf[Reset])
+    def step(cycles: Int = 1): Unit = {
+      toTestableClock(clock).step(cycles)
+    }
   }
 }
