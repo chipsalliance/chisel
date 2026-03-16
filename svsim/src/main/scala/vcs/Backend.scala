@@ -2,6 +2,7 @@
 
 package svsim.vcs
 
+import com.lihaoyi.unroll
 import svsim._
 
 object Backend {
@@ -55,14 +56,18 @@ object Backend {
     final case class TraceSettings(
       enableVcd:    Boolean = false,
       enableVpd:    Boolean = false,
-      fsdbSettings: Option[TraceSettings.FsdbSettings] = None
+      fsdbSettings: Option[TraceSettings.FsdbSettings] = None,
+      @unroll
+      fullDebugVisibility: Boolean = false
     ) {
       private def fsdbEnabled = fsdbSettings match {
         case Some(_) => true
         case None    => false
       }
       private[vcs] def compileFlags = Seq(
-        if (enableVpd || fsdbEnabled) Seq("-debug_access+pp+dmptf") else Seq(),
+        if (enableVpd || fsdbEnabled) {
+          if (fullDebugVisibility) Seq("-debug_access+all") else Seq("-debug_access+pp+dmptf")
+        } else Seq(),
         fsdbSettings match {
           case None => Seq()
           case Some(_) =>
