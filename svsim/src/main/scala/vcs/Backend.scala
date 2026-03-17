@@ -2,6 +2,7 @@
 
 package svsim.vcs
 
+import com.lihaoyi.unroll
 import svsim._
 
 object Backend {
@@ -325,7 +326,6 @@ object Backend {
     xProp:                       Option[CompilationSettings.XProp] = None,
     randomlyInitializeRegisters: Boolean = false,
     traceSettings:               CompilationSettings.TraceSettings = CompilationSettings.TraceSettings(),
-    debugAccessSettings:         DebugAccessSettings = DebugAccessSettings(),
     simulationSettings:          SimulationSettings = SimulationSettings(),
     coverageSettings:            CoverageSettings = CoverageSettings(),
     coverageDirectory:           Option[CoverageDirectory] = None,
@@ -334,7 +334,9 @@ object Backend {
     flags:                       Seq[Flag.Type] = Seq.empty,
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
-    waitForLicenseIfUnavailable: Boolean = false
+    waitForLicenseIfUnavailable: Boolean = false,
+    @unroll
+    debugAccessSettings:         DebugAccessSettings = DebugAccessSettings()
   ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
