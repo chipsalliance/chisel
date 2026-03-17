@@ -336,7 +336,7 @@ object Backend {
     archOverride:                Option[String] = None,
     waitForLicenseIfUnavailable: Boolean = false,
     @unroll
-    debugAccessSettings:         DebugAccessSettings = DebugAccessSettings()
+    debugAccessSettings: DebugAccessSettings = DebugAccessSettings()
   ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
