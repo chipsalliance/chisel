@@ -121,6 +121,73 @@ class VCSSpec extends BackendSpec {
 
       }
 
+      describe("VCS debug_access options") {
+
+        they("debug access options should produce correct flag format with mixed plus and standalone flags") {
+          import vcs.Backend.CompilationSettings._
+
+          val defaultDebugAccess = vcs.Backend.DebugAccessSettings()
+          info("default debug access settings (pp=true, dmtf=true, all others false)")
+          val defaultFlags = defaultDebugAccess.toFlags
+          defaultFlags mustEqual Seq("-debug_access+pp+dmtf")
+
+          val allTrueDebugAccess = vcs.Backend.DebugAccessSettings(
+            r = true,
+            w = true,
+            wn = true,
+            fn = true,
+            fwn = true,
+            f = true,
+            drivers = true,
+            line = true,
+            cbk = true,
+            cbkd = true,
+            thread = true,
+            `class` = true,
+            pp = true,
+            dmtf = true,
+            all = true,
+            memcbk = true,
+            reverse = true,
+            designer = true,
+            simctrl = true,
+            verbose = true
+          )
+          info("all debug access fields set to true")
+          val allTrueFlags = allTrueDebugAccess.toFlags
+          allTrueFlags mustEqual Seq(
+            "-debug_access+r+w+wn+fn+fwn+f+drivers+line+cbk+cbkd+thread+class+pp+dmtf+all-memcbk+reverse+designer+simctrl+verbose"
+          )
+
+          val allFalseDebugAccess = vcs.Backend.DebugAccessSettings(
+            r = false,
+            w = false,
+            wn = false,
+            fn = false,
+            fwn = false,
+            f = false,
+            drivers = false,
+            line = false,
+            cbk = false,
+            cbkd = false,
+            thread = false,
+            `class` = false,
+            pp = false,
+            dmtf = false,
+            all = false,
+            memcbk = false,
+            reverse = false,
+            designer = false,
+            simctrl = false,
+            verbose = false
+          )
+          info("all debug access fields set to false")
+          val allFalseFlags = allFalseDebugAccess.toFlags
+          allFalseFlags mustBe empty
+        }
+
+      }
+
       describe("VCS FSDB support") {
 
         it("should work for the version of VCS available on the PATH") {

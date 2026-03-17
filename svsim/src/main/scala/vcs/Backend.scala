@@ -2,6 +2,7 @@
 
 package svsim.vcs
 
+import com.lihaoyi.unroll
 import svsim._
 
 object Backend {
@@ -61,16 +62,16 @@ object Backend {
         case Some(_) => true
         case None    => false
       }
-      private[vcs] def compileFlags = Seq(
-        if (enableVpd || fsdbEnabled) Seq("-debug_access+pp+dmptf") else Seq(),
-        fsdbSettings match {
+      private[vcs] def compileFlags = {
+        val fsdbFlag = fsdbSettings match {
           case None => Seq()
           case Some(_) =>
             Seq(
               "-kdb"
             )
         }
-      ).flatten
+        fsdbFlag
+      }
       private[vcs] def verilogPreprocessorDefines = Seq(
         (enableVcd, svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport),
         (enableVpd, svsim.Backend.HarnessCompilationFlags.enableVpdTracingSupport),
@@ -133,6 +134,48 @@ object Backend {
 
   }
 
+  /** Trait that encodes VCS options where some flags use `+` prefix while others are standalone `-`.
+    *
+    * Some VCS debug access fields must be specified as `-flag_name` (standalone) rather than
+    * `+flag_name` (part of the main option). This trait allows each boolean field to specify its own
+    * prefix via an overrideable method.
+    *
+    * Fields returning "+" get prefixed as +field in the combined list
+    * Fields returning "" become separate -flag arguments after the main option
+    */
+  sealed trait PlusOrMinusSeparated { this: Product =>
+
+    /** The name of the option. */
+    def name: String
+
+    /** Determine if a field should have empty prefix for standalone flag format */
+    protected def isMinus(fieldIndex: Int): Boolean = false
+
+    /** Convert the option into command line flags */
+    final def toFlags: Seq[String] = {
+      val setFlags: Seq[String] = productElementNames
+        .zip(productIterator)
+        .zipWithIndex
+        .flatMap {
+          case ((name, true), idx) =>
+            isMinus(idx) match {
+              case true  => Some("-" + name)
+              case false => Some("+" + name)
+            }
+          case _ => None
+        }
+        .toSeq
+
+      if (setFlags.isEmpty) {
+        Seq.empty
+      } else {
+        Seq(s"-$name${setFlags.mkString}")
+      }
+
+    }
+
+  }
+
   /** Settings for controlling VCS coverage.
     *
     * These options map to the `-cm` option.  Each parameter turns on a specific
@@ -154,6 +197,42 @@ object Backend {
   ) extends PlusSeparated {
 
     override def name = "cm"
+
+  }
+
+  /** Settings for controlling VCS debug access.
+     *
+     * These options map to the `+debug_access` option with separate flags for
+     * pp and dmtf, plus a standalone `-memcbk` flag when enabled. Consult the
+     * Synopsys VCS user guide for documentation.
+     */
+  final case class DebugAccessSettings(
+    r:        Boolean = false,
+    w:        Boolean = false,
+    wn:       Boolean = false,
+    fn:       Boolean = false,
+    fwn:      Boolean = false,
+    f:        Boolean = false,
+    drivers:  Boolean = false,
+    line:     Boolean = false,
+    cbk:      Boolean = false,
+    cbkd:     Boolean = false,
+    thread:   Boolean = false,
+    `class`:  Boolean = false,
+    pp:       Boolean = true,
+    dmtf:     Boolean = true,
+    all:      Boolean = false,
+    memcbk:   Boolean = false,
+    reverse:  Boolean = false,
+    designer: Boolean = false,
+    simctrl:  Boolean = false,
+    verbose:  Boolean = false
+  ) extends PlusOrMinusSeparated {
+
+    override def name = "debug_access"
+
+    /** Override to identify memcbk as the only field that uses standalone -memcbk format */
+    protected override def isMinus(fieldIndex: Int): Boolean = fieldIndex == 15
 
   }
 
@@ -249,7 +328,9 @@ object Backend {
     flags:                       Seq[Flag.Type] = Seq.empty,
     licenceExpireWarningTimeout: Option[Int] = None,
     archOverride:                Option[String] = None,
-    waitForLicenseIfUnavailable: Boolean = false
+    waitForLicenseIfUnavailable: Boolean = false,
+    @unroll
+    debugAccessSettings: DebugAccessSettings = DebugAccessSettings()
   ) extends svsim.Backend.Settings
 
   def initializeFromProcessEnvironment() = {
@@ -385,6 +466,8 @@ final class Backend(
           }.flatten,
 
           backendSpecificSettings.traceSettings.compileFlags,
+
+          backendSpecificSettings.debugAccessSettings.toFlags,
 
           backendSpecificSettings.coverageSettings.toFlags,
 
