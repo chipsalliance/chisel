@@ -155,7 +155,9 @@ class VCSSpec extends BackendSpec {
           )
           info("all debug access fields set to true")
           val allTrueFlags = allTrueDebugAccess.toFlags
-          allTrueFlags mustEqual Seq("-debug_access+r+w+wn+fn+fwn+f+drivers+line+cbk+cbkd+thread+class+pp+dmtf+all-memcbk+reverse+designer+simctrl+verbose")
+          allTrueFlags mustEqual Seq(
+            "-debug_access+r+w+wn+fn+fwn+f+drivers+line+cbk+cbkd+thread+class+pp+dmtf+all-memcbk+reverse+designer+simctrl+verbose"
+          )
 
           val allFalseDebugAccess = vcs.Backend.DebugAccessSettings(
             r = false,
