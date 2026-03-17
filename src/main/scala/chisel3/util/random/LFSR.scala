@@ -68,7 +68,7 @@ trait LFSR extends PRNG {
   }
 }
 
-/** Utilities related to psuedorandom number generation using Linear Feedback Shift Registers (LFSRs).
+/** Utilities related to pseudorandom number generation using Linear Feedback Shift Registers (LFSRs).
   *
   * For example, to generate a pseudorandom 16-bit [[UInt]] that changes every cycle, you can use:
   * {{{
