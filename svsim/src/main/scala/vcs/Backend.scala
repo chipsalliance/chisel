@@ -151,12 +151,6 @@ object Backend {
     /** Determine if a field should have empty prefix for standalone flag format */
     protected def isMinus(fieldIndex: Int): Boolean = false
 
-    /** Get the prefix for a specific field's flag (+ or empty string for standalone) */
-    protected def flagPrefix(fieldIndex: Int): String = {
-      val fieldName = productElementName(fieldIndex)
-      if (isMinus(fieldIndex)) "" else "+"
-    }
-
     /** Convert the option into command line flags */
     final def toFlags: Seq[String] = {
       val setFlags: Seq[String] = productElementNames
