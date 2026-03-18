@@ -144,4 +144,20 @@ class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
+  it should "support bulk connections to instance choice IO" in {
+
+    class ModuleWithBulkConnect extends Module {
+      val io = IO(new TargetIO(8))
+      val inst = ModuleChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
+      io <> inst
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new ModuleWithBulkConnect)
+      .fileCheck()(
+        """|CHECK: instchoice inst of VerifTarget, Platform :
+           |CHECK: connect io.out, inst.out
+           |CHECK: connect inst.in, io.in""".stripMargin
+      )
+  }
 }

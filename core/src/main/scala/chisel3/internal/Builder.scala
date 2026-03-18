@@ -652,7 +652,8 @@ private[chisel3] object Builder extends LazyLogging {
       def recData(_data: Data): Option[String] = {
         val data = reifySingleTarget(_data).getOrElse(_data)
         data.binding.flatMap {
-          case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding) => data.seedOpt
+          case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding | _: InstanceChoiceBinding) =>
+            data.seedOpt
           case ChildBinding(parent) =>
             recData(parent).map { p =>
               // And name of the field if we have one, we don't for dynamic indexing of Vecs
