@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.{Counter, DecoupledIO}
+import chisel3.util.{Counter, Decoupled, DecoupledIO}
 import circt.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
@@ -29,8 +29,8 @@ class HugeVecTester(n: Int) extends RawModule {
 
 class ReduceTreeTester extends Module {
   class FooIO[T <: Data](n: Int, private val gen: T) extends Bundle {
-    val in = Flipped(Vec(n, new DecoupledIO(gen)))
-    val out = new DecoupledIO(gen)
+    val in = Flipped(Vec(n, Decoupled(gen)))
+    val out = Decoupled(gen)
   }
 
   class Foo[T <: Data](n: Int, private val gen: T) extends Module {
@@ -39,7 +39,7 @@ class ReduceTreeTester extends Module {
     def foo(a: DecoupledIO[T], b: DecoupledIO[T]) = {
       a.ready := true.B
       b.ready := true.B
-      val out = Wire(new DecoupledIO(gen))
+      val out = Wire(Decoupled(gen))
 
       out.valid := true.B
 
