@@ -501,18 +501,19 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   // Data-subtype.
   private[chisel3] def _bindingToString(topBindingOpt: TopBinding): String =
     topBindingOpt match {
-      case OpBinding(_, _)           => "OpResult"
-      case MemoryPortBinding(_, _)   => "MemPort"
-      case PortBinding(_)            => "IO"
-      case SecretPortBinding(_)      => "IO"
-      case RegBinding(_, _)          => "Reg"
-      case WireBinding(_, _)         => "Wire"
-      case DontCareBinding()         => "(DontCare)"
-      case ElementLitBinding(litArg) => "(unhandled literal)"
-      case BundleLitBinding(litMap)  => "(unhandled bundle literal)"
-      case VecLitBinding(litMap)     => "(unhandled vec literal)"
-      case DynamicIndexBinding(vec)  => _bindingToString(vec.topBinding)
-      case _                         => ""
+      case OpBinding(_, _)             => "OpResult"
+      case MemoryPortBinding(_, _)     => "MemPort"
+      case PortBinding(_)              => "IO"
+      case SecretPortBinding(_)        => "IO"
+      case RegBinding(_, _)            => "Reg"
+      case WireBinding(_, _)           => "Wire"
+      case InstanceChoiceBinding(_, _) => "InstanceChoice"
+      case DontCareBinding()           => "(DontCare)"
+      case ElementLitBinding(litArg)   => "(unhandled literal)"
+      case BundleLitBinding(litMap)    => "(unhandled bundle literal)"
+      case VecLitBinding(litMap)       => "(unhandled vec literal)"
+      case DynamicIndexBinding(vec)    => _bindingToString(vec.topBinding)
+      case _                           => ""
     }
 
   private[chisel3] def earlyName: String = Arg.earlyLocalName(this)

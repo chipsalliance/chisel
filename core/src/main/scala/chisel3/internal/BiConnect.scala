@@ -314,7 +314,15 @@ private[chisel3] object BiConnect {
       case _                                            => true
     }
 
-    typeCheck && contextCheck && bindingCheck && flowSinkCheck && flowSourceCheck && sourceAndSinkNotLiteralOrViewCheck && blackBoxCheck
+    // Do not bulk connect instance choices since they need to be expanded field-by-field.
+    def instanceChoiceCheck = List(source, sink).forall {
+      _.topBinding match {
+        case _: InstanceChoiceBinding => false
+        case _ => true
+      }
+    }
+
+    typeCheck && contextCheck && bindingCheck && flowSinkCheck && flowSourceCheck && sourceAndSinkNotLiteralOrViewCheck && blackBoxCheck && instanceChoiceCheck
   }
 
   // These functions (finally) issue the connection operation

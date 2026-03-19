@@ -90,6 +90,9 @@ private[chisel3] object binding {
       with BlockBinding
   case class RegBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
   case class WireBinding(enclosure: RawModule, parentBlock: Option[Block]) extends ConstrainedBinding with BlockBinding
+  case class InstanceChoiceBinding(enclosure: RawModule, parentBlock: Option[Block])
+      extends ConstrainedBinding
+      with BlockBinding
 
   /** Special binding for Vec dynamic indexing */
   case class DynamicIndexBinding(vec: Vec[_]) extends ConstrainedBinding with BlockBinding {

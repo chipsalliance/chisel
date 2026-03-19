@@ -7,7 +7,7 @@ import scala.collection.immutable.ListMap
 import chisel3.{Data, FixedIOBaseModule, Module, SourceInfoDoc}
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.{groupByIntoSeq, Builder}
-import chisel3.internal.binding.WireBinding
+import chisel3.internal.binding.InstanceChoiceBinding
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.DefInstanceChoice
 
@@ -47,7 +47,7 @@ object ModuleChoice extends ModuleChoice$Intf {
     val group = groupedChoices.head.name
 
     val binding = instDefaultModule.io.cloneTypeFull
-    binding.bind(WireBinding(Builder.forcedUserModule, Builder.currentBlock))
+    binding.bind(InstanceChoiceBinding(Builder.forcedUserModule, Builder.currentBlock))
 
     pushCommand(
       DefInstanceChoice(
