@@ -121,6 +121,8 @@ private[chisel3] object Converter {
       fir.ProbeRead(convert(probe, ctx, info))
     case PropExpr(info, tpe, op, args) =>
       fir.PropExpr(convert(info), tpe, op, args.map(convert(_, ctx, info)))
+    case DomainSubfield(info, domain, fieldName, fieldType) =>
+      fir.DomainSubfield(convert(info), convert(domain, ctx, info), fieldName)
     case e: PrimExpr[_] =>
       convertPrim(e.op, e.args, info, ctx)
     case other =>

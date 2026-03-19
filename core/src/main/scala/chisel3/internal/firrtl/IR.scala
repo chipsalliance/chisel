@@ -215,6 +215,25 @@ private[chisel3] object ir {
     def name: String = throwException("Internal Error! PropExpr has no name")
   }
 
+  /** Domain subfield access expression.
+    *
+    * Represents accessing a field of a domain port, returning a property value.
+    * For example, `A.name` where A is a domain port.
+    */
+  case class DomainSubfield(
+    sourceInfo: SourceInfo,
+    domain:     Arg,
+    fieldName:  String,
+    fieldType:  chisel3.domain.Field.Type
+  ) extends Arg {
+    def name: String = throwException("Internal Error! DomainSubfield has no name")
+
+    def bindToProperty(property: chisel3.properties.Property[_]): Unit = {
+      property.bind(PropertyValueBinding)
+      property.setRef(this)
+    }
+  }
+
   case class Ref(name: String) extends Arg
 
   /** Arg for ports of Modules

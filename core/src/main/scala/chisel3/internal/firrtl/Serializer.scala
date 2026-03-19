@@ -157,6 +157,8 @@ private[chisel3] object Serializer {
       b ++= "read("; serialize(probe, ctx, info); b += ')'
     case PropExpr(_, tpe, op, args) =>
       b ++= op.toString; b += '('; serializeArgs(args, ctx, info); b += ')'
+    case DomainSubfield(_, domain, fieldName, _) =>
+      serialize(domain, ctx, info); b += '.'; b ++= fieldName
     case e: PrimExpr[_] =>
       serializePrim(e.op, e.args, info, ctx)
     case other =>

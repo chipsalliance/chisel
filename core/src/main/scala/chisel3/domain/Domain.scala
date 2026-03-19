@@ -3,19 +3,32 @@
 package chisel3.domain
 
 import chisel3.experimental.SourceInfo
+import chisel3.properties.Property
 import chisel3.util.simpleClassName
 
 object Field {
-  sealed trait Type
+  sealed trait Type {
+    private[domain] type PropertyType
+    private[domain] def createProperty(): Property[PropertyType]
+  }
 
   /** A boolean type */
-  object Boolean extends Type
+  object Boolean extends Type {
+    private[domain] type PropertyType = scala.Boolean
+    private[domain] def createProperty(): Property[scala.Boolean] = Property[scala.Boolean]()
+  }
 
   /** An integer type */
-  object Integer extends Type
+  object Integer extends Type {
+    private[domain] type PropertyType = scala.Int
+    private[domain] def createProperty(): Property[scala.Int] = Property[scala.Int]()
+  }
 
   /** A string type */
-  object String extends Type
+  object String extends Type {
+    private[domain] type PropertyType = scala.Predef.String
+    private[domain] def createProperty(): Property[scala.Predef.String] = Property[scala.Predef.String]()
+  }
 }
 
 /** A [[Domain]] represents a kind information, and the schema of that

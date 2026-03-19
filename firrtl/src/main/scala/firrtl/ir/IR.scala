@@ -716,6 +716,11 @@ case class DomainType(domain: String) extends Type with UseSerializer
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class DomainDefine(info: Info, sink: Expression, source: Expression) extends Statement with UseSerializer
 
+case class DomainSubfield(info: Info, domain: Expression, fieldName: String) extends Expression with UseSerializer {
+  def tpe:                Type = UnknownType
+  override def serialize: String = s"${domain.serialize}.${fieldName}"
+}
+
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object UnknownType extends Type with UseSerializer
 
