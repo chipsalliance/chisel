@@ -16,7 +16,7 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
 
   override def fields: Seq[(String, Field.Type)] = Seq(
     "name" -> Field.String,
-    "period" -> Field.Integer
+    "synchronousTo" -> Field.String
   )
 
 }
