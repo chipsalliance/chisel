@@ -131,6 +131,7 @@ object Serializer {
     case ProbeExpr(expr, _)                          => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _)                        => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)                          => b ++= "read("; s(expr); b += ')'
+    case DomainSubfield(_, domain, fieldName)        => s(domain); b += '.'; b ++= fieldName
     case IntrinsicExpr(intrinsic, args, params, tpe) => sIntrinsic(NoInfo, intrinsic, args, params, Some(tpe))
     case other                                       => b ++= other.serialize // Handle user-defined nodes
   }

@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.domain.{Domain, Field}
 import chisel3.domains.ClockDomain
 import chisel3.experimental.dataview._
+import chisel3.properties.Property
 import chisel3.testing.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -209,6 +210,31 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
          |CHECK: unsafe_domain_cast(in, A)
          |CHECK: unsafe_domain_cast(in, B)
          |CHECK: unsafe_domain_cast(in, A, B)
+         |""".stripMargin
+    }
+
+  }
+
+  behavior of "domain subfield access"
+
+  it should "allow accessing fields of a domain port" in {
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val nameOut = IO(Output(Property[String]()))
+      val syncOut = IO(Output(Property[String]()))
+
+      nameOut := A.field.name
+      syncOut := A.field.synchronousTo
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   input A : Domain of ClockDomain
+         |CHECK:   output nameOut : String
+         |CHECK:   output syncOut : String
+         |CHECK:   propassign nameOut, A.name
+         |CHECK:   propassign syncOut, A.synchronousTo
          |""".stripMargin
     }
 
