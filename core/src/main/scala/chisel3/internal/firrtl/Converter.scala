@@ -301,6 +301,13 @@ private[chisel3] object Converter {
       fir.Comment(text)
     case DomainDefine(info, sink, source) =>
       fir.DomainDefine(convert(info), convert(sink, ctx, info), convert(source, ctx, info))
+    case DomainInstance(info, id, domain, properties) =>
+      fir.DomainInstance(
+        convert(info),
+        id.getRef.name,
+        domain.name,
+        properties.map(p => convert(p, ctx, info))
+      )
   }
 
   /** Convert Chisel IR Commands into FIRRTL Statements

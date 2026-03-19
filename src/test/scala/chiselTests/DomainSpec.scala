@@ -240,4 +240,75 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
+  behavior of "domain instantiation"
+
+  it should "allow instantiating a domain with property literals" in {
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val B = IO(Output(ClockDomain.Type()))
+
+      val b = ClockDomain.derived(A, "_div2")
+      domain.define(B, b)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   input A : Domain of ClockDomain
+         |CHECK:   output B : Domain of ClockDomain
+         |CHECK:   wire [[name:.+]] : String
+         |CHECK:   propassign [[name]], string_concat(A.name, String("_div2"))
+         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], A.name)
+         |CHECK:   domain_define B = [[b]]
+         |""".stripMargin
+    }
+
+  }
+
+  it should "error when property type doesn't match field type" in {
+
+    object TestDomain extends Domain {
+      override def fields = Seq(
+        ("name", Field.String),
+        ("value", Field.Integer),
+        ("flag", Field.Boolean)
+      )
+      def apply(): chisel3.domain.Type = TestDomain(Property("test"), Property("wrong"), Property(true))
+    }
+
+    class WrongTypeModule extends RawModule {
+      // Wrong type for second field: String instead of Integer
+      val bad = TestDomain()
+    }
+
+    val exception = intercept[ChiselException] {
+      ChiselStage.elaborate(new WrongTypeModule, Array("--throw-on-first-error"))
+    }
+    exception.getMessage should include("field 'value' expects Property[Int] but got Property[String]")
+
+  }
+
+  it should "error when property count doesn't match field count" in {
+
+    object TestDomain extends Domain {
+      override def fields = Seq(
+        ("name", Field.String),
+        ("value", Field.Integer),
+        ("flag", Field.Boolean)
+      )
+      def apply(): chisel3.domain.Type = TestDomain(Property("test"))
+    }
+
+    class WrongCountModule extends RawModule {
+      // Only one property when three are expected
+      val bad = TestDomain()
+    }
+
+    val exception = intercept[ChiselException] {
+      ChiselStage.elaborate(new WrongCountModule, Array("--throw-on-first-error"))
+    }
+    exception.getMessage should include("requires 3 properties but got 1")
+
+  }
+
 }

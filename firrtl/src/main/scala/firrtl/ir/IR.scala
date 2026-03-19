@@ -724,6 +724,16 @@ case class DomainSubfield(info: Info, domain: Expression, fieldName: String) ext
 }
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class DomainInstance(info: Info, name: String, domainKind: String, properties: Seq[Expression])
+    extends Statement
+    with UseSerializer {
+  override def serialize: String = {
+    val propStr = properties.map(_.serialize).mkString(", ")
+    s"domain $name of $domainKind($propStr)"
+  }
+}
+
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object UnknownType extends Type with UseSerializer
 
 /** [[Port]] Direction */

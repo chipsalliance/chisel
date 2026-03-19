@@ -345,6 +345,18 @@ private[chisel3] object Serializer {
       b ++= " = "
       serialize(source, ctx, info);
       serialize(info)
+    case e @ DomainInstance(info, id, domain, properties) =>
+      b ++= "domain "
+      b ++= id.getRef.name
+      b ++= " of "
+      b ++= domain.name
+      b += '('
+      properties.zipWithIndex.foreach { case (prop, idx) =>
+        if (idx > 0) b ++= ", "
+        serialize(prop, ctx, info)
+      }
+      b += ')'
+      serialize(info)
   }
 
   private def serializeCommand(cmd: Command, ctx: Component, typeAliases: Seq[String])(
