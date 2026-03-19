@@ -44,7 +44,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       """|CHECK:      circuit Foo :
          |CHECK:        domain ClockDomain :
          |CHECK-NEXT:     name : String
-         |CHECK-NEXT:     period : Integer
+         |CHECK-NEXT:     synchronousTo : String
          |
          |CHECK:        domain PowerDomain :
          |CHECK-NEXT:     name : String
