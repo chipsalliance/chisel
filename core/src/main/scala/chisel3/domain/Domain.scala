@@ -3,31 +3,49 @@
 package chisel3.domain
 
 import chisel3.experimental.SourceInfo
+import chisel3.internal.Builder
+import chisel3.internal.firrtl.ir
 import chisel3.properties.Property
 import chisel3.util.simpleClassName
 
 object Field {
   sealed trait Type {
+
+    /** The Scala type that corresponds to this field type (e.g., scala.Int for Integer) */
     private[domain] type PropertyType
+
+    /** Create a new Property instance of the appropriate type for this field. */
     private[domain] def createProperty(): Property[PropertyType]
+
+    /** The expected FIRRTL PropertyType for this field type */
+    private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType
+
+    /** The human-readable type name for error messages */
+    private[domain] def typeName: scala.Predef.String
   }
 
   /** A boolean type */
   object Boolean extends Type {
     private[domain] type PropertyType = scala.Boolean
-    private[domain] def createProperty(): Property[scala.Boolean] = Property[scala.Boolean]()
+    private[domain] def createProperty():     Property[scala.Boolean] = Property[scala.Boolean]()
+    private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.BooleanPropertyType
+    private[domain] def typeName:             scala.Predef.String = "Boolean"
   }
 
   /** An integer type */
   object Integer extends Type {
     private[domain] type PropertyType = scala.Int
-    private[domain] def createProperty(): Property[scala.Int] = Property[scala.Int]()
+    private[domain] def createProperty():     Property[scala.Int] = Property[scala.Int]()
+    private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.IntegerPropertyType
+    private[domain] def typeName:             scala.Predef.String = "Int"
   }
 
   /** A string type */
   object String extends Type {
     private[domain] type PropertyType = scala.Predef.String
-    private[domain] def createProperty(): Property[scala.Predef.String] = Property[scala.Predef.String]()
+    private[domain] def createProperty():     Property[scala.Predef.String] = Property[scala.Predef.String]()
+    private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.StringPropertyType
+    private[domain] def typeName:             scala.Predef.String = "String"
   }
 }
 
@@ -98,5 +116,61 @@ abstract class Domain()(implicit val sourceInfo: SourceInfo) { self: Singleton =
     * }}}
     */
   final def Type() = new chisel3.domain.Type(this)
+
+  /** Instantiate a domain with specific property values.
+    *
+    * This creates a domain instance similar to how Module() creates a module instance.
+    * The property values must match the domain's field schema in both number and type.
+    *
+    * This API is intentionally very low level as it allows direct access to the
+    * underlying properties which may be "unsafe" depending on how the domain
+    * chooses to model information.  Therefore, this function is _not_ public,
+    * but expected to be used by a domain developer by their own `apply` methods
+    * for creating instances of their domains.
+    *
+    *
+    * @param properties the property values for this domain instance, must match the domain's fields
+    * @return a domain.Type representing this instantiated domain
+    */
+  final protected def apply(
+    properties: chisel3.properties.Property[_]*
+  )(implicit sourceInfo: SourceInfo): chisel3.domain.Type = {
+    // Validate that the number of properties matches the number of fields.
+    if (properties.length != fields.length) {
+      Builder.error(
+        s"Domain instantiation for '${name}' requires ${fields.length} properties but got ${properties.length}. " +
+          s"Expected fields: ${fields.map { case (n, t) => s"$n: $t" }.mkString(", ")}"
+      )(sourceInfo)
+    }
+
+    // Validate that each property type matches the corresponding field type.
+    properties.zip(fields).zipWithIndex.foreach { case ((prop, (fieldName, fieldType)), idx) =>
+      val actualPropertyType = prop.tpe.getPropertyType()
+
+      if (actualPropertyType != fieldType.expectedPropertyType) {
+        val actualTypeName = actualPropertyType.serialize
+        Builder.error(
+          s"Domain instantiation for '${name}': field '$fieldName' expects Property[${fieldType.typeName}] but got Property[$actualTypeName]"
+        )(sourceInfo)
+      }
+    }
+
+    // Create a new domain.Type instance
+    val domainInstance = new chisel3.domain.Type(this)
+
+    // Auto-generate a name for this domain instance
+    domainInstance.autoSeed(name.toLowerCase)
+
+    // Bind the domain instance as a read-only operation result in the current module
+    val currentModule = Builder.referenceUserModule
+    domainInstance.bind(chisel3.internal.binding.OpBinding(currentModule, Builder.currentBlock))
+
+    // Create a DomainInstance command and push it to the Builder
+    // Convert properties to their Arg references
+    val propertyRefs = properties.map(_.ref(sourceInfo))
+    Builder.pushCommand(ir.DomainInstance(sourceInfo, domainInstance, this, propertyRefs.toSeq))
+
+    domainInstance
+  }
 
 }

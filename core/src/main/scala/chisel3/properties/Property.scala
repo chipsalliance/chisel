@@ -229,7 +229,7 @@ sealed trait Property[T] extends Element { self =>
       }
   }
 
-  protected[properties] val tpe: PropertyType[_]
+  protected[chisel3] val tpe: PropertyType[_]
 
   private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): chisel3.UInt = {
     Builder.error(s"${this._localErrorContext} does not support .asUInt.")

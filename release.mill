@@ -71,7 +71,9 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     // Sequence is a sealed trait
     ProblemFilter.exclude[NewMixinForwarderProblem]("chisel3.ltl.Sequence.*"),
     // Field.Type members are package-private and safe to add
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.createProperty")
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.createProperty"),
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.expectedPropertyType"),
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.typeName")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)

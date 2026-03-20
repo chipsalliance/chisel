@@ -551,6 +551,18 @@ private[chisel3] object ir {
 
   case class DomainDefine(sourceInfo: SourceInfo, sink: Arg, source: Arg) extends Command
 
+  /** Domain instantiation command.
+    *
+    * Represents instantiating a domain with specific property values.
+    * Similar to DefInstance for modules, but for domains.
+    */
+  case class DomainInstance(
+    sourceInfo: SourceInfo,
+    id:         domain.Type,
+    domainKind: domain.Domain,
+    properties: Seq[Arg]
+  ) extends Definition
+
   object Formal extends Enumeration {
     val Assert = Value("assert")
     val Assume = Value("assume")
