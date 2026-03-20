@@ -372,9 +372,7 @@ private object PropertyExpressionHelpers {
     val currentModule = Builder.referenceUserContainer match {
       case mod: RawModule => mod
       case other =>
-        throwException(
-          sourceInfo.makeMessage(s => s"Property expressions are currently only supported in RawModules ${s}")
-        )
+        Builder.exception("Property expressions are currently only supported in RawModules")
     }
 
     // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.

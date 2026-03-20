@@ -813,18 +813,19 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "not support expressions in Classes, and give a nice error" in {
-    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new RawModule {
-      DynamicObject(new Class {
-        val a = IO(Input(Property[BigInt]()))
-        val b = IO(Input(Property[BigInt]()))
-        val c = IO(Output(Property[BigInt]()))
-        c := a + b
-      })
-    }))
+    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(
+      new RawModule {
+        DynamicObject(new Class {
+          val a = IO(Input(Property[BigInt]()))
+          val b = IO(Input(Property[BigInt]()))
+          val c = IO(Output(Property[BigInt]()))
+          c := a + b
+        })
+      },
+      Array("--throw-on-first-error")
+    ))
 
-    e.getMessage should include(
-      "Property expressions are currently only supported in RawModules @[src/test/scala-2/chiselTests/properties/PropertySpec.scala"
-    )
+    e.getMessage should include("Property expressions are currently only supported in RawModules")
   }
 
   it should "support addition" in {
@@ -902,18 +903,19 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "not support expressions in Classes, and give a nice error" in {
-    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(new RawModule {
-      DynamicObject(new Class {
-        val a = IO(Input(Property[Seq[Int]]()))
-        val b = IO(Input(Property[Seq[Int]]()))
-        val c = IO(Output(Property[Seq[Int]]()))
-        c := a ++ b
-      })
-    }))
+    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(
+      new RawModule {
+        DynamicObject(new Class {
+          val a = IO(Input(Property[Seq[Int]]()))
+          val b = IO(Input(Property[Seq[Int]]()))
+          val c = IO(Output(Property[Seq[Int]]()))
+          c := a ++ b
+        })
+      },
+      Array("--throw-on-first-error")
+    ))
 
-    e.getMessage should include(
-      "Property expressions are currently only supported in RawModules @[src/test/scala-2/chiselTests/properties/PropertySpec.scala"
-    )
+    e.getMessage should include("Property expressions are currently only supported in RawModules")
   }
 
   it should "support concatenation for Property[Seq[Int]]" in {
