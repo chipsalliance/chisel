@@ -396,6 +396,52 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
     )
   }
 
+  it should "support concatenation of Property[String] with 1, 2, and 3 operands" in {
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val str1 = IO(Input(Property[String]()))
+        val str2 = IO(Input(Property[String]()))
+        val str3 = IO(Input(Property[String]()))
+        val result_1 = IO(Output(Property[String]()))
+        val result_2 = IO(Output(Property[String]()))
+        val result_3 = IO(Output(Property[String]()))
+        result_1 := Property.concat(str1)
+        result_2 := Property.concat(str1, str2)
+        result_3 := Property.concat(str1, str2, str3)
+      }
+    }.fileCheck()(
+      """|CHECK: input str1 : String
+         |CHECK: input str2 : String
+         |CHECK: input str3 : String
+         |CHECK: output result_1 : String
+         |CHECK: output result_2 : String
+         |CHECK: output result_3 : String
+         |CHECK: wire _result_1_propExpr : String
+         |CHECK: propassign _result_1_propExpr, string_concat(str1)
+         |CHECK: wire _result_2_propExpr : String
+         |CHECK: propassign _result_2_propExpr, string_concat(str1, str2)
+         |CHECK: wire _result_3_propExpr : String
+         |CHECK: propassign _result_3_propExpr, string_concat(str1, str2, str3)
+         |""".stripMargin
+    )
+  }
+
+  it should "not support string concatenation in Classes, and give a nice error" in {
+    val e = the[ChiselException] thrownBy (ChiselStage.emitCHIRRTL(
+      new RawModule {
+        DynamicObject(new Class {
+          val a = IO(Input(Property[String]()))
+          val b = IO(Input(Property[String]()))
+          val c = IO(Output(Property[String]()))
+          c := Property.concat(a, b)
+        })
+      },
+      Array("--throw-on-first-error")
+    ))
+
+    e.getMessage should include("Property expressions are currently only supported in RawModules")
+  }
+
   it should "not support types with nested Property[_]" in {
     assertTypeError("Property[Property[Property[Int]]]()")
     assertTypeError("Property[Property[Seq[Property[Int]]]]()")

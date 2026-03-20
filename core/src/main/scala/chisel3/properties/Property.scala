@@ -388,6 +388,37 @@ private object PropertyExpressionHelpers {
     // Return the temporary Wire as the result.
     wire.asInstanceOf[Property[T]]
   }
+
+  // Helper function to create variadic Property expression IR.
+  def variadicOp[T](
+    sourceInfo: SourceInfo,
+    op:         fir.PropPrimOp,
+    operands:   Property[T]*
+  ): Property[T] = {
+    require(operands.nonEmpty, "variadicOp requires at least one operand")
+    implicit val info = sourceInfo
+
+    // Get the containing RawModule, or throw an error. We can only use the temporary Wire approach in RawModule, so at
+    // least give a decent error explaining this current shortcoming.
+    val currentModule = Builder.referenceUserContainer match {
+      case mod: RawModule => mod
+      case other =>
+        Builder.exception("Property expressions are currently only supported in RawModules")
+    }
+
+    // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.
+    val wire = Wire(chiselTypeOf(operands.head))
+    wire.autoSeed("_propExpr")
+
+    // Create a PropExpr with the correct type, operation, and operands.
+    val propExpr = ir.PropExpr(sourceInfo, operands.head.tpe.getPropertyType(), op, operands.map(_.ref).toList)
+
+    // Directly add a PropAssign command assigning the PropExpr to the Wire.
+    currentModule.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
+
+    // Return the temporary Wire as the result.
+    wire.asInstanceOf[Property[T]]
+  }
 }
 
 /** Typeclass for Property arithmetic.
@@ -459,6 +490,25 @@ object PropertySequenceOps {
     }
 }
 
+/** Typeclass for Property string operations.
+  */
+@implicitNotFound("string operations are not supported on Property type ${T}")
+sealed trait PropertyStringOps[T] {
+  def concat(operands: T*)(implicit sourceInfo: SourceInfo): T
+}
+
+object PropertyStringOps {
+  import PropertyExpressionHelpers._
+
+  // Type class instance for Property string operations.
+  private class StringOpsImpl extends PropertyStringOps[Property[String]] {
+    def concat(operands: Property[String]*)(implicit sourceInfo: SourceInfo) =
+      variadicOp(sourceInfo, fir.StringConcatOp, operands: _*)
+  }
+
+  implicit val stringOps: PropertyStringOps[Property[String]] = new StringOpsImpl
+}
+
 /** Companion object for Property.
   */
 object Property {
@@ -495,5 +545,19 @@ object Property {
     val literal = ir.PropertyLit[tpe.Type, tpe.Underlying](tpe, tpe.convertUnderlying(lit, info))
     val result = makeWithValueOpt(tpe)
     literal.bindLitArg(result)
+  }
+
+  /** Concatenate multiple string properties into a single string property.
+    *
+    * @param operands the string properties to concatenate
+    * @return a new string property containing the concatenation of all operands
+    */
+  def concat(
+    operands: Property[String]*
+  )(
+    implicit ev: PropertyStringOps[Property[String]],
+    sourceInfo:  SourceInfo
+  ): Property[String] = {
+    ev.concat(operands: _*)
   }
 }
