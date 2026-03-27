@@ -535,6 +535,7 @@ private[chisel3] class DynamicContext(
   val layers = mutable.LinkedHashSet[layer.Layer]()
   val options = mutable.LinkedHashSet[choice.Case]()
   val domains = mutable.LinkedHashSet[domain.Domain]()
+  val dynamicGroups = mutable.HashMap[String, choice.DynamicGroup]()
   var currentModule: Option[BaseModule] = None
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
@@ -613,6 +614,8 @@ private[chisel3] object Builder extends LazyLogging {
   def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
   def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
   def domains: mutable.LinkedHashSet[domain.Domain] = dynamicContext.domains
+
+  def dynamicGroups: mutable.HashMap[String, choice.DynamicGroup] = dynamicContext.dynamicGroups
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
@@ -865,6 +868,37 @@ private[chisel3] object Builder extends LazyLogging {
 
   def elaborationTrace: ElaborationTrace = dynamicContext.elaborationTrace
 
+  private def validateGroupCases(groupName: String, expectedCases: Seq[String], actualCases: Seq[String], context: String = ""): Unit = {
+    if (expectedCases != actualCases) {
+      val contextMsg = if (context.nonEmpty) s" ($context)" else ""
+      throw new IllegalArgumentException(
+        s"Group '$groupName' has inconsistent case definitions$contextMsg.\n" +
+          s"  Expected cases: ${expectedCases.mkString(", ")}\n" +
+          s"  Found cases: ${actualCases.mkString(", ")}"
+      )
+    }
+  }
+
+  private def validateDynamicGroupCases(name: String, caseNames: Seq[String]): Unit = {
+    dynamicGroups.get(name).foreach { existingInstance =>
+      validateGroupCases(name, existingInstance.caseNames, caseNames, "DynamicGroup already exists with different case names or order")
+    }
+  }
+
+  def getOrCreateDynamicGroup(name: String, caseNames: Seq[String], groupFactory: () => choice.Group): choice.Group = {
+    validateDynamicGroupCases(name, caseNames)
+    groupFactory()
+  }
+
+  def getOrCreateDynamicGroupInstance[T <: choice.DynamicGroup](
+    name: String,
+    caseNames: Seq[String],
+    instanceFactory: () => T
+  ): T = {
+    validateDynamicGroupCases(name, caseNames)
+    dynamicGroups.getOrElseUpdate(name, instanceFactory()).asInstanceOf[T]
+  }
+
   def forcedClock: Clock = currentClock.getOrElse(
     // TODO add implicit clock change to Builder.exception
     throwException("Error: No implicit clock.")
@@ -1110,11 +1144,24 @@ private[chisel3] object Builder extends LazyLogging {
         Layer(l.sourceInfo, l.name, config, children.map(foldLayers).toSeq, l)
       }
 
-      val optionDefs = groupByIntoSeq(options)(opt => opt.group).map { case (optGroup, cases) =>
+      // Group by name to handle multiple Group objects with the same name
+      val optionDefs = groupByIntoSeq(options)(opt => opt.group.name).map { case (groupName, cases) =>
+        val representativeGroup = cases.head.group
+        val allCaseNames = cases.map(_.name).distinct
+
+        // Validate all Group objects with the same name have the same cases (catches static vs dynamic conflicts)
+        val distinctGroups = cases.map(_.group).distinct
+        if (distinctGroups.size > 1) {
+          distinctGroups.tail.foreach { otherGroup =>
+            val otherCases = cases.filter(_.group == otherGroup).map(_.name).distinct
+            validateGroupCases(groupName, allCaseNames, otherCases, "static vs dynamic conflict")
+          }
+        }
+
         DefOption(
-          optGroup.sourceInfo,
-          optGroup.name,
-          cases.map(optCase => DefOptionCase(optCase.sourceInfo, optCase.name))
+          representativeGroup.sourceInfo,
+          groupName,
+          cases.distinctBy(_.name).map(optCase => DefOptionCase(optCase.sourceInfo, optCase.name))
         )
       }
 
