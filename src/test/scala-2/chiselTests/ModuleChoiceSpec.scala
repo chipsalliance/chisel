@@ -44,6 +44,7 @@ class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
     class ModuleWithValidChoices
         extends ModuleWithChoice(new VerifTarget)(Seq(Platform.FPGA -> new FPGATarget, Platform.ASIC -> new ASICTarget))
 
+    info("FIRRTL emission looks good")
     ChiselStage
       .emitCHIRRTL(new ModuleWithValidChoices)
       .fileCheck()(
@@ -54,6 +55,13 @@ class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
            |CHECK-NEXT: FPGA => FPGATarget
            |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
       )
+
+    // TODO: The Verilog ABI for Instance Choice is in flux.  This test is only
+    // checking that things compile, not that the output matches any ABI just
+    // yet.
+    info("Verilog compilation doesn't error")
+    ChiselStage
+      .emitSystemVerilog(new ModuleWithValidChoices)
   }
 
   it should "emit options and cases for Modules including definitions" in {
