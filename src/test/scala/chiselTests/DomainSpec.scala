@@ -84,7 +84,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     intercept[ChiselException] {
       ChiselStage.elaborate(new Foo, Array("--throw-on-first-error"))
-    }.getMessage should include("Unable to associate port")
+    }.getMessage should include("Unable to associate")
 
   }
 
@@ -137,7 +137,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
     intercept[IllegalArgumentException] {
       ChiselStage.elaborate(new Foo)
-    }.getMessage should include("cannot associate a port with zero domains")
+    }.getMessage should include("cannot associate a port or wire with zero domains")
 
   }
 
@@ -309,6 +309,104 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
     exception.getMessage should include("requires 3 properties but got 1")
 
+  }
+
+  behavior of "Wire domain associations"
+
+  it should "allow associating a wire with a domain" in {
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val w = Wire(UInt(8.W))
+      associate(w, A)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   input A : Domain of ClockDomain
+         |CHECK:   wire w : UInt<8> domains [A]
+         |""".stripMargin
+    }
+  }
+
+  it should "allow associating a wire with multiple domains" in {
+    object PowerDomain extends Domain {
+      override def fields = Seq(
+        ("name", Field.String),
+        ("voltage", Field.Integer)
+      )
+    }
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val B = IO(Input(PowerDomain.Type()))
+      val w = Wire(UInt(16.W))
+      associate(w, A, B)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   wire w : UInt<16> domains [A, B]
+         |""".stripMargin
+    }
+  }
+
+  it should "error if associating a wire from another module" in {
+    class Bar extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val w = Wire(UInt(8.W))
+    }
+
+    class Foo extends RawModule {
+      val bar = Module(new Bar)
+      val A = IO(Input(ClockDomain.Type()))
+      // Try to associate a wire from another module
+      associate(bar.w, A)
+    }
+
+    intercept[ChiselException] {
+      ChiselStage.elaborate(new Foo, Array("--throw-on-first-error"))
+    }.getMessage should include("Unable to associate")
+  }
+
+  it should "work with multiple wires" in {
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val w1 = Wire(UInt(8.W))
+      val w2 = Wire(UInt(8.W))
+      associate(Seq(w1, w2), A)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK:   wire w1 : UInt<8> domains [A]
+         |CHECK:   wire w2 : UInt<8> domains [A]
+         |""".stripMargin
+    }
+  }
+
+  it should "error if given zero domains" in {
+    class Foo extends RawModule {
+      val w = Wire(UInt(8.W))
+      associate(w)
+    }
+
+    intercept[IllegalArgumentException] {
+      ChiselStage.elaborate(new Foo)
+    }.getMessage should include("cannot associate a port or wire with zero domains")
+  }
+
+  it should "fail to compile to SystemVerilog with current firtool (XFAIL until CIRCT support merged)" in {
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val w = Wire(UInt(8.W))
+      associate(w, A)
+    }
+
+    // This should fail with current firtool that doesn't support wire domain associations.
+    // Once CIRCT changes are merged and firtool is updated, this test should be changed
+    // to verify successful compilation.
+    intercept[RuntimeException] {
+      ChiselStage.emitSystemVerilog(new Foo)
+    }.getMessage should include("firtool returned a non-zero exit code")
   }
 
 }

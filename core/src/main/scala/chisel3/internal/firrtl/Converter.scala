@@ -134,7 +134,7 @@ private[chisel3] object Converter {
     case e: DefPrim[_] =>
       val expr = convertPrim(e.op, e.args, e.sourceInfo, ctx)
       fir.DefNode(convert(e.sourceInfo), e.name, expr)
-    case e @ DefWire(info, id) =>
+    case e @ DefWire(info, id, _) =>
       fir.DefWire(convert(info), e.name, extractType(id, info, typeAliases))
     case e @ DefReg(info, id, clock) =>
       fir.DefRegister(
