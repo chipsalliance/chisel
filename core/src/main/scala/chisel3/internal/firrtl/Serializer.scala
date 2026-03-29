@@ -210,8 +210,22 @@ private[chisel3] object Serializer {
       b ++= "node "; b ++= legalize(e.name); b ++= " = ";
       serializePrim(e.op, e.args, e.sourceInfo, ctx)
       serialize(e.sourceInfo)
-    case e @ DefWire(info, id) =>
-      b ++= "wire "; b ++= legalize(e.name); b ++= " : "; serializeType(id, info, typeAliases); serialize(e.sourceInfo)
+    case e @ DefWire(info, id, _) =>
+      b ++= "wire "; b ++= legalize(e.name); b ++= " : "; serializeType(id, info, typeAliases)
+      // Look up and emit domain associations
+      val associations = ctx.id match {
+        case rm: RawModule => rm.getAssociations(id)
+        case _ => Seq.empty[domain.Type]
+      }
+      if (associations.nonEmpty) {
+        b ++= " domains ["
+        associations.zipWithIndex.foreach { case (assoc, i) =>
+          if (i > 0) b ++= ", "
+          b ++= legalize(getRef(assoc, UnlocatableSourceInfo).name)
+        }
+        b ++= "]"
+      }
+      serialize(e.sourceInfo)
     case e @ DefReg(info, id, clock) =>
       b ++= "reg "; b ++= legalize(e.name); b ++= " : "; serializeType(id, info, typeAliases);
       b ++= ", "; serialize(clock, ctx, info)

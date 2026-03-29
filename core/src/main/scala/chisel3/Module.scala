@@ -599,6 +599,13 @@ package experimental {
       }
     }
 
+    /** Get domain associations for any Data (port or wire) in this module.
+      * This is called during serialization to emit domain associations.
+      */
+    private[chisel3] def getAssociations(data: Data): Seq[domain.Type] = {
+      _associations.get(data).fold(Seq.empty[domain.Type])(_.toSeq)
+    }
+
     /** Get IOs that are currently bound to this module.
       */
     private[chisel3] def getIOs: Seq[Data] = {
@@ -619,30 +626,36 @@ package experimental {
 
     protected def portsSize: Int = _ports.size
 
-    /** Associate a port of this module with one or more domains. */
-    final def associate(port: Data, domains: domain.Type*)(implicit si: SourceInfo): Unit = {
-      require(domains.nonEmpty, "cannot associate a port with zero domains")
-      val portx = dataview.reifySingleTarget(port).getOrElse(port)
-      if (dataview.isView(portx)) {
-        Builder.error(s"Cannot associate a non 1-1 view ($portx) with domains")
+    /** Check if the given Data is a wire in this module. */
+    private def isWire(data: Data): Boolean = data.topBindingOpt match {
+      case Some(WireBinding(m, _)) if m == this => true
+      case _                                    => false
+    }
+
+    /** Associate a port or wire of this module with one or more domains. */
+    final def associate(data: Data, domains: domain.Type*)(implicit si: SourceInfo): Unit = {
+      require(domains.nonEmpty, "cannot associate a port or wire with zero domains")
+      val datax = dataview.reifySingleTarget(data).getOrElse(data)
+      if (dataview.isView(datax)) {
+        Builder.error(s"Cannot associate a non 1-1 view ($datax) with domains")
         return
       }
-      if (!portsContains(portx)) {
+      if (!portsContains(datax) && !isWire(datax)) {
         val domainsString = domains.mkString(", ")
         Builder.error(
-          s"""Unable to associate port '$portx' to domains '$domainsString' because the port does not exist in this module"""
+          s"""Unable to associate data '$datax' to domains '$domainsString' because it is not a port or wire in this module"""
         )(si)
         return
       }
-      _associations.updateWith(portx) {
+      _associations.updateWith(datax) {
         case Some(acc) => Some(acc ++= domains)
         case None      => Some(LinkedHashSet.empty[domain.Type] ++= domains)
       }
     }
 
-    /** Associate multiple ports of this module with one or more domains. */
-    final def associate(port: Seq[Data], domains: domain.Type*)(implicit si: SourceInfo): Unit = {
-      port.foreach(associate(_, domains: _*))
+    /** Associate multiple ports or wires of this module with one or more domains. */
+    final def associate(data: Seq[Data], domains: domain.Type*)(implicit si: SourceInfo): Unit = {
+      data.foreach(associate(_, domains: _*))
     }
 
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
