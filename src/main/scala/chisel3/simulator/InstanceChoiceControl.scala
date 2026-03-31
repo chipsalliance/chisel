@@ -34,6 +34,23 @@ object InstanceChoiceControl {
       }
     }
 
+    /** Return a partial function that will return true if a file should be included
+      * in the build to enable an instance choice.
+      *
+      * @deprecated Instance choices now use a macro-based ABI with no generated files.
+      *             Use preprocessorDefines instead to get the macro definitions.
+      * @param module an elaborated Chisel module
+      * @return an empty partial function (no files are generated for instance choices)
+      */
+    @deprecated("Instance choices no longer generate files; use preprocessorDefines instead", "Chisel 7.0")
+    final def shouldIncludeFile(
+      module: ElaboratedModule[_ <: RawModule]
+    ): PartialFunction[java.io.File, Boolean] = {
+      // Instance choices now use macro-based ABI (CIRCT PR #10042) instead of
+      // header files. No files need to be filtered.
+      PartialFunction.empty
+    }
+
     /** Return the (option, value) pairs for VerilogElaborationTime choices */
     protected def getVerilogElaborationTimeChoices: Seq[(String, String)]
 
