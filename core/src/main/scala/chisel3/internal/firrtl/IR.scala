@@ -323,7 +323,7 @@ private[chisel3] object ir {
 
   case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
 
-  case class DefWire(sourceInfo: SourceInfo, id: Data, associations: Seq[domain.Type] = Seq.empty) extends Definition
+  case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
 
   case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
 

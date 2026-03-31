@@ -134,10 +134,7 @@ private[chisel3] object Converter {
     case e: DefPrim[_] =>
       val expr = convertPrim(e.op, e.args, e.sourceInfo, ctx)
       fir.DefNode(convert(e.sourceInfo), e.name, expr)
-    case e @ DefWire(info, id, _) =>
-      // Note: FIRRTL IR currently doesn't support wire domains natively in DefWire.
-      // The associations are retrieved here but not yet emitted since firtool lacks CIRCT support.
-      // Once firtool supports wire domains (via PR #10065 merged into CIRCT), this should emit them.
+    case e @ DefWire(info, id) =>
       fir.DefWire(convert(info), e.name, extractType(id, info, typeAliases))
     case e @ DefReg(info, id, clock) =>
       fir.DefRegister(

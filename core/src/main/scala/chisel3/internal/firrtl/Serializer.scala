@@ -210,9 +210,8 @@ private[chisel3] object Serializer {
       b ++= "node "; b ++= legalize(e.name); b ++= " = ";
       serializePrim(e.op, e.args, e.sourceInfo, ctx)
       serialize(e.sourceInfo)
-    case e @ DefWire(info, id, _) =>
+    case e @ DefWire(info, id) =>
       b ++= "wire "; b ++= legalize(e.name); b ++= " : "; serializeType(id, info, typeAliases)
-      // Look up and emit domain associations
       val associations = ctx.id match {
         case rm: RawModule => rm.getAssociations(id)
         case _ => Seq.empty[domain.Type]

@@ -599,9 +599,7 @@ package experimental {
       }
     }
 
-    /** Get domain associations for any Data (port or wire) in this module.
-      * This is called during serialization to emit domain associations.
-      */
+    /** Get domain associations for any Data (port or wire) in this module. */
     private[chisel3] def getAssociations(data: Data): Seq[domain.Type] = {
       _associations.get(data).fold(Seq.empty[domain.Type])(_.toSeq)
     }
