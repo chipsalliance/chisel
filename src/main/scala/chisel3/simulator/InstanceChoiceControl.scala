@@ -3,7 +3,7 @@
 package chisel3.simulator
 
 import chisel3.RawModule
-import java.io.File
+import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
 
 /** Utilities for controlling instance choice selections */
 object InstanceChoiceControl {
@@ -18,24 +18,19 @@ object InstanceChoiceControl {
   /** The type of all instance choice control variations */
   sealed trait Type {
 
-    /** Return a partial function that will return true if a file should be included
-      * in the build to enable an instance choice. This partial function is not defined
-      * if the file is not an instance choice header file.
+    /** Return the preprocessor defines that should be set to enable instance choices.
+      *
+      * Instance choices use a macro-based ABI where each option case is represented
+      * by a macro with the format `targets$<option>$<case>` (e.g., `targets$Platform$FPGA`).
       *
       * @param module an elaborated Chisel module
-      * @return a partial function to test if instance choice files should be included
+      * @return preprocessor defines to control instance choice selection
       */
-    final def shouldIncludeFile(
+    final def preprocessorDefines(
       module: ElaboratedModule[_ <: RawModule]
-    ): PartialFunction[File, Boolean] = {
-      // Build expected filenames: targets-<module_name>-<option-name>-<option-value>.svh
-      val expectedFilenames: Set[String] = getVerilogElaborationTimeChoices.map { case (option, value) =>
-        s"targets-${module.wrapped.name}-$option-$value.svh"
-      }.toSet
-
-      {
-        case a if a.getName().startsWith("targets-") && a.getName().endsWith(".svh") =>
-          expectedFilenames.contains(a.getName())
+    ): Seq[VerilogPreprocessorDefine] = {
+      getVerilogElaborationTimeChoices.map { case (option, caseValue) =>
+        VerilogPreprocessorDefine(s"targets$$${option}$$${caseValue}")
       }
     }
 
