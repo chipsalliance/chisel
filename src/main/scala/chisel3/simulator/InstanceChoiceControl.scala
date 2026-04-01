@@ -42,7 +42,7 @@ object InstanceChoiceControl {
       * @param module an elaborated Chisel module
       * @return an empty partial function (no files are generated for instance choices)
       */
-    @deprecated("Instance choices no longer generate files; use preprocessorDefines instead", "Chisel 7.0")
+    @deprecated("Instance choices no longer generate files; use preprocessorDefines instead", "Chisel 7.11.0")
     final def shouldIncludeFile(
       module: ElaboratedModule[_ <: RawModule]
     ): PartialFunction[java.io.File, Boolean] = {
