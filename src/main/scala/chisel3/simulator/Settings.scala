@@ -192,7 +192,9 @@ final class Settings[A <: RawModule] private[simulator] (
     ).flatMap {
       case (Some(a), macroName) => Some(a.toPreprocessorDefine(macroName, elaboratedModule))
       case (None, _)            => None
-    } ++ verilogLayers.preprocessorDefines(elaboratedModule) ++ randomization.toPreprocessorDefines
+    } ++ verilogLayers.preprocessorDefines(elaboratedModule) ++
+      instanceChoices.preprocessorDefines(elaboratedModule) ++
+      randomization.toPreprocessorDefines
 
   }
 

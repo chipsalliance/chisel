@@ -60,19 +60,6 @@ class ModuleChoiceTestModule extends Module {
 class ModuleChoiceFirtoolCompilationTimeSpec extends AnyFunSpec with ChiselSim with Matchers {
 
   describe("ModuleChoice at FirtoolCompilationTime") {
-    it("should select single choice") {
-      val settings = Settings
-        .default[ModuleChoiceTestModule]
-        .withInstanceChoices(
-          InstanceChoiceControl(List((SpecializationTime.FirtoolCompilationTime, "Platform", "FPGA")))
-        )
-
-      simulate(new ModuleChoiceTestModule, settings = settings) { dut =>
-        dut.out1.peek().litValue shouldBe 1
-        dut.out2.peek().litValue shouldBe 0
-      }
-    }
-
     it("should select multiple choices") {
       val settings = Settings
         .default[ModuleChoiceTestModule]
@@ -98,16 +85,19 @@ class ModuleChoiceFirtoolCompilationTimeSpec extends AnyFunSpec with ChiselSim w
 class ModuleChoiceVerilogElaborationTimeSpec extends AnyFunSpec with ChiselSim with Matchers with FileCheck {
 
   describe("ModuleChoice at VerilogElaborationTime") {
-    it("should select single choice") {
+    it("should require all options to be selected") {
       val settings = Settings
         .default[ModuleChoiceTestModule]
         .withInstanceChoices(
           InstanceChoiceControl(List((SpecializationTime.VerilogElaborationTime, "Platform", "FPGA")))
         )
 
-      simulate(new ModuleChoiceTestModule, settings = settings) { dut =>
-        dut.out1.peek().litValue shouldBe 1
-        dut.out2.peek().litValue shouldBe 0
+      info("Verilator errors if conflicting targets are set")
+      intercept[Exception] {
+        simulate(new ModuleChoiceTestModule, settings = settings)(_ => {})
+      }.getMessage.fileCheck() {
+        """|CHECK: Required instance choice option 'Opt' not selected, must define one of: 'targets$Opt$Fast'
+           |""".stripMargin
       }
     }
 
@@ -145,7 +135,7 @@ class ModuleChoiceVerilogElaborationTimeSpec extends AnyFunSpec with ChiselSim w
       intercept[Exception] {
         simulate(new ModuleChoiceTestModule, settings = settings)(_ => {})
       }.getMessage.fileCheck() {
-        """|CHECK: _ERROR_{{.*}}_must_not_be_set
+        """|CHECK: Multiple instance choice options defined for option 'Platform': 'targets$Platform$FPGA' and 'targets$Platform$ASIC'
            |""".stripMargin
       }
     }
