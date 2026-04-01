@@ -32,7 +32,7 @@ class Verf extends Module {
 println(circt.stage.ChiselStage.emitCHIRRTL(new Verf))
 
 // Following test ported from ProbeSpec.scala in chisel test suite
-// CHECK-LABEL: circuit Probe :
+// CHECK-LABEL: circuit `Probe` :
 class Probe extends Module {
   val x = IO(Input(Bool()))
   val y = IO(Output(Bool()))

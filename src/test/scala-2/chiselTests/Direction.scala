@@ -487,7 +487,7 @@ class DirectionSpec extends AnyPropSpec with Matchers {
       )
     )
     assert(emitted.contains("connect io.consumer, io.producer"))
-    assert(emitted.contains("connect io.monitor.bits, io.driver.bits"))
+    assert(emitted.contains("connect io.monitor.`bits`, io.driver.`bits`"))
     assert(emitted.contains("connect io.monitor.valid, io.driver.valid"))
     assert(emitted.contains("connect io.monitor.ready, io.driver.ready"))
   }

@@ -642,7 +642,7 @@ class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with FileCheck {
            |CHECK:         define widgetProbes_p_bore_1 = hier.widgetProbes_p_bore_1
            |CHECK-LABEL: public module Dut :
            |CHECK:         input clock : Clock
-           |CHECK:         input reset : UInt<1>
+           |CHECK:         input `reset` : UInt<1>
            |CHECK:         output widgetProbes_0 : RWProbe<UInt<32>>
            |CHECK:         output widgetProbes_1 : RWProbe<UInt<32>>
            |CHECK:         inst hier of ArbitrarilyDeepHierarchy
@@ -769,7 +769,7 @@ class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with FileCheck {
       .fileCheck()(
         """|CHECK-LABEL: module Widget :
            |CHECK:         input clock : Clock
-           |CHECK:         input reset : Reset
+           |CHECK:         input `reset` : Reset
            |CHECK:         input in : UInt<32>
            |CHECK:         output out : UInt<32>
            |CHECK:         node _out_T = not(in)
@@ -816,7 +816,7 @@ class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with FileCheck {
       .fileCheck()(
         """|CHECK-LABEL: module Widget :
            |CHECK:         input clock : Clock
-           |CHECK:         input reset : Reset
+           |CHECK:         input `reset` : Reset
            |CHECK:         input in : UInt<32>
            |CHECK:         output out : UInt<32>
            |CHECK:         node _out_T = not(in)
@@ -907,7 +907,7 @@ class BoringUtilsTapSpec extends AnyFlatSpec with Matchers with FileCheck {
         """|CHECK-LABEL: module Foo :
            |CHECK:         wire a : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}
            |CHECK:         wire b : { ready : UInt<1>, valid : UInt<1>, bits : UInt<1>}
-           |CHECK:         connect b.bits, a.bits
+           |CHECK:         connect b.`bits`, a.`bits`
            |CHECK:         connect b.valid, a.valid
            |CHECK:         connect b.ready, a.ready
            |""".stripMargin

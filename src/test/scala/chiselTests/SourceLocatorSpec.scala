@@ -142,14 +142,14 @@ class SourceLocatorSpec extends AnyFunSpec with Matchers {
   describe("(4) SourceLocator simple definitions") {
     it("(4.a): Simple definitions should have a source locator") {
       val chirrtl = emitCHIRRTL(new SimpleDefinitions)
-      chirrtl should include(s"wire wire : UInt<8> @[$thisFile 46:${col(20, 30)}]")
-      chirrtl should include(s"reg reg : UInt<8>, clock @[$thisFile 47:${col(18, 28)}]")
-      chirrtl should include(s"regreset regInit : UInt<8>, clock, reset, UInt<8>(0h0) @[$thisFile 48:${col(26, 35)}]")
+      chirrtl should include(s"wire `wire` : UInt<8> @[$thisFile 46:${col(20, 30)}]")
+      chirrtl should include(s"reg `reg` : UInt<8>, clock @[$thisFile 47:${col(18, 28)}]")
+      chirrtl should include(s"regreset regInit : UInt<8>, clock, `reset`, UInt<8>(0h0) @[$thisFile 48:${col(26, 35)}]")
       chirrtl should include(s"reg regNext : UInt, clock @[$thisFile 49:${col(26, 35)}]")
       chirrtl should include(s"reg regEnable : UInt<8>, clock @[$thisFile 50:${col(30, 47)}]")
       chirrtl should include(s"input port : UInt<1> @[$thisFile 51:${col(18, 32)}]")
-      chirrtl should include(s"inst inst of RawModuleChild @[$thisFile 52:${col(22, 41)}]")
-      chirrtl should include(s"cmem mem : UInt<8>[1024] @[$thisFile 53:${col(18, 34)}]")
+      chirrtl should include(s"inst `inst` of RawModuleChild @[$thisFile 52:${col(22, 41)}]")
+      chirrtl should include(s"cmem `mem` : UInt<8>[1024] @[$thisFile 53:${col(18, 34)}]")
     }
   }
 }

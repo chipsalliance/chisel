@@ -310,7 +310,7 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
         prop(a)
       })
       val sourceLoc = "@[Foo.scala 1:2]"
-      chirrtl should include("node has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
+      chirrtl should include("node has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, `reset`)")
       chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
       chirrtl should include(f"node ltl_clock = intrinsic(circt_ltl_clock : UInt<1>, a, clock) $sourceLoc")
       chirrtl should include(f"node _T = eq(disable, UInt<1>(0h0)) $sourceLoc")

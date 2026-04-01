@@ -204,7 +204,7 @@ class PrefixSpec extends AnyPropSpec with Matchers with FileCheck {
         }
       }
     }
-    ChiselStage.emitCHIRRTL(new Test) should include("wire wire :")
+    ChiselStage.emitCHIRRTL(new Test) should include("wire `wire` :")
   }
 
   property("Prefixing should not leak into child modules, example 2") {
@@ -221,7 +221,7 @@ class PrefixSpec extends AnyPropSpec with Matchers with FileCheck {
         val child = Module(module)
       }
     }
-    ChiselStage.emitCHIRRTL(new Test) should include("wire wire")
+    ChiselStage.emitCHIRRTL(new Test) should include("wire `wire`")
   }
 
   property("Instance names should not be added to prefix") {
@@ -243,7 +243,7 @@ class PrefixSpec extends AnyPropSpec with Matchers with FileCheck {
       }
     }.fileCheck()(
       """|CHECK: input clock :
-         |CHECK: input reset :
+         |CHECK: input `reset` :
          |CHECK: input io :
          |""".stripMargin
     )
@@ -258,7 +258,7 @@ class PrefixSpec extends AnyPropSpec with Matchers with FileCheck {
         }
       }
     }
-    ChiselStage.emitCHIRRTL(new Test) should include("wire wire :")
+    ChiselStage.emitCHIRRTL(new Test) should include("wire `wire` :")
   }
 
   property("Prefixing should be caused by nested Iterable[Iterable[Data]]") {

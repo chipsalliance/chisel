@@ -89,9 +89,10 @@ object Serializer {
 
   /** Generate a legal FIRRTL name. */
   private def legalize(name: String): String = name match {
-    // If the name starts with a digit, then escape it with backticks.
+    // If the name starts with a digit, escape it with backticks.
     case _ if name.head.isDigit => legalizedNames.getOrElseUpdate(name, s"`$name`")
-    case _                      => name
+    // Otherwise, use the common keyword legalization
+    case _ => legalizedNames.getOrElseUpdate(name, Keywords.legalize(name))
   }
 
   private def s(str: StringLit)(implicit b: StringBuilder, indent: Int): Unit = b ++= str.serialize

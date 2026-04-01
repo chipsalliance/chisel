@@ -104,14 +104,14 @@ class ResetSpec extends AnyFlatSpec with Matchers {
     val fir = ChiselStage.emitCHIRRTL(new Module with RequireSyncReset {
       reset shouldBe a[Bool]
     })
-    fir should include("input reset : UInt<1>")
+    fir should include("input `reset` : UInt<1>")
   }
 
   they should "be able to force implicit reset to be asynchronous" in {
     val fir = ChiselStage.emitCHIRRTL(new Module with RequireAsyncReset {
       reset shouldBe an[AsyncReset]
     })
-    fir should include("input reset : AsyncReset")
+    fir should include("input `reset` : AsyncReset")
   }
 
   they should "be able to override the value of the implicit reset" in {
@@ -149,12 +149,12 @@ class ResetSpec extends AnyFlatSpec with Matchers {
     val firAsync = ChiselStage.emitCHIRRTL(new MyModule(true) {
       reset shouldBe an[AsyncReset]
     })
-    firAsync should include("input reset : AsyncReset")
+    firAsync should include("input `reset` : AsyncReset")
 
     val firSync = ChiselStage.emitCHIRRTL(new MyModule(false) {
       reset shouldBe a[Bool]
     })
-    firSync should include("input reset : UInt<1>")
+    firSync should include("input `reset` : UInt<1>")
   }
 
   "Chisel" should "error if sync and async modules are nested" in {

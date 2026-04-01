@@ -532,8 +532,8 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
              |CHECK-NEXT: "tag":"bits"
              |
              |CHECK:      public module Top :
-             |CHECK:        connect i.in.valid, input.valid
-             |CHECK:        connect i.in.bits, input.bits
+             |CHECK:        connect i.in.valid, `input`.valid
+             |CHECK:        connect i.in.`bits`, `input`.`bits`
              |""".stripMargin
         )
     }
