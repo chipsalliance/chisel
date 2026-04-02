@@ -13,6 +13,7 @@ import firrtl.stage.FirrtlCircuitAnnotation
   *   - Extracts all `firrtl.annotations.Annotation`s from the `chisel3.internal.firrtl.Circuit`
   *   - Generates any needed `RunFirrtlTransformAnnotation`s from extracted `firrtl.annotations.Annotation`s
   */
+@deprecated("Converting to FIRRTL IR is deprecated, use ElaboratedCircuit instead.", "Chisel 7.11.0")
 class Convert extends Phase {
 
   override def prerequisites = Seq(Dependency[Elaborate])
