@@ -145,4 +145,24 @@ package object choice {
       */
     def ->[T](module: => T): (Case, () => T) = (this, () => module)
   }
+
+  /** An option case declaration.
+    */
+  abstract class Case2(implicit val group: DynamicGroup, _sourceInfo: SourceInfo) {
+    self: Singleton =>
+
+    group.cases += this
+
+    private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
+
+    private[chisel3] def name: String = simpleClassName(this.getClass())
+
+    /** A helper method to allow ModuleChoice to use the `->` syntax to specify case-module mappings.
+      *
+      * It captures a lazy reference to the module and produces a generator to avoid instantiating it.
+      *
+      * @param module Module to map to the current case.
+      */
+    def ->[T](module: => T): (Case, () => T) = (this, () => module)
+  }
 }
