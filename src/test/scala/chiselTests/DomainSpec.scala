@@ -240,6 +240,108 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
+  behavior of "unsafeConnectAligned and unsafeConnectFlipped"
+
+  they should "perform a bidirectional domain cast for a mixed-direction Bundle" in {
+    class Bar extends Bundle {
+      val a = UInt(1.W)
+      val b = Flipped(UInt(1.W))
+    }
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val B = IO(Input(ClockDomain.Type()))
+      val x = IO(Flipped(new Bar))
+      val y = IO(new Bar)
+
+      associate(x, A)
+      associate(y, B)
+
+      domain.unsafeConnectAligned(y, x, B)
+      domain.unsafeConnectFlipped(y, x, A)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: node [[n1:.*]] = unsafe_domain_cast(x.a, B)
+         |CHECK: connect y.a, [[n1]]
+         |CHECK: node [[n2:.*]] = unsafe_domain_cast(y.b, A)
+         |CHECK: connect x.b, [[n2]]
+         |""".stripMargin
+    }
+  }
+
+  they should "error if sink and source have different numbers of aligned elements" in {
+    class Sink extends Bundle {
+      val a = UInt(1.W)
+      val b = UInt(1.W)
+    }
+    class Source extends Bundle {
+      val a = UInt(1.W)
+    }
+
+    class Foo extends RawModule {
+      val B = IO(Input(ClockDomain.Type()))
+      val x = IO(Input(new Source))
+      val y = IO(Output(new Sink))
+
+      intercept[IllegalArgumentException] {
+        domain.unsafeConnectAligned(y, x, B)
+      }.getMessage should include("unsafeConnectAligned")
+    }
+
+    ChiselStage.elaborate(new Foo)
+  }
+
+  they should "error if sink and source have different numbers of flipped elements" in {
+    class Sink extends Bundle {
+      val a = Flipped(UInt(1.W))
+      val b = Flipped(UInt(1.W))
+    }
+    class Source extends Bundle {
+      val a = Flipped(UInt(1.W))
+    }
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val x = IO(new Source)
+      val y = IO(new Sink)
+
+      intercept[IllegalArgumentException] {
+        domain.unsafeConnectFlipped(y, x, A)
+      }.getMessage should include("unsafeConnectFlipped")
+    }
+
+    ChiselStage.elaborate(new Foo)
+  }
+
+  they should "work for a fully-aligned Bundle (unsafeConnectFlipped is a no-op)" in {
+    class Bar extends Bundle {
+      val a = UInt(1.W)
+      val b = UInt(1.W)
+    }
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val B = IO(Input(ClockDomain.Type()))
+      val x = IO(Input(new Bar))
+      val y = IO(Output(new Bar))
+
+      associate(x, A)
+      associate(y, B)
+
+      domain.unsafeConnectAligned(y, x, B)
+      domain.unsafeConnectFlipped(y, x, A)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK-DAG: node {{.*}} = unsafe_domain_cast(x.a, B)
+         |CHECK-DAG: node {{.*}} = unsafe_domain_cast(x.b, B)
+         |CHECK-DAG: connect y.a,
+         |CHECK-DAG: connect y.b,
+         |""".stripMargin
+    }
+  }
+
   behavior of "domain subfield access"
 
   it should "allow accessing fields of a domain port" in {
