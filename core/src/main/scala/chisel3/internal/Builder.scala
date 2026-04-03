@@ -868,7 +868,12 @@ private[chisel3] object Builder extends LazyLogging {
 
   def elaborationTrace: ElaborationTrace = dynamicContext.elaborationTrace
 
-  private def validateGroupCases(groupName: String, expectedCases: Seq[String], actualCases: Seq[String], context: String = ""): Unit = {
+  private def validateGroupCases(
+    groupName:     String,
+    expectedCases: Seq[String],
+    actualCases:   Seq[String],
+    context:       String = ""
+  ): Unit = {
     if (expectedCases != actualCases) {
       val contextMsg = if (context.nonEmpty) s" ($context)" else ""
       throw new IllegalArgumentException(
@@ -881,7 +886,12 @@ private[chisel3] object Builder extends LazyLogging {
 
   private def validateDynamicGroupCases(name: String, caseNames: Seq[String]): Unit = {
     dynamicGroups.get(name).foreach { existingInstance =>
-      validateGroupCases(name, existingInstance.caseNames, caseNames, "DynamicGroup already exists with different case names or order")
+      validateGroupCases(
+        name,
+        existingInstance.caseNames,
+        caseNames,
+        "DynamicGroup already exists with different case names or order"
+      )
     }
   }
 
@@ -891,8 +901,8 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   def getOrCreateDynamicGroupInstance[T <: choice.DynamicGroup](
-    name: String,
-    caseNames: Seq[String],
+    name:            String,
+    caseNames:       Seq[String],
     instanceFactory: () => T
   ): T = {
     validateDynamicGroupCases(name, caseNames)
