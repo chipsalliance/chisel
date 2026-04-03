@@ -534,8 +534,8 @@ private[chisel3] class DynamicContext(
   val annotations = ArrayBuffer[() => Seq[Annotation]]()
   val layers = mutable.LinkedHashSet[layer.Layer]()
   val options = mutable.LinkedHashSet[choice.Case]()
-  val domains = mutable.LinkedHashSet[domain.Domain]()
   val dynamicGroups = mutable.HashMap[String, choice.DynamicGroup]()
+  val domains = mutable.LinkedHashSet[domain.Domain]()
   var currentModule: Option[BaseModule] = None
 
   // Views that do not correspond to a single ReferenceTarget and thus require renaming
@@ -611,11 +611,10 @@ private[chisel3] object Builder extends LazyLogging {
 
   def annotations: ArrayBuffer[() => Seq[Annotation]] = dynamicContext.annotations
 
-  def layers:  mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
-  def options: mutable.LinkedHashSet[choice.Case] = dynamicContext.options
-  def domains: mutable.LinkedHashSet[domain.Domain] = dynamicContext.domains
-
+  def layers:        mutable.LinkedHashSet[layer.Layer] = dynamicContext.layers
+  def options:       mutable.LinkedHashSet[choice.Case] = dynamicContext.options
   def dynamicGroups: mutable.HashMap[String, choice.DynamicGroup] = dynamicContext.dynamicGroups
+  def domains:       mutable.LinkedHashSet[domain.Domain] = dynamicContext.domains
 
   def contextCache: BuilderContextCache = dynamicContext.contextCache
 
