@@ -43,10 +43,18 @@ package object choice {
     * }
     * }}}
     */
-  trait DynamicGroup {
+  abstract class DynamicGroup(implicit _sourceInfo: SourceInfo) {
+    private[chisel3] def sourceInfo: SourceInfo = _sourceInfo
+
+    private[chisel3] def name: String = simpleClassName(this.getClass())
+
+    final implicit def group: Group = this
+
     private var initializedName:       Option[String] = None
     private var initializedCaseNames:  Option[Seq[String]] = None
     private var initializedSourceInfo: Option[SourceInfo] = None
+
+    private[chisel3] val cases = new mutable.ArrayBuffer[Case]
 
     private def groupName: String = initializedName.getOrElse(
       throw new IllegalStateException("DynamicGroup was used before it was initialized")
@@ -83,13 +91,13 @@ package object choice {
       DynamicGroupSingleton
     }
 
-    /** Typeclass for constructing trait-based [[DynamicGroup]] instances.
-      */
-    trait Factory[T <: DynamicGroup] {
-      def caseNames:                                 Seq[String]
-      def create()(implicit sourceInfo: SourceInfo): T
-    }
-    object Factory extends DynamicGroupFactoryIntf
+    // /** Typeclass for constructing trait-based [[DynamicGroup]] instances.
+    //   */
+    // trait Factory[T <: DynamicGroup] {
+    //   def caseNames:                                 Seq[String]
+    //   def create()(implicit sourceInfo: SourceInfo): T
+    // }
+    // object Factory extends DynamicGroupFactoryIntf
 
     /** Create a trait-based [[DynamicGroup]] using an implicit factory.
       *
@@ -107,7 +115,7 @@ package object choice {
       * val platform = DynamicGroup[PlatformType]("Platform")
       * }}}
       */
-    def apply[T <: DynamicGroup](groupName: String)(implicit factory: Factory[T], sourceInfo: SourceInfo): T = {
+    def apply[T <: DynamicGroup](groupName: String)(implicitsourceInfo: SourceInfo): T = {
       Builder.getOrCreateDynamicGroupInstance(
         groupName,
         factory.caseNames,
