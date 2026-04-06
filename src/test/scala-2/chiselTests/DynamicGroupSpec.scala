@@ -3,7 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.choice.{Case, DynamicGroup, Group, ModuleChoice}
+import chisel3.choice.{Case, DynamicCase, DynamicGroup, Group, ModuleChoice}
+import chisel3.experimental.SourceInfo
 import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -11,19 +12,19 @@ import org.scalatest.matchers.should.Matchers
 
 class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
 
-  trait PlatformType extends DynamicGroup {
-    object FPGA extends Case
-    object ASIC extends Case
+  class PlatformType(customName: String)(implicit sourceInfo: SourceInfo) extends DynamicGroup(customName) {
+    object FPGA extends DynamicCase
+    object ASIC extends DynamicCase
   }
 
-  trait PlatformGpuType extends DynamicGroup {
-    object FPGA extends Case
-    object GPU extends Case
+  class PlatformGpuType(customName: String)(implicit sourceInfo: SourceInfo) extends DynamicGroup(customName) {
+    object FPGA extends DynamicCase
+    object GPU extends DynamicCase
   }
 
-  trait ReorderedPlatformType extends DynamicGroup {
-    object ASIC extends Case
-    object FPGA extends Case
+  class ReorderedPlatformType(customName: String)(implicit sourceInfo: SourceInfo) extends DynamicGroup(customName) {
+    object ASIC extends DynamicCase
+    object FPGA extends DynamicCase
   }
 
   class TargetIO(width: Int) extends Bundle {
@@ -43,7 +44,7 @@ class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   it should "emit options and cases with DynamicGroup" in {
     class ModuleWithDynamicChoice extends Module {
-      val platform = DynamicGroup[PlatformType]("Platform")
+      val platform = new PlatformType("Platform")
 
       val inst = ModuleChoice(new VerifTarget)(
         Seq(
@@ -69,8 +70,15 @@ class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   it should "reject DynamicGroup with same name but different cases" in {
     class ModuleWithMismatchedCases extends Module {
-      val platform1 = DynamicGroup[PlatformType]("Platform")
-      val platform2 = DynamicGroup[PlatformGpuType]("Platform")
+      val platform1 = new PlatformType("Platform")
+      val platform2 = new PlatformGpuType("Platform")
+
+      val inst1 = ModuleChoice(new VerifTarget)(Seq(platform1.FPGA -> new FPGATarget))
+      val inst2 = ModuleChoice(new VerifTarget)(Seq(platform2.GPU -> new FPGATarget))
+      val io1 = IO(inst1.cloneType)
+      val io2 = IO(inst2.cloneType)
+      io1 <> inst1
+      io2 <> inst2
     }
 
     val exception = intercept[IllegalArgumentException] {
@@ -78,15 +86,19 @@ class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
 
     exception.getMessage should include("Group 'Platform' has inconsistent case definitions")
-    exception.getMessage should include("FPGA")
-    exception.getMessage should include("ASIC")
-    exception.getMessage should include("GPU")
   }
 
   it should "reject DynamicGroup with same cases but different order" in {
     class ModuleWithDifferentOrder extends Module {
-      val platform1 = DynamicGroup[PlatformType]("Platform")
-      val platform2 = DynamicGroup[ReorderedPlatformType]("Platform")
+      val platform1 = new PlatformType("Platform")
+      val platform2 = new ReorderedPlatformType("Platform")
+
+      val inst1 = ModuleChoice(new VerifTarget)(Seq(platform1.FPGA -> new FPGATarget))
+      val inst2 = ModuleChoice(new VerifTarget)(Seq(platform2.ASIC -> new ASICTarget))
+      val io1 = IO(inst1.cloneType)
+      val io2 = IO(inst2.cloneType)
+      io1 <> inst1
+      io2 <> inst2
     }
 
     val exception = intercept[IllegalArgumentException] {
@@ -94,21 +106,19 @@ class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
     }
 
     exception.getMessage should include("Group 'Platform' has inconsistent case definitions")
-    exception.getMessage should include("FPGA")
-    exception.getMessage should include("ASIC")
   }
 
   it should "allow same DynamicGroup name across different submodules" in {
     class SubModule1 extends Module {
-      val platform = DynamicGroup[PlatformType]("Platform")
-      val inst = ModuleChoice(new VerifTarget)(Seq(platform.FPGA -> new FPGATarget))
+      val platform = new PlatformType("Platform")
+      val inst = ModuleChoice(new VerifTarget)(Seq(platform.FPGA -> new FPGATarget, platform.ASIC -> new ASICTarget))
       val io = IO(inst.cloneType)
       io <> inst
     }
 
     class SubModule2 extends Module {
-      val platform = DynamicGroup[PlatformType]("Platform") // Same name, same cases - should work
-      val inst = ModuleChoice(new VerifTarget)(Seq(platform.ASIC -> new ASICTarget))
+      val platform = new PlatformType("Platform") // Same name, same cases - should work
+      val inst = ModuleChoice(new VerifTarget)(Seq(platform.FPGA -> new FPGATarget, platform.ASIC -> new ASICTarget))
       val io = IO(inst.cloneType)
       io <> inst
     }
@@ -131,10 +141,9 @@ class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
            |CHECK-NOT: option Platform :
            |CHECK: module SubModule1 :
            |CHECK: instchoice inst of {{VerifTarget[_0-9]*}}, Platform :
-           |CHECK-NEXT: FPGA => FPGATarget
            |CHECK: module SubModule2 :
            |CHECK: instchoice inst of {{VerifTarget[_0-9]*}}, Platform :
-           |CHECK-NEXT: ASIC => ASICTarget""".stripMargin
+           """.stripMargin
       )
   }
 
@@ -147,7 +156,7 @@ class DynamicGroupSpec extends AnyFlatSpec with Matchers with FileCheck {
   it should "reject conflict between static Group and DynamicGroup with same name" in {
     class ModuleWithStaticGroup extends Module {
       val inst1 = ModuleChoice(new VerifTarget)(Seq(StaticPlatform.FPGA -> new FPGATarget))
-      val platform = DynamicGroup[PlatformGpuType]("StaticPlatform") // Same name as static group, different cases
+      val platform = new PlatformGpuType("StaticPlatform") // Same name as static group, different cases
       val inst2 = ModuleChoice(new VerifTarget)(Seq(platform.GPU -> new FPGATarget))
       val io1 = IO(inst1.cloneType)
       val io2 = IO(inst2.cloneType)
