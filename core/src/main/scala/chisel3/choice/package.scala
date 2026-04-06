@@ -61,7 +61,7 @@ package object choice {
 
     private[chisel3] val groupName: String = customName
 
-    private lazy val _group: Group = {
+    private val _group: Group = {
       object DynamicGroupSingleton extends Group()(sourceInfo) {
         override private[chisel3] def name = groupName
       }
@@ -80,7 +80,7 @@ package object choice {
     * They use implicit parameters to automatically associate with their parent DynamicGroup.
     */
   abstract class DynamicCase(implicit val dynamicGroup: DynamicGroup, _sourceInfo: SourceInfo)
-      extends Case()(dynamicGroup.group, _sourceInfo) {
+      extends Case()(using dynamicGroup.group, _sourceInfo) {
     self: Singleton =>
   }
 
