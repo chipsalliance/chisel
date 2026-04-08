@@ -156,7 +156,7 @@ object Instance extends SourceInfoDoc {
           firrtlPorts,
           SpecifiedDirection.Unspecified,
           params,
-          importedDefinition.proto.layers,
+          importedDefinition.proto.moduleLayers,
           // Imported Definitions necessarily don't have external requirements
           Seq.empty
         )
@@ -202,7 +202,7 @@ object Instance extends SourceInfoDoc {
 
     // The definition may have known layers that are not yet known to the
     // Builder.  Add them here.
-    definition.proto.layers.foreach(layer.addLayer)
+    definition.proto.moduleLayers.foreach(layer.addLayer)
 
     new Instance(Clone(clone))
   }
