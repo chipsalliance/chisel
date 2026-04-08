@@ -81,6 +81,18 @@ private[chisel3] object LTLDelayIntrinsic {
   }
 }
 
+/** A wrapper intrinsic for the CIRCT `ltl.past` operation. */
+private[chisel3] object LTLPastIntrinsic {
+
+  def apply(delay: Int, clock: Option[Clock] = None)(_in: Bool)(implicit sourceInfo: SourceInfo) = {
+    val params = Seq("delay" -> IntParam(delay))
+    clock match {
+      case None      => UnaryLTLIntrinsic("past", params)(_in)
+      case Some(clk) => BinaryLTLIntrinsic("past", params)(_in, clk)
+    }
+  }
+}
+
 /** A wrapper intrinsic for the CIRCT `ltl.repeat` operation. */
 private[chisel3] object LTLRepeatIntrinsic {
 

@@ -56,6 +56,15 @@ sealed trait Sequence extends Property with SequenceIntf {
   protected def _delayAtLeastImpl(delay: Int)(implicit sourceInfo: SourceInfo): Sequence =
     Sequence._delayAtLeast(this, delay)
 
+  protected def _pastImpl(delay: Int)(implicit sourceInfo: SourceInfo): Sequence =
+    Sequence._past(this, delay)
+
+  protected def _pastClockImpl(clock: Clock)(implicit sourceInfo: SourceInfo): Sequence =
+    Sequence._pastClock(this, 1, clock)
+
+  protected def _pastDelayClockImpl(delay: Int, clock: Clock)(implicit sourceInfo: SourceInfo): Sequence =
+    Sequence._pastClock(this, delay, clock)
+
   protected def _concatImpl(other: Sequence)(implicit sourceInfo: SourceInfo): Sequence = Sequence._concat(this, other)
 
   protected def _repeatImpl(n: Int = 1)(implicit sourceInfo: SourceInfo): Sequence = Sequence._repeat(this, n)
@@ -125,6 +134,12 @@ object Sequence extends Sequence$Intf {
 
   protected def _delayAtLeast(seq: Sequence, delay: Int)(implicit sourceInfo: SourceInfo): Sequence =
     OpaqueSequence(LTLDelayIntrinsic(delay, None)(seq.inner))
+
+  protected def _past(seq: Sequence, delay: Int)(implicit sourceInfo: SourceInfo): Sequence =
+    OpaqueSequence(LTLPastIntrinsic(delay)(seq.inner))
+
+  protected def _pastClock(seq: Sequence, delay: Int, clock: Clock)(implicit sourceInfo: SourceInfo): Sequence =
+    OpaqueSequence(LTLPastIntrinsic(delay, Some(clock))(seq.inner))
 
   protected def _concat(arg0: Sequence, argN: Sequence*)(implicit sourceInfo: SourceInfo): Sequence = {
     var lhs = arg0

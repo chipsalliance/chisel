@@ -68,6 +68,32 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     ChiselStage.emitSystemVerilog(new DelaysMod)
   }
 
+  class PastMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
+    val a, b = IO(Input(Bool()))
+    val clock = IO(Input(Clock()))
+    val s0: Sequence = a.past()
+    val s1: Sequence = a.past(3)
+    val s2: Sequence = Sequence.past(b, 2)
+    val s3: Sequence = a.past(clock)
+    val s4: Sequence = a.past(2, clock)
+  }
+  it should "support sequence past operations" in {
+    val chirrtl = ChiselStage.emitCHIRRTL(new PastMod)
+    val sourceLoc = "@[Foo.scala 1:2]"
+    chirrtl should include("input a : UInt<1>")
+    chirrtl should include("input b : UInt<1>")
+    chirrtl should include("input clock : Clock")
+    chirrtl should include(s"node ltl_past = intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(s"node ltl_past_1 = intrinsic(circt_ltl_past<delay = 3> : UInt<1>, a) $sourceLoc")
+    chirrtl should include(s"node ltl_past_2 = intrinsic(circt_ltl_past<delay = 2> : UInt<1>, b) $sourceLoc")
+    chirrtl should include(s"node ltl_past_3 = intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a, clock) $sourceLoc")
+    chirrtl should include(s"node ltl_past_4 = intrinsic(circt_ltl_past<delay = 2> : UInt<1>, a, clock) $sourceLoc")
+  }
+  it should "compile sequence past operations" in {
+    ChiselStage.emitSystemVerilog(new PastMod)
+  }
+
   class ConcatMod extends RawModule {
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b, c, d, e = IO(Input(Bool()))

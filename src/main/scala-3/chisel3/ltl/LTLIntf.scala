@@ -16,6 +16,15 @@ private[chisel3] trait SequenceIntf { self: Sequence =>
   /** See `Sequence.delayAtLeast`. */
   def delayAtLeast(delay: Int)(using SourceInfo): Sequence = _delayAtLeastImpl(delay)
 
+  /** See [[Sequence.past]]. */
+  def past(delay: Int = 1)(using SourceInfo): Sequence = _pastImpl(delay)
+
+  /** See [[Sequence.past]]. */
+  def past(clock: Clock)(using SourceInfo): Sequence = _pastClockImpl(clock)
+
+  /** See [[Sequence.past]]. */
+  def past(delay: Int, clock: Clock)(using SourceInfo): Sequence = _pastDelayClockImpl(delay, clock)
+
   /** See `Sequence.concat`. */
   def concat(other: Sequence)(using SourceInfo): Sequence = _concatImpl(other)
 
@@ -116,6 +125,26 @@ private[chisel3] trait Sequence$Intf { self: Sequence.type =>
     * `##[delay:$]` in SVA.
     */
   def delayAtLeast(seq: Sequence, delay: Int)(using SourceInfo): Sequence = _delayAtLeast(seq, delay)
+
+  /** Observe a sequence from a previous clock cycle.
+    *
+    * Equivalent to `$past(seq, delay)` in SVA.
+    */
+  def past(seq: Sequence, delay: Int = 1)(using SourceInfo): Sequence = _past(seq, delay)
+
+  /** Observe a sequence from the previous clock cycle with an explicit clock.
+    *
+    * Equivalent to `$past(seq, 1, , @(posedge clock))` in SVA.
+    */
+  def past(seq: Sequence, clock: Clock)(using SourceInfo): Sequence =
+    _pastClock(seq, 1, clock)
+
+  /** Observe a sequence from a previous clock cycle with an explicit clock.
+    *
+    * Equivalent to `$past(seq, delay, , @(posedge clock))` in SVA.
+    */
+  def past(seq: Sequence, delay: Int, clock: Clock)(using SourceInfo): Sequence =
+    _pastClock(seq, delay, clock)
 
   /** Concatenate multiple sequences. Equivalent to
     * `arg0 ##0 arg1 ##0 ... ##0 argN` in SVA.
