@@ -81,5 +81,5 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
     this
   }
 
-  override def moduleLayers: Seq[Layer] = getProto.moduleLayers
+  override def _moduleLayers: Seq[Layer] = getProto._moduleLayers
 }
