@@ -380,6 +380,19 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   private[chisel3] def isConst: Boolean = _isConst
   private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
 
+  // Role tag for views created by .asProducer or .asConsumer (0=none, 1=producer, 2=consumer)
+  private var _viewRoleVar: Byte = 0
+  private[chisel3] def viewRole: Option[Data.ViewRole] = _viewRoleVar match {
+    case 1 => Some(Data.ViewRole.Producer)
+    case 2 => Some(Data.ViewRole.Consumer)
+    case _ => None
+  }
+  private[chisel3] def viewRole_=(role: Option[Data.ViewRole]): Unit = _viewRoleVar = role match {
+    case Some(Data.ViewRole.Producer) => 1
+    case Some(Data.ViewRole.Consumer) => 2
+    case _                            => 0
+  }
+
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
   // Both are only valid after binding is set.
@@ -899,6 +912,13 @@ object Data {
 
   private[chisel3] case class ProbeInfo(val writable: Boolean, color: Option[layer.Layer])
 
+  /** Role tag for views created by `.asProducer` or `.asConsumer` */
+  private[chisel3] sealed trait ViewRole
+  private[chisel3] object ViewRole {
+    case object Producer extends ViewRole
+    case object Consumer extends ViewRole
+  }
+
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
 
@@ -1076,6 +1096,43 @@ object Data {
         self
       } else {
         self.viewAsReadOnly(_ => "Cannot connect to read-only value")
+      }
+    }
+  }
+
+  implicit class AsProducerConsumer[T <: Data](self: T) {
+
+    /** Returns a view of this Data marked as a producer.
+      *
+      * Aligned fields (outputs from the producer's perspective) become read-only,
+      * while flipped fields (inputs to the producer) remain writable.
+      *
+      * This should only be used on the producer (RHS) of Connectable operators
+      * (e.g., `consumer :<>= producer.asProducer`).
+      */
+    def asProducer(implicit sourceInfo: SourceInfo): T = {
+      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
+      if (alreadyReadOnly) {
+        self
+      } else {
+        self.viewAsProducer(_ => "Cannot connect to producer's aligned field")
+      }
+    }
+
+    /** Returns a view of this Data marked as a consumer.
+      *
+      * Flipped fields (inputs from the consumer's perspective) become read-only,
+      * while aligned fields (outputs from the consumer) remain writable.
+      *
+      * This should only be used on the consumer (LHS) of Connectable operators
+      * (e.g., `consumer.asConsumer :<>= producer`).
+      */
+    def asConsumer(implicit sourceInfo: SourceInfo): T = {
+      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
+      if (alreadyReadOnly) {
+        self
+      } else {
+        self.viewAsConsumer(_ => "Cannot connect to consumer's flipped field")
       }
     }
   }

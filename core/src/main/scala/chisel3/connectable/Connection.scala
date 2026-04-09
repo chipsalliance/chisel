@@ -57,20 +57,25 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
   val connectToProducer:       Boolean = true
   val alwaysConnectToConsumer: Boolean = false
   def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
-    val typeEquivalent =
-      try {
-        BiConnect.canFirrtlConnectData(
-          consumer.base,
-          producer.base,
-          UnlocatableSourceInfo,
-          Builder.referenceUserModule
-        ) && consumer.base.typeEquivalent(producer.base)
-      } catch {
-        // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
-        //  when calling DirectionConnection.connect. Hence, we can just default to false to take the non-optimized emission path
-        case e: Throwable => false
-      }
-    (typeEquivalent && consumer.notWaivedOrSqueezedOrExcluded && producer.notWaivedOrSqueezedOrExcluded)
+    // Role-tagged views must go through the slow path for role enforcement checks
+    val hasRole = consumer.base.viewRole.isDefined || producer.base.viewRole.isDefined
+    if (hasRole) false
+    else {
+      val typeEquivalent =
+        try {
+          BiConnect.canFirrtlConnectData(
+            consumer.base,
+            producer.base,
+            UnlocatableSourceInfo,
+            Builder.referenceUserModule
+          ) && consumer.base.typeEquivalent(producer.base)
+        } catch {
+          // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
+          //  when calling DirectionConnection.connect. Hence, we can just default to false to take the non-optimized emission path
+          case e: Throwable => false
+        }
+      (typeEquivalent && consumer.notWaivedOrSqueezedOrExcluded && producer.notWaivedOrSqueezedOrExcluded)
+    }
   }
 }
 
@@ -108,7 +113,26 @@ private[chisel3] object Connection {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
+    checkRoleEnforcement(cRoot, pRoot)
     doConnection(cRoot, pRoot, cOp)
+  }
+
+  private def checkRoleEnforcement[T <: Data](
+    consumer: Connectable[T],
+    producer: Connectable[T]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    consumer.base.viewRole match {
+      case Some(Data.ViewRole.Producer) =>
+        Builder.error(".asProducer cannot be used on the consumer (LHS) of a connection operator")
+      case _ => ()
+    }
+    producer.base.viewRole match {
+      case Some(Data.ViewRole.Consumer) =>
+        Builder.error(".asConsumer cannot be used on the producer (RHS) of a connection operator")
+      case _ => ()
+    }
   }
 
   private def connect(
