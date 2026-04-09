@@ -66,6 +66,43 @@ package object dataview {
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
     ): V = _viewAsImpl(ViewWriteability.ReadOnly(getError))
+
+    private[chisel3] def viewAsProducer[V <: Data](
+      getError: SourceInfo => String
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = _viewAsWithRoleImpl(Data.ViewRole.Producer, getError)
+
+    private[chisel3] def viewAsConsumer[V <: Data](
+      getError: SourceInfo => String
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = _viewAsWithRoleImpl(Data.ViewRole.Consumer, getError)
+
+    private def _viewAsWithRoleImpl[V <: Data](
+      role:     Data.ViewRole,
+      getError: SourceInfo => String
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = {
+      val result: V = dataView.mkView(target)
+      requireIsChiselType(result, "viewAs")
+
+      val wrMap = computeRoleWritabilityMap(result, role, getError)
+
+      doBind(target, result, dataView, ViewWriteability.Default, Some(wrMap))
+
+      result.setAllParents(Some(ViewParent))
+      result.viewRole = Some(role)
+      result.forceName("view", Builder.viewNamespace)
+      result
+    }
   }
 
   /** Provides `viewAsSupertype` for subclasses of [[Record]] */
@@ -103,10 +140,11 @@ package object dataview {
 
   // TODO should this be moved to class Aggregate / can it be unified with Aggregate.bind?
   private def doBind[T: DataProduct, V <: Data](
-    target:      T,
-    view:        V,
-    dataView:    DataView[T, V],
-    writability: ViewWriteability
+    target:                 T,
+    view:                   V,
+    dataView:               DataView[T, V],
+    writability:            ViewWriteability,
+    writabilityMapOverride: Option[Map[Data, ViewWriteability]] = None
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
@@ -233,14 +271,49 @@ package object dataview {
     }
 
     view match {
-      case elt: Element => view.bind(ViewBinding(elementResult(elt), writability))
+      case elt: Element =>
+        val w = writabilityMapOverride.flatMap(_.get(elt)).getOrElse(writability)
+        view.bind(ViewBinding(elementResult(elt), w))
       case agg: Aggregate =>
         val fullResult = elementResult ++ aggregateMappings
-        val aggWritability = Option.when(writability.isReadOnly)(
-          Map((agg: Data) -> writability)
+        val aggWritability = writabilityMapOverride.orElse(
+          Option.when(writability.isReadOnly)(
+            Map((agg: Data) -> writability)
+          )
         )
         agg.bind(AggregateViewBinding(fullResult, aggWritability))
     }
+  }
+
+  /** Compute a per-field writability map based on alignment.
+    *
+    * For Producer role: aligned fields become ReadOnly, flipped fields stay Default.
+    * For Consumer role: flipped fields become ReadOnly, aligned fields stay Default.
+    */
+  private def computeRoleWritabilityMap(
+    view:     Data,
+    role:     Data.ViewRole,
+    getError: SourceInfo => String
+  ): Map[Data, ViewWriteability] = {
+    import chisel3.connectable.AlignedWithRoot
+    val readOnly = ViewWriteability.ReadOnly(getError)
+    val default = ViewWriteability.Default
+    // Collect all aligned members (including root, aggregates, and leaves)
+    val alignedSet: Set[Data] =
+      DataMirror.collectAlignedDeep(view) { case d => d }.toSet
+    // Collect all members
+    val allMembers: Iterable[Data] =
+      DataMirror.collectMembers(view) { case d => d }
+    // Build per-field writability based on role
+    val entries = allMembers.map { m =>
+      val isAligned = alignedSet.contains(m)
+      val writability = role match {
+        case Data.ViewRole.Producer => if (isAligned) readOnly else default
+        case Data.ViewRole.Consumer => if (isAligned) default else readOnly
+      }
+      m -> writability
+    }
+    entries.toMap
   }
 
   // When annotating views that are not identity mappings, we need to record them for renaming
