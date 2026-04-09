@@ -30,6 +30,6 @@ private[chisel3] final class InstanceClone[T <: BaseModule](val getProto: T, val
   // Instance name is the same as proto's instance name
   override def instanceName = instName()
   // Module name is the same as proto's module name
-  override def desiredName:  String = getProto.name
+  override def desiredName:   String = getProto.name
   override def _moduleLayers: Seq[Layer] = getProto._moduleLayers
 }

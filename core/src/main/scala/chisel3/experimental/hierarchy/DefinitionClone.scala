@@ -25,6 +25,6 @@ private[chisel3] class DefinitionClone[T <: BaseModule](val getProto: T) extends
   // Necessary for toTarget to work
   private[chisel3] def initializeInParent(): Unit = ()
   // Module name is the same as proto's module name
-  override def desiredName:  String = getProto.name
+  override def desiredName:   String = getProto.name
   override def _moduleLayers: Seq[Layer] = getProto._moduleLayers
 }
