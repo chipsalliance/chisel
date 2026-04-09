@@ -289,12 +289,6 @@ object Examples {
   }
 
   @instantiable
-  class HasMems() extends Module {
-    @public val mem = Mem(8, UInt(32.W))
-    @public val syncReadMem = SyncReadMem(8, UInt(32.W))
-  }
-
-  @instantiable
   class LeafInstantiable(val bundle: Data) {
     @public val bundle = bundle
   }

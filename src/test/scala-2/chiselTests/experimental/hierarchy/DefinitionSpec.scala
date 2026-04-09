@@ -569,36 +569,8 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
-    it("(3.n): should work on Mems/SyncReadMems") {
-      class Top() extends Module {
-        val i = Definition(new HasMems())
-        mark(i.mem, "Mem")
-        mark(i.syncReadMem, "SyncReadMem")
-      }
-      ChiselStage
-        .emitCHIRRTL(new Top)
-        .fileCheck()(
-          """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~|HasMems>mem"
-             |CHECK-NEXT: "tag":"Mem"
-             |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
-             |CHECK-NEXT: "target":"~|HasMems>syncReadMem"
-             |CHECK-NEXT: "tag":"SyncReadMem"
-             |""".stripMargin
-        )
-    }
-    it("(3.o): should not create memory ports") {
-      class Top() extends Module {
-        val i = Definition(new HasMems())
-        i.mem(0) := 100.U // should be illegal!
-      }
-      intercept[ChiselException] {
-        ChiselStage.elaborate(new Top)
-      }.getMessage should include(
-        "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
-      )
-    }
-    it("(3.p): should work on HasTarget") {
+
+    it("(3.n): should work on HasTarget") {
       class Top() extends Module {
         val i = Definition(new HasHasTarget)
         mark(i.x, "x")
@@ -612,7 +584,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
-    it("(3.q): should work on Tuple5 with a Module in it") {
+    it("(3.o): should work on Tuple5 with a Module in it") {
       class Top() extends Module {
         val defn = Definition(new HasTuple5())
         val (3, w: UInt, "hi", inst: Instance[AddOne], l) = defn.tup

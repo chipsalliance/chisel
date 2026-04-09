@@ -3,8 +3,10 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
 import chisel3.util.{is, switch, Counter, SRAM}
 import circt.stage.ChiselStage
 import org.scalatest.propspec.AnyPropSpec
@@ -342,7 +344,13 @@ class MemMaskedReadWriteTester extends Module {
   }
 }
 
-class MemorySpec extends AnyPropSpec with Matchers with ChiselSim {
+@instantiable
+class HasMems() extends Module {
+  @public val mem = Mem(8, UInt(32.W))
+  @public val syncReadMem = SyncReadMem(8, UInt(32.W))
+}
+
+class MemorySpec extends AnyPropSpec with Matchers with ChiselSim with FileCheck {
   property("Mem of Vec should work") {
     simulate(new MemVecTester)(RunUntilFinished(3))
   }
@@ -450,8 +458,38 @@ class MemorySpec extends AnyPropSpec with Matchers with ChiselSim {
     }
     ChiselStage.emitSystemVerilog(new TestModule)
   }
-}
 
+  property("Definition/Instance should work with Mems/SyncReadMems") {
+    import chiselTests.experimental.hierarchy.Annotations._
+    class Top() extends Module {
+      val i = Definition(new HasMems())
+      mark(i.mem, "Mem")
+      mark(i.syncReadMem, "SyncReadMem")
+      ChiselStage
+        .emitCHIRRTL(new Top)
+        .fileCheck()(
+          """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|HasMems>mem"
+             |CHECK-NEXT: "tag":"Mem"
+             |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|HasMems>syncReadMem"
+             |CHECK-NEXT: "tag":"SyncReadMem"
+             |""".stripMargin
+        )
+    }
+  }
+  property("Definition/Instance with Mems should not create memory ports") {
+    class Top() extends Module {
+      val i = Definition(new HasMems())
+      i.mem(0) := 100.U // should be illegal!
+    }
+    intercept[ChiselException] {
+      ChiselStage.elaborate(new Top)
+    }.getMessage should include(
+      "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
+    )
+  }
+}
 class SRAMSpec extends AnyFunSpec with Matchers {
   describe("SRAM") {
     val portCombos: Seq[(Int, Int, Int)] =
