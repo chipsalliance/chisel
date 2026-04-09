@@ -10,7 +10,7 @@
 
 
 <link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.3c4e2b46.css">
-<script src="/assets/js/runtime~main.8bd29c39.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.d8b252a6.js" defer="defer"></script>
 <script src="/assets/js/main.d4548cbc.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -82,13 +82,10 @@ defined on them that can be used to drive stimulus.</p>
 <ul>
 <li class=""><code>poke</code> sets a value on a port</li>
 <li class=""><code>peek</code> reads a value on a port</li>
-<li class=""><code>expect</code> reads a value on a port and asserts that it is equal another value</li>
+<li class=""><code>expect</code> reads a value on a port and asserts that it is equal to another value, with optional custom formatting (see the <a class="" href="/docs/cookbooks/testing#how-do-i-customize-expect-failure-value-formatting">testing cookbook</a>)</li>
 <li class=""><code>step</code> toggles a clock for a number of cycles</li>
 <li class=""><code>stepUntil</code> toggles a clock until a condition occurs on another port</li>
 </ul>
-<p>For more information see the <a href="https://www.chisel-lang.org/api" target="_blank" rel="noopener noreferrer" class="">Chisel API
-documentation</a> for
-<code>chisel3.simulator.PeekPokeAPI</code>.</p>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="reusable-stimulus-patterns">Reusable Stimulus Patterns<a href="#reusable-stimulus-patterns" class="hash-link" aria-label="Direct link to Reusable Stimulus Patterns" title="Direct link to Reusable Stimulus Patterns" translate="no">​</a></h4>
 <p>While the Peek/Poke APIs are useful for freeform tests, there are a number of
 common stimulus patterns that are frequently applied during testing.  E.g.,
