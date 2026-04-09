@@ -92,6 +92,38 @@ simulate(new Foo) { dut =>
 }
 ```
 
+You can also customize the failure message separately from the rendered values:
+
+```scala
+import chisel3.simulator.ExpectationValueFormat
+
+def bits(value: ExpectationValueFormat.Value): String =
+  value.unsignedValue.toString(2).reverse.padTo(value.bitWidth, '0').reverse.mkString
+
+val bitDiff = ExpectationValueFormat.Custom.message(
+  ExpectationValueFormat.Custom(bits)
+) { (observed, expected) =>
+  val observedBits = bits(observed)
+  val expectedBits = bits(expected)
+  val markers = observedBits.zip(expectedBits).map {
+    case (observedBit, expectedBit) => if (observedBit == expectedBit) ' ' else '^'
+  }.mkString
+  val diffBits = observedBits.zip(expectedBits).zipWithIndex.collect {
+    case ((observedBit, expectedBit), idx) if observedBit != expectedBit =>
+      observedBits.length - 1 - idx
+  }.sorted
+  val indent = " " * "Observed value: '".length
+
+  s"""|$indent$markers
+      |Diff Bit: ${diffBits.mkString(",")}""".stripMargin
+}
+
+simulate(new Foo) { dut =>
+  dut.io.in.poke("b101111".U)
+  dut.io.out.expect("b100101".U, bitDiff)
+}
+```
+
 ## How do I see what options a ChiselSim Scalatest test supports?
 
 Pass `-Dhelp=1` to Scalatest, e.g.:

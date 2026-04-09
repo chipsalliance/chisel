@@ -158,18 +158,11 @@ object ExpectationValueFormat {
   object Custom {
 
     /** Use a user-provided formatter for each rendered value. */
-    def apply(formatValue: Value => String): Type = values(formatValue)
+    def apply(formatValue: Value => String): Type =
+      customType(failure => renderValues(failure)(formatValue))
 
     /** Use a user-provided formatter for the failure message. */
     def apply(buildMessage: (Value, Value) => String): Type = message(buildMessage)
-
-    /** Use a user-provided formatter for each rendered value. */
-    def values(formatValue: Value => String): Type =
-      customType { failure =>
-        val observed = formatValue(failure.observed)
-        val expected = formatValue(failure.expected)
-        Rendered(observed, expected, defaultMessage(observed, expected))
-      }
 
     /** Use a user-provided formatter for the failure message while keeping the rendered values. */
     def message(buildMessage: (Value, Value) => String): Type = message(Dec)(buildMessage)

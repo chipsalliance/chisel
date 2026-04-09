@@ -15,12 +15,6 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
 
   val numTests = 20
 
-  class BitDiffModule extends Module {
-    val in = IO(Input(UInt(6.W)))
-    val out = IO(Output(UInt(6.W)))
-    out := in
-  }
-
   describe("PeekPokeAPI with TestableData") {
     val w = 32
     it("should correctly poke, peek, and peekValue Elements and Aggregates") {
@@ -264,44 +258,32 @@ class PeekPokeAPISpec extends AnyFunSpec with ChiselSim with Matchers {
       thrown.getMessage must include("Expectation failed: observed value riscv(ret) != riscv(jump)")
     }
 
-    it("should support pairwise custom bit diff messages for failed expect values") {
-      def bits(value: ExpectationValueFormat.Value): String =
-        value.unsignedValue.toString(2).reverse.padTo(value.bitWidth, '0').reverse.mkString
-
-      val customFormat = ExpectationValueFormat.Custom.message(
-        ExpectationValueFormat.Custom.values(bits)
-      ) { (observed, expected) =>
-        val observedBits = bits(observed)
-        val expectedBits = bits(expected)
-        val markers = observedBits
-          .zip(expectedBits)
-          .map { case (observedBit, expectedBit) =>
-            if (observedBit == expectedBit) ' ' else '^'
-          }
-          .mkString
-        val diffBits = observedBits
-          .zip(expectedBits)
-          .zipWithIndex
-          .collect {
-            case ((observedBit, expectedBit), idx) if observedBit != expectedBit =>
-              observedBits.length - 1 - idx
-          }
-          .sorted
-        val indent = " " * "Observed value: '".length
-
-        s"""|$indent$markers
-            |Diff Bit: ${diffBits.mkString(",")}""".stripMargin
+    it("should support custom failure messages for failed expect values") {
+      val customFormat = ExpectationValueFormat.Custom.message(ExpectationValueFormat.Hex) { (observed, expected) =>
+        s"bit widths: observed=${observed.bitWidth}, expected=${expected.bitWidth}"
       }
       val thrown = the[FailedExpectationException[_]] thrownBy {
-        simulate(new BitDiffModule) { dut =>
-          dut.in.poke("b101111".U)
-          dut.out.expect("b100101".U, customFormat)
+        simulate(new PeekPokeTestModule(w)) { dut =>
+          val vecDim = dut.vecDim
+
+          dut.io.in.bits.poke(
+            chiselTypeOf(dut.io.in.bits).Lit(
+              _.a -> 1.U,
+              _.b -> 2.U,
+              _.v1 -> Vec.Lit(Seq.fill(vecDim)(3.U(w.W)): _*),
+              _.v2 -> Vec.Lit(Seq.fill(vecDim)(4.U(w.W)): _*)
+            )
+          )
+          dut.io.in.valid.poke(true)
+          dut.io.op.poke(TestOp.Add)
+          dut.clock.step()
+
+          dut.io.out.bits.c.expect(5.U, customFormat)
         }
       }
-      thrown.getMessage must include("Observed value: '101111'")
-      thrown.getMessage must include("Expected value: '100101'")
-      thrown.getMessage must include(s"${" " * "Observed value: '".length}  ^ ^")
-      thrown.getMessage must include("Diff Bit: 1,3")
+      thrown.getMessage must include("Observed value: 'UInt<32>(0x00 00 00 03)'")
+      thrown.getMessage must include("Expected value: 'UInt<32>(0x00 00 00 05)'")
+      thrown.getMessage must include("bit widths: observed=32, expected=32")
     }
 
     it("should use Dec formatting for expect(BigInt, message)") {
