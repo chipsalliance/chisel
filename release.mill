@@ -105,7 +105,12 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.MemBase.forceName*"),
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName*"),
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.forceName*"),
-    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.properties.DynamicObject.forceName*")
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.properties.DynamicObject.forceName*"),
+    // ViewWriteability inner types are package-private
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.internal.binding#ViewWriteability#ReadOnly*"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.internal.binding$ViewWriteability$ReadOnly$"),
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.internal.binding#ViewWriteability#ReadOnlyDeprecated*"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.internal.binding$ViewWriteability$ReadOnlyDeprecated$")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)

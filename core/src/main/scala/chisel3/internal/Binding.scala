@@ -130,6 +130,13 @@ private[chisel3] object binding {
   // It is a source (RHS). It may only be connected/applied to sinks.
   case class DontCareBinding() extends UnconstrainedBinding
 
+  /** The connectable "role" of a view created by `.asProducer` / `.asConsumer`. */
+  sealed trait ConnectableRole
+  object ConnectableRole {
+    case object Producer extends ConnectableRole
+    case object Consumer extends ConnectableRole
+  }
+
   /** Views are able to restrict writability of the target */
   sealed trait ViewWriteability {
 
@@ -142,10 +149,10 @@ private[chisel3] object binding {
       */
     final def reportIfReadOnly[A](onPass: => A)(onFail: => A)(implicit info: SourceInfo): A = this match {
       case ViewWriteability.Default => onPass
-      case ViewWriteability.ReadOnlyDeprecated(getWarning) =>
+      case ViewWriteability.ReadOnlyDeprecated(getWarning, _) =>
         Builder.warning(getWarning(info))
         onPass // This is just a warning so we propagate the pass value.
-      case ViewWriteability.ReadOnly(getError) =>
+      case ViewWriteability.ReadOnly(getError, _) =>
         Builder.error(getError(info))
         onFail
     }
@@ -164,7 +171,8 @@ private[chisel3] object binding {
     }
 
     /** Signals that will eventually become read only */
-    case class ReadOnlyDeprecated(getWarning: SourceInfo => Warning) extends ViewWriteability {
+    case class ReadOnlyDeprecated(getWarning: SourceInfo => Warning, role: Option[ConnectableRole] = None)
+        extends ViewWriteability {
       override def combine(that: ViewWriteability): ViewWriteability = that match {
         case ro: ReadOnly => ro
         case _ => this
@@ -172,7 +180,7 @@ private[chisel3] object binding {
     }
 
     /** Signals that are read only */
-    case class ReadOnly(getError: SourceInfo => String) extends ViewWriteability {
+    case class ReadOnly(getError: SourceInfo => String, role: Option[ConnectableRole] = None) extends ViewWriteability {
       override def combine(that: ViewWriteability): ViewWriteability = this
     }
   }

@@ -180,3 +180,100 @@ class MyBundle extends Bundle {
 val x = WireInit(0.U.asTypeOf(new MyBundle))
 x.bar := 123.U
 ```
+
+### [W009] Producer view used incorrectly
+
+`.asProducerDeprecated` is a migration aid for `.asProducer`, which marks a `Data` as the producer
+(right-hand side) of a [`Connectable`](connectable) operator.
+See [Enforcing producer/consumer roles](connectable) for a full explanation of how these tags work.
+
+This warning most commonly arises when using a library component that returns a value tagged as a
+producer: the library has already driven the producer's aligned fields (e.g. `valid` and `bits` on
+a `Decoupled` source), and the caller is trying to drive one of them again.
+If the assignment is accidental, remove it — the library already drives that field.
+If you genuinely need to override a field the library drives, use an untagged `Wire` of the same
+type directly rather than the library helper, so the producer restriction does not apply.
+
+More specifically, this warning fires when `.asProducerDeprecated` is used in a way that `.asProducer`
+rejects as an error:
+
+* connecting to an *aligned* field of the producer view (aligned fields are outputs from the producer's
+  perspective, so they are read-only), or
+* using the producer view on the consumer (left-hand) side of a connection operator.
+
+For example, a library helper returns a `Wire` tagged as a producer, meaning the library owns
+the aligned (`valid`) field.
+Trying to drive that field triggers W009:
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val valid = Bool()
+  val ready = Flipped(Bool())
+}
+val w = Wire(new MyBundle)
+val fromLibrary = w.asProducerDeprecated
+fromLibrary.valid := true.B  // valid is aligned, so it is read-only on a producer view
+```
+
+If the assignment is unintentional, remove it — the library already drives `valid`.
+If you need to drive it yourself, use an intermediate `Wire`:
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val valid = Bool()
+  val ready = Flipped(Bool())
+}
+val w = Wire(new MyBundle)
+val fromLibrary = w.asProducerDeprecated
+val myWire = Wire(new MyBundle)
+myWire :<>= fromLibrary
+// Intentional override of field driven by the library
+myWire.valid := true.B
+```
+
+### [W010] Consumer view used incorrectly
+
+`.asConsumerDeprecated` is a migration aid for `.asConsumer`, which marks a `Data` as the consumer
+(left-hand side) of a [`Connectable`](connectable) operator.
+See [Enforcing producer/consumer roles](connectable) for a full explanation of how these tags work.
+
+This warning most commonly arises when using a library component that returns a value tagged as a
+consumer: the library has already driven the consumer's flipped fields (i.e. the inputs it expects
+from its environment, such as `ready` on a `Decoupled` sink), and the caller is trying to drive one
+of them again.
+If the assignment is accidental, remove it — the library already drives that field.
+If you genuinely need to override a field the library drives, use an untagged `Wire` of the same
+type directly rather than the library helper, so the consumer restriction does not apply.
+
+More specifically, this warning fires when `.asConsumerDeprecated` is used in a way that `.asConsumer`
+rejects as an error:
+
+* connecting to a *flipped* field of the consumer view (flipped fields are inputs from the consumer's
+  perspective, so they are read-only), or
+* using the consumer view on the producer (right-hand) side of a connection operator.
+
+For example, a library helper returns a `Wire` tagged as a consumer, meaning the library owns
+the flipped (`ready`) field.
+Trying to drive that field triggers W010:
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val valid = Bool()
+  val ready = Flipped(Bool())
+}
+val w = Wire(new MyBundle)
+val fromLibrary = w.asConsumerDeprecated
+fromLibrary.ready := true.B  // ready is flipped, so it is read-only on a consumer view
+```
+
+If the assignment is unintentional, remove it — the library already drives `ready`.
+If you need to drive it yourself, use an intermediate `Wire`:
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val valid = Bool()
+  val ready = Flipped(Bool())
+}
+val w = Wire(new MyBundle)
+val fromLibrary = w.asConsumerDeprecated
+val myWire = Wire(new MyBundle)
+fromLibrary :<>= myWire
+// Intentional override of field driven by the library
+myWire.ready := true.B
+```
