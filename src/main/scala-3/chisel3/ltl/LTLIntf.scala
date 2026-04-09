@@ -7,13 +7,13 @@ import chisel3.experimental.SourceInfo
 
 private[chisel3] trait SequenceIntf { self: Sequence =>
 
-  /** See `Sequence.delay`. */
+  /** See [[Sequence.delay]]. */
   def delay(delay: Int = 1)(using SourceInfo): Sequence = _delayImpl(delay)
 
-  /** See `Sequence.delayRange`. */
+  /** See [[Sequence.delayRange]]. */
   def delayRange(min: Int, max: Int)(using SourceInfo): Sequence = _delayRangeImpl(min, max)
 
-  /** See `Sequence.delayAtLeast`. */
+  /** See [[Sequence.delayAtLeast]]. */
   def delayAtLeast(delay: Int)(using SourceInfo): Sequence = _delayAtLeastImpl(delay)
 
   /** See [[Sequence.past]]. */
@@ -25,44 +25,44 @@ private[chisel3] trait SequenceIntf { self: Sequence =>
   /** See [[Sequence.past]]. */
   def past(delay: Int, clock: Clock)(using SourceInfo): Sequence = _pastDelayClockImpl(delay, clock)
 
-  /** See `Sequence.concat`. */
+  /** See [[Sequence.concat]]. */
   def concat(other: Sequence)(using SourceInfo): Sequence = _concatImpl(other)
 
-  /** See `Sequence.repeat`. */
+  /** See [[Sequence.repeat]]. */
   def repeat(n: Int = 1)(using SourceInfo): Sequence = _repeatImpl(n)
 
-  /** See `Sequence.repeatRange`. */
+  /** See [[Sequence.repeatRange]]. */
   def repeatRange(min: Int, max: Int)(using SourceInfo): Sequence = _repeatRangeImpl(min, max)
 
-  /** See `Sequence.repeatAtLeast`. */
+  /** See [[Sequence.repeatAtLeast]]. */
   def repeatAtLeast(n: Int)(using SourceInfo): Sequence = _repeatAtLeastImpl(n)
 
-  /** See `Sequence.gotoRepeat`. */
+  /** See [[Sequence.gotoRepeat]]. */
   def gotoRepeat(min: Int, max: Int)(using SourceInfo): Sequence = _gotoRepeatImpl(min, max)
 
-  /** See `Sequence.nonConsecutiveRepeat`. */
+  /** See [[Sequence.nonConsecutiveRepeat]]. */
   def nonConsecutiveRepeat(min: Int, max: Int)(using SourceInfo): Sequence =
     _nonConsecutiveRepeatImpl(min, max)
 
-  /** See `Sequence.and`. */
+  /** See [[Sequence.and]]. */
   def and(other: Sequence)(using SourceInfo): Sequence = _andSeqImpl(other)
 
-  /** See `Sequence.or`. */
+  /** See [[Sequence.or]]. */
   def or(other: Sequence)(using SourceInfo): Sequence = _orSeqImpl(other)
 
-  /** See `Sequence.intersect`. */
+  /** See [[Sequence.intersect]]. */
   def intersect(other: Sequence)(using SourceInfo): Sequence = _intersectSeqImpl(other)
 
-  /** See `Sequence.until`. */
+  /** See [[Sequence.until]]. */
   def until(other: Sequence)(using SourceInfo): Sequence = _untilSeqImpl(other)
 
-  /** See `Sequence.clock`. */
+  /** See [[Sequence.clock]]. */
   override def clock(clock: Clock)(using SourceInfo): Sequence = _clockImpl(clock)
 
-  /** See `Property.implication`. */
+  /** See [[Property.implication]]. */
   def implication(prop: Property)(using SourceInfo): Property = _implicationImpl(prop)
 
-  /** See `Property.implication`. */
+  /** See [[Property.implication]]. */
   def implicationNonOverlapping(prop: Property)(using SourceInfo): Property =
     _implicationNonOverlappingImpl(prop)
 
@@ -86,25 +86,25 @@ private[chisel3] trait SequenceIntf { self: Sequence =>
 
 private[chisel3] trait PropertyIntf { self: Property =>
 
-  /** See `Property.not`. */
+  /** See [[Property.not]]. */
   def not(using SourceInfo): Property = _notImpl
 
-  /** See `Property.eventually`. */
+  /** See [[Property.eventually]]. */
   def eventually(using SourceInfo): Property = _eventuallyImpl
 
-  /** See `Property.and`. */
+  /** See [[Property.and]]. */
   def and(other: Property)(using SourceInfo): Property = _andPropImpl(other)
 
-  /** See `Property.or`. */
+  /** See [[Property.or]]. */
   def or(other: Property)(using SourceInfo): Property = _orPropImpl(other)
 
-  /** See `Property.intersect`. */
+  /** See [[Property.intersect]]. */
   def intersect(other: Property)(using SourceInfo): Property = _intersectPropImpl(other)
 
-  /** See `Property.until`. */
+  /** See [[Property.until]]. */
   def until(other: Property)(using SourceInfo): Property = _untilPropImpl(other)
 
-  /** See `Property.clock`. */
+  /** See [[Property.clock]]. */
   def clock(clock: Clock)(using SourceInfo): Property = _clockImpl(clock)
 }
 
@@ -215,7 +215,7 @@ private[chisel3] trait Sequence$Intf { self: Sequence.type =>
     *
     * `Sequence(a, Delay(), b, Delay(2), c, Delay(3, 9), d, Delay(4, None), e)`
     *
-    * See `SequenceAtom` for more details.
+    * See [[SequenceAtom]] for more details.
     */
   def apply(atoms: SequenceAtom*)(using SourceInfo): Sequence = _apply(atoms: _*)
 }

@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.ltl._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
+import chisel3.testing.scalatest.FileCheck
 import chisel3.experimental.{SourceInfo, SourceLine}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,23 +14,31 @@ import org.scalatest.matchers.should.Matchers
 
 import Sequence._
 
-class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
+class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
   it should "allow booleans to be used as sequences" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      Sequence.delay(a, 42)
-    })
-    chirrtl should include("input a : UInt<1>")
-    chirrtl should include("intrinsic(circt_ltl_delay<delay = 42, length = 0> : UInt<1>, a)")
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        val a = IO(Input(Bool()))
+        Sequence.delay(a, 42)
+      })
+      .fileCheck()(
+        """|CHECK: input a : UInt<1>
+           |CHECK: intrinsic(circt_ltl_delay<delay = 42, length = 0> : UInt<1>, a)
+           |""".stripMargin
+      )
   }
 
   it should "allow booleans to be used as properties" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a = IO(Input(Bool()))
-      Property.eventually(a)
-    })
-    chirrtl should include("input a : UInt<1>")
-    chirrtl should include("intrinsic(circt_ltl_eventually : UInt<1>, a)")
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        val a = IO(Input(Bool()))
+        Property.eventually(a)
+      })
+      .fileCheck()(
+        """|CHECK: input a : UInt<1>
+           |CHECK: intrinsic(circt_ltl_eventually : UInt<1>, a)
+           |""".stripMargin
+      )
   }
 
   class DelaysMod extends RawModule {
@@ -43,26 +52,24 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val s5: Sequence = a ##+ b
   }
   it should "support sequence delay operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new DelaysMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include("input a : UInt<1>")
-    chirrtl should include("input b : UInt<1>")
-    chirrtl should include("input c : UInt<1>")
-    chirrtl should include(
-      f"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc"
-    )
-    chirrtl should include(
-      f"node ltl_delay_1 = intrinsic(circt_ltl_delay<delay = 2, length = 2> : UInt<1>, b) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_delay_2 = intrinsic(circt_ltl_delay<delay = 5> : UInt<1>, c) $sourceLoc")
-    chirrtl should include(
-      f"node ltl_delay_3 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_concat = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_3) $sourceLoc")
-    chirrtl should include(f"node ltl_delay_4 = intrinsic(circt_ltl_delay<delay = 0> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(f"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_4) $sourceLoc")
-    chirrtl should include(f"node ltl_delay_5 = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(f"node ltl_concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_5) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new DelaysMod)
+      .fileCheck()(
+        s"""|CHECK: input a : UInt<1>
+            |CHECK: input b : UInt<1>
+            |CHECK: input c : UInt<1>
+            |CHECK: intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_delay<delay = 2, length = 2> : UInt<1>, b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_delay<delay = 5> : UInt<1>, c) $sourceLoc
+            |CHECK: node [[D3:.*]] = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_concat : UInt<1>, a, [[D3]]) $sourceLoc
+            |CHECK: node [[D4:.*]] = intrinsic(circt_ltl_delay<delay = 0> : UInt<1>, b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_concat : UInt<1>, a, [[D4]]) $sourceLoc
+            |CHECK: node [[D5:.*]] = intrinsic(circt_ltl_delay<delay = 1> : UInt<1>, b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_concat : UInt<1>, a, [[D5]]) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile sequence delay operations" in {
     ChiselStage.emitSystemVerilog(new DelaysMod)
@@ -79,16 +86,20 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val s4: Sequence = a.past(2, clock)
   }
   it should "support sequence past operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new PastMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include("input a : UInt<1>")
-    chirrtl should include("input b : UInt<1>")
-    chirrtl should include("input clock : Clock")
-    chirrtl should include(s"node ltl_past = intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a) $sourceLoc")
-    chirrtl should include(s"node ltl_past_1 = intrinsic(circt_ltl_past<delay = 3> : UInt<1>, a) $sourceLoc")
-    chirrtl should include(s"node ltl_past_2 = intrinsic(circt_ltl_past<delay = 2> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(s"node ltl_past_3 = intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a, clock) $sourceLoc")
-    chirrtl should include(s"node ltl_past_4 = intrinsic(circt_ltl_past<delay = 2> : UInt<1>, a, clock) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new PastMod)
+      .fileCheck()(
+        s"""|CHECK: input a : UInt<1>
+            |CHECK: input b : UInt<1>
+            |CHECK: input clock : Clock
+            |CHECK: intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 3> : UInt<1>, a) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 2> : UInt<1>, b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a, clock) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 2> : UInt<1>, a, clock) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile sequence past operations" in {
     ChiselStage.emitSystemVerilog(new PastMod)
@@ -101,16 +112,20 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val s1: Sequence = Sequence.concat(c, d, e) // (c concat d) concat e
   }
   it should "support sequence concat operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new ConcatMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include("input a : UInt<1>")
-    chirrtl should include("input b : UInt<1>")
-    chirrtl should include("input c : UInt<1>")
-    chirrtl should include("input d : UInt<1>")
-    chirrtl should include("input e : UInt<1>")
-    chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
-    chirrtl should include(f"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, c, d) $sourceLoc")
-    chirrtl should include(f"intrinsic(circt_ltl_concat : UInt<1>, ltl_concat_1, e) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new ConcatMod)
+      .fileCheck()(
+        s"""|CHECK: input a : UInt<1>
+            |CHECK: input b : UInt<1>
+            |CHECK: input c : UInt<1>
+            |CHECK: input d : UInt<1>
+            |CHECK: input e : UInt<1>
+            |CHECK: intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc
+            |CHECK: node [[CD:.*]] = intrinsic(circt_ltl_concat : UInt<1>, c, d) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_concat : UInt<1>, [[CD]], e) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile sequence concat operations" in {
     ChiselStage.emitSystemVerilog(new ConcatMod)
@@ -126,24 +141,22 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val s4: Sequence = e.nonConsecutiveRepeat(1, 3)
   }
   it should "support sequence repeat operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RepeatMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include("input a : UInt<1>")
-    chirrtl should include("input b : UInt<1>")
-    chirrtl should include("input c : UInt<1>")
-    chirrtl should include("input d : UInt<1>")
-    chirrtl should include("input e : UInt<1>")
-    chirrtl should include(f"node ltl_repeat = intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc")
-    chirrtl should include(
-      f"node ltl_repeat_1 = intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_repeat_2 = intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc")
-    chirrtl should include(
-      f"node ltl_goto_repeat = intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc"
-    )
-    chirrtl should include(
-      f"node ltl_non_consecutive_repeat = intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc"
-    )
+    ChiselStage
+      .emitCHIRRTL(new RepeatMod)
+      .fileCheck()(
+        s"""|CHECK: input a : UInt<1>
+            |CHECK: input b : UInt<1>
+            |CHECK: input c : UInt<1>
+            |CHECK: input d : UInt<1>
+            |CHECK: input e : UInt<1>
+            |CHECK: intrinsic(circt_ltl_repeat<base = 1, more = 0> : UInt<1>, a) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_repeat<base = 2, more = 2> : UInt<1>, b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_repeat<base = 5> : UInt<1>, c) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_goto_repeat<base = 1, more = 2> : UInt<1>, d) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_non_consecutive_repeat<base = 1, more = 2> : UInt<1>, e) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile sequence repeat operations" in {
     ChiselStage.emitSystemVerilog(new RepeatMod)
@@ -169,42 +182,30 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val u2: Property = p0.until(b)
   }
   it should "support and, or, intersect, and clock operations" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new AndOrClockMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-
-    // Sequences
-    chirrtl should include(
-      f"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_and = intrinsic(circt_ltl_and : UInt<1>, ltl_delay, b) $sourceLoc")
-    chirrtl should include(f"node ltl_or = intrinsic(circt_ltl_or : UInt<1>, ltl_delay, b) $sourceLoc")
-    chirrtl should include(f"node ltl_intersect = intrinsic(circt_ltl_intersect : UInt<1>, ltl_delay, b) $sourceLoc")
-    chirrtl should include(
-      f"node ltl_intersect_1 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect, ltl_and) $sourceLoc"
-    )
-    chirrtl should include(
-      f"node ltl_intersect_2 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect_1, ltl_or) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_clock = intrinsic(circt_ltl_clock : UInt<1>, ltl_delay, clock) $sourceLoc")
-
-    // Properties
-    chirrtl should include(f"node ltl_eventually = intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
-    chirrtl should include(f"node ltl_and_1 = intrinsic(circt_ltl_and : UInt<1>, ltl_eventually, b) $sourceLoc")
-    chirrtl should include(f"node ltl_or_1 = intrinsic(circt_ltl_or : UInt<1>, ltl_eventually, b) $sourceLoc")
-    chirrtl should include(
-      f"node ltl_intersect_3 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_eventually, b) $sourceLoc"
-    )
-    chirrtl should include(
-      f"node ltl_intersect_4 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect_3, ltl_and_1) $sourceLoc"
-    )
-    chirrtl should include(
-      f"node ltl_intersect_5 = intrinsic(circt_ltl_intersect : UInt<1>, ltl_intersect_4, ltl_or_1) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_clock_1 = intrinsic(circt_ltl_clock : UInt<1>, ltl_eventually, clock) $sourceLoc")
-
-    // Until
-    chirrtl should include(f"node ltl_until = intrinsic(circt_ltl_until : UInt<1>, ltl_delay, b) $sourceLoc")
-    chirrtl should include(f"node ltl_until_1 = intrinsic(circt_ltl_until : UInt<1>, ltl_eventually, b) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new AndOrClockMod)
+      .fileCheck()(
+        s"""|CHECK: node [[DEL:.*]] = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc
+            |CHECK: node [[SAND:.*]] = intrinsic(circt_ltl_and : UInt<1>, [[DEL]], b) $sourceLoc
+            |CHECK: node [[SOR:.*]] = intrinsic(circt_ltl_or : UInt<1>, [[DEL]], b) $sourceLoc
+            |CHECK: node [[SI:.*]] = intrinsic(circt_ltl_intersect : UInt<1>, [[DEL]], b) $sourceLoc
+            |CHECK: node [[SIA:.*]] = intrinsic(circt_ltl_intersect : UInt<1>, [[SI]], [[SAND]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_intersect : UInt<1>, [[SIA]], [[SOR]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_clock : UInt<1>, [[DEL]], clock) $sourceLoc
+            |
+            |CHECK: node [[EV:.*]] = intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc
+            |CHECK: node [[PAND:.*]] = intrinsic(circt_ltl_and : UInt<1>, [[EV]], b) $sourceLoc
+            |CHECK: node [[POR:.*]] = intrinsic(circt_ltl_or : UInt<1>, [[EV]], b) $sourceLoc
+            |CHECK: node [[PI:.*]] = intrinsic(circt_ltl_intersect : UInt<1>, [[EV]], b) $sourceLoc
+            |CHECK: node [[PIA:.*]] = intrinsic(circt_ltl_intersect : UInt<1>, [[PI]], [[PAND]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_intersect : UInt<1>, [[PIA]], [[POR]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_clock : UInt<1>, [[EV]], clock) $sourceLoc
+            |
+            |CHECK: intrinsic(circt_ltl_until : UInt<1>, [[DEL]], b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_until : UInt<1>, [[EV]], b) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile and, or, intersect, and clock operations" in {
     ChiselStage.emitSystemVerilog(new AndOrClockMod)
@@ -216,9 +217,13 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val p0: Property = Property.not(a)
   }
   it should "support property not operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new NotMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include(f"intrinsic(circt_ltl_not : UInt<1>, a) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new NotMod)
+      .fileCheck()(
+        s"""|CHECK: intrinsic(circt_ltl_not : UInt<1>, a) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile property not operation" in {
     ChiselStage.emitSystemVerilog(new NotMod)
@@ -233,28 +238,21 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val p3: Property = a |=> b
   }
   it should "support property implication operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new PropImplicationMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-
-    // Overlapping
-    chirrtl should include(f"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
-    chirrtl should include(f"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc")
-
-    // Non-overlapping (emitted as `a ## true |-> b`)
-    chirrtl should include(
-      f"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_concat = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay) $sourceLoc")
-    chirrtl should include(
-      f"node ltl_implication_2 = intrinsic(circt_ltl_implication : UInt<1>, ltl_concat, b) $sourceLoc"
-    )
-    chirrtl should include(
-      f"node ltl_delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc"
-    )
-    chirrtl should include(f"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_1) $sourceLoc")
-    chirrtl should include(
-      f"node ltl_implication_3 = intrinsic(circt_ltl_implication : UInt<1>, ltl_concat_1, b) $sourceLoc"
-    )
+    ChiselStage
+      .emitCHIRRTL(new PropImplicationMod)
+      .fileCheck()(
+        s"""|CHECK: intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc
+            |
+            |CHECK: node [[D0:.*]] = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc
+            |CHECK: node [[C0:.*]] = intrinsic(circt_ltl_concat : UInt<1>, a, [[D0]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_implication : UInt<1>, [[C0]], b) $sourceLoc
+            |CHECK: node [[D1:.*]] = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, UInt<1>(0h1)) $sourceLoc
+            |CHECK: node [[C1:.*]] = intrinsic(circt_ltl_concat : UInt<1>, a, [[D1]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_implication : UInt<1>, [[C1]], b) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile property implication operation" in {
     ChiselStage.emitSystemVerilog(new PropImplicationMod)
@@ -266,9 +264,13 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     val p0: Property = a.eventually
   }
   it should "support property eventually operation" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new EventuallyMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include(f"intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new EventuallyMod)
+      .fileCheck()(
+        s"""|CHECK: intrinsic(circt_ltl_eventually : UInt<1>, a) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile property eventually operation" in {
     ChiselStage.emitSystemVerilog(new EventuallyMod)
@@ -284,23 +286,27 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     EnsureProperty(a)
   }
   it should "support simple property asserts/assumes/covers and put them in layer blocks" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new BasicVerifMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-    chirrtl should include("layerblock Verification")
-    chirrtl should include("layerblock Assert")
-    chirrtl should include(f"intrinsic(circt_verif_assert, a) $sourceLoc")
-    chirrtl should include("layerblock Verification")
-    chirrtl should include("layerblock Assume")
-    chirrtl should include(f"intrinsic(circt_verif_assume, a) $sourceLoc")
-    chirrtl should include("layerblock Verification")
-    chirrtl should include("layerblock Cover")
-    chirrtl should include(f"intrinsic(circt_verif_cover, a) $sourceLoc")
-    chirrtl should include("layerblock Verification")
-    chirrtl should include("layerblock Assume")
-    chirrtl should include(f"intrinsic(circt_verif_require, a) $sourceLoc")
-    chirrtl should include("layerblock Verification")
-    chirrtl should include("layerblock Assert")
-    chirrtl should include(f"intrinsic(circt_verif_ensure, a) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new BasicVerifMod)
+      .fileCheck()(
+        s"""|CHECK: layerblock Verification
+            |CHECK: layerblock Assert
+            |CHECK: intrinsic(circt_verif_assert, a) $sourceLoc
+            |CHECK: layerblock Verification
+            |CHECK: layerblock Assume
+            |CHECK: intrinsic(circt_verif_assume, a) $sourceLoc
+            |CHECK: layerblock Verification
+            |CHECK: layerblock Cover
+            |CHECK: intrinsic(circt_verif_cover, a) $sourceLoc
+            |CHECK: layerblock Verification
+            |CHECK: layerblock Assume
+            |CHECK: intrinsic(circt_verif_require, a) $sourceLoc
+            |CHECK: layerblock Verification
+            |CHECK: layerblock Assert
+            |CHECK: intrinsic(circt_verif_ensure, a) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile simple property checks" in {
     ChiselStage.emitSystemVerilog(new BasicVerifMod)
@@ -313,10 +319,15 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
         AssertProperty(a)
       }
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(new Foo)
-    chirrtl should include("layerblock Verification")
-    chirrtl should include("layerblock Cover")
-    (chirrtl should not).include("layerblock Assert")
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK:     layerblock Verification
+           |CHECK:     layerblock Cover
+           |CHECK-NOT: layerblock Assert
+           |CHECK:     intrinsic(circt_verif_assert, a)
+           |""".stripMargin
+      )
   }
 
   it should "use clock and disable by default for properties" in {
@@ -330,17 +341,21 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     )
 
     for ((prop, (intrinsic, op)) <- properties) {
-      val chirrtl = ChiselStage.emitCHIRRTL(new Module {
-        implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
-        val a = IO(Input(Bool()))
-        prop(a)
-      })
       val sourceLoc = "@[Foo.scala 1:2]"
-      chirrtl should include("node has_been_reset = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)")
-      chirrtl should include("node disable = eq(has_been_reset, UInt<1>(0h0))")
-      chirrtl should include(f"node ltl_clock = intrinsic(circt_ltl_clock : UInt<1>, a, clock) $sourceLoc")
-      chirrtl should include(f"node _T = eq(disable, UInt<1>(0h0)) $sourceLoc")
-      chirrtl should include(f"intrinsic(circt_verif_$op, ltl_clock, _T) $sourceLoc")
+      ChiselStage
+        .emitCHIRRTL(new Module {
+          implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
+          val a = IO(Input(Bool()))
+          prop(a)
+        })
+        .fileCheck()(
+          s"""|CHECK: node [[HBR:.*]] = intrinsic(circt_has_been_reset : UInt<1>, clock, reset)
+              |CHECK: node [[DIS:.*]] = eq([[HBR]], UInt<1>(0h0))
+              |CHECK: node [[CLK:.*]] = intrinsic(circt_ltl_clock : UInt<1>, a, clock) $sourceLoc
+              |CHECK: node [[EN:.*]] = eq([[DIS]], UInt<1>(0h0)) $sourceLoc
+              |CHECK: intrinsic(circt_verif_$op, [[CLK]], [[EN]]) $sourceLoc
+              |""".stripMargin
+        )
     }
   }
 
@@ -354,37 +369,43 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     EnsureProperty(a, label = Some("foo4"))
   }
   it should "support labeled property asserts/assumes/covers" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new LabeledVerifMod)
-    chirrtl should include("intrinsic(circt_verif_assert<label = \"foo0\">, a)")
-    chirrtl should include("intrinsic(circt_verif_assume<label = \"foo1\">, a")
-    chirrtl should include("intrinsic(circt_verif_cover<label = \"foo2\">, a)")
-    chirrtl should include("intrinsic(circt_verif_require<label = \"foo3\">, a)")
-    chirrtl should include("intrinsic(circt_verif_ensure<label = \"foo4\">, a)")
+    ChiselStage
+      .emitCHIRRTL(new LabeledVerifMod)
+      .fileCheck()(
+        """|CHECK: intrinsic(circt_verif_assert<label = "foo0">, a)
+           |CHECK: intrinsic(circt_verif_assume<label = "foo1">, a)
+           |CHECK: intrinsic(circt_verif_cover<label = "foo2">, a)
+           |CHECK: intrinsic(circt_verif_require<label = "foo3">, a)
+           |CHECK: intrinsic(circt_verif_ensure<label = "foo4">, a)
+           |""".stripMargin
+      )
   }
   it should "compile labeled property asserts/assumes/covers" in {
     ChiselStage.emitSystemVerilog(new LabeledVerifMod)
   }
 
   it should "support assert shorthands with clock and disable" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
-      val a, b = IO(Input(Bool()))
-      val c = IO(Input(Clock()))
-      AssertProperty(a, clock = Some(c))
-      AssertProperty(a, disable = Some(b.asDisable))
-      AssertProperty(a, clock = Some(c), disable = Some(b.asDisable))
-    })
-    // with clock; emitted as `assert(clock(a, c))`
-    chirrtl should include("node ltl_clock = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
-    chirrtl should include("intrinsic(circt_verif_assert, ltl_clock)")
-
-    // with disable; emitted as `assert(a, disable)`
-    chirrtl should include("node _T = eq(b, UInt<1>(0h0))")
-    chirrtl should include("intrinsic(circt_verif_assert, a, _T)")
-
-    // with clock and disable; emitted as `assert(clock(disable(a, b), c))`
-    chirrtl should include("node ltl_clock_1 = intrinsic(circt_ltl_clock : UInt<1>, a, c)")
-    chirrtl should include("node _T_1 = eq(b, UInt<1>(0h0))")
-    chirrtl should include("intrinsic(circt_verif_assert, ltl_clock_1, _T_1)")
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        val a, b = IO(Input(Bool()))
+        val c = IO(Input(Clock()))
+        AssertProperty(a, clock = Some(c))
+        AssertProperty(a, disable = Some(b.asDisable))
+        AssertProperty(a, clock = Some(c), disable = Some(b.asDisable))
+      })
+      .fileCheck()(
+        // with clock; emitted as `assert(clock(a, c))`
+        """|CHECK: node [[C0:.*]] = intrinsic(circt_ltl_clock : UInt<1>, a, c)
+           |CHECK: intrinsic(circt_verif_assert, [[C0]])
+           |
+           |CHECK: node [[T0:.*]] = eq(b, UInt<1>(0h0))
+           |CHECK: intrinsic(circt_verif_assert, a, [[T0]])
+           |
+           |CHECK: node [[C1:.*]] = intrinsic(circt_ltl_clock : UInt<1>, a, c)
+           |CHECK: node [[T1:.*]] = eq(b, UInt<1>(0h0))
+           |CHECK: intrinsic(circt_verif_assert, [[C1]], [[T1]])
+           |""".stripMargin
+      )
   }
 
   class SequenceConvMod extends RawModule {
@@ -399,47 +420,35 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
     AssertProperty(Sequence(a, Delay(9001, None), b))
   }
   it should "support Sequence(...) convenience constructor" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new SequenceConvMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-
-    // a
-    chirrtl should include(s"intrinsic(circt_verif_assert, a) $sourceLoc")
-
-    // a b
-    chirrtl should include(s"node ltl_concat = intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat) $sourceLoc")
-
-    // Delay() a
-    chirrtl should include(
-      s"node ltl_delay = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc"
-    )
-    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_delay) $sourceLoc")
-
-    // a Delay() b
-    chirrtl should include(
-      s"node ltl_delay_1 = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc"
-    )
-    chirrtl should include(s"node ltl_concat_1 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_1) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_1) $sourceLoc")
-
-    // a Delay(2) b
-    chirrtl should include(
-      s"node ltl_delay_2 = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b) $sourceLoc"
-    )
-    chirrtl should include(s"node ltl_concat_2 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_2) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_2) $sourceLoc")
-
-    // a Delay(42, 1337) b
-    chirrtl should include(
-      s"node ltl_delay_3 = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b) $sourceLoc"
-    )
-    chirrtl should include(s"node ltl_concat_3 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_3) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_3) $sourceLoc")
-
-    // a Delay(9001, None) sb
-    chirrtl should include(s"node ltl_delay_4 = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b) $sourceLoc")
-    chirrtl should include(s"node ltl_concat_4 = intrinsic(circt_ltl_concat : UInt<1>, a, ltl_delay_4) $sourceLoc")
-    chirrtl should include(s"intrinsic(circt_verif_assert, ltl_concat_4) $sourceLoc")
+    ChiselStage
+      .emitCHIRRTL(new SequenceConvMod)
+      .fileCheck()(
+        s"""|CHECK: intrinsic(circt_verif_assert, a) $sourceLoc
+            |
+            |CHECK: node [[CAB:.*]] = intrinsic(circt_ltl_concat : UInt<1>, a, b) $sourceLoc
+            |CHECK: intrinsic(circt_verif_assert, [[CAB]]) $sourceLoc
+            |
+            |CHECK: node [[D0:.*]] = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a) $sourceLoc
+            |CHECK: intrinsic(circt_verif_assert, [[D0]]) $sourceLoc
+            |
+            |CHECK: node [[D1:.*]] = intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, b) $sourceLoc
+            |CHECK: node [[C1:.*]] = intrinsic(circt_ltl_concat : UInt<1>, a, [[D1]]) $sourceLoc
+            |CHECK: intrinsic(circt_verif_assert, [[C1]]) $sourceLoc
+            |
+            |CHECK: node [[D2:.*]] = intrinsic(circt_ltl_delay<delay = 2, length = 0> : UInt<1>, b) $sourceLoc
+            |CHECK: node [[C2:.*]] = intrinsic(circt_ltl_concat : UInt<1>, a, [[D2]]) $sourceLoc
+            |CHECK: intrinsic(circt_verif_assert, [[C2]]) $sourceLoc
+            |
+            |CHECK: node [[D3:.*]] = intrinsic(circt_ltl_delay<delay = 42, length = 1295> : UInt<1>, b) $sourceLoc
+            |CHECK: node [[C3:.*]] = intrinsic(circt_ltl_concat : UInt<1>, a, [[D3]]) $sourceLoc
+            |CHECK: intrinsic(circt_verif_assert, [[C3]]) $sourceLoc
+            |
+            |CHECK: node [[D4:.*]] = intrinsic(circt_ltl_delay<delay = 9001> : UInt<1>, b) $sourceLoc
+            |CHECK: node [[C4:.*]] = intrinsic(circt_ltl_concat : UInt<1>, a, [[D4]]) $sourceLoc
+            |CHECK: intrinsic(circt_verif_assert, [[C4]]) $sourceLoc
+            |""".stripMargin
+      )
   }
   it should "compile Sequence(...) convenience constructor" in {
     ChiselStage.emitSystemVerilog(new SequenceConvMod)
@@ -463,19 +472,15 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   it should "wrap all intrinsics in layerblocks" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new LayerBlockMod)
     val sourceLoc = "@[Foo.scala 1:2]"
-
-    val assertBlockLoc = chirrtl.indexOf(s"layerblock Assert : $sourceLoc")
-    val delayIntrinsicLoc = chirrtl.indexOf(
-      s"intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)"
-    )
-    val assumeblockLoc = chirrtl.indexOf(s"layerblock Assume : $sourceLoc")
-    val implicationIntrinsicLoc = chirrtl.indexOf(
-      s"intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc"
-    )
-
-    assert(assertBlockLoc < delayIntrinsicLoc)
-    assert(assumeblockLoc < implicationIntrinsicLoc)
+    ChiselStage
+      .emitCHIRRTL(new LayerBlockMod)
+      .fileCheck()(
+        s"""|CHECK: layerblock Assert : $sourceLoc
+            |CHECK:   intrinsic(circt_ltl_delay<delay = 1, length = 0> : UInt<1>, a)
+            |CHECK: layerblock Assume : $sourceLoc
+            |CHECK:   intrinsic(circt_ltl_implication : UInt<1>, a, b) $sourceLoc
+            |""".stripMargin
+      )
   }
 }
