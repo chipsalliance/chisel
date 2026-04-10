@@ -5,6 +5,7 @@ package properties
 
 import firrtl.{ir => fir}
 import firrtl.annotations.{InstanceTarget, IsMember, ModuleTarget, ReferenceTarget, Target}
+import chisel3.RawModule
 import chisel3.internal._
 import chisel3.internal.binding._
 import chisel3.internal.firrtl.{ir, Converter}
@@ -340,6 +341,17 @@ sealed trait Property[T] extends Element { self =>
   ): Property[T] = {
     ev.concat(this, that)
   }
+
+  /** Assert that this boolean property holds (only available for Property[Boolean])
+    *
+    * @param message the assertion message
+    */
+  final def assert(message: String)(
+    implicit ev: T =:= Boolean,
+    sourceInfo:  SourceInfo
+  ): Unit = {
+    PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], message)
+  }
 }
 
 private[chisel3] sealed trait ClassTypeProvider[A] {
@@ -507,6 +519,26 @@ object PropertyStringOps {
   }
 
   implicit val stringOps: PropertyStringOps[Property[String]] = new StringOpsImpl
+}
+
+/** Operations for Property[Boolean].
+  *
+  * Property assertions do not have names or labels - just a condition and message.
+  */
+object PropertyBooleanOps {
+
+  /** Assert that a boolean property holds
+    *
+    * @param cond the boolean property condition
+    * @param message the assertion message to display if the assertion fails
+    */
+  def assert(cond: Property[Boolean], message: String)(implicit sourceInfo: SourceInfo): Unit =
+    Builder.referenceUserContainer match {
+      case rm: RawModule =>
+        rm.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message))
+      case cls: Class =>
+        cls.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message))
+    }
 }
 
 /** Companion object for Property.
