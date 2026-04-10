@@ -3,7 +3,7 @@
 package chisel3.connectable
 
 import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
-import chisel3.internal.{BiConnect, Builder}
+import chisel3.internal.{BiConnect, Builder, Warning, WarningID}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir.DefInvalid
@@ -127,11 +127,21 @@ private[chisel3] object Connection {
     detectRole(consumer.base) match {
       case Some(Data.ViewRole.Producer) =>
         Builder.error(".asProducer cannot be used on the consumer (LHS) of a connection operator")
+      case Some(Data.ViewRole.ProducerDeprecated) =>
+        Builder.warning(
+          Warning(WarningID.AsProducerDeprecated,
+            ".asProducer cannot be used on the consumer (LHS) of a connection operator")
+        )
       case _ => ()
     }
     detectRole(producer.base) match {
       case Some(Data.ViewRole.Consumer) =>
         Builder.error(".asConsumer cannot be used on the producer (RHS) of a connection operator")
+      case Some(Data.ViewRole.ConsumerDeprecated) =>
+        Builder.warning(
+          Warning(WarningID.AsConsumerDeprecated,
+            ".asConsumer cannot be used on the producer (RHS) of a connection operator")
+        )
       case _ => ()
     }
   }
@@ -139,8 +149,10 @@ private[chisel3] object Connection {
   /** Detect whether a Data has a Producer or Consumer role from its view writability */
   private[connectable] def detectRole(data: Data): Option[Data.ViewRole] = {
     def fromWriteability(wr: ViewWriteability): Option[Data.ViewRole] = wr match {
-      case _: ViewWriteability.ProducerReadOnly => Some(Data.ViewRole.Producer)
-      case _: ViewWriteability.ConsumerReadOnly => Some(Data.ViewRole.Consumer)
+      case _: ViewWriteability.ProducerReadOnly           => Some(Data.ViewRole.Producer)
+      case _: ViewWriteability.ConsumerReadOnly           => Some(Data.ViewRole.Consumer)
+      case _: ViewWriteability.ProducerReadOnlyDeprecated => Some(Data.ViewRole.ProducerDeprecated)
+      case _: ViewWriteability.ConsumerReadOnlyDeprecated => Some(Data.ViewRole.ConsumerDeprecated)
       case _ => None
     }
     data.topBindingOpt match {

@@ -11,7 +11,7 @@ import org.scalactic.source.Position
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class AsProducerConsumerSpec extends AnyFlatSpec with Matchers {
+class AsProducerConsumerSpec extends AnyFlatSpec with Matchers with LogUtils {
 
   class MixedBundle extends Bundle {
     val data = UInt(8.W)
@@ -352,6 +352,86 @@ class AsProducerConsumerSpec extends AnyFlatSpec with Matchers {
       val in = IO(Flipped(new MixedBundle))
       val out = IO(new MixedBundle)
       out.asConsumer :<>= in.asProducer
+    })
+  }
+
+  // ======================== Deprecated variants ========================
+
+  def checkHasWarning(warnMsg: String)(m: => RawModule)(implicit pos: Position): Unit = {
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(m))
+    log should include(warnMsg)
+  }
+
+  def checkNoWarning(warnMsg: String)(m: => RawModule)(implicit pos: Position): Unit = {
+    val (log, _) = grabLog(ChiselStage.emitCHIRRTL(m))
+    log should not include (warnMsg)
+  }
+
+  behavior.of("asProducerDeprecated")
+
+  it should "warn (not error) when connecting to aligned fields" in {
+    checkHasWarning("Cannot connect to producer's aligned field")(new RawModule {
+      val w = Wire(new MixedBundle)
+      val p = w.asProducerDeprecated
+      p.data := 1.U
+    })
+  }
+
+  it should "leave flipped fields writable without warning" in {
+    checkNoWarning("producer")(new RawModule {
+      val w = Wire(new MixedBundle)
+      val p = w.asProducerDeprecated
+      p.ready := true.B
+    })
+  }
+
+  it should "warn (not error) when used on LHS" in {
+    checkHasWarning(".asProducer cannot be used on the consumer (LHS)")(new RawModule {
+      val in = IO(Flipped(new MixedBundle))
+      val out = IO(new MixedBundle)
+      out.asProducerDeprecated :<>= in
+    })
+  }
+
+  it should "work correctly on RHS without warning" in {
+    checkNoWarning("producer")(new RawModule {
+      val in = IO(Flipped(new MixedBundle))
+      val out = IO(new MixedBundle)
+      out :<>= in.asProducerDeprecated
+    })
+  }
+
+  behavior.of("asConsumerDeprecated")
+
+  it should "warn (not error) when connecting to flipped fields" in {
+    checkHasWarning("Cannot connect to consumer's flipped field")(new RawModule {
+      val w = Wire(new MixedBundle)
+      val c = w.asConsumerDeprecated
+      c.ready := true.B
+    })
+  }
+
+  it should "leave aligned fields writable without warning" in {
+    checkNoWarning("consumer")(new RawModule {
+      val w = Wire(new MixedBundle)
+      val c = w.asConsumerDeprecated
+      c.data := 1.U
+    })
+  }
+
+  it should "warn (not error) when used on RHS" in {
+    checkHasWarning(".asConsumer cannot be used on the producer (RHS)")(new RawModule {
+      val in = IO(Flipped(new MixedBundle))
+      val out = IO(new MixedBundle)
+      out :<>= in.asConsumerDeprecated
+    })
+  }
+
+  it should "work correctly on LHS without warning" in {
+    checkNoWarning("consumer")(new RawModule {
+      val in = IO(Flipped(new MixedBundle))
+      val out = IO(new MixedBundle)
+      out.asConsumerDeprecated :<>= in
     })
   }
 }

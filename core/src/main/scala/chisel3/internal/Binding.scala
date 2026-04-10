@@ -154,6 +154,12 @@ private[chisel3] object binding {
       case ViewWriteability.ConsumerReadOnly(getError) =>
         Builder.error(getError(info))
         onFail
+      case ViewWriteability.ProducerReadOnlyDeprecated(getWarning) =>
+        Builder.warning(getWarning(info))
+        onPass
+      case ViewWriteability.ConsumerReadOnlyDeprecated(getWarning) =>
+        Builder.warning(getWarning(info))
+        onPass
     }
 
     final def reportIfReadOnlyUnit(onPass: => Unit)(implicit info: SourceInfo): Unit =
@@ -190,6 +196,22 @@ private[chisel3] object binding {
     /** Read only for flipped fields of a consumer view (created by .asConsumer) */
     case class ConsumerReadOnly(getError: SourceInfo => String) extends ViewWriteability {
       override def combine(that: ViewWriteability): ViewWriteability = this
+    }
+
+    /** Deprecated warning for aligned fields of a producer view (created by .asProducerDeprecated) */
+    case class ProducerReadOnlyDeprecated(getWarning: SourceInfo => Warning) extends ViewWriteability {
+      override def combine(that: ViewWriteability): ViewWriteability = that match {
+        case ro: ProducerReadOnly => ro
+        case _ => this
+      }
+    }
+
+    /** Deprecated warning for flipped fields of a consumer view (created by .asConsumerDeprecated) */
+    case class ConsumerReadOnlyDeprecated(getWarning: SourceInfo => Warning) extends ViewWriteability {
+      override def combine(that: ViewWriteability): ViewWriteability = that match {
+        case ro: ConsumerReadOnly => ro
+        case _ => this
+      }
     }
   }
 

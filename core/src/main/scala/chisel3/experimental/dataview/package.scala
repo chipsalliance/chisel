@@ -73,7 +73,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithRoleImpl(Data.ViewRole.Producer, getError)
+    ): V = _viewAsWithRoleImpl(Data.ViewRole.Producer, Left(getError))
 
     private[chisel3] def viewAsConsumer[V <: Data](
       getError: SourceInfo => String
@@ -81,11 +81,27 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithRoleImpl(Data.ViewRole.Consumer, getError)
+    ): V = _viewAsWithRoleImpl(Data.ViewRole.Consumer, Left(getError))
+
+    private[chisel3] def viewAsProducerDeprecated[V <: Data](
+      getWarning: SourceInfo => Warning
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = _viewAsWithRoleImpl(Data.ViewRole.ProducerDeprecated, Right(getWarning))
+
+    private[chisel3] def viewAsConsumerDeprecated[V <: Data](
+      getWarning: SourceInfo => Warning
+    )(
+      implicit dataproduct: DataProduct[T],
+      dataView:             DataView[T, V],
+      sourceInfo:           SourceInfo
+    ): V = _viewAsWithRoleImpl(Data.ViewRole.ConsumerDeprecated, Right(getWarning))
 
     private def _viewAsWithRoleImpl[V <: Data](
-      role:     Data.ViewRole,
-      getError: SourceInfo => String
+      role:    Data.ViewRole,
+      message: Either[SourceInfo => String, SourceInfo => Warning]
     )(
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
@@ -94,7 +110,7 @@ package object dataview {
       val result: V = dataView.mkView(target)
       requireIsChiselType(result, "viewAs")
 
-      val wrMap = computeRoleWritabilityMap(result, role, getError)
+      val wrMap = computeRoleWritabilityMap(result, role, message)
 
       doBind(target, result, dataView, ViewWriteability.Default, Some(wrMap))
 
@@ -290,12 +306,17 @@ package object dataview {
     * For Consumer role: flipped fields become ReadOnly, aligned fields stay Default.
     */
   private def computeRoleWritabilityMap(
-    view:     Data,
-    role:     Data.ViewRole,
-    getError: SourceInfo => String
+    view:    Data,
+    role:    Data.ViewRole,
+    message: Either[SourceInfo => String, SourceInfo => Warning]
   ): Map[Data, ViewWriteability] = {
-    val producerReadOnly = ViewWriteability.ProducerReadOnly(getError)
-    val consumerReadOnly = ViewWriteability.ConsumerReadOnly(getError)
+    val readOnly: ViewWriteability = (role, message) match {
+      case (Data.ViewRole.Producer, Left(getError))              => ViewWriteability.ProducerReadOnly(getError)
+      case (Data.ViewRole.Consumer, Left(getError))              => ViewWriteability.ConsumerReadOnly(getError)
+      case (Data.ViewRole.ProducerDeprecated, Right(getWarning)) => ViewWriteability.ProducerReadOnlyDeprecated(getWarning)
+      case (Data.ViewRole.ConsumerDeprecated, Right(getWarning)) => ViewWriteability.ConsumerReadOnlyDeprecated(getWarning)
+      case _ => throw new IllegalArgumentException("Mismatched role and message type")
+    }
     val default = ViewWriteability.Default
     // Collect all aligned members (including root, aggregates, and leaves)
     val alignedSet: Set[Data] =
@@ -303,13 +324,11 @@ package object dataview {
     // Collect all members
     val allMembers: Iterable[Data] =
       DataMirror.collectMembers(view) { case d => d }
-    // Build per-field writability based on role
+    // Build per-field writability based on role: producer marks aligned, consumer marks flipped
+    val markAligned = role == Data.ViewRole.Producer || role == Data.ViewRole.ProducerDeprecated
     val entries = allMembers.map { m =>
       val isAligned = alignedSet.contains(m)
-      val writability = role match {
-        case Data.ViewRole.Producer => if (isAligned) producerReadOnly else default
-        case Data.ViewRole.Consumer => if (isAligned) default else consumerReadOnly
-      }
+      val writability = if (markAligned == isAligned) readOnly else default
       m -> writability
     }
     entries.toMap
