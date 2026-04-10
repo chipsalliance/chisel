@@ -311,10 +311,12 @@ package object dataview {
     message: Either[SourceInfo => String, SourceInfo => Warning]
   ): Map[Data, ViewWriteability] = {
     val readOnly: ViewWriteability = (role, message) match {
-      case (Data.ViewRole.Producer, Left(getError))              => ViewWriteability.ProducerReadOnly(getError)
-      case (Data.ViewRole.Consumer, Left(getError))              => ViewWriteability.ConsumerReadOnly(getError)
-      case (Data.ViewRole.ProducerDeprecated, Right(getWarning)) => ViewWriteability.ProducerReadOnlyDeprecated(getWarning)
-      case (Data.ViewRole.ConsumerDeprecated, Right(getWarning)) => ViewWriteability.ConsumerReadOnlyDeprecated(getWarning)
+      case (Data.ViewRole.Producer, Left(getError)) => ViewWriteability.ProducerReadOnly(getError)
+      case (Data.ViewRole.Consumer, Left(getError)) => ViewWriteability.ConsumerReadOnly(getError)
+      case (Data.ViewRole.ProducerDeprecated, Right(getWarning)) =>
+        ViewWriteability.ProducerReadOnlyDeprecated(getWarning)
+      case (Data.ViewRole.ConsumerDeprecated, Right(getWarning)) =>
+        ViewWriteability.ConsumerReadOnlyDeprecated(getWarning)
       case _ => throw new IllegalArgumentException("Mismatched role and message type")
     }
     val default = ViewWriteability.Default

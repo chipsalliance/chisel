@@ -364,7 +364,7 @@ class AsProducerConsumerSpec extends AnyFlatSpec with Matchers with LogUtils {
 
   def checkNoWarning(warnMsg: String)(m: => RawModule)(implicit pos: Position): Unit = {
     val (log, _) = grabLog(ChiselStage.emitCHIRRTL(m))
-    log should not include (warnMsg)
+    (log should not).include(warnMsg)
   }
 
   behavior.of("asProducerDeprecated")
