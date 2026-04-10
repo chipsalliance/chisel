@@ -21,6 +21,8 @@ private[chisel3] object WarningID extends Enumeration {
   val ExtractFromVecSizeZero = Value(6)
   val BundleLiteralValueTooWide = Value(7)
   val AsTypeOfReadOnly = Value(8)
+  val AsProducerDeprecated = Value(9)
+  val AsConsumerDeprecated = Value(10)
 }
 import WarningID.WarningID
 

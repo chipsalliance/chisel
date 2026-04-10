@@ -904,6 +904,8 @@ object Data {
   private[chisel3] object ViewRole {
     case object Producer extends ViewRole
     case object Consumer extends ViewRole
+    case object ProducerDeprecated extends ViewRole
+    case object ConsumerDeprecated extends ViewRole
   }
 
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
@@ -1120,6 +1122,36 @@ object Data {
         self
       } else {
         self.viewAsConsumer(_ => "Cannot connect to consumer's flipped field")
+      }
+    }
+
+    /** Like [[asProducer]] but issues deprecation warnings instead of errors.
+      *
+      * Use this to migrate existing code toward [[asProducer]] incrementally.
+      */
+    def asProducerDeprecated(implicit sourceInfo: SourceInfo): T = {
+      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
+      if (alreadyReadOnly) {
+        self
+      } else {
+        self.viewAsProducerDeprecated(info =>
+          Warning(WarningID.AsProducerDeprecated, "Cannot connect to producer's aligned field")(info)
+        )
+      }
+    }
+
+    /** Like [[asConsumer]] but issues deprecation warnings instead of errors.
+      *
+      * Use this to migrate existing code toward [[asConsumer]] incrementally.
+      */
+    def asConsumerDeprecated(implicit sourceInfo: SourceInfo): T = {
+      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
+      if (alreadyReadOnly) {
+        self
+      } else {
+        self.viewAsConsumerDeprecated(info =>
+          Warning(WarningID.AsConsumerDeprecated, "Cannot connect to consumer's flipped field")(info)
+        )
       }
     }
   }
