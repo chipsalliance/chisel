@@ -59,7 +59,9 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
   val alwaysConnectToConsumer: Boolean = false
   def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
     // Role-tagged views must go through the slow path for role enforcement checks
-    val hasRole = Connection.detectRole(consumer.base).isDefined || Connection.detectRole(producer.base).isDefined
+    val hasRole =
+      Connection.detectRoleWriteability(consumer.base).isDefined ||
+        Connection.detectRoleWriteability(producer.base).isDefined
     if (hasRole) false
     else {
       val typeEquivalent =
@@ -124,10 +126,10 @@ private[chisel3] object Connection {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    detectRole(consumer.base) match {
-      case Some(Data.ViewRole.Producer) =>
+    detectRoleWriteability(consumer.base).foreach {
+      case _: ViewWriteability.ProducerReadOnly =>
         Builder.error(".asProducer cannot be used on the consumer (LHS) of a connection operator")
-      case Some(Data.ViewRole.ProducerDeprecated) =>
+      case _: ViewWriteability.ProducerReadOnlyDeprecated =>
         Builder.warning(
           Warning(
             WarningID.AsProducerDeprecated,
@@ -136,10 +138,10 @@ private[chisel3] object Connection {
         )
       case _ => ()
     }
-    detectRole(producer.base) match {
-      case Some(Data.ViewRole.Consumer) =>
+    detectRoleWriteability(producer.base).foreach {
+      case _: ViewWriteability.ConsumerReadOnly =>
         Builder.error(".asConsumer cannot be used on the producer (RHS) of a connection operator")
-      case Some(Data.ViewRole.ConsumerDeprecated) =>
+      case _: ViewWriteability.ConsumerReadOnlyDeprecated =>
         Builder.warning(
           Warning(
             WarningID.AsConsumerDeprecated,
@@ -150,19 +152,18 @@ private[chisel3] object Connection {
     }
   }
 
-  /** Detect whether a Data has a Producer or Consumer role from its view writability */
-  private[connectable] def detectRole(data: Data): Option[Data.ViewRole] = {
-    def fromWriteability(wr: ViewWriteability): Option[Data.ViewRole] = wr match {
-      case _: ViewWriteability.ProducerReadOnly           => Some(Data.ViewRole.Producer)
-      case _: ViewWriteability.ConsumerReadOnly           => Some(Data.ViewRole.Consumer)
-      case _: ViewWriteability.ProducerReadOnlyDeprecated => Some(Data.ViewRole.ProducerDeprecated)
-      case _: ViewWriteability.ConsumerReadOnlyDeprecated => Some(Data.ViewRole.ConsumerDeprecated)
-      case _ => None
+  /** Detect whether a Data has a role-tagged ViewWriteability from its binding */
+  private[connectable] def detectRoleWriteability(data: Data): Option[ViewWriteability] = {
+    def isRoleTagged(wr: ViewWriteability): Boolean = wr match {
+      case _: ViewWriteability.ProducerReadOnly | _: ViewWriteability.ConsumerReadOnly |
+          _: ViewWriteability.ProducerReadOnlyDeprecated | _: ViewWriteability.ConsumerReadOnlyDeprecated =>
+        true
+      case _ => false
     }
     data.topBindingOpt match {
-      case Some(ViewBinding(_, wr)) => fromWriteability(wr)
+      case Some(ViewBinding(_, wr)) if isRoleTagged(wr) => Some(wr)
       case Some(avb: AggregateViewBinding) =>
-        avb.writabilityMap.flatMap(_.values.collectFirst(Function.unlift(fromWriteability)))
+        avb.writabilityMap.flatMap(_.values.find(isRoleTagged))
       case _ => None
     }
   }

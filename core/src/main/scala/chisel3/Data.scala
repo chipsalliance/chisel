@@ -899,15 +899,6 @@ object Data {
 
   private[chisel3] case class ProbeInfo(val writable: Boolean, color: Option[layer.Layer])
 
-  /** Role tag for views created by `.asProducer` or `.asConsumer` */
-  private[chisel3] sealed trait ViewRole
-  private[chisel3] object ViewRole {
-    case object Producer extends ViewRole
-    case object Consumer extends ViewRole
-    case object ProducerDeprecated extends ViewRole
-    case object ConsumerDeprecated extends ViewRole
-  }
-
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
 
