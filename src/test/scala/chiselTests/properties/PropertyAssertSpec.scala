@@ -43,15 +43,10 @@ class PropertyAssertSpec extends AnyFlatSpec with Matchers with FileCheck {
       }
   }
 
-  it should "fail to compile to SystemVerilog (not yet supported in CIRCT)" in {
-    val exception = intercept[Exception] {
-      ChiselStage.emitSystemVerilog(new RawModule {
-        val prop = IO(Input(Property[Boolean]()))
-        prop.assert("must be true")
-      })
-    }
-    exception.getMessage should include("use of unknown declaration 'propassert'")
-    // This test documents that PropertyAssert is not yet supported in CIRCT's SystemVerilog emission
-    // When CIRCT support is added, this test should be updated or removed
+  it should "compile to SystemVerilog" in {
+    ChiselStage.emitSystemVerilog(new RawModule {
+      val prop = IO(Input(Property[Boolean]()))
+      prop.assert("must be true")
+    })
   }
 }
