@@ -273,6 +273,8 @@ private[chisel3] object Serializer {
       b ++= "connect "; serialize(loc, ctx, info); b ++= ", "; serialize(exp, ctx, info); serialize(info)
     case PropAssign(info, loc, exp) =>
       b ++= "propassign "; serialize(loc, ctx, info); b ++= ", "; serialize(exp, ctx, info); serialize(info)
+    case PropertyAssert(info, cond, msg) =>
+      b ++= "propassert "; serialize(cond, ctx, info); b ++= ", \""; b ++= msg; b += '"'; serialize(info)
     case Attach(info, locs) =>
       b ++= "attach ("
       serializeArgs(locs, ctx, info)

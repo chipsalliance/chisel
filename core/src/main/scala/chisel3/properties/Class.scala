@@ -8,7 +8,18 @@ import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{Definition, Instance, ModuleClone}
 import chisel3.internal.{throwException, Builder}
 import chisel3.internal.binding.{ClassBinding, OpBinding}
-import chisel3.internal.firrtl.ir.{Arg, Block, Command, Component, DefClass, DefObject, ModuleIO, Port, PropAssign}
+import chisel3.internal.firrtl.ir.{
+  Arg,
+  Block,
+  Command,
+  Component,
+  DefClass,
+  DefObject,
+  ModuleIO,
+  Port,
+  PropAssign,
+  PropertyAssert
+}
 import chisel3.internal.firrtl.Converter
 import chisel3.layer.Layer
 
@@ -84,6 +95,12 @@ class Class extends BaseModule {
     * Most commands are unsupported in Class, so the internal addCommand API explicitly supports certain commands.
     */
   private[chisel3] def addCommand(c: PropAssign): Unit = addCommandImpl(c)
+
+  /** Add a PropertyAssert command to the Class
+    *
+    * Most commands are unsupported in Class, so the internal addCommand API explicitly supports certain commands.
+    */
+  private[chisel3] def addCommand(c: PropertyAssert): Unit = addCommandImpl(c)
 
   /** Add a DefObject command to the Class
     *

@@ -482,6 +482,7 @@ private[chisel3] object ir {
 
   case class Connect(sourceInfo: SourceInfo, loc: Arg, exp: Arg) extends Command
   case class PropAssign(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+  case class PropertyAssert(sourceInfo: SourceInfo, condition: Arg, message: String) extends Command
   case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
   case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
 

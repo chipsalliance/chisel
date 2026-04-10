@@ -192,6 +192,8 @@ private[chisel3] object Converter {
       fir.Connect(convert(info), convert(loc, ctx, info), convert(exp, ctx, info))
     case PropAssign(info, loc, exp) =>
       fir.PropAssign(convert(info), convert(loc, ctx, info), convert(exp, ctx, info))
+    case PropertyAssert(info, cond, msg) =>
+      fir.PropertyAssert(convert(info), convert(cond, ctx, info), msg)
     case Attach(info, locs) =>
       fir.Attach(convert(info), locs.map(l => convert(l, ctx, info)))
     case DefInvalid(info, arg) =>
