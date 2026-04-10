@@ -73,7 +73,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithRoleImpl(Data.ViewRole.Producer, Left(getError))
+    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ProducerReadOnly(getError), markAligned = true)
 
     private[chisel3] def viewAsConsumer[V <: Data](
       getError: SourceInfo => String
@@ -81,7 +81,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithRoleImpl(Data.ViewRole.Consumer, Left(getError))
+    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ConsumerReadOnly(getError), markAligned = false)
 
     private[chisel3] def viewAsProducerDeprecated[V <: Data](
       getWarning: SourceInfo => Warning
@@ -89,7 +89,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithRoleImpl(Data.ViewRole.ProducerDeprecated, Right(getWarning))
+    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ProducerReadOnlyDeprecated(getWarning), markAligned = true)
 
     private[chisel3] def viewAsConsumerDeprecated[V <: Data](
       getWarning: SourceInfo => Warning
@@ -97,11 +97,15 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithRoleImpl(Data.ViewRole.ConsumerDeprecated, Right(getWarning))
+    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ConsumerReadOnlyDeprecated(getWarning), markAligned = false)
 
-    private def _viewAsWithRoleImpl[V <: Data](
-      role:    Data.ViewRole,
-      message: Either[SourceInfo => String, SourceInfo => Warning]
+    /** Create a view with per-field writability based on alignment.
+      * @param readOnly the ViewWriteability to apply to the marked fields
+      * @param markAligned if true, aligned fields get readOnly; if false, flipped fields get readOnly
+      */
+    private def _viewAsWithAlignmentWritability[V <: Data](
+      readOnly:    ViewWriteability,
+      markAligned: Boolean
     )(
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
@@ -110,7 +114,7 @@ package object dataview {
       val result: V = dataView.mkView(target)
       requireIsChiselType(result, "viewAs")
 
-      val wrMap = computeRoleWritabilityMap(result, role, message)
+      val wrMap = computeAlignmentWritabilityMap(result, readOnly, markAligned)
 
       doBind(target, result, dataView, ViewWriteability.Default, Some(wrMap))
 
@@ -302,23 +306,14 @@ package object dataview {
 
   /** Compute a per-field writability map based on alignment.
     *
-    * For Producer role: aligned fields become ReadOnly, flipped fields stay Default.
-    * For Consumer role: flipped fields become ReadOnly, aligned fields stay Default.
+    * @param readOnly the ViewWriteability to apply to the marked fields
+    * @param markAligned if true, aligned fields get readOnly; if false, flipped fields get readOnly
     */
-  private def computeRoleWritabilityMap(
-    view:    Data,
-    role:    Data.ViewRole,
-    message: Either[SourceInfo => String, SourceInfo => Warning]
+  private def computeAlignmentWritabilityMap(
+    view:        Data,
+    readOnly:    ViewWriteability,
+    markAligned: Boolean
   ): Map[Data, ViewWriteability] = {
-    val readOnly: ViewWriteability = (role, message) match {
-      case (Data.ViewRole.Producer, Left(getError)) => ViewWriteability.ProducerReadOnly(getError)
-      case (Data.ViewRole.Consumer, Left(getError)) => ViewWriteability.ConsumerReadOnly(getError)
-      case (Data.ViewRole.ProducerDeprecated, Right(getWarning)) =>
-        ViewWriteability.ProducerReadOnlyDeprecated(getWarning)
-      case (Data.ViewRole.ConsumerDeprecated, Right(getWarning)) =>
-        ViewWriteability.ConsumerReadOnlyDeprecated(getWarning)
-      case _ => throw new IllegalArgumentException("Mismatched role and message type")
-    }
     val default = ViewWriteability.Default
     // Collect all aligned members (including root, aggregates, and leaves)
     val alignedSet: Set[Data] =
@@ -326,14 +321,10 @@ package object dataview {
     // Collect all members
     val allMembers: Iterable[Data] =
       DataMirror.collectMembers(view) { case d => d }
-    // Build per-field writability based on role: producer marks aligned, consumer marks flipped
-    val markAligned = role == Data.ViewRole.Producer || role == Data.ViewRole.ProducerDeprecated
-    val entries = allMembers.map { m =>
-      val isAligned = alignedSet.contains(m)
-      val writability = if (markAligned == isAligned) readOnly else default
-      m -> writability
-    }
-    entries.toMap
+    // Build per-field writability: markAligned=true marks aligned fields, false marks flipped
+    allMembers.map { m =>
+      m -> (if (alignedSet.contains(m) == markAligned) readOnly else default)
+    }.toMap
   }
 
   // When annotating views that are not identity mappings, we need to record them for renaming
