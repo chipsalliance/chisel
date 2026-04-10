@@ -5,6 +5,7 @@ package chisel3.connectable
 import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
 import chisel3.internal.{BiConnect, Builder}
 import chisel3.internal.Builder.pushCommand
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir.DefInvalid
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
@@ -58,7 +59,7 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
   val alwaysConnectToConsumer: Boolean = false
   def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
     // Role-tagged views must go through the slow path for role enforcement checks
-    val hasRole = consumer.base.viewRole.isDefined || producer.base.viewRole.isDefined
+    val hasRole = Connection.detectRole(consumer.base).isDefined || Connection.detectRole(producer.base).isDefined
     if (hasRole) false
     else {
       val typeEquivalent =
@@ -123,15 +124,30 @@ private[chisel3] object Connection {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    consumer.base.viewRole match {
+    detectRole(consumer.base) match {
       case Some(Data.ViewRole.Producer) =>
         Builder.error(".asProducer cannot be used on the consumer (LHS) of a connection operator")
       case _ => ()
     }
-    producer.base.viewRole match {
+    detectRole(producer.base) match {
       case Some(Data.ViewRole.Consumer) =>
         Builder.error(".asConsumer cannot be used on the producer (RHS) of a connection operator")
       case _ => ()
+    }
+  }
+
+  /** Detect whether a Data has a Producer or Consumer role from its view writability */
+  private[connectable] def detectRole(data: Data): Option[Data.ViewRole] = {
+    def fromWriteability(wr: ViewWriteability): Option[Data.ViewRole] = wr match {
+      case _: ViewWriteability.ProducerReadOnly => Some(Data.ViewRole.Producer)
+      case _: ViewWriteability.ConsumerReadOnly => Some(Data.ViewRole.Consumer)
+      case _ => None
+    }
+    data.topBindingOpt match {
+      case Some(ViewBinding(_, wr)) => fromWriteability(wr)
+      case Some(avb: AggregateViewBinding) =>
+        avb.writabilityMap.flatMap(_.values.collectFirst(Function.unlift(fromWriteability)))
+      case _ => None
     }
   }
 
