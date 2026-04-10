@@ -129,8 +129,10 @@ private[chisel3] object Connection {
         Builder.error(".asProducer cannot be used on the consumer (LHS) of a connection operator")
       case Some(Data.ViewRole.ProducerDeprecated) =>
         Builder.warning(
-          Warning(WarningID.AsProducerDeprecated,
-            ".asProducer cannot be used on the consumer (LHS) of a connection operator")
+          Warning(
+            WarningID.AsProducerDeprecated,
+            ".asProducer cannot be used on the consumer (LHS) of a connection operator"
+          )
         )
       case _ => ()
     }
@@ -139,8 +141,10 @@ private[chisel3] object Connection {
         Builder.error(".asConsumer cannot be used on the producer (RHS) of a connection operator")
       case Some(Data.ViewRole.ConsumerDeprecated) =>
         Builder.warning(
-          Warning(WarningID.AsConsumerDeprecated,
-            ".asConsumer cannot be used on the producer (RHS) of a connection operator")
+          Warning(
+            WarningID.AsConsumerDeprecated,
+            ".asConsumer cannot be used on the producer (RHS) of a connection operator"
+          )
         )
       case _ => ()
     }
