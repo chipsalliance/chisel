@@ -380,19 +380,6 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   private[chisel3] def isConst: Boolean = _isConst
   private[chisel3] def isConst_=(isConst: Boolean) = _isConst = isConst
 
-  // Role tag for views created by .asProducer or .asConsumer (0=none, 1=producer, 2=consumer)
-  private var _viewRoleVar: Byte = 0
-  private[chisel3] def viewRole: Option[Data.ViewRole] = _viewRoleVar match {
-    case 1 => Some(Data.ViewRole.Producer)
-    case 2 => Some(Data.ViewRole.Consumer)
-    case _ => None
-  }
-  private[chisel3] def viewRole_=(role: Option[Data.ViewRole]): Unit = _viewRoleVar = role match {
-    case Some(Data.ViewRole.Producer) => 1
-    case Some(Data.ViewRole.Consumer) => 2
-    case _                            => 0
-  }
-
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
   // Both are only valid after binding is set.

@@ -99,7 +99,6 @@ package object dataview {
       doBind(target, result, dataView, ViewWriteability.Default, Some(wrMap))
 
       result.setAllParents(Some(ViewParent))
-      result.viewRole = Some(role)
       result.forceName("view", Builder.viewNamespace)
       result
     }
@@ -295,8 +294,8 @@ package object dataview {
     role:     Data.ViewRole,
     getError: SourceInfo => String
   ): Map[Data, ViewWriteability] = {
-    import chisel3.connectable.AlignedWithRoot
-    val readOnly = ViewWriteability.ReadOnly(getError)
+    val producerReadOnly = ViewWriteability.ProducerReadOnly(getError)
+    val consumerReadOnly = ViewWriteability.ConsumerReadOnly(getError)
     val default = ViewWriteability.Default
     // Collect all aligned members (including root, aggregates, and leaves)
     val alignedSet: Set[Data] =
@@ -308,8 +307,8 @@ package object dataview {
     val entries = allMembers.map { m =>
       val isAligned = alignedSet.contains(m)
       val writability = role match {
-        case Data.ViewRole.Producer => if (isAligned) readOnly else default
-        case Data.ViewRole.Consumer => if (isAligned) default else readOnly
+        case Data.ViewRole.Producer => if (isAligned) producerReadOnly else default
+        case Data.ViewRole.Consumer => if (isAligned) default else consumerReadOnly
       }
       m -> writability
     }

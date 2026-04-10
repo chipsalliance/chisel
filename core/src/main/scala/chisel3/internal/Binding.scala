@@ -148,6 +148,12 @@ private[chisel3] object binding {
       case ViewWriteability.ReadOnly(getError) =>
         Builder.error(getError(info))
         onFail
+      case ViewWriteability.ProducerReadOnly(getError) =>
+        Builder.error(getError(info))
+        onFail
+      case ViewWriteability.ConsumerReadOnly(getError) =>
+        Builder.error(getError(info))
+        onFail
     }
 
     final def reportIfReadOnlyUnit(onPass: => Unit)(implicit info: SourceInfo): Unit =
@@ -173,6 +179,16 @@ private[chisel3] object binding {
 
     /** Signals that are read only */
     case class ReadOnly(getError: SourceInfo => String) extends ViewWriteability {
+      override def combine(that: ViewWriteability): ViewWriteability = this
+    }
+
+    /** Read only for aligned fields of a producer view (created by .asProducer) */
+    case class ProducerReadOnly(getError: SourceInfo => String) extends ViewWriteability {
+      override def combine(that: ViewWriteability): ViewWriteability = this
+    }
+
+    /** Read only for flipped fields of a consumer view (created by .asConsumer) */
+    case class ConsumerReadOnly(getError: SourceInfo => String) extends ViewWriteability {
       override def combine(that: ViewWriteability): ViewWriteability = this
     }
   }
