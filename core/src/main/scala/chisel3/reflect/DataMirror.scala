@@ -145,6 +145,26 @@ object DataMirror {
     }(AlignmentMatchingZipOfChildren).forall(r => r)
   }
 
+  /** Check if two Chisel types are structurally equivalent.
+    *
+    * Unlike [[checkTypeEquivalence]], this does not require Records to have the same
+    * Scala class -- only the same field names and structurally equivalent field types.
+    * For Records, this uses a pre-computed 128-bit Blake3 hash for O(1) comparison.
+    * For non-Record types, falls back to structural type comparison.
+    *
+    * @param x First Chisel type
+    * @param y Second Chisel type
+    * @return true if the two Chisel types are structurally equivalent.
+    */
+  def checkStructuralTypeEquivalence(x: Data, y: Data): Boolean = {
+    (x, y) match {
+      case (r1: Record, r2: Record) =>
+        r1.typeIdHashHi == r2.typeIdHashHi && r1.typeIdHashLo == r2.typeIdHashLo
+      case _ =>
+        x.findFirstTypeMismatch(y, strictTypes = false, strictWidths = true, strictProbeInfo = true).isEmpty
+    }
+  }
+
   /** Returns the ports of a module
     * {{{
     * class MyModule extends Module {

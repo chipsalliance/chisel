@@ -1190,6 +1190,23 @@ abstract class Record extends Aggregate with Selectable {
   override private[chisel3] lazy val _minId: Long = {
     this.elementsIterator.map(_._minId).foldLeft(this._id)(_ min _)
   }
+
+  // Type ID hash for structural type equivalence (128-bit Blake3, stored as 2 Longs)
+  private var _typeIdHashComputed: Boolean = false
+  private var _typeIdHashHi0:      Long = 0L
+  private var _typeIdHashLo0:      Long = 0L
+
+  private def ensureTypeIdHash(): Unit = {
+    if (!_typeIdHashComputed) {
+      val (hi, lo) = internal.TypeIdHash.computeRecordHash(this)
+      _typeIdHashHi0 = hi
+      _typeIdHashLo0 = lo
+      _typeIdHashComputed = true
+    }
+  }
+
+  private[chisel3] def typeIdHashHi: Long = { ensureTypeIdHash(); _typeIdHashHi0 }
+  private[chisel3] def typeIdHashLo: Long = { ensureTypeIdHash(); _typeIdHashLo0 }
 }
 
 /**

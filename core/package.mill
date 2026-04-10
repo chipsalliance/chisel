@@ -23,7 +23,8 @@ trait Core extends ChiselCrossModule with HasScala2MacroAnno with HasCommonOptio
 
   val commonDeps = Seq(
     v.osLib,
-    v.upickle
+    v.upickle,
+    v.blake3
   )
 
   override def mvnDeps = if (v.isScala3(crossScalaVersion)) {
