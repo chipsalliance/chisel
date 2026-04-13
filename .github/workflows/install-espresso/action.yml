@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - id: cache-espresso
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: /usr/local/bin/espresso
         key: espresso-${{ runner.os }}-${{ inputs.version }}

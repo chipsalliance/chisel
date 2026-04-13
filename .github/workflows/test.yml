@@ -39,7 +39,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -92,11 +92,11 @@ jobs:
     if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Scala
-        uses: VirtusLab/scala-cli-setup@77834b5926f3eb70869d8009530c65585f7a039b # v1.9.1
+        uses: VirtusLab/scala-cli-setup@14e5155ee896fcc200f66f92c9eb7a3dd9b58e0d # v1.12.5
         with:
           jvm: adoptium:17
       - name: Install FileCheck
@@ -138,7 +138,7 @@ jobs:
     if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Java
@@ -155,7 +155,7 @@ jobs:
     if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Java
@@ -174,7 +174,7 @@ jobs:
     if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -209,7 +209,7 @@ jobs:
     if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Java
@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Install Tabby OSS Cad Suite
@@ -243,7 +243,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
       - name: Setup Java
@@ -260,7 +260,7 @@ jobs:
     if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
           # Need full history to correctly determine SNAPSHOT version
@@ -268,9 +268,9 @@ jobs:
       - name: Install Tabby OSS Cad Suite
         uses: ./.github/workflows/setup-oss-cad-suite
       - name: Cache Scala
-        uses: coursier/cache-action@bebeeb0e6f48ebad66d3783946588ecf43114433 # v7.0.0
+        uses: coursier/cache-action@90c37294538be80a558fd665531fcdc2b467b475 # v8.1.0
       - name: Setup Scala
-        uses: VirtusLab/scala-cli-setup@77834b5926f3eb70869d8009530c65585f7a039b # v1.9.1
+        uses: VirtusLab/scala-cli-setup@14e5155ee896fcc200f66f92c9eb7a3dd9b58e0d # v1.12.5
         with:
           jvm: adoptium:17
       - name: Setup Node
@@ -298,7 +298,7 @@ jobs:
       - name: Tar built website
         run: tar zcf website.tar.gz website/build
       - name: Share Built Website
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: website
           path: website.tar.gz
