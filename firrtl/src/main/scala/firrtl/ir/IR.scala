@@ -303,6 +303,8 @@ case object IntegerShlOp extends PropPrimOp("integer_shl")
 case object ListConcatOp extends PropPrimOp("list_concat")
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object StringConcatOp extends PropPrimOp("string_concat")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case object PropEqOp extends PropPrimOp("prop_eq")
 
 /** Property expressions.
   *
