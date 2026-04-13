@@ -70,7 +70,7 @@ class PropertyEqualitySpec extends AnyFlatSpec with Matchers with FileCheck {
       }
   }
 
-  it should "compile to SystemVerilog with latest CIRCT" in{
+  it should "compile to SystemVerilog with latest CIRCT" in {
     // This test requires CIRCT with commit 9a9621f3e or later
     // Set CHISEL_FIRTOOL_PATH to point to your local CIRCT build
     val sv = ChiselStage.emitSystemVerilog(new RawModule {

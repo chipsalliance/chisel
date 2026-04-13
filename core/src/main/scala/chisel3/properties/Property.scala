@@ -384,7 +384,7 @@ private[chisel3] object ClassTypeProvider {
 /** Helpers for building Property expressions.
   */
 private object PropertyExpressionHelpers {
-  import chisel3.internal.binding.{WireBinding, ClassBinding}
+  import chisel3.internal.binding.{ClassBinding, WireBinding}
 
   // Helper to create a Property wire that works in RawModule contexts.  Class
   // contexts don't support intermediate wires for property expressions.
@@ -401,7 +401,9 @@ private object PropertyExpressionHelpers {
         wire.asInstanceOf[Property[T]]
       }
       case _: Class =>
-        Builder.exception("Property expressions are currently only supported in RawModules (not yet supported in Classes)")
+        Builder.exception(
+          "Property expressions are currently only supported in RawModules (not yet supported in Classes)"
+        )
       case _ =>
         Builder.exception("Property expressions are currently only supported in RawModules")
     }
