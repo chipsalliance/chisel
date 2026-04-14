@@ -352,6 +352,20 @@ sealed trait Property[T] extends Element { self =>
   ): Unit = {
     PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], message)
   }
+
+  /** Property equality comparison
+    *
+    * Compares two properties of the same type and returns a Property[Boolean].
+    *
+    * @param that the property to compare with
+    * @return Property[Boolean] indicating whether the two properties are equal
+    */
+  final def ===(that: Property[T])(
+    implicit ev: PropertyEqualityOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[Boolean] = {
+    ev.propEq(this, that)
+  }
 }
 
 private[chisel3] sealed trait ClassTypeProvider[A] {
@@ -370,6 +384,31 @@ private[chisel3] object ClassTypeProvider {
 /** Helpers for building Property expressions.
   */
 private object PropertyExpressionHelpers {
+  import chisel3.internal.binding.{ClassBinding, WireBinding}
+
+  // Helper to create a Property wire that works in RawModule contexts.  Class
+  // contexts don't support intermediate wires for property expressions.
+  private def createPropertyWire[T](template: Property[T])(
+    implicit sourceInfo: SourceInfo
+  ): Property[T] = {
+    val contextMod = Builder.referenceUserContainer
+    contextMod match {
+      case mod: RawModule => {
+        val wire = Property.makeWithValueOpt(template.tpe)
+        wire.autoSeed("_propExpr")
+        wire.bind(WireBinding(mod, Builder.currentBlock))
+        mod.addCommand(ir.DefWire(sourceInfo, wire))
+        wire.asInstanceOf[Property[T]]
+      }
+      case _: Class =>
+        Builder.exception(
+          "Property expressions are currently only supported in RawModules (not yet supported in Classes)"
+        )
+      case _ =>
+        Builder.exception("Property expressions are currently only supported in RawModules")
+    }
+  }
+
   // Helper function to create Property expression IR.
   def binOp[T](
     sourceInfo: SourceInfo,
@@ -379,26 +418,42 @@ private object PropertyExpressionHelpers {
   ): Property[T] = {
     implicit val info = sourceInfo
 
-    // Get the containing RawModule, or throw an error. We can only use the temporary Wire approach in RawModule, so at
-    // least give a decent error explaining this current shortcoming.
-    val currentModule = Builder.referenceUserContainer match {
-      case mod: RawModule => mod
-      case other =>
-        Builder.exception("Property expressions are currently only supported in RawModules")
-    }
-
-    // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.
-    val wire = Wire(chiselTypeOf(lhs))
-    wire.autoSeed("_propExpr")
+    // Create a temporary Wire to assign the expression to (validates we're in a RawModule).
+    val wire = createPropertyWire(lhs)(sourceInfo)
 
     // Create a PropExpr with the correct type, operation, and operands.
     val propExpr = ir.PropExpr(sourceInfo, lhs.tpe.getPropertyType(), op, List(lhs.ref, rhs.ref))
 
-    // Directly add a PropAssign command assigning the PropExpr to the Wire.
-    currentModule.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
+    // Add the PropAssign command.
+    val mod = Builder.referenceUserContainer.asInstanceOf[RawModule]
+    mod.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
 
     // Return the temporary Wire as the result.
     wire.asInstanceOf[Property[T]]
+  }
+
+  // Helper function for comparison operations that return Property[Boolean].
+  def cmpOp[T](
+    sourceInfo: SourceInfo,
+    op:         fir.PropPrimOp,
+    lhs:        Property[T],
+    rhs:        Property[T]
+  ): Property[Boolean] = {
+    implicit val info = sourceInfo
+
+    // Create a temporary Wire for the Boolean result (validates we're in a RawModule).
+    val boolTemplate = Property[Boolean]()
+    val wire = createPropertyWire(boolTemplate)(sourceInfo)
+
+    // Create a PropExpr with Boolean type, operation, and operands.
+    val propExpr = ir.PropExpr(sourceInfo, fir.BooleanPropertyType, op, List(lhs.ref, rhs.ref))
+
+    // Add the PropAssign command.
+    val mod = Builder.referenceUserContainer.asInstanceOf[RawModule]
+    mod.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
+
+    // Return the temporary Wire as the result.
+    wire.asInstanceOf[Property[Boolean]]
   }
 
   // Helper function to create variadic Property expression IR.
@@ -410,23 +465,15 @@ private object PropertyExpressionHelpers {
     require(operands.nonEmpty, "variadicOp requires at least one operand")
     implicit val info = sourceInfo
 
-    // Get the containing RawModule, or throw an error. We can only use the temporary Wire approach in RawModule, so at
-    // least give a decent error explaining this current shortcoming.
-    val currentModule = Builder.referenceUserContainer match {
-      case mod: RawModule => mod
-      case other =>
-        Builder.exception("Property expressions are currently only supported in RawModules")
-    }
-
-    // Create a temporary Wire to assign the expression to. We currently don't support Nodes for Property types.
-    val wire = Wire(chiselTypeOf(operands.head))
-    wire.autoSeed("_propExpr")
+    // Create a temporary Wire to assign the expression to (validates we're in a RawModule).
+    val wire = createPropertyWire(operands.head)(sourceInfo)
 
     // Create a PropExpr with the correct type, operation, and operands.
     val propExpr = ir.PropExpr(sourceInfo, operands.head.tpe.getPropertyType(), op, operands.map(_.ref).toList)
 
-    // Directly add a PropAssign command assigning the PropExpr to the Wire.
-    currentModule.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
+    // Add the PropAssign command.
+    val mod = Builder.referenceUserContainer.asInstanceOf[RawModule]
+    mod.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
 
     // Return the temporary Wire as the result.
     wire.asInstanceOf[Property[T]]
@@ -519,6 +566,50 @@ object PropertyStringOps {
   }
 
   implicit val stringOps: PropertyStringOps[Property[String]] = new StringOpsImpl
+}
+
+/** Typeclass for Property equality operations.
+  */
+@implicitNotFound("equality operations are not supported on Property type ${T}")
+sealed trait PropertyEqualityOps[T] {
+  def propEq(lhs: T, rhs: T)(implicit sourceInfo: SourceInfo): Property[Boolean]
+}
+
+object PropertyEqualityOps {
+  import PropertyExpressionHelpers._
+
+  // Type class instances for Property equality operations.
+  implicit val boolEqualityOps: PropertyEqualityOps[Property[Boolean]] =
+    new PropertyEqualityOps[Property[Boolean]] {
+      def propEq(lhs: Property[Boolean], rhs: Property[Boolean])(
+        implicit sourceInfo: SourceInfo
+      ): Property[Boolean] =
+        cmpOp(sourceInfo, fir.PropEqOp, lhs, rhs)
+    }
+
+  implicit val intEqualityOps: PropertyEqualityOps[Property[Int]] =
+    new PropertyEqualityOps[Property[Int]] {
+      def propEq(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+        cmpOp(sourceInfo, fir.PropEqOp, lhs, rhs)
+    }
+
+  implicit val longEqualityOps: PropertyEqualityOps[Property[Long]] =
+    new PropertyEqualityOps[Property[Long]] {
+      def propEq(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+        cmpOp(sourceInfo, fir.PropEqOp, lhs, rhs)
+    }
+
+  implicit val bigIntEqualityOps: PropertyEqualityOps[Property[BigInt]] =
+    new PropertyEqualityOps[Property[BigInt]] {
+      def propEq(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+        cmpOp(sourceInfo, fir.PropEqOp, lhs, rhs)
+    }
+
+  implicit val stringEqualityOps: PropertyEqualityOps[Property[String]] =
+    new PropertyEqualityOps[Property[String]] {
+      def propEq(lhs: Property[String], rhs: Property[String])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+        cmpOp(sourceInfo, fir.PropEqOp, lhs, rhs)
+    }
 }
 
 /** Operations for Property[Boolean].
