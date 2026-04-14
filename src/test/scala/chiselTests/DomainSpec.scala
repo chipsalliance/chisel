@@ -45,7 +45,8 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       """|CHECK:      circuit Foo :
          |CHECK:        domain ClockDomain :
          |CHECK-NEXT:     name : String
-         |CHECK-NEXT:     synchronousTo : String
+         |CHECK-NEXT:     source : String
+         |CHECK-NEXT:     relationship : String
          |
          |CHECK:        domain PowerDomain :
          |CHECK-NEXT:     name : String
@@ -222,19 +223,19 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     class Foo extends RawModule {
       val A = IO(Input(ClockDomain.Type()))
       val nameOut = IO(Output(Property[String]()))
-      val syncOut = IO(Output(Property[String]()))
+      val sourceOut = IO(Output(Property[String]()))
 
       nameOut := A.field.name
-      syncOut := A.field.synchronousTo
+      sourceOut := A.field.source
     }
 
     ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
       """|CHECK: module Foo :
          |CHECK:   input A : Domain of ClockDomain
          |CHECK:   output nameOut : String
-         |CHECK:   output syncOut : String
+         |CHECK:   output sourceOut : String
          |CHECK:   propassign nameOut, A.name
-         |CHECK:   propassign syncOut, A.synchronousTo
+         |CHECK:   propassign sourceOut, A.source
          |""".stripMargin
     }
 
@@ -242,13 +243,13 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   behavior of "domain instantiation"
 
-  it should "allow instantiating a domain with property literals" in {
+  it should "allow instantiating a synchronous domain" in {
 
     class Foo extends RawModule {
       val A = IO(Input(ClockDomain.Type()))
       val B = IO(Output(ClockDomain.Type()))
 
-      val b = ClockDomain.derived(A, "_div2")
+      val b = ClockDomain.synchronous(A, "_1to4")
       domain.define(B, b)
     }
 
@@ -257,8 +258,31 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
          |CHECK:   input A : Domain of ClockDomain
          |CHECK:   output B : Domain of ClockDomain
          |CHECK:   wire [[name:.+]] : String
-         |CHECK:   propassign [[name]], string_concat(A.name, String("_div2"))
-         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], A.name)
+         |CHECK:   propassign [[name]], string_concat(A.name, String("_1to4"))
+         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], A.name, String("synchronous"))
+         |CHECK:   domain_define B = [[b]]
+         |""".stripMargin
+    }
+
+  }
+
+  it should "allow instantiating a rational domain" in {
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val B = IO(Output(ClockDomain.Type()))
+
+      val b = ClockDomain.rational(A, "_2to3")
+      domain.define(B, b)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: module Foo :
+         |CHECK:   input A : Domain of ClockDomain
+         |CHECK:   output B : Domain of ClockDomain
+         |CHECK:   wire [[name:.+]] : String
+         |CHECK:   propassign [[name]], string_concat(A.name, String("_2to3"))
+         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], A.name, String("rational"))
          |CHECK:   domain_define B = [[b]]
          |""".stripMargin
     }
