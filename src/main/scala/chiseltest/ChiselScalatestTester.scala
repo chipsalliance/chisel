@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.simulator.EphemeralSimulator._
 import chisel3.simulator.ChiselSim
 import svsim._
-import svsim.verilator.Backend.CompilationSettings.{TraceStyle, TraceKind}
+import svsim.verilator.Backend.CompilationSettings.{TraceKind, TraceStyle}
 import scala.language.implicitConversions
 
 /**
@@ -83,6 +83,7 @@ trait ChiselScalatestTester {
    * @param resetCyc Number of reset cycles to apply
    */
   class TestBuilder[T <: Module](dutGen: => T, autoReset: Boolean, resetCyc: Int) {
+
     /**
      * Attach ChiselTest-style annotations before running the test.
      *
@@ -119,6 +120,7 @@ trait ChiselScalatestTester {
    * @param annotations Annotation list used to configure execution behavior
    */
   class TestRunner[T <: Module](dutGen: => T, autoReset: Boolean, resetCyc: Int, annotations: Seq[Any] = Seq()) {
+
     /**
      * Execute the configured test run.
      *
@@ -135,28 +137,29 @@ trait ChiselScalatestTester {
 
       if (hasVcd) {
         println("[ChiselTest Compat] WriteVcdAnnotation detected, enabling VCD trace generation...")
-        
+
         // Create backend modification to enable VCD tracing
-        implicit val backendMod: BackendSettingsModifications = 
-          (settings: Backend.Settings) => settings match {
-            case vs: verilator.Backend.CompilationSettings =>
-              val vcdStyle = TraceStyle(
-                kind = TraceKind.Vcd,
-                traceUnderscore = false,
-                traceStructs = true,
-                traceParams = true,
-                maxWidth = None,
-                maxArraySize = None,
-                traceDepth = None
-              )
-              vs.withTraceStyle(Some(vcdStyle))
-            case other => other
-          }
-        
+        implicit val backendMod: BackendSettingsModifications =
+          (settings: Backend.Settings) =>
+            settings match {
+              case vs: verilator.Backend.CompilationSettings =>
+                val vcdStyle = TraceStyle(
+                  kind = TraceKind.Vcd,
+                  traceUnderscore = false,
+                  traceStructs = true,
+                  traceParams = true,
+                  maxWidth = None,
+                  maxArraySize = None,
+                  traceDepth = None
+                )
+                vs.withTraceStyle(Some(vcdStyle))
+              case other => other
+            }
+
         // Simulate with VCD enabled
         chiselSim.simulate(dutGen) { dut =>
           chiselSim.enableWaves()
-          
+
           if (autoReset) {
             applyReset(dut, resetCyc)
           }

@@ -15,9 +15,9 @@ trait ChiselTestHelper extends AnyFlatSpec with ChiselScalatestTester {
    * Test a module with a basic poke and expect pattern
    */
   protected def testPokeExpect[T <: Module](
-    module:        => T,
-    pokeData:      (T, UInt) => Unit,
-    expectedData:  UInt
+    module:       => T,
+    pokeData:     (T, UInt) => Unit,
+    expectedData: UInt
   ): Unit = {
     test(module) { dut =>
       implicit val clk = dut.clock
@@ -35,8 +35,8 @@ trait ChiselTestHelper extends AnyFlatSpec with ChiselScalatestTester {
    * Test a sequential logic module with multiple cycles
    */
   protected def testSequential[T <: Module](
-    module:      => T,
-    stimuli:     Seq[(T) => Unit]
+    module:  => T,
+    stimuli: Seq[(T) => Unit]
   ): Unit = {
     test(module) { dut =>
       implicit val clk = dut.clock
