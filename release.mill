@@ -73,7 +73,35 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     // Field.Type members are package-private and safe to add
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.createProperty"),
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.expectedPropertyType"),
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.typeName")
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.typeName"),
+    // Renamed package private *$Intf traits to *ObjInterface
+    ProblemFilter.exclude[MissingClassProblem]("chisel3.*$Intf"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.FormalContract$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.Mem$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.Module$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.Mux$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.SyncReadMem$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.VecInit$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.assert$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.assume$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.cover$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.choice.ModuleChoice$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.probe.package$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.properties.DynamicObject$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.BitPat$"),
+    ProblemFilter.exclude[MissingClassProblem]("chisel3.util.BitPat$Intf$fromUIntToBitPatComparable"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.Fill$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.FillInterleaved$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.Mux1H$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.MuxLookup$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.PopCount$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.PriorityMux$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.Reverse$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.ltl.Property$"),
+    ProblemFilter.exclude[MissingTypesProblem]("chisel3.ltl.Sequence$"),
+    ProblemFilter.exclude[MissingClassProblem]("chisel3.Cover$Impl"),
+    ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.util.BitPat.fromUIntToBitPatComparable"),
+    ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.util.BitPat.fromUIntToBitPatComparable")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)
