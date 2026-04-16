@@ -88,7 +88,7 @@ object v extends Module {
   val jmhVersion = "1.37"
   val osLib = mvn"com.lihaoyi::os-lib:0.10.7" // 0.11 requires Java 11
   val upickle = mvn"com.lihaoyi::upickle:3.3.1" // upickle 4.0 requires Scala 3.4 (we target Scala 3.3 LTS)
-  val firtoolResolver = mvn"org.chipsalliance::firtool-resolver:2.1.0"
+  val firtoolResolver = mvn"org.chipsalliance::firtool-resolver:2.1.1"
   val scalatest = mvn"org.scalatest::scalatest:3.2.20"
   val scalacheck = mvn"org.scalatestplus::scalacheck-1-18:3.2.19.0"
   val json4s = mvn"io.github.json4s::json4s-native:4.1.0"
