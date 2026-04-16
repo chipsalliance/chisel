@@ -77,7 +77,7 @@ class DynamicObject private[chisel3] (val className: ClassType) extends HasId wi
   }
 }
 
-object DynamicObject extends DynamicObject$Intf {
+object DynamicObject extends DynamicObjectObjIntf {
 
   protected def _applyImpl[T <: Class](bc: => T)(implicit sourceInfo: SourceInfo): DynamicObject = {
     // Instantiate the Class definition.

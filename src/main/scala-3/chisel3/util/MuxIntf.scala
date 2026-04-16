@@ -8,7 +8,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.SourceInfo
 
-private[chisel3] trait Mux1H$Intf { self: Mux1H.type =>
+private[chisel3] trait Mux1HObjIntf { self: Mux1H.type =>
 
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 
@@ -19,7 +19,7 @@ private[chisel3] trait Mux1H$Intf { self: Mux1H.type =>
   def apply(sel: UInt, in: UInt)(using SourceInfo): Bool = _applyImpl(sel, in)
 }
 
-private[chisel3] trait PriorityMux$Intf { self: PriorityMux.type =>
+private[chisel3] trait PriorityMuxObjIntf { self: PriorityMux.type =>
 
   def apply[T <: Data](in: Seq[(Bool, T)])(using SourceInfo): T = _applyImpl(in)
 
@@ -28,7 +28,7 @@ private[chisel3] trait PriorityMux$Intf { self: PriorityMux.type =>
   def apply[T <: Data](sel: Bits, in: Seq[T])(using SourceInfo): T = _applyImpl(sel, in)
 }
 
-private[chisel3] trait MuxLookup$Intf { self: MuxLookup.type =>
+private[chisel3] trait MuxLookupObjIntf { self: MuxLookup.type =>
 
   /** @param key a key to search for
     * @param default a default value if nothing is found

@@ -5,7 +5,7 @@ package chisel3
 import chisel3.experimental.SourceInfo
 import chisel3.Mem.HasVecDataType
 
-private[chisel3] trait Mem$Intf { self: Mem.type =>
+private[chisel3] trait MemObjIntf { self: Mem.type =>
 
   /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
     *
@@ -116,7 +116,7 @@ private[chisel3] trait MemBaseIntf[T <: Data] extends SourceInfoDoc { self: MemB
   ): Unit = _writeImpl(idx, data, mask, clock)
 }
 
-private[chisel3] trait SyncReadMem$Intf { self: SyncReadMem.type =>
+private[chisel3] trait SyncReadMemObjIntf { self: SyncReadMem.type =>
 
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *

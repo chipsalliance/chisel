@@ -43,7 +43,7 @@ private[chisel3] trait VecIntf[T <: Data] { self: Vec[T] =>
   ): T = _reduceTreeImpl(redOp, layerOp)
 }
 
-private[chisel3] trait VecInit$Intf extends SourceInfoDoc { self: VecInit.type =>
+private[chisel3] trait VecInitObjIntf extends SourceInfoDoc { self: VecInit.type =>
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.

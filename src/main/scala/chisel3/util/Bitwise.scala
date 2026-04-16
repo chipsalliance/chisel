@@ -19,7 +19,7 @@ import chisel3.experimental.SourceInfo
   * FillInterleaved(2, Seq(true.B, false.B, false.B, true.B))  // equivalent to "b11 00 00 11".U
   * }}}
   */
-object FillInterleaved extends FillInterleaved$Intf {
+object FillInterleaved extends FillInterleavedObjIntf {
 
   protected def _applyImpl(n: Int, in: UInt)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(n, in.asBools)
 
@@ -38,7 +38,7 @@ object FillInterleaved extends FillInterleaved$Intf {
   * PopCount(myUIntWire)  // dynamic count
   * }}}
   */
-object PopCount extends PopCount$Intf {
+object PopCount extends PopCountObjIntf {
 
   protected def _applyImpl(in: Iterable[Bool])(implicit sourceInfo: SourceInfo): UInt = SeqUtils.count(in.toSeq)
 
@@ -121,7 +121,7 @@ object PopCount extends PopCount$Intf {
   * Fill(2, myUIntWire)  // dynamic fill
   * }}}
   */
-object Fill extends Fill$Intf {
+object Fill extends FillObjIntf {
 
   protected def _applyImpl(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = {
     n match {
@@ -149,7 +149,7 @@ object Fill extends Fill$Intf {
   * Reverse(myUIntWire)  // dynamic reverse
   * }}}
   */
-object Reverse extends Reverse$Intf {
+object Reverse extends ReverseObjIntf {
 
   private def doit(in: UInt, length: Int)(implicit sourceInfo: SourceInfo): UInt =
     length match {

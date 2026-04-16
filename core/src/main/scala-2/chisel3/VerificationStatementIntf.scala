@@ -20,7 +20,7 @@ import scala.language.experimental.macros
   */
 trait VerifPrintMacrosDoc
 
-private[chisel3] trait Assert$Intf extends VerifPrintMacrosDoc { self: assert.type =>
+private[chisel3] trait AssertObjIntf extends VerifPrintMacrosDoc { self: assert.type =>
 
   /** Checks for a condition to be valid in the circuit at rising clock edge
     * when not in reset. If the condition evaluates to false, the circuit
@@ -69,7 +69,7 @@ private[chisel3] trait Assert$Intf extends VerifPrintMacrosDoc { self: assert.ty
     macro VerifStmtMacrosCompat.assert._applyMacroWithNoMessage
 }
 
-private[chisel3] trait Assume$Intf extends VerifPrintMacrosDoc { self: assume.type =>
+private[chisel3] trait AssumeObjIntf extends VerifPrintMacrosDoc { self: assume.type =>
 
   /** Assumes a condition to be valid in the circuit at all times.
     * Acts like an assertion in simulation and imposes a declarative
@@ -122,7 +122,7 @@ private[chisel3] trait Assume$Intf extends VerifPrintMacrosDoc { self: assume.ty
     macro VerifStmtMacrosCompat.assume._applyMacroWithNoMessage
 }
 
-private[chisel3] trait Cover$Impl extends VerifPrintMacrosDoc { self: cover.type =>
+private[chisel3] trait CoverObjImpl extends VerifPrintMacrosDoc { self: cover.type =>
 
   /** Declares a condition to be covered.
     * At ever clock event, a counter is incremented iff the condition is active

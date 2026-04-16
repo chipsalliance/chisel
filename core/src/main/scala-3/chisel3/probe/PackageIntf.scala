@@ -5,8 +5,8 @@ package chisel3.probe
 import chisel3._
 import chisel3.experimental.SourceInfo
 
-// Empty olyfill for trait needed by Scala 2
-private[chisel3] trait Probe$Intf
+// Empty polyfill for trait needed by Scala 2
+private[chisel3] trait ProbeObjIntf
 
 /** Access the value of a probe.
   *

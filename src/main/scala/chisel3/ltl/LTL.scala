@@ -120,7 +120,7 @@ sealed trait Sequence extends Property with SequenceIntf {
   * This object exposes the primary API to create and compose sequences from
   * booleans and shorter sequences.
   */
-object Sequence extends Sequence$Intf {
+object Sequence extends SequenceObjIntf {
 
   implicit class BoolSequence(val inner: Bool) extends Sequence with SequenceAtom
 
@@ -252,7 +252,7 @@ sealed trait Property extends PropertyIntf {
   * This object exposes the primary API to create and compose properties from
   * booleans, sequences, and other properties.
   */
-object Property extends Property$Intf {
+object Property extends PropertyObjIntf {
 
   protected def _not(prop: Property)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLNotIntrinsic(prop.inner))

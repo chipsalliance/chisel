@@ -10,7 +10,7 @@ import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.language.experimental.macros
 
-private[chisel3] trait FillInterleaved$Intf { self: FillInterleaved.type =>
+private[chisel3] trait FillInterleavedObjIntf { self: FillInterleaved.type =>
 
   /** Creates n repetitions of each bit of x in order.
     *
@@ -31,7 +31,7 @@ private[chisel3] trait FillInterleaved$Intf { self: FillInterleaved.type =>
   def do_apply(n: Int, in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = _applyImpl(n, in)
 }
 
-private[chisel3] trait PopCount$Intf { self: PopCount.type =>
+private[chisel3] trait PopCountObjIntf { self: PopCount.type =>
 
   def apply(in: Iterable[Bool]): UInt = macro SourceInfoTransform.inArg
 
@@ -44,7 +44,7 @@ private[chisel3] trait PopCount$Intf { self: PopCount.type =>
   def do_apply(in: Bits)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(in)
 }
 
-private[chisel3] trait Fill$Intf { self: Fill.type =>
+private[chisel3] trait FillObjIntf { self: Fill.type =>
 
   /** Create n repetitions of x using a tree fanout topology.
     *
@@ -57,7 +57,7 @@ private[chisel3] trait Fill$Intf { self: Fill.type =>
   def do_apply(n: Int, x: UInt)(implicit sourceInfo: SourceInfo): UInt = _applyImpl(n, x)
 }
 
-private[chisel3] trait Reverse$Intf { self: Reverse.type =>
+private[chisel3] trait ReverseObjIntf { self: Reverse.type =>
 
   def apply(in: UInt): UInt = macro SourceInfoTransform.inArg
 

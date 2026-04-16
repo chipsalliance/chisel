@@ -31,7 +31,7 @@ import chisel3.util.simpleClassName
 import chisel3.experimental.annotate
 import chisel3.experimental.hierarchy.Hierarchy
 
-object Module extends Module$Intf {
+object Module extends ModuleObjIntf {
 
   private[chisel3] def _applyImpl[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Instantiate the module definition.

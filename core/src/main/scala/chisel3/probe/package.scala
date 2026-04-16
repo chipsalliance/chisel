@@ -12,7 +12,7 @@ import chisel3.experimental.{requireIsHardware, SourceInfo}
 import chisel3.experimental.dataview.reifyIdentityView
 import chisel3.reflect.DataMirror.{checkTypeEquivalence, collectAllMembers, hasProbeTypeModifier}
 
-package object probe extends Probe$Intf {
+package object probe extends ProbeObjIntf {
 
   private[chisel3] def setProbeModifier[T <: Data](data: T, probeInfo: Option[ProbeInfo]): Unit = {
     probeInfo.foreach { _ =>

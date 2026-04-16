@@ -23,7 +23,7 @@ import chisel3.internal.Builder
   *
   * @note results unspecified unless exactly one select signal is high
   */
-object Mux1H extends Mux1H$Intf {
+object Mux1H extends Mux1HObjIntf {
   protected def _applyImpl[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = {
     if (sel.size != in.size) {
       Builder.error(s"Mux1H: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
@@ -53,7 +53,7 @@ object Mux1H extends Mux1H$Intf {
   * }}}
   * Returns the output of the Mux tree.
   */
-object PriorityMux extends PriorityMux$Intf {
+object PriorityMux extends PriorityMuxObjIntf {
 
   protected def _applyImpl[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
 
@@ -75,7 +75,7 @@ object PriorityMux extends PriorityMux$Intf {
   * MuxLookup(myEnum, default)(Seq(MyEnum.a -> 1.U, MyEnum.b -> 2.U, MyEnum.c -> 3.U))
   * }}}
   */
-object MuxLookup extends MuxLookup$Intf {
+object MuxLookup extends MuxLookupObjIntf {
 
   protected def _applyEnumImpl[S <: EnumType, T <: Data](
     key:     S,

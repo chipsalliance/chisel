@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.internal.sourceinfo.InstTransform
 
-private[chisel3] trait Module$Intf extends SourceInfoDoc { self: Module.type =>
+private[chisel3] trait ModuleObjIntf extends SourceInfoDoc { self: Module.type =>
 
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).

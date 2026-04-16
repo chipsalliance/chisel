@@ -13,7 +13,7 @@ abstract class VerificationStatement extends NamedComponent {
   _parent.foreach(_.addId(this))
 }
 
-object assert extends Assert$Intf {
+object assert extends AssertObjIntf {
 
   /** Named class for assertions. */
   final class Assert private[chisel3] () extends VerificationStatement
@@ -25,7 +25,7 @@ object assert extends Assert$Intf {
   def apply(cond: Boolean): Unit = Predef.assert(cond, "")
 }
 
-object assume extends Assume$Intf {
+object assume extends AssumeObjIntf {
 
   /** Named class for assumptions. */
   final class Assume private[chisel3] () extends VerificationStatement
@@ -37,7 +37,7 @@ object assume extends Assume$Intf {
   def apply(cond: Boolean): Unit = Predef.assume(cond, "")
 }
 
-object cover extends Cover$Impl {
+object cover extends CoverObjImpl {
 
   /** Named class for cover statements. */
   final class Cover private[chisel3] () extends VerificationStatement

@@ -61,7 +61,7 @@ import chisel3.internal.firrtl.ir._
   * }
   * }}}
   */
-object FormalContract extends FormalContract$Intf {
+object FormalContract extends FormalContractObjIntf {
 
   /** Create a formal contract from a sequence of expressions.
     *

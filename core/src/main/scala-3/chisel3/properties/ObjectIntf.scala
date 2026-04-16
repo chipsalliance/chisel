@@ -2,6 +2,6 @@
 
 package chisel3.properties
 
-private[chisel3] trait DynamicObject$Intf { self: DynamicObject.type =>
+private[chisel3] trait DynamicObjectObjIntf { self: DynamicObject.type =>
   // TODO implement
 }

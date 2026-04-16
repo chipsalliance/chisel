@@ -10,7 +10,7 @@ import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.{MuxLookupTransform, SourceInfoTransform}
 import scala.language.experimental.macros
 
-private[chisel3] trait Mux1H$Intf { self: Mux1H.type =>
+private[chisel3] trait Mux1HObjIntf { self: Mux1H.type =>
 
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = macro SourceInfoTransform.selInArg
   def do_apply[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
@@ -26,7 +26,7 @@ private[chisel3] trait Mux1H$Intf { self: Mux1H.type =>
 
 }
 
-private[chisel3] trait PriorityMux$Intf { self: PriorityMux.type =>
+private[chisel3] trait PriorityMuxObjIntf { self: PriorityMux.type =>
 
   def apply[T <: Data](in:    Seq[(Bool, T)]):                                  T = macro SourceInfoTransform.inArg
   def do_apply[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = _applyImpl(in)
@@ -38,7 +38,7 @@ private[chisel3] trait PriorityMux$Intf { self: PriorityMux.type =>
   def do_apply[T <: Data](sel: Bits, in: Seq[T])(implicit sourceInfo: SourceInfo): T = _applyImpl(sel, in)
 }
 
-private[chisel3] trait MuxLookup$Intf extends SourceInfoDoc { self: MuxLookup.type =>
+private[chisel3] trait MuxLookupObjIntf extends SourceInfoDoc { self: MuxLookup.type =>
 
   /** @param key a key to search for
     * @param default a default value if nothing is found

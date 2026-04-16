@@ -646,7 +646,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
 object Vec extends VecFactory
 
-object VecInit extends VecInit$Intf {
+object VecInit extends VecInitObjIntf {
 
   private[chisel3] def _applyImpl[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo): Vec[T] = {
     // REVIEW TODO: this should be removed in favor of the apply(elts: T*)

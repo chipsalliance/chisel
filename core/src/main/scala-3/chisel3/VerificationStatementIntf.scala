@@ -9,7 +9,7 @@ trait VerifPrintMacrosDoc
 private val emptySourceLine: VerifStmtMacrosCompat.SourceLineInfo =
   ("[Source line unavailable: see https://github.com/chipsalliance/chisel/issues/5049]", 0)
 
-private[chisel3] trait Assert$Intf extends VerifPrintMacrosDoc { self: assert.type =>
+private[chisel3] trait AssertObjIntf extends VerifPrintMacrosDoc { self: assert.type =>
 
   def apply(
     cond:    Bool,
@@ -34,7 +34,7 @@ private[chisel3] trait Assert$Intf extends VerifPrintMacrosDoc { self: assert.ty
     VerifStmtMacrosCompat.assert._applyWithSourceLinePrintable(cond, emptySourceLine, None)
 }
 
-private[chisel3] trait Assume$Intf extends VerifPrintMacrosDoc { self: assume.type =>
+private[chisel3] trait AssumeObjIntf extends VerifPrintMacrosDoc { self: assume.type =>
 
   def apply(
     cond:    Bool,
@@ -59,7 +59,7 @@ private[chisel3] trait Assume$Intf extends VerifPrintMacrosDoc { self: assume.ty
     VerifStmtMacrosCompat.assume._applyWithSourceLinePrintable(cond, emptySourceLine, None)
 }
 
-private[chisel3] trait Cover$Impl extends VerifPrintMacrosDoc { self: cover.type =>
+private[chisel3] trait CoverObjImpl extends VerifPrintMacrosDoc { self: cover.type =>
   def apply(cond: Bool, message: String)(implicit sourceInfo: SourceInfo): Cover =
     VerifStmtMacrosCompat.cover._applyWithSourceLine(cond, emptySourceLine, Some(message))
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Cover =

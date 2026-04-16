@@ -11,7 +11,7 @@ import chisel3.internal.binding.InstanceChoiceBinding
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.ir.DefInstanceChoice
 
-object ModuleChoice extends ModuleChoice$Intf {
+object ModuleChoice extends ModuleChoiceObjIntf {
 
   protected def _applyImpl[T <: Data](
     default: => FixedIOBaseModule[T],

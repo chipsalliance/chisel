@@ -8,7 +8,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.SourceInfo
 
-private[chisel3] trait FillInterleaved$Intf { self: FillInterleaved.type =>
+private[chisel3] trait FillInterleavedObjIntf { self: FillInterleaved.type =>
 
   /** Creates n repetitions of each bit of x in order.
     *
@@ -23,13 +23,13 @@ private[chisel3] trait FillInterleaved$Intf { self: FillInterleaved.type =>
   def apply(n: Int, in: Seq[Bool])(using SourceInfo): UInt = _applyImpl(n, in)
 }
 
-private[chisel3] trait PopCount$Intf { self: PopCount.type =>
+private[chisel3] trait PopCountObjIntf { self: PopCount.type =>
 
   def apply(in: Iterable[Bool])(using SourceInfo): UInt = _applyImpl(in)
   def apply(in: Bits)(using SourceInfo):           UInt = _applyImpl(in)
 }
 
-private[chisel3] trait Fill$Intf { self: Fill.type =>
+private[chisel3] trait FillObjIntf { self: Fill.type =>
 
   /** Create n repetitions of x using a tree fanout topology.
     *
@@ -39,7 +39,7 @@ private[chisel3] trait Fill$Intf { self: Fill.type =>
   def apply(n: Int, x: UInt)(using SourceInfo): UInt = _applyImpl(n, x)
 }
 
-private[chisel3] trait Reverse$Intf { self: Reverse.type =>
+private[chisel3] trait ReverseObjIntf { self: Reverse.type =>
 
   def apply(in: UInt)(using SourceInfo): UInt = _applyImpl(in)
 }

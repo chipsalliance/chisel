@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import chisel3.experimental.SourceInfo
 import chisel3.internal.sourceinfo.MuxTransform
 
-private[chisel3] trait Mux$Intf extends SourceInfoDoc { self: Mux.type =>
+private[chisel3] trait MuxObjIntf extends SourceInfoDoc { self: Mux.type =>
 
   /** Creates a mux, whose output is one of the inputs depending on the
     * value of the condition.

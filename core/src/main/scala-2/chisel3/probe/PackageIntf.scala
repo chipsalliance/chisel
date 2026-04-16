@@ -7,7 +7,7 @@ import chisel3.experimental.SourceInfo
 
 import scala.language.experimental.macros
 
-private[chisel3] trait Probe$Intf extends SourceInfoDoc {
+private[chisel3] trait ProbeObjIntf extends SourceInfoDoc {
 
   /** Access the value of a probe.
     *

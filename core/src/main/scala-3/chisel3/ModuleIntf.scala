@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.experimental.{BaseModule, SourceInfo}
 
-private[chisel3] trait Module$Intf extends SourceInfoDoc { self: Module.type =>
+private[chisel3] trait ModuleObjIntf extends SourceInfoDoc { self: Module.type =>
 
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).

@@ -108,7 +108,7 @@ private[chisel3] trait PropertyIntf { self: Property =>
   def clock(clock: Clock)(implicit sourceInfo: SourceInfo): Property = _clockImpl(clock)
 }
 
-private[chisel3] trait Sequence$Intf { self: Sequence.type =>
+private[chisel3] trait SequenceObjIntf { self: Sequence.type =>
 
   /** Delay a sequence by a fixed number of cycles. Equivalent to `##delay` in
     * SVA.
@@ -220,7 +220,7 @@ private[chisel3] trait Sequence$Intf { self: Sequence.type =>
   def apply(atoms: SequenceAtom*)(implicit sourceInfo: SourceInfo): Sequence = _apply(atoms: _*)
 }
 
-private[chisel3] trait Property$Intf { self: Property.type =>
+private[chisel3] trait PropertyObjIntf { self: Property.type =>
 
   /** Negate a property. Equivalent to `not prop` in SVA. */
   def not(prop: Property)(implicit sourceInfo: SourceInfo): Property = _not(prop)
