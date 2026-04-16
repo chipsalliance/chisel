@@ -13,6 +13,8 @@ private[chisel3] trait BitPatObjIntf { self: BitPat.type =>
     def =/=(that: BitPat)(using SourceInfo): Bool = that =/= x
   }
 }
+// Polyfill for a Scala 2 binary compatibiliy workaround
+private[chisel3] trait BitPat$Intf
 
 private[chisel3] trait BitPatIntf extends SourceInfoDoc { self: BitPat =>
   import chisel3.util.experimental.BitSet

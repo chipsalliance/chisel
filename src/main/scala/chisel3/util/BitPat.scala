@@ -7,7 +7,7 @@ import chisel3.experimental.SourceInfo
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
-object BitPat extends BitPatObjIntf {
+object BitPat extends BitPatObjIntf with BitPat$Intf {
 
   private[chisel3] implicit val bitPatOrder: Ordering[BitPat] = new Ordering[BitPat] {
     import scala.math.Ordered.orderingToOrdered

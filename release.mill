@@ -99,9 +99,7 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.Reverse$"),
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.ltl.Property$"),
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.ltl.Sequence$"),
-    ProblemFilter.exclude[MissingClassProblem]("chisel3.Cover$Impl"),
-    ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.util.BitPat.fromUIntToBitPatComparable"),
-    ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.util.BitPat.fromUIntToBitPatComparable")
+    ProblemFilter.exclude[MissingClassProblem]("chisel3.Cover$Impl")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)

@@ -9,20 +9,27 @@ import chisel3.internal.sourceinfo.SourceInfoTransform
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
+private[chisel3] class BaseFomUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
+  import scala.language.experimental.macros
+
+  final def ===(that: BitPat): Bool = macro SourceInfoTransform.thatArg
+  final def =/=(that: BitPat): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_===(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x
+
+  /** @group SourceInfoTransformMacro */
+  def do_=/=(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
+}
+
+private[chisel3] trait BitPat$Intf { self: BitPat.type =>
+  @deprecated("Use uintToBitPatComparable instead", "Chisel 7.11.0")
+  class fromUIntToBitPatComparable(x: UInt) extends BaseFomUIntToBitPatComparable(x)
+  @deprecated("Use uintToBitPatComparable instead", "Chisel 7.11.0")
+  def fromUIntToBitPatComparable(x: UInt): fromUIntToBitPatComparable = new fromUIntToBitPatComparable(x)
+}
 private[chisel3] trait BitPatObjIntf { self: BitPat.type =>
-  implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
-
-    import scala.language.experimental.macros
-
-    final def ===(that: BitPat): Bool = macro SourceInfoTransform.thatArg
-    final def =/=(that: BitPat): Bool = macro SourceInfoTransform.thatArg
-
-    /** @group SourceInfoTransformMacro */
-    def do_===(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x
-
-    /** @group SourceInfoTransformMacro */
-    def do_=/=(that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
-  }
+  implicit class uintToBitPatComparable(x: UInt) extends BaseFomUIntToBitPatComparable(x)
 }
 
 private[chisel3] trait BitPatIntf extends SourceInfoDoc { self: BitPat =>
