@@ -3195,7 +3195,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/util/BitPat$.html#apply-a5","e":false,"i":"","n":"apply","t":"apply(x: EnumType): BitPat","d":"chisel3.util.BitPat","k":"def","x":""},
 {"l":"chisel3/util/BitPat$.html#bitPatToUInt-fffffc9c","e":false,"i":"","n":"bitPatToUInt","t":"bitPatToUInt(x: BitPat): UInt","d":"chisel3.util.BitPat","k":"def","x":""},
 {"l":"chisel3/util/BitPat$.html#dontCare-aaa","e":false,"i":"","n":"dontCare","t":"dontCare(width: Int): BitPat","d":"chisel3.util.BitPat","k":"def","x":""},
-{"l":"chisel3/util/BitPat$.html#fromUIntToBitPatComparable-328","e":false,"i":"","n":"fromUIntToBitPatComparable","t":"fromUIntToBitPatComparable(x: UInt): fromUIntToBitPatComparable","d":"chisel3.util.BitPat","k":"def","x":""},
+{"l":"chisel3/util/BitPat$.html#fromUIntToBitPatComparable-fffff695","e":false,"i":"","n":"fromUIntToBitPatComparable","t":"fromUIntToBitPatComparable(x: UInt): fromUIntToBitPatComparable","d":"chisel3.util.BitPat","k":"def","x":""},
 {"l":"chisel3/util/BitPat.html#","e":false,"i":"","n":"BitPat","t":"BitPat(val value: BigInt, val mask: BigInt, val width: Int) extends BitSet","d":"chisel3.util","k":"class","x":""},
 {"l":"chisel3/util/BitPat.html###-844","e":false,"i":"","n":"##","t":"##(that: BitPat)(using SourceInfo): BitPat","d":"chisel3.util.BitPat","k":"def","x":""},
 {"l":"chisel3/util/BitPat.html#=/=-4ee","e":false,"i":"","n":"=/=","t":"=/=(that: UInt)(using SourceInfo): Bool","d":"chisel3.util.BitPat","k":"def","x":""},
