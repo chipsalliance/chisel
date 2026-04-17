@@ -63,7 +63,7 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
     */
   @deprecated(
     message = "use the more exact `synchronous` or `rational` to create a derived clock",
-    since = "Chisel 7.11.0"
+    since = "Chisel 7.12.0"
   )
   def derived(synchronousTo: chisel3.domain.Type, suffix: String): chisel3.domain.Type =
     synchronous(synchronousTo, suffix)
