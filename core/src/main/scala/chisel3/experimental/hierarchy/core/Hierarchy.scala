@@ -9,12 +9,13 @@ import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.IsModule
 
 import scala.annotation.implicitNotFound
+import scala.language.dynamics
 
 /** Super-trait for Instance and Definition
   *
   * Enables writing functions which are Instance/Definition agnostic
   */
-sealed trait Hierarchy[+A] extends HierarchyIsA[A] {
+sealed trait Hierarchy[+A] extends HierarchyIsA[A] with scala.Dynamic {
 
   /** Updated by calls to [[_lookup]], to avoid recloning returned Data's */
   private[chisel3] val cache = HashMap[Data, Data]()

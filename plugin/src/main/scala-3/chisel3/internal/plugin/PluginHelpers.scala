@@ -229,8 +229,28 @@ object ChiselTypeHelpers {
   }
 
   def isInstance(t: Type)(using Context): Boolean = {
-    val instanceTpe = getClassIfDefined("chisel3.experimental.hierarchy.Instance")
+    val instanceTpe = getClassIfDefined("chisel3.experimental.hierarchy.core.Instance")
     t.baseClasses.contains(instanceTpe)
+  }
+
+  def isBoxedModuleOrInstance(tpe: Type)(using Context): Boolean = {
+    val optionClass = getClassIfDefined("scala.Option")
+    val iterableClass = getClassIfDefined("scala.collection.Iterable")
+    def isLeaf(t: Type): Boolean = isModule(t) || isInstance(t)
+
+    def rec(t: Type): Boolean = t match {
+      case AppliedType(tycon, List(arg)) =>
+        tycon match {
+          case tp: TypeRef =>
+            val isIterable = tp.symbol.derivesFrom(iterableClass)
+            val isOption = tp.symbol == optionClass
+            if (isOption || isIterable) isLeaf(arg) || rec(arg)
+            else false
+          case _ => rec(arg)
+        }
+      case _ => false
+    }
+    rec(tpe)
   }
 
   def isPrefixed(t: Type)(using Context): Boolean = {

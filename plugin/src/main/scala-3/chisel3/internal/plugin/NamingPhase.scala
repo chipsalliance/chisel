@@ -230,7 +230,8 @@ class ChiselNamingPhase extends PluginPhase {
       cpy.ValDef(tree)(rhs = named)
     } else if ( // Modules or instances
       ChiselTypeHelpers.isModule(tpt) ||
-      ChiselTypeHelpers.isInstance(tpt)
+      ChiselTypeHelpers.isInstance(tpt) ||
+      ChiselTypeHelpers.isBoxedModuleOrInstance(tpt)
     ) {
       val newRHS = transformFollowing(rhs)
       val named =
