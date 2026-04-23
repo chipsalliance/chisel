@@ -7,13 +7,18 @@ import chisel3.domain.{Domain, Field}
 import chisel3.domains.ClockDomain
 import chisel3.experimental.dataview._
 import chisel3.properties.Property
-import chisel3.testing.FileCheck
+import chisel3.testing.{FileCheck, HasTestingDirectory}
+import chisel3.testing.scalatest.TestingDirectory
+import chisel3.util.experimental.InlineInstance
 import circt.stage.ChiselStage
+import java.io.ByteArrayOutputStream
+import java.nio.file.Files
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.annotation.nowarn
+import scala.sys.process._
 
-class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
+class DomainSpec extends AnyFlatSpec with Matchers with FileCheck with TestingDirectory {
 
   behavior of "Domains"
 
@@ -417,4 +422,171 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       ChiselStage.elaborate(new Foo)
     }.getMessage should include("cannot associate a port or wire with zero domains")
   }
+
+  behavior of ("Domain assertions")
+
+  trait Domains {
+    def A: domain.Type
+    def B: domain.Type
+  }
+
+  object Domains {
+
+    /** Return two asynchronous (unrelated) domains. */
+    def asynchronous() = new Domains {
+      override val A = ClockDomain("A")
+      override val B = ClockDomain("B")
+    }
+
+    /** Return two domains, the second of which is synchronous to the first */
+    def synchronous() = new Domains {
+      override val A = ClockDomain("A")
+      override val B = ClockDomain.synchronous(A, "_1to2")
+    }
+
+    /** Return two domains, the second of which is rationally related to the first. */
+    def rational() = new Domains {
+      override val A = ClockDomain("A")
+      override val B = ClockDomain.rational(A, "_2to3")
+    }
+  }
+
+  abstract class Crossing extends RawModule {
+    val A, B = IO(Input(ClockDomain.Type()))
+  }
+
+  object Crossing {
+
+    /** Cross between any two domains. */
+    class Asynchronous extends Crossing
+
+    /** Cross between synchronous domains. */
+    class Synchronous extends Crossing {
+      (A.field.source.asInstanceOf[Property[String]] === B.field.source.asInstanceOf[Property[String]])
+        .assert(s"clock domains 'A' and 'B' must have the same source")
+      (A.field.relationship.asInstanceOf[Property[String]] === ClockDomain.Relationship.Synchronous.toProperty())
+        .assert(s"clock domain 'A' must have a synchronous relationship")
+      (B.field.relationship.asInstanceOf[Property[String]] === ClockDomain.Relationship.Synchronous.toProperty())
+        .assert(s"clock domain 'B' must have a synchronous relationship")
+    }
+
+    /** Cross between synchronous or rational domains.
+      *
+      * @note This needs to be updated once boolean or is a supported property
+      * expression.
+      */
+    class Rational extends Crossing {
+      (A.field.source.asInstanceOf[Property[String]] === B.field.source.asInstanceOf[Property[String]])
+        .assert(s"clock domains 'A' and 'B' must have the same source")
+      (A.field.relationship.asInstanceOf[Property[String]] === ClockDomain.Relationship.Synchronous.toProperty())
+        .assert(s"clock domain 'A' must have a rational relationship")
+      (B.field.relationship.asInstanceOf[Property[String]] === ClockDomain.Relationship.Rational.toProperty())
+        .assert(s"clock domain 'B' must have a rational relationship")
+    }
+
+  }
+
+  class CrossingTestHarness(
+    crossingGen: () => Crossing,
+    domainsGen:  () => Domains
+  ) extends RawModule {
+    private val crossing = Module(crossingGen())
+    private val domains = domainsGen()
+    domain.define(crossing.A, domains.A)
+    domain.define(crossing.B, domains.B)
+  }
+
+  case class CrossingTest(name: String, genHarness: () => CrossingTestHarness, result: Either[String, Unit]) {
+
+    private val description = {
+      (result match {
+        case Right(_) => "pass"
+        case Left(_)  => "error"
+      }) ++ s" for $name"
+    }
+
+    def test() = they should description in {
+      val dir = implicitly[HasTestingDirectory].getDirectory
+      Files.createDirectories(dir)
+
+      val finalMlir = dir.resolve("final.mlir").toString
+      ChiselStage.emitSystemVerilog(
+        genHarness(),
+        firtoolOpts = Array("-domain-mode=infer-all", "-output-final-mlir", finalMlir)
+      )
+
+      val stderrStream = new ByteArrayOutputStream
+      val logger = ProcessLogger(_ => (), line => { stderrStream.write(line.getBytes); stderrStream.write('\n') })
+      try {
+        val exitCode: Int = Seq("domaintool", "--module", "CrossingTestHarness", finalMlir).!(logger)
+        result match {
+          case Right(_) =>
+            exitCode should be(0)
+          case Left(error) =>
+            exitCode should not be (0)
+            stderrStream.toString should include(error)
+        }
+
+      } catch {
+        case a: java.io.IOException if a.getMessage().startsWith("Cannot run program") =>
+          info("skipped as 'domaintool' is not available")
+      }
+    }
+
+  }
+
+  Seq(
+    // ---------------------------------- Synchronous crossing
+    CrossingTest(
+      "a synchronous crossing with synchronous clocks",
+      () => new CrossingTestHarness(() => new Crossing.Synchronous, Domains.synchronous),
+      Right(())
+    ),
+    CrossingTest(
+      "a synchronous crossing with rational clocks",
+      () => new CrossingTestHarness(() => new Crossing.Synchronous, Domains.rational),
+      Left("clock domain 'B' must have a synchronous relationship")
+    ),
+    CrossingTest(
+      "a synchronous crossing with asynchronous clocks",
+      () => new CrossingTestHarness(() => new Crossing.Synchronous, Domains.asynchronous),
+      Left("clock domains 'A' and 'B' must have the same source")
+    ),
+    // ---------------------------------- Rational crossing
+    // TODO: This currently fails as we need a property boolean or to express
+    // that a rational crossing can handle both synchronous and rational
+    // relationships.
+    // CrossingTest(
+    //   "a rationl crossing with synchronous clocks",
+    //   () => new CrossingTestHarness(() => new Crossing.Rational, Domains.synchronous),
+    //   Right(())
+    // ),
+    CrossingTest(
+      "a rationl crossing with rational clocks",
+      () => new CrossingTestHarness(() => new Crossing.Rational, Domains.rational),
+      Right(())
+    ),
+    CrossingTest(
+      "a rational crossing with asynchronous clocks",
+      () => new CrossingTestHarness(() => new Crossing.Rational, Domains.asynchronous),
+      Left("clock domains 'A' and 'B' must have the same source")
+    ),
+    // ---------------------------------- Asynchronous crossing
+    CrossingTest(
+      "an aasynchronous crossing with synchronous clocks",
+      () => new CrossingTestHarness(() => new Crossing.Asynchronous, Domains.synchronous),
+      Right(())
+    ),
+    CrossingTest(
+      "an asynchronous crossing with rational clocks",
+      () => new CrossingTestHarness(() => new Crossing.Asynchronous, Domains.rational),
+      Right(())
+    ),
+    CrossingTest(
+      "an asynchronous crossing with asynchronous clocks",
+      () => new CrossingTestHarness(() => new Crossing.Asynchronous, Domains.asynchronous),
+      Right(())
+    )
+  ).foreach { _.test() }
+
 }
