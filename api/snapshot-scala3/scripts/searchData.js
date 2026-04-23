@@ -1422,6 +1422,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/domains/ClockDomain$$Relationship$$Rational$.html#","e":false,"i":"","n":"Rational","t":"Rational extends Type","d":"chisel3.domains.ClockDomain.Relationship","k":"object","x":""},
 {"l":"chisel3/domains/ClockDomain$$Relationship$$Synchronous$.html#","e":false,"i":"","n":"Synchronous","t":"Synchronous extends Type","d":"chisel3.domains.ClockDomain.Relationship","k":"object","x":""},
 {"l":"chisel3/domains/ClockDomain$$Relationship$$Type.html#","e":false,"i":"","n":"Type","t":"Type","d":"chisel3.domains.ClockDomain.Relationship","k":"trait","x":""},
+{"l":"chisel3/domains/ClockDomain$$Relationship$$Type.html#toProperty-fffff29f","e":false,"i":"","n":"toProperty","t":"toProperty(): Property[String]","d":"chisel3.domains.ClockDomain.Relationship.Type","k":"def","x":""},
 {"l":"chisel3/experimental.html#","e":false,"i":"","n":"chisel3.experimental","t":"chisel3.experimental","d":"","k":"package","x":""},
 {"l":"chisel3/experimental.html#ClonePorts-0","e":false,"i":"","n":"ClonePorts","t":"ClonePorts = ClonePorts","d":"chisel3.experimental","k":"type","x":""},
 {"l":"chisel3/experimental.html#Direction-0","e":false,"i":"","n":"Direction","t":"Direction = ActualDirection","d":"chisel3.experimental","k":"type","x":""},
