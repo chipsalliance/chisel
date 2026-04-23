@@ -344,13 +344,11 @@ class ExtModuleSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCh
 
   it should "use defName for the FIRRTL defname field" in {
     class MyExtMod extends ExtModule {
-      val in = IO(Input(UInt(8.W)))
       override def desiredName = "prefixed_MyExtMod"
       override def defName = "MyExtMod"
     }
     class Top extends Module {
       val m = Module(new MyExtMod)
-      m.in := 0.U
     }
     ChiselStage
       .emitCHIRRTL(new Top)
