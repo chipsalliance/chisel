@@ -21,6 +21,8 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
     /** A clock relationship */
     sealed trait Type {
       override final def toString: String = this.getClass.getSimpleName.stripSuffix("$").toLowerCase
+
+      final def toProperty(): Property[String] = Property(toString)
     }
 
     /** A synchronous relationship
@@ -53,7 +55,8 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
     *
     * @param name the name of this domain
     */
-  def apply(name: String): chisel3.domain.Type = ClockDomain(Property(name), Property(""), Property(""))
+  def apply(name: String): chisel3.domain.Type =
+    ClockDomain(Property(name), Property(name), Relationship.Synchronous.toProperty())
 
   /** Create a derived clock domain.
     *
@@ -77,7 +80,7 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
     ClockDomain(
       Property.concat(source.field.name.asInstanceOf[Property[String]], Property(suffix)),
       source.field.name,
-      Property(Relationship.Synchronous.toString)
+      Relationship.Synchronous.toProperty()
     )
 
   /** Create a new clock domain with a rational relationship to another clock domain.
@@ -89,7 +92,7 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
     ClockDomain(
       Property.concat(source.field.name.asInstanceOf[Property[String]], Property(suffix)),
       source.field.name,
-      Property(Relationship.Rational.toString)
+      Relationship.Rational.toProperty()
     )
 
 }
