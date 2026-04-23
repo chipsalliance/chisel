@@ -76,4 +76,7 @@ private[chisel3] abstract class BaseBlackBox extends BaseModule {
   }
 
   requirements.foreach(addRequirement)
+
+  /** The Verilog name of the module that this extmodule represents. Defaults to [[desiredName]]. */
+  protected[chisel3] def defName: String = desiredName
 }

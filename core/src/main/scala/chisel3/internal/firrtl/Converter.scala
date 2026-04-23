@@ -494,7 +494,7 @@ private[chisel3] object Converter {
         convert(id._getSourceLocator),
         name,
         (ports ++ ctx.secretPorts).map(p => convert(p, typeAliases, topDir)),
-        id.desiredName,
+        id.defName,
         params.keys.toList.sorted.map { name => convert(name, params(name)) },
         knownLayers.map(_.fullName),
         requirements

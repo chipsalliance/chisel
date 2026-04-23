@@ -665,7 +665,7 @@ private[chisel3] object Serializer {
         }
         b ++= " :"; serialize(id._getSourceLocator)
         (ports ++ ctx.secretPorts).foreach { p => newLineAndIndent(1); serialize(p, typeAliases, topDir) }
-        newLineAndIndent(1); b ++= "defname = "; b ++= id.desiredName
+        newLineAndIndent(1); b ++= "defname = "; b ++= id.defName
         params.keys.toList.sorted.foreach { name =>
           newLineAndIndent(1); b ++= "parameter "; serialize(name, params(name))
         }
