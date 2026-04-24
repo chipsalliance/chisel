@@ -3,45 +3,30 @@
 package chiseltest
 
 import chisel3._
+import scala.annotation.compileTimeOnly
 
 /**
- * Formal verification stubs for compatibility
- * 
- * Note: Formal verification is not fully supported in Chisel 7 yet.
- * These are compatibility stubs that allow code to compile but may not provide
- * full formal verification functionality.
+ * Formal compatibility API placeholders.
+ *
+ * Formal verification is currently unsupported in this compatibility layer.
+ * Any usage should fail at compile time to avoid vacuously passing tests.
  */
 package object formal {
 
-  // Annotation stubs
+  /** Annotation placeholder for source compatibility only. */
   case class BoundedCheck(depth: Int)
 
-  // Formal verification trait
+  @compileTimeOnly("chiseltest.formal.Formal is unsupported in this compatibility layer")
   trait Formal {
-    def verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit = {
-      println("Warning: Formal verification is not fully supported in Chisel 7")
-      // Stub implementation - just simulate for now
-      import chisel3.simulator.EphemeralSimulator._
-      import chiseltest._ // Import implicit conversions
-
-      simulate(dut) { c =>
-        // Run for bounded depth if BoundedCheck is present
-        val depth = annotations.collectFirst { case BoundedCheck(d) =>
-          d
-        }.getOrElse(10)
-
-        // Use the implicit conversion
-        chiseltest.testableClock(c.clock).step(depth)
-      }
-    }
+    @compileTimeOnly("chiseltest.formal.verify is unsupported in this compatibility layer")
+    def verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit =
+      throw new UnsupportedOperationException("chiseltest.formal.verify is unsupported")
   }
 
-  // Past function stub
-  def past[T <: Data](x: T, delay: Int = 1): T = {
-    // This is a stub - actual formal verification would use SMT solver
-    x
-  }
+  @compileTimeOnly("chiseltest.formal.past is unsupported in this compatibility layer")
+  def past[T <: Data](x: T, delay: Int = 1): T =
+    throw new UnsupportedOperationException("chiseltest.formal.past is unsupported")
 
-  // Overload for single argument
+  @compileTimeOnly("chiseltest.formal.past is unsupported in this compatibility layer")
   def past[T <: Data](x: T): T = past(x, 1)
 }

@@ -3,24 +3,12 @@
 package chiseltest
 
 /**
- * DecoupledDriver provides utility functions for testing Decoupled interfaces
+ * Compatibility placeholder for ChiselTest's DecoupledDriver class.
  *
- * This is compatible with ChiselTest's DecoupledDriver but implemented using ChiselSim.
- *
- * The actual implementation is in the package object as implicit conversions.
- * Import chiseltest._ or chiseltest.DecoupledDriver._ to use these methods.
- *
- * Example:
- * {{{
- * import chiseltest._
- *
- * test(new QueueModule) { dut =>
- *   dut.io.in.enqueueNow(42.U)
- *   dut.io.out.expectDequeueNow(42.U)
- * }
- * }}}
+ * Decoupled enqueue/dequeue helpers are provided via implicit extensions in
+ * `package object chiseltest`. Use `import chiseltest._` to access:
+ * - `enqueueNow`, `enqueueSeq`
+ * - `expectDequeueNow`, `expectDequeueSeq`
+ * - `initSource`, `initSink`
  */
-object DecoupledDriver {
-  // For compatibility with imports like: import chiseltest.DecoupledDriver._
-  // The actual implicit classes are defined in the package object
-}
+final class DecoupledDriver

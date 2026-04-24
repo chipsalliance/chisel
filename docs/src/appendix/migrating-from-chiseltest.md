@@ -128,13 +128,13 @@ ChiselSim also does not currently have any support for `fork`-`join`, so any tes
 
 ## ChiselTest Compatibility Layer
 
-For projects with a large test suite, Chisel now includes a **ChiselTest compatibility layer** at `chiseltest.*` that provides a drop-in replacement for most ChiselTest APIs. This allows you to keep your existing test code while running on ChiselSim.
+For projects with a large test suite, Chisel now includes a **ChiselTest compatibility layer** at `chiseltest._` that provides a drop-in replacement for most ChiselTest APIs. This allows you to keep your existing test code while running on ChiselSim.
 
 ### Using the Compatibility Layer
 
 Simply keep your existing imports and test structure:
 
-```scala
+```scala mdoc
 import chisel3._
 import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec

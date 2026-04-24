@@ -40,7 +40,7 @@ package object chiseltest {
   case object WriteVcdAnnotation
   case object VerilatorBackendAnnotation
 
-  // Re-export the implicit conversions from ChiselTestCompat
+  // Implicit conversions for ChiselTest-compatible operations
   implicit class testableData[T <: Data](val x: T) extends AnyVal {
     def poke(value: T): Unit =
       toTestableData(x).poke(value)
@@ -184,7 +184,7 @@ package object chiseltest {
       toTestableReset(x).poke(value.asInstanceOf[Reset])
   }
 
-  // Re-export DecoupledDriver implicits
+  // Decoupled interface helper extensions
   implicit class DecoupledIOOps[T <: Data](val x: DecoupledIO[T]) extends AnyVal {
     def enqueueNow(data: T)(implicit clock: Clock): Unit = {
       // Drive data and valid for one cycle
