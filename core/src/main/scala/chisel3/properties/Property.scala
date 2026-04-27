@@ -366,6 +366,64 @@ sealed trait Property[T] extends Element { self =>
   ): Property[Boolean] = {
     ev.propEq(this, that)
   }
+
+  /** Boolean AND of two boolean properties (only available for Property[Boolean])
+    *
+    * @param that the other boolean property
+    * @return Property[Boolean] that is the AND of this and that
+    */
+  final def &&(that: Property[T])(
+    implicit ev: T =:= Boolean,
+    sourceInfo:  SourceInfo
+  ): Property[Boolean] = {
+    PropertyBooleanBinaryOps.and(
+      this.asInstanceOf[Property[Boolean]],
+      that.asInstanceOf[Property[Boolean]]
+    )
+  }
+
+  /** Boolean OR of two boolean properties (only available for Property[Boolean])
+    *
+    * @param that the other boolean property
+    * @return Property[Boolean] that is the OR of this and that
+    */
+  final def ||(that: Property[T])(
+    implicit ev: T =:= Boolean,
+    sourceInfo:  SourceInfo
+  ): Property[Boolean] = {
+    PropertyBooleanBinaryOps.or(
+      this.asInstanceOf[Property[Boolean]],
+      that.asInstanceOf[Property[Boolean]]
+    )
+  }
+
+  /** Boolean XOR of two boolean properties (only available for Property[Boolean])
+    *
+    * @param that the other boolean property
+    * @return Property[Boolean] that is the XOR of this and that
+    */
+  final def ^(that: Property[T])(
+    implicit ev: T =:= Boolean,
+    sourceInfo:  SourceInfo
+  ): Property[Boolean] = {
+    PropertyBooleanBinaryOps.xor(
+      this.asInstanceOf[Property[Boolean]],
+      that.asInstanceOf[Property[Boolean]]
+    )
+  }
+
+  /** Boolean NOT of a boolean property (only available for Property[Boolean])
+    *
+    * Implemented as XOR with the constant `true`.
+    *
+    * @return Property[Boolean] that is the logical negation of this
+    */
+  final def unary_!(
+    implicit ev: T =:= Boolean,
+    sourceInfo:  SourceInfo
+  ): Property[Boolean] = {
+    PropertyBooleanBinaryOps.not(this.asInstanceOf[Property[Boolean]])
+  }
 }
 
 private[chisel3] sealed trait ClassTypeProvider[A] {
@@ -630,6 +688,32 @@ object PropertyBooleanOps {
       case cls: Class =>
         cls.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message))
     }
+}
+
+/** Binary boolean property operations: AND, OR, XOR.
+  */
+object PropertyBooleanBinaryOps {
+  import PropertyExpressionHelpers._
+
+  /** Compute the AND of two boolean properties. */
+  def and(lhs: Property[Boolean], rhs: Property[Boolean])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+    cmpOp(sourceInfo, fir.BoolAndOp, lhs, rhs)
+
+  /** Compute the OR of two boolean properties. */
+  def or(lhs: Property[Boolean], rhs: Property[Boolean])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+    cmpOp(sourceInfo, fir.BoolOrOp, lhs, rhs)
+
+  /** Compute the XOR of two boolean properties.
+    *
+    * Note: NOT can be expressed as `xor(a, Property(true))`, or more
+    * conveniently via the `not` helper or `unary_!` operator.
+    */
+  def xor(lhs: Property[Boolean], rhs: Property[Boolean])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+    cmpOp(sourceInfo, fir.BoolXorOp, lhs, rhs)
+
+  /** Compute the logical NOT of a boolean property, implemented as XOR with the constant `true`. */
+  def not(operand: Property[Boolean])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+    xor(operand, Property(true))
 }
 
 /** Companion object for Property.
