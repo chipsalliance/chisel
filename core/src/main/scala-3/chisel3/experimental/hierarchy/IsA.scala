@@ -12,9 +12,7 @@ trait HierarchyProto[+A] {
     case Proto(value)         => value
     case Clone(i: IsClone[A]) => i.getProto
   }
-}
 
-trait HierarchyIsA[+A] extends HierarchyProto[A] with scala.Selectable {
   // The transparent inline here ensures the precise return type
   // propagates to the call site
   transparent inline def selectDynamic(inline name: String): Any = {
@@ -35,7 +33,9 @@ trait HierarchyIsA[+A] extends HierarchyProto[A] with scala.Selectable {
       )
     }
   }
+}
 
+trait HierarchyIsA[+A] extends HierarchyProto[A] with scala.Selectable {
   // This code handles a special-case where, within an mdoc context,
   //  the type returned from scala reflection (typetag) looks
   //  different than when returned from java reflection.  This
@@ -70,8 +70,8 @@ trait HierarchyIsA[+A] extends HierarchyProto[A] with scala.Selectable {
     * E.g. isA[List[Int]] will return true, even if underlying proto is of type List[String]
     * @return Whether underlying proto is of provided type (with caveats outlined above)
     */
-  def isA[B](implicit ct: ClassTag[B]): Boolean = {
-    val clzName = ct.runtimeClass.getCanonicalName
+  def isA[B: ClassTag]: Boolean = {
+    val clzName = summon[ClassTag[B]].runtimeClass.getCanonicalName
     if (clzName == null) false
     else inBaseClasses(modifyReplString(clzName))
   }
