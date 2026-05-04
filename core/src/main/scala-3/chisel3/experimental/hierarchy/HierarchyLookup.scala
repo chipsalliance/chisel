@@ -25,6 +25,9 @@ private[hierarchy] object HierarchyLookupMacro {
     import q.reflect.*
     val tpe = TypeRepr.of[A]
     val typeSym = tpe.typeSymbol
+    // Handle vals inherited from parent of an instance: fieldMember
+    // is declared in the Instance, while methodMember is the Scala 3
+    // representation of vals inherited from the parent
     val fieldSym = typeSym.fieldMember(name) match {
       case s if s != Symbol.noSymbol => s
       case _ =>
@@ -52,7 +55,7 @@ private[hierarchy] object HierarchyLookupMacro {
     import q.reflect.*
     Lambda(
       owner = Symbol.spliceOwner,
-      tpe = MethodType(List("a"))(_ => List(TypeRepr.of[A]), _ => TypeRepr.of[T]),
+      tpe = MethodType(List("proto"))(_ => List(TypeRepr.of[A]), _ => TypeRepr.of[T]),
       rhsFn = (lamSym, args) => Select(args.head.asInstanceOf[Term], fieldSym).changeOwner(lamSym)
     ).asExprOf[A => T]
   }
@@ -129,6 +132,8 @@ private[hierarchy] object HierarchyLookupMacro {
     argsExpr: Expr[Seq[Any]]
   )(using q: Quotes): Expr[Any] = {
     import q.reflect.*
+    // Restrict method calls on Instance to explicit arguments. Splice
+    // syntax like `inst.someMethod(args*)` should report an error
     val argTerms = argsExpr match {
       case Varargs(args) => args.toList.map(_.asTerm)
       case _             => report.errorAndAbort("applyDynamic on an Instance requires explicit varargs")
@@ -137,6 +142,8 @@ private[hierarchy] object HierarchyLookupMacro {
     val cTpe = selectExpr.asTerm.tpe.widen
     cTpe.asType match {
       case '[c] =>
+        // Find an apply on a container like List or Vec of the shape
+        // `def apply(idx: Int)(sourceInfo: ...)`
         val applySym = cTpe.typeSymbol
           .methodMember("apply")
           .find { sym =>
