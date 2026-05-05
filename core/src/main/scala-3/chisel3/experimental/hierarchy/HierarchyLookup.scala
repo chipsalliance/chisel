@@ -80,9 +80,8 @@ private[hierarchy] object HierarchyLookupMacro {
   ): q.reflect.TypeRepr = {
     import q.reflect.*
     def fromBounds(tp: TypeRepr): TypeRepr = tp match {
-      case TypeBounds(lo, hi) if lo =:= hi => lo
-      case TypeBounds(_, hi)               => hi
-      case other                           => other
+      case TypeBounds(_, hi) => hi
+      case other             => other
     }
     def walk(tp: TypeRepr): Option[TypeRepr] = tp match {
       case Refinement(_, "C", info) => Some(fromBounds(info))
