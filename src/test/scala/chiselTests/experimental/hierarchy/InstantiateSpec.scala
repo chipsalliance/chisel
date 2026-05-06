@@ -483,14 +483,11 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
 
   describe("Instantiate") {
     it("should provide source locators for module instances") {
-      // Make a source info so we can use it in the check
-      implicit val info: chisel3.experimental.SourceInfo =
-        chisel3.experimental.SourceLine("InstantiateSpec.scala", 1, 2)
       val chirrtl = emitCHIRRTL(new Top {
         val inst = Instantiate(new OneArg(3))
       })
-      // Exact check simpler without FileCheck
-      chirrtl should include(s"inst inst of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
+      val thisFile = "src/test/scala/chiselTests/experimental/hierarchy/InstantiateSpec.scala"
+      chirrtl should include(s"inst inst of OneArg @[$thisFile 487")
     }
 
     it("should support BlackBoxes") {

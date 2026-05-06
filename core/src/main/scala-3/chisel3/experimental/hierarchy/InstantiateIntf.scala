@@ -14,7 +14,9 @@ private[chisel3] trait InstantiateIntf { self: Instantiate.type =>
     * @param con module construction, must be actual call to constructor (`new MyModule(...)`)
     * @return constructed module `Instance`
     */
-  inline def apply[A <: BaseModule](inline con: A): Instance[A] = ${ InstantiateIntfMacros.instanceMacro[A]('con) }
+  inline def apply[A <: BaseModule](inline con: A)(using sourceInfo: SourceInfo): Instance[A] = ${
+    InstantiateIntfMacros.instanceMacro[A]('con, 'sourceInfo)
+  }
 
   inline def definition[A <: BaseModule](inline con: A): Definition[A] = ${
     InstantiateIntfMacros.definitionMacro[A]('con)
@@ -140,11 +142,10 @@ private object InstantiateIntfMacros {
 
   // Transform `Instantiate(new MyModule(arg1, arg2))` into
   // `Instantiate._instance((arg1, arg2), args => new MyModule(args._1, args._2), typeToken)(using sourceInfo)`
-  def instanceMacro[A <: BaseModule: Type](con: Expr[A])(using q: Quotes): Expr[Instance[A]] = {
+  def instanceMacro[A <: BaseModule: Type](con: Expr[A], sourceInfo: Expr[SourceInfo])(
+    using q: Quotes
+  ): Expr[Instance[A]] = {
     import q.reflect.*
-    val sourceInfoExpr = Expr.summon[SourceInfo].getOrElse {
-      report.errorAndAbort("Instantiate.apply requires an implicit SourceInfo")
-    }
     val (argsTuple, constructorFunc) = extractAndBuild[A](con)
     val typeRepr = TypeRepr.of[A]
     val typeToken = Expr(typeRepr.show)
@@ -154,7 +155,7 @@ private object InstantiateIntfMacros {
         $argsTuple.asInstanceOf[Any],
         $constructorFunc.asInstanceOf[Any => A],
         $typeToken.asInstanceOf[AnyRef]
-      )(using $sourceInfoExpr)
+      )
     }
   }
 
