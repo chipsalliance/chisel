@@ -43,10 +43,16 @@ private[chisel3] trait InstantiateIntf { self: Instantiate.type =>
 private object InstantiateIntfMacros {
   import scala.quoted.*
 
+  // This helper is called by both instanceMacro and definitionMacro.
+  // Extracts all args to the Module and creates a constructor lambda
+  // of shape `argsTuple() => new Module(...)`
   private def extractAndBuild[A <: BaseModule: Type](
     con: Expr[A]
   )(using q: Quotes): (Expr[Any], Expr[_]) = {
     import q.reflect.*
+    // Since our Instantiate apply method is Inline, Scala wraps it in
+    // an `Inline` block to track bindings. We need to peel the Inline
+    // block to get to the Apply block.
     def unwrapInlined(term: Term): Term = term match {
       case Inlined(_, _, expansion) => unwrapInlined(expansion)
       case other                    => other
@@ -74,6 +80,9 @@ private object InstantiateIntfMacros {
     val unwrapped = unwrapInlined(con.asTerm)
     val (core, args, argStructure) = collectArgs(unwrapped, Nil, Nil)
 
+    // Unwrap based on whether this is a constructor with or without
+    // explicit type arguments; for example, `MyModule[UInt].apply(a)`
+    // is wrapped in a TypeApply block
     val (tpt, typeArgs, fullConstructorTerm) = core match {
       case Select(New(tpt), _) =>
         (tpt, None, unwrapped)
@@ -143,14 +152,7 @@ private object InstantiateIntfMacros {
         )
       case n =>
         val argTypes = args.map(_.tpe.widen)
-        val tupleTypeRepr = argTypes match {
-          case List(t1, t2) =>
-            AppliedType(TypeRepr.of[Tuple2].typeSymbol.typeRef, List(t1, t2))
-          case List(t1, t2, t3) =>
-            AppliedType(TypeRepr.of[Tuple3].typeSymbol.typeRef, List(t1, t2, t3))
-          case _ =>
-            AppliedType(defn.TupleClass(n).typeRef, argTypes)
-        }
+        val tupleTypeRepr = AppliedType(defn.TupleClass(n).typeRef, argTypes)
         buildConstructorLambdaMultiList(
           List(tupleTypeRepr),
           params => {
