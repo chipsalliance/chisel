@@ -58,18 +58,18 @@ private object InstantiateIntfMacros {
       case other                    => other
     }
 
+    // Walk the chain of Apply nodes while collecting params on each
+    // level. For example, something like
+    //   `Instantiate(new MyModule(a, b)(c))`
+    // is parsed into
+    //   `Apply(Apply(Select(New(MyModule)), [a, b]), [c])`
     def collectArgs(
       term:          Term,
       accFlat:       List[Term],
       accStructured: List[List[Term]]
     ): (Term, List[Term], List[List[Term]]) = term match {
       case Apply(inner, newArgs) =>
-        val isImplicit = inner.tpe.widen match {
-          case mt: MethodType => mt.isImplicit
-          case _ => false
-        }
-        if (isImplicit) collectArgs(inner, accFlat, accStructured)
-        else collectArgs(inner, newArgs ::: accFlat, newArgs :: accStructured)
+        collectArgs(inner, newArgs ::: accFlat, newArgs :: accStructured)
       case other => (other, accFlat, accStructured)
     }
 
