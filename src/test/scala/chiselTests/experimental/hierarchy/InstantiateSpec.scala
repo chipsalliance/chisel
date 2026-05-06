@@ -4,7 +4,6 @@ package chiselTests
 package experimental.hierarchy
 
 import chisel3._
-import chisel3.aop.Select
 import chisel3.util.Valid
 import chisel3.properties._
 import chisel3.experimental.hierarchy._
@@ -229,7 +228,7 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
   describe("Module classes that take only implicit arguments") {
     it("should be Instantiate-able if there are only a single implicit argument") {
       emitCHIRRTL(new Top {
-        implicit val n = 3
+        implicit val n: Int = 3
         val inst0 = Instantiate(new OneImplicitArg)
         val inst1 = Instantiate(new OneImplicitArg)
       }).fileCheck()(
@@ -241,8 +240,8 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
 
     it("should be Instantiate-able if there are multiple implicit arguments") {
       emitCHIRRTL(new Top {
-        implicit val n = 3
-        implicit val str = "4"
+        implicit val n:   Int = 3
+        implicit val str: String = "4"
         val inst0 = Instantiate(new TwoImplicitArgs)
         val inst1 = Instantiate(new TwoImplicitArgs)
       }).fileCheck()(
@@ -254,8 +253,8 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
 
     it("should be Instantiate-able when arguments are passed manually") {
       emitCHIRRTL(new Top {
-        implicit val n = 5
-        implicit val str = "6"
+        implicit val n:   Int = 5
+        implicit val str: String = "6"
         val inst0 = Instantiate(new TwoImplicitArgs)
         val inst1 = Instantiate(new TwoImplicitArgs()(n, str))
       }).fileCheck()(
@@ -269,7 +268,7 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
   describe("Module classes that take a single argument list") {
     it("should be Instantiate-able when there is only a single argument") {
       emitCHIRRTL(new Top {
-        val n = 3
+        val n: Int = 3
         val inst0 = Instantiate(new OneArg(3))
         val inst1 = Instantiate(new OneArg(n))
       }).fileCheck()(
@@ -484,13 +483,11 @@ class InstantiateSpec extends AnyFunSpec with Matchers with FileCheck {
 
   describe("Instantiate") {
     it("should provide source locators for module instances") {
-      // Materialize the source info so we can use it in the check
-      implicit val info = implicitly[chisel3.experimental.SourceInfo]
       val chirrtl = emitCHIRRTL(new Top {
         val inst = Instantiate(new OneArg(3))
       })
-      // Exact check simpler without FileCheck
-      chirrtl should include(s"inst inst of OneArg @[${info.asInstanceOf[SourceLine].serialize}]")
+      val thisFile = "src/test/scala/chiselTests/experimental/hierarchy/InstantiateSpec.scala"
+      chirrtl should include(s"inst inst of OneArg @[$thisFile 487")
     }
 
     it("should support BlackBoxes") {
