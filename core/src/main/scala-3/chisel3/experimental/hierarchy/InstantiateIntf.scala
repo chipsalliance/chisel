@@ -79,7 +79,7 @@ private object InstantiateIntfMacros {
     val (core, args, argStructure) = collectArgs(unwrapped, Nil, Nil)
 
     // Unwrap based on whether this is a constructor with or without
-    // explicit type arguments; for example, `MyModule[UInt].apply(a)`
+    // explicit type arguments; for example, `new MyModule[UInt](a)`
     // is wrapped in a TypeApply block
     val (tpt, typeArgs) = core match {
       case Select(New(tpt), _)                   => (tpt, None)
