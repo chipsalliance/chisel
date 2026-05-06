@@ -254,7 +254,7 @@ object ChiselTypeHelpers {
   }
 
   def isPrefixed(t: Type)(using Context): Boolean = {
-    val affectsTpe = getClassIfDefined("chisel3.experimental.AffectsChiselName")
+    val affectsTpe = getClassIfDefined("chisel3.experimental.AffectsChiselPrefix")
     t.baseClasses.contains(affectsTpe)
   }
 }
