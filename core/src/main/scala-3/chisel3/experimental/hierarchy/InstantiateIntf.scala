@@ -63,17 +63,13 @@ private object InstantiateIntfMacros {
       accFlat:       List[Term],
       accStructured: List[List[Term]]
     ): (Term, List[Term], List[List[Term]]) = term match {
-      case app @ Apply(inner, newArgs) =>
+      case Apply(inner, newArgs) =>
         val isImplicit = inner.tpe.widen match {
           case mt: MethodType => mt.isImplicit
           case _ => false
         }
-
-        if (isImplicit) {
-          collectArgs(inner, accFlat, accStructured)
-        } else {
-          collectArgs(inner, newArgs ::: accFlat, newArgs :: accStructured)
-        }
+        if (isImplicit) collectArgs(inner, accFlat, accStructured)
+        else collectArgs(inner, newArgs ::: accFlat, newArgs :: accStructured)
       case other => (other, accFlat, accStructured)
     }
 
@@ -83,84 +79,60 @@ private object InstantiateIntfMacros {
     // Unwrap based on whether this is a constructor with or without
     // explicit type arguments; for example, `MyModule[UInt].apply(a)`
     // is wrapped in a TypeApply block
-    val (tpt, typeArgs, fullConstructorTerm) = core match {
-      case Select(New(tpt), _) =>
-        (tpt, None, unwrapped)
-      case TypeApply(Select(New(tpt), _), targs) =>
-        (tpt, Some(targs), unwrapped)
+    val (tpt, typeArgs) = core match {
+      case Select(New(tpt), _)                   => (tpt, None)
+      case TypeApply(Select(New(tpt), _), targs) => (tpt, Some(targs))
       case _ =>
-        report.errorAndAbort(
-          s"Invalid arguments: ${con.show}",
-          con.asTerm.pos
-        )
+        report.errorAndAbort(s"Invalid arguments: ${con.show}", con.asTerm.pos)
     }
 
-    // Helper to match the original parameter list structure by distributing flat args
-    def matchStructure(
-      structure: List[List[Term]],
-      flatArgs:  List[Term]
-    ): List[List[Term]] = {
-      val it = flatArgs.iterator
-      structure.map(_.map(_ => it.next()))
-    }
-
-    def buildConstructorLambdaMultiList(
-      paramTypes:              List[TypeRepr],
-      reconstructArgStructure: List[Any] => List[List[Term]],
-      paramName:               String
-    ): Expr[_] = {
-      Lambda(
-        Symbol.spliceOwner,
-        MethodType(List(paramName))(_ => paramTypes, _ => TypeRepr.of[A]),
-        (sym, params) => {
-          val argss = reconstructArgStructure(params)
-          // Build nested Apply nodes for multiple parameter lists
-          val base = typeArgs match {
-            case Some(targs) => TypeApply(Select(New(tpt), tpt.tpe.typeSymbol.primaryConstructor), targs)
-            case None        => Select(New(tpt), tpt.tpe.typeSymbol.primaryConstructor)
-          }
-          val result = argss.foldLeft(base)((acc, args) => Apply(acc, args))
-          result.asExprOf[A].asTerm.changeOwner(sym)
-        }
-      ).asExpr
+    // Rebuild the original constructor without arguments
+    val constructorBase: Term = typeArgs match {
+      case Some(targs) => TypeApply(Select(New(tpt), tpt.tpe.typeSymbol.primaryConstructor), targs)
+      case None        => Select(New(tpt), tpt.tpe.typeSymbol.primaryConstructor)
     }
 
     val argExprs = args.map(_.asExpr)
+    val n = argExprs.size
 
-    val argsTuple: Expr[Any] = argExprs.size match {
+    val argsTuple: Expr[Any] = n match {
       case 0 => '{ () }
       case 1 => argExprs.head
       case _ => Expr.ofTupleFromSeq(argExprs)
     }
 
-    val constructorFunc: Expr[_] = argExprs.size match {
+    val constructorFunc: Expr[_] = n match {
       case 0 =>
         Lambda(
           Symbol.spliceOwner,
           MethodType(List("x"))(_ => List(TypeRepr.of[Unit]), _ => TypeRepr.of[A]),
-          (sym, _) => fullConstructorTerm.changeOwner(sym)
+          (sym, _) => unwrapped.changeOwner(sym)
         ).asExpr
       case 1 =>
-        val argTpe = args.head.tpe.widen
-        buildConstructorLambdaMultiList(
-          List(argTpe),
-          params => {
-            val singleArg = params.head.asInstanceOf[Term]
-            matchStructure(argStructure, List(singleArg))
-          },
-          "arg"
-        )
-      case n =>
-        val argTypes = args.map(_.tpe.widen)
-        val tupleTypeRepr = AppliedType(defn.TupleClass(n).typeRef, argTypes)
-        buildConstructorLambdaMultiList(
-          List(tupleTypeRepr),
-          params => {
-            val flatArgs = (1 to n).map(i => Select.unique(params.head.asInstanceOf[Term], s"_$i")).toList
-            matchStructure(argStructure, flatArgs)
-          },
-          "tupArg"
-        )
+        Lambda(
+          Symbol.spliceOwner,
+          MethodType(List("arg"))(_ => List(args.head.tpe.widen), _ => TypeRepr.of[A]),
+          (sym, params) => {
+            val it = Iterator.single(params.head.asInstanceOf[Term])
+            val argss = argStructure.map(_.map(_ => it.next()))
+            val result = argss.foldLeft(constructorBase)((acc, as) => Apply(acc, as))
+            result.asExprOf[A].asTerm.changeOwner(sym)
+          }
+        ).asExpr
+      case _ =>
+        val tupleType = AppliedType(defn.TupleClass(n).typeRef, args.map(_.tpe.widen))
+        Lambda(
+          Symbol.spliceOwner,
+          MethodType(List("tupArg"))(_ => List(tupleType), _ => TypeRepr.of[A]),
+          (sym, params) => {
+            val tup = params.head.asInstanceOf[Term]
+            val flatArgs = (1 to n).map(i => Select.unique(tup, s"_$i")).toList
+            val it = flatArgs.iterator
+            val argss = argStructure.map(_.map(_ => it.next()))
+            val result = argss.foldLeft(constructorBase)((acc, as) => Apply(acc, as))
+            result.asExprOf[A].asTerm.changeOwner(sym)
+          }
+        ).asExpr
     }
 
     (argsTuple, constructorFunc)
