@@ -28,5 +28,6 @@ package object formal {
     throw new UnsupportedOperationException("chiseltest.formal.past is unsupported")
 
   @compileTimeOnly("chiseltest.formal.past is unsupported in this compatibility layer")
-  def past[T <: Data](x: T): T = past(x, 1)
+  def past[T <: Data](x: T): T =
+    throw new UnsupportedOperationException("chiseltest.formal.past is unsupported")
 }
