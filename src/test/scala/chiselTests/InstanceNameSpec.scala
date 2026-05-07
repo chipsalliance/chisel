@@ -27,7 +27,7 @@ class InstanceNameModule extends Module {
 class InstanceNameSpec extends AnyFlatSpec with Matchers {
   behavior.of("instanceName")
   val moduleName = "InstanceNameModule"
-  var m: InstanceNameModule = _
+  var m: InstanceNameModule = null // Crashes in Scala 3 if initialized as `_`
   ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
   it should "work with module IO" in {
