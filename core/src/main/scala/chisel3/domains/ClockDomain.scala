@@ -2,6 +2,7 @@
 
 package chisel3.domains
 
+import chisel3.domain
 import chisel3.domain.{Domain, Field}
 import chisel3.experimental.UnlocatableSourceInfo
 import chisel3.properties.Property
@@ -42,6 +43,42 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
       * phase-locked-loop (PLL).
       */
     object Rational extends Type
+
+    /** Generate an assertion that two domains have a synchronous relationship.
+      *
+      * This is a building block of writing safe clock domain synchronizers.
+      *
+      * @param A the first domain
+      * @param B the second domain
+      */
+    def assertSynchronous(A: domain.Type, B: domain.Type): Unit = {
+      val A_source = A.field.source.asInstanceOf[Property[String]]
+      val A_relationship = A.field.relationship.asInstanceOf[Property[String]]
+      val B_source = B.field.source.asInstanceOf[Property[String]]
+      val B_relationship = B.field.relationship.asInstanceOf[Property[String]]
+      val sync = Property(ClockDomain.Relationship.Synchronous.toString)
+      (A_source === B_source && A_relationship === sync && B_relationship === sync)
+        .assert("input and output must have the same clock source and be synchronous")
+    }
+
+    /** Generate an assertion that two domains have a rational or synchronous relationship.
+      *
+      * This is a building block of writing safe clock domain synchronizers.
+      *
+      * @param A the first domain
+      * @param B the second domain
+      */
+    def assertRational(A: domain.Type, B: domain.Type): Unit = {
+      val A_source = A.field.source.asInstanceOf[Property[String]]
+      val A_relationship = A.field.relationship.asInstanceOf[Property[String]]
+      val B_source = B.field.source.asInstanceOf[Property[String]]
+      val B_relationship = B.field.relationship.asInstanceOf[Property[String]]
+      val sync = Property(ClockDomain.Relationship.Synchronous.toString)
+      val rational = Property(ClockDomain.Relationship.Rational.toString)
+      (A_source === B_source && (A_relationship === sync || A_relationship === rational) && (B_relationship === sync || B_relationship === rational))
+        .assert("input and output must have the same clock source and be synchronous or rational")
+    }
+
   }
 
   override def fields: Seq[(String, Field.Type)] = Seq(
