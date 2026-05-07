@@ -115,7 +115,19 @@ class ChiselNamingPhase extends PluginPhase {
     autoNameMethod = pluginModule.requiredMethod("withName")
     withNames = pluginModule.requiredMethod("withNames")
     prefixModule = requiredModule("chisel3.experimental.prefix")
-    prefixApplyMethod = prefixModule.requiredMethod("applyString")
+
+    // requiredMethod in Scala 3.3.x cannot disambiguate between
+    // overloaded methods. We need this workaround here since the apply
+    // method in object prefix has overloads. This is fixed in Scala 3.7+
+    prefixApplyMethod = requiredModuleRef("chisel3.experimental.prefix").info
+      .member(nme.apply)
+      .suchThat(_.info.firstParamTypes match {
+        case List(pt) => pt.isRef(defn.StringClass)
+        case _        => false
+      })
+      .symbol
+      .asTerm
+
     ctx
   }
 
