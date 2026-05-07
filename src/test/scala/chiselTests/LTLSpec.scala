@@ -75,15 +75,15 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
     ChiselStage.emitSystemVerilog(new DelaysMod)
   }
 
-  class PastMod extends RawModule {
+  class PastMod extends Module {
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a, b = IO(Input(Bool()))
-    val clock = IO(Input(Clock()))
+    val myClock = IO(Input(Clock()))
     val s0: Sequence = a.past()
     val s1: Sequence = a.past(3)
     val s2: Sequence = Sequence.past(b, 2)
-    val s3: Sequence = a.past(clock)
-    val s4: Sequence = a.past(2, clock)
+    val s3: Sequence = a.past(myClock)
+    val s4: Sequence = a.past(2, myClock)
   }
   it should "support sequence past operations" in {
     val sourceLoc = "@[Foo.scala 1:2]"
@@ -92,12 +92,12 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
       .fileCheck()(
         s"""|CHECK: input a : UInt<1>
             |CHECK: input b : UInt<1>
-            |CHECK: input clock : Clock
-            |CHECK: intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a) $sourceLoc
-            |CHECK: intrinsic(circt_ltl_past<delay = 3> : UInt<1>, a) $sourceLoc
-            |CHECK: intrinsic(circt_ltl_past<delay = 2> : UInt<1>, b) $sourceLoc
+            |CHECK: input myClock : Clock
             |CHECK: intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a, clock) $sourceLoc
-            |CHECK: intrinsic(circt_ltl_past<delay = 2> : UInt<1>, a, clock) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 3> : UInt<1>, a, clock) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 2> : UInt<1>, b, clock) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 1> : UInt<1>, a, myClock) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_past<delay = 2> : UInt<1>, a, myClock) $sourceLoc
             |""".stripMargin
       )
   }

@@ -136,7 +136,7 @@ object Sequence extends SequenceObjIntf {
     OpaqueSequence(LTLDelayIntrinsic(delay, None)(seq.inner))
 
   protected def _past(seq: Sequence, delay: Int)(implicit sourceInfo: SourceInfo): Sequence =
-    OpaqueSequence(LTLPastIntrinsic(delay)(seq.inner))
+    OpaqueSequence(LTLPastIntrinsic(delay, Some(Module.clock))(seq.inner))
 
   protected def _pastClock(seq: Sequence, delay: Int, clock: Clock)(implicit sourceInfo: SourceInfo): Sequence =
     OpaqueSequence(LTLPastIntrinsic(delay, Some(clock))(seq.inner))
