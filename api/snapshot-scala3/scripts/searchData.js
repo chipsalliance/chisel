@@ -1425,6 +1425,8 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/domains/ClockDomain$.html#rational-fffffc9b","e":false,"i":"","n":"rational","t":"rational(source: Type, suffix: String): Type","d":"chisel3.domains.ClockDomain","k":"def","x":""},
 {"l":"chisel3/domains/ClockDomain$.html#synchronous-fffffc9b","e":false,"i":"","n":"synchronous","t":"synchronous(source: Type, suffix: String): Type","d":"chisel3.domains.ClockDomain","k":"def","x":""},
 {"l":"chisel3/domains/ClockDomain$$Relationship$.html#","e":false,"i":"","n":"Relationship","t":"Relationship","d":"chisel3.domains.ClockDomain","k":"object","x":""},
+{"l":"chisel3/domains/ClockDomain$$Relationship$.html#assertRational-a6c","e":false,"i":"","n":"assertRational","t":"assertRational(A: Type, B: Type): Unit","d":"chisel3.domains.ClockDomain.Relationship","k":"def","x":""},
+{"l":"chisel3/domains/ClockDomain$$Relationship$.html#assertSynchronous-a6c","e":false,"i":"","n":"assertSynchronous","t":"assertSynchronous(A: Type, B: Type): Unit","d":"chisel3.domains.ClockDomain.Relationship","k":"def","x":""},
 {"l":"chisel3/domains/ClockDomain$$Relationship$$Rational$.html#","e":false,"i":"","n":"Rational","t":"Rational extends Type","d":"chisel3.domains.ClockDomain.Relationship","k":"object","x":""},
 {"l":"chisel3/domains/ClockDomain$$Relationship$$Synchronous$.html#","e":false,"i":"","n":"Synchronous","t":"Synchronous extends Type","d":"chisel3.domains.ClockDomain.Relationship","k":"object","x":""},
 {"l":"chisel3/domains/ClockDomain$$Relationship$$Type.html#","e":false,"i":"","n":"Type","t":"Type","d":"chisel3.domains.ClockDomain.Relationship","k":"trait","x":""},
