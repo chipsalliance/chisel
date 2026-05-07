@@ -251,6 +251,56 @@ class Child extends Module {
 
 This results in the definition `Bar_Child`.
 
+## ignoreParentPrefix
+
+Override `ignoreParentPrefix` to `true` to make a module (and its children) ignore any prefix
+inherited from the instantiation context — i.e., from an enclosing `withModulePrefix` block or
+a parent's `localModulePrefix`.
+The module's own `localModulePrefix` is still respected.
+
+This is useful when a module belongs to a fixed namespace regardless of where it is instantiated.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  withModulePrefix("Foo") {
+    val sub = Module(new Sub)
+  }
+}
+
+class Sub extends Module {
+  override def ignoreParentPrefix = true
+  // ..
+}
+```
+
+This results in the two module definitions `Top` and `Sub` — the `Foo` prefix is ignored.
+
+You can combine `ignoreParentPrefix` with `localModulePrefix` to pin a module to its own namespace:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Top extends Module {
+  withModulePrefix("Foo") {
+    val sub = Module(new Sub)
+  }
+}
+
+class Sub extends Module {
+  override def ignoreParentPrefix = true
+  override def localModulePrefix = Some("Bar")
+  // ..
+}
+```
+
+This results in the two module definitions `Top` and `Bar_Sub`.
+The inherited `Foo` prefix is ignored, but `Bar` from `localModulePrefix` still applies.
+
+Unlike `noModulePrefix` (which is applied at the call site), `ignoreParentPrefix` is defined on
+the module class itself, so the behaviour is consistent no matter where the module is instantiated.
+
 ## External Modules
 
 `BlackBox` and `ExtModule` are unaffected by `withModulePrefix`.
