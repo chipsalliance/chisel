@@ -452,6 +452,126 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
     )
   }
 
+  behavior.of("BaseModule.ignoreParentPrefix")
+
+  it should "cause a module to ignore an inherited prefix" in {
+    class Foo extends RawModule {
+      override def ignoreParentPrefix = true
+      val a = Wire(Bool())
+    }
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val foo = Module(new Foo)
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Foo
+           |""".stripMargin
+      )
+  }
+
+  it should "still respect localModulePrefix when ignoreParentPrefix is true" in {
+    class Foo extends RawModule {
+      override def ignoreParentPrefix = true
+      override def localModulePrefix = Some("Local")
+      val a = Wire(Bool())
+    }
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val foo = Module(new Foo)
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Local_Foo :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Local_Foo
+           |""".stripMargin
+      )
+  }
+
+  it should "cause children to also ignore the inherited prefix" in {
+    class Bar extends RawModule {
+      val a = Wire(Bool())
+    }
+    class Foo extends RawModule {
+      override def ignoreParentPrefix = true
+      val bar = Module(new Bar)
+    }
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val foo = Module(new Foo)
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Bar :
+           |CHECK-LABEL: module Foo :
+           |CHECK:         inst bar of Bar
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Foo
+           |""".stripMargin
+      )
+  }
+
+  it should "restore the prefix after the module so siblings are unaffected" in {
+    class Foo extends RawModule {
+      override def ignoreParentPrefix = true
+      val a = Wire(Bool())
+    }
+    class Bar extends RawModule {
+      val a = Wire(Bool())
+    }
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val foo = Module(new Foo)
+        val bar = Module(new Bar)
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Foo :
+           |CHECK-LABEL: module Outer_Bar :
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Foo
+           |CHECK:         inst bar of Outer_Bar
+           |""".stripMargin
+      )
+  }
+
+  it should "allow localModulePrefix to propagate to children when ignoreParentPrefix is set" in {
+    class Bar extends RawModule {
+      val a = Wire(Bool())
+    }
+    class Foo extends RawModule {
+      override def ignoreParentPrefix = true
+      override def localModulePrefix = Some("Local")
+      val bar = Module(new Bar)
+    }
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        val foo = Module(new Foo)
+      }
+    }
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK-LABEL: module Local_Bar :
+           |CHECK-LABEL: module Local_Foo :
+           |CHECK:         inst bar of Local_Bar
+           |CHECK-LABEL: module Top :
+           |CHECK:         inst foo of Local_Foo
+           |""".stripMargin
+      )
+  }
+
   behavior.of("noModulePrefix")
 
   it should "remove module prefix within the block" in {
