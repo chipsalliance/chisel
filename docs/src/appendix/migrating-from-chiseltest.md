@@ -134,6 +134,19 @@ For projects with a large test suite, Chisel now includes a **ChiselTest compati
 
 Simply keep your existing imports and test structure:
 
+```scala mdoc:reset:silent
+// Need to reset because EphemeralSimulator also provides peek and poke                                                                                                                                           
+import chisel3._
+class MyModule extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(16.W))
+    val out = Output(UInt(16.W))
+  })
+
+  io.out := RegNext(io.in)
+}
+```
+
 ```scala mdoc
 import chisel3._
 import chiseltest._
