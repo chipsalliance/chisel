@@ -1715,6 +1715,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/experimental/BaseModule.html#desiredName-0","e":false,"i":"","n":"desiredName","t":"desiredName: String","d":"chisel3.experimental.BaseModule","k":"def","x":""},
 {"l":"chisel3/experimental/BaseModule.html#endIOCreation-6ea","e":false,"i":"","n":"endIOCreation","t":"endIOCreation()(implicit si: SourceInfo): Unit","d":"chisel3.experimental.BaseModule","k":"def","x":""},
 {"l":"chisel3/experimental/BaseModule.html#hasSeed-0","e":false,"i":"","n":"hasSeed","t":"hasSeed: Boolean","d":"chisel3.experimental.BaseModule","k":"def","x":""},
+{"l":"chisel3/experimental/BaseModule.html#ignoreParentPrefix-0","e":false,"i":"","n":"ignoreParentPrefix","t":"ignoreParentPrefix: Boolean","d":"chisel3.experimental.BaseModule","k":"def","x":""},
 {"l":"chisel3/experimental/BaseModule.html#localModulePrefix-0","e":false,"i":"","n":"localModulePrefix","t":"localModulePrefix: Option[String]","d":"chisel3.experimental.BaseModule","k":"def","x":""},
 {"l":"chisel3/experimental/BaseModule.html#localModulePrefixAppliesToSelf-0","e":false,"i":"","n":"localModulePrefixAppliesToSelf","t":"localModulePrefixAppliesToSelf: Boolean","d":"chisel3.experimental.BaseModule","k":"def","x":""},
 {"l":"chisel3/experimental/BaseModule.html#localModulePrefixUseSeparator-0","e":false,"i":"","n":"localModulePrefixUseSeparator","t":"localModulePrefixUseSeparator: Boolean","d":"chisel3.experimental.BaseModule","k":"def","x":""},
