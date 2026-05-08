@@ -58,10 +58,11 @@ class ChiselPlugin(val global: Global) extends Plugin {
   )
 
   override def init(options: List[String], error: String => Unit): Boolean = {
-    // Deprecate Scala 2.12 via the compiler plugin
-    val scalaVersion = scala.util.Properties.versionNumberString.split('.')
-    if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt == 12) {
-      val msg = s"Chisel 5 is the last version that will support Scala 2.12. Please upgrade to Scala 2.13."
+    // Deprecate Scala <= 2.13.8 via the compiler plugin
+    val Array(epoch, major, minor) = scala.util.Properties.versionNumberString.split('.')
+    if (epoch == "2" && major == "13" && minor.toInt <= 8) {
+      val msg = s"Chisel 7 is the last version that will support Scala <= 2.13.8. " +
+        "Please upgrade to a newer minor version of Scala 2.13."
 
       global.reporter.warning(NoPosition, msg)
     }
