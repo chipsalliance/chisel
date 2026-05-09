@@ -771,4 +771,30 @@ class ProbeSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim 
     }
     ChiselStage.emitCHIRRTL(new TestMod)
   }
+
+  "FlatIO probe" should "not stack overflow" in {
+    class ProbeIO extends Bundle {
+      val a = UInt(32.W)
+    }
+    class WithProbeIO extends Bundle {
+      val probe = Output(Probe(new ProbeIO))
+    }
+    class FlatIOModule extends RawModule {
+      val io = FlatIO(new WithProbeIO)
+      val w = Wire(new ProbeIO)
+      define(io.probe, ProbeValue(w))
+      w.a := 0.U
+      dontTouch(io)
+      dontTouch(w)
+    }
+    class TestTop extends RawModule {
+      val testMod = Module(new FlatIOModule)
+      val r: Bool = testMod.io.probe.a === 0.U
+      dontTouch(r)
+    }
+    val exc = intercept[Throwable] {
+      ChiselStage.emitSystemVerilog(new TestTop)
+    }
+    exc should not be a[StackOverflowError]
+  }
 }
