@@ -8,7 +8,7 @@ import chisel3.experimental.hierarchy._
 import chisel3.probe.Probe
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror
-import chisel3.util.DecoupledIO
+import chisel3.util.Decoupled
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -184,9 +184,9 @@ class DataMirrorSpec extends AnyFlatSpec with Matchers {
 
   "isFullyAligned" should "work" in {
     class InputOutputTest extends Bundle {
-      val incoming = Input(DecoupledIO(UInt(8.W)))
-      val outgoing = Output(DecoupledIO(UInt(8.W)))
-      val mixed = DecoupledIO(UInt(8.W))
+      val incoming = Input(Decoupled(UInt(8.W)))
+      val outgoing = Output(Decoupled(UInt(8.W)))
+      val mixed = Decoupled(UInt(8.W))
     }
     // Top-level negative test.
     assert(!DataMirror.isFullyAligned(new InputOutputTest()))
@@ -205,15 +205,15 @@ class DataMirrorSpec extends AnyFlatSpec with Matchers {
     assert(DataMirror.isFullyAligned(Input(new InputOutputTest().mixed)))
 
     // Check DecoupledIO directly, as well as coerced.
-    assert(!DataMirror.isFullyAligned(new DecoupledIO(UInt(8.W))))
-    assert(DataMirror.isFullyAligned(Input(new DecoupledIO(UInt(8.W)))))
+    assert(!DataMirror.isFullyAligned(Decoupled(UInt(8.W))))
+    assert(DataMirror.isFullyAligned(Input(Decoupled(UInt(8.W)))))
 
     // Positive test, simple vector + flipped vector.
     assert(DataMirror.isFullyAligned(Vec(2, UInt(1.W))))
     assert(DataMirror.isFullyAligned(Flipped(Vec(2, UInt(1.W)))))
 
     // Positive test, zero-length vector of non-aligned elements.
-    assert(DataMirror.isFullyAligned(Vec(0, new DecoupledIO(UInt(8.W)))))
+    assert(DataMirror.isFullyAligned(Vec(0, Decoupled(UInt(8.W)))))
 
     // Negative test: vector of flipped (?).
     assert(!DataMirror.isFullyAligned(Vec(2, Flipped(UInt(1.W)))))
