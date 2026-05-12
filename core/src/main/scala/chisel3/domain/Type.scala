@@ -61,6 +61,8 @@ final class Type private[domain] (val domain: Domain) extends Element { self =>
 
   override def cloneType: this.type = new Type(domain).asInstanceOf[this.type]
 
+  override def toString: String = s"${domain.name}.Type"
+
   override def toPrintable: Printable =
     throwException(s"'domain.Type' does not support hardware printing" + this._errorContext)
 

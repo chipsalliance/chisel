@@ -23,7 +23,7 @@ package object domain {
     * @param source the source of the forward
     */
   def define[A <: domain.Type](sink: A, source: A)(implicit sourceInfo: SourceInfo): Unit = {
-    Builder.pushCommand(ir.DomainDefine(sourceInfo, sink.lref, source.ref))
+    chisel3.internal.MonoConnect.domainDefine(sourceInfo, sink, source, Builder.referenceUserContainer)
   }
 
   /** Unsafe cast to a variadic list of domains.

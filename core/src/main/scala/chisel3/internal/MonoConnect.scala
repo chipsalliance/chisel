@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, SourceInfo}
 import chisel3.internal.binding._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.ir.{Block, Connect, DefInvalid, ProbeDefine, PropAssign}
+import chisel3.internal.firrtl.ir.{Block, Connect, DefInvalid, DomainDefine, ProbeDefine, PropAssign}
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
 import chisel3.properties.{Class, Property}
@@ -80,6 +80,10 @@ private[chisel3] object MonoConnect {
     MonoConnectException(s"Source ${formatName(source)} of Probed type cannot participate in a mono connection (:=)")
   def SinkProbeMonoConnectionException(sink: Data) =
     MonoConnectException(s"Sink ${formatName(sink)} of Probed type cannot participate in a mono connection (:=)")
+  def MismatchedDomainException(sink: chisel3.domain.Type, source: chisel3.domain.Type) =
+    MonoConnectException(
+      s"Sink (${sink.domain.name}) and Source (${source.domain.name}) are different kinds of domains."
+    )
 
   /** Check if the argument is visible from current block scope
     *
@@ -155,6 +159,9 @@ private[chisel3] object MonoConnect {
         elemConnect(sourceInfo, sink_e, source_e, context_mod)
       case (sink_p: Property[_], source_p: Property[_]) =>
         propConnect(sourceInfo, sink_p, source_p, context_mod)
+      // Two domains are connected at the root.
+      case (sink_d: chisel3.domain.Type, source_d: chisel3.domain.Type) =>
+        domainDefine(sourceInfo, sink_d, source_d, context_mod)
 
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
@@ -453,6 +460,24 @@ private[chisel3] object MonoConnect {
           cls.addCommand(PropAssign(sourceInfo, sink.lref, source.ref))
         }(sourceInfo)
       case _ => throwException("Internal Error! Property connection can only occur within RawModule or Class.")
+    }
+  }
+
+  def domainDefine(
+    sourceInfo: SourceInfo,
+    sink:       chisel3.domain.Type,
+    source:     chisel3.domain.Type,
+    context:    BaseModule
+  ): Unit = {
+    implicit val info: SourceInfo = sourceInfo
+    if (sink.domain != source.domain) {
+      throw MismatchedDomainException(sink, source)
+    }
+    checkConnect.checkConnection(sourceInfo, sink, source, context)
+    context match {
+      case rm: RawModule =>
+        rm.addCommand(DomainDefine(sourceInfo, sink.lref, source.ref))
+      case _ => throwException("Internal Error! Domain connection can only occur within RawModule.")
     }
   }
 
