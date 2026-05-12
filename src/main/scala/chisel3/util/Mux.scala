@@ -25,9 +25,10 @@ import chisel3.internal.Builder
   */
 object Mux1H extends Mux1HObjIntf {
   protected def _applyImpl[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = {
-    if (sel.size != in.size) {
-      Builder.error(s"Mux1H: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
-    }
+    require(
+      sel.size == in.size,
+      s"Mux1H: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}"
+    )
     _applyImpl(sel.zip(in))
   }
 
@@ -58,9 +59,10 @@ object PriorityMux extends PriorityMuxObjIntf {
   protected def _applyImpl[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
 
   protected def _applyImpl[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo): T = {
-    if (sel.size != in.size) {
-      Builder.error(s"PriorityMux: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}")
-    }
+    require(
+      sel.size == in.size,
+      s"PriorityMux: input Seqs must have the same length, got sel ${sel.size} and in ${in.size}"
+    )
     _applyImpl(sel.zip(in))
   }
 

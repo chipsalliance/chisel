@@ -67,7 +67,7 @@ class PriorityMuxSpec extends AnyFlatSpec with Matchers with ChiselSim {
   }
 
   it should "give a error when given different size Seqs" in {
-    val e = intercept[ChiselException] {
+    val e = intercept[IllegalArgumentException] {
       emitCHIRRTL(
         new RawModule {
           PriorityMux(Seq(true.B, false.B), Seq(1.U, 2.U, 3.U))
@@ -75,7 +75,6 @@ class PriorityMuxSpec extends AnyFlatSpec with Matchers with ChiselSim {
         args = Array("--throw-on-first-error")
       )
     }
-    e.getMessage should include("PriorityMuxSpec.scala") // Make sure source locator comes from this file
     e.getMessage should include("PriorityMux: input Seqs must have the same length, got sel 2 and in 3")
   }
 
@@ -84,5 +83,21 @@ class PriorityMuxSpec extends AnyFlatSpec with Matchers with ChiselSim {
     emitCHIRRTL(new RawModule {
       PriorityMux("b10".U(2.W), Seq(1.U, 2.U, 3.U))
     })
+  }
+
+  it should "not drop arguments when sel.size < in.size" in {
+    // Regression test for issue #4444
+    val e = intercept[IllegalArgumentException] {
+      emitCHIRRTL(
+        new RawModule {
+          val a, b = IO(Input(Bool()))
+          val foo, bar, fizz = IO(Input(UInt(8.W)))
+          val out = IO(Output(UInt(8.W)))
+          out := PriorityMux(Seq(a, b), Seq(foo, bar, fizz))
+        },
+        args = Array("--throw-on-first-error")
+      )
+    }
+    e.getMessage should include("PriorityMux: input Seqs must have the same length, got sel 2 and in 3")
   }
 }

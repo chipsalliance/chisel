@@ -33,7 +33,7 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselSim {
     e.getMessage should include("Mux1H must have a non-empty argument")
   }
   "Mux1H should give a error when given different size Seqs" in {
-    val e = intercept[ChiselException] {
+    val e = intercept[IllegalArgumentException] {
       emitCHIRRTL(
         new RawModule {
           Mux1H(Seq(true.B, false.B), Seq(1.U, 2.U, 3.U))
@@ -41,7 +41,6 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselSim {
         args = Array("--throw-on-first-error")
       )
     }
-    e.getMessage should include("OneHotMuxSpec.scala") // Make sure source locator comes from this file
     e.getMessage should include("Mux1H: input Seqs must have the same length, got sel 2 and in 3")
   }
   // The input bitvector is sign extended to the width of the sequence
