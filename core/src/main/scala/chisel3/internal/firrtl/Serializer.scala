@@ -26,7 +26,7 @@ private[chisel3] object Serializer {
   private val Indent = "  "
 
   // The version supported by the serializer.
-  val version = "6.0.0"
+  val version = "7.0.0"
 
   def getRef(id: HasId, sourceInfo: SourceInfo): Arg =
     id.getOptionRef.getOrElse {
