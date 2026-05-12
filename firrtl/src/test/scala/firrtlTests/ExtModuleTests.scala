@@ -8,7 +8,7 @@ import firrtl.testutils._
 class ExtModuleTests extends FirrtlFlatSpec {
   "extmodule" should "serialize and re-parse equivalently" in {
     val input =
-      """|FIRRTL version 6.0.0
+      """|FIRRTL version 7.0.0
          |circuit Top :
          |  extmodule Top knownlayer A, B, C :
          |    input y : UInt<0>
