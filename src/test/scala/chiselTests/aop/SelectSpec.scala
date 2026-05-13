@@ -7,10 +7,9 @@ import chisel3.aop.Select
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import circt.stage.ChiselStage
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.reflect.runtime.universe.TypeTag
 
 class SelectTester(results: Seq[Int]) extends Module {
   val values = VecInit(results.map(_.U))
@@ -39,14 +38,14 @@ class SelectSpec extends AnyFlatSpec with Matchers {
   "Test" should "pass if selecting correct registers" in {
     val dut = ChiselGeneratorAnnotation(() => {
       new SelectTester(Seq(0, 1, 2))
-    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[SelectTester]].design
     Select.registers(dut) should be(Seq(dut.counter))
   }
 
   "Test" should "pass if selecting correct wires" in {
     val dut = ChiselGeneratorAnnotation(() => {
       new SelectTester(Seq(0, 1, 2))
-    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[SelectTester]].design
     Select.wires(dut) should be(Seq(dut.values))
 
   }
@@ -54,7 +53,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
   "Test" should "pass if selecting correct printfs" in {
     val dut = ChiselGeneratorAnnotation(() => {
       new SelectTester(Seq(0, 1, 2))
-    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[SelectTester]].design
     Seq(Select.printfs(dut).last.toString) should be(
       Seq(
         Select
@@ -76,7 +75,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
   "Test" should "pass if selecting correct connections" in {
     val dut = ChiselGeneratorAnnotation(() => {
       new SelectTester(Seq(0, 1, 2))
-    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[SelectTester]].design
     Select.connectionsTo(dut)(dut.counter) should be(
       Seq(
         PredicatedConnect(Nil, dut.counter, dut.added, false),
@@ -93,7 +92,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
       attach(a, b, c)
     }
     val dut = ChiselGeneratorAnnotation(() => new AttachTest)
-      .elaborate(1)
+      .elaborate.apply(1)
       .asInstanceOf[DesignAnnotation[AttachTest]]
       .design
     Select.attachedTo(dut)(dut.a) should be(Set(dut.a, dut.b, dut.c))
@@ -103,21 +102,21 @@ class SelectSpec extends AnyFlatSpec with Matchers {
   "Test" should "pass if selecting ops by kind" in {
     val dut = ChiselGeneratorAnnotation(() => {
       new SelectTester(Seq(0, 1, 2))
-    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[SelectTester]].design
     Select.ops("tail")(dut) should be(Seq(dut.added, dut.zero))
   }
 
   "Test" should "pass if selecting ops" in {
     val dut = ChiselGeneratorAnnotation(() => {
       new SelectTester(Seq(0, 1, 2))
-    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[SelectTester]].design
     Select.ops(dut).collect { case ("tail", d) => d } should be(Seq(dut.added, dut.zero))
   }
 
   "Test" should "pass if selecting correct stops" in {
     val dut = ChiselGeneratorAnnotation(() => {
       new SelectTester(Seq(0, 1, 2))
-    }).elaborate(1).asInstanceOf[DesignAnnotation[SelectTester]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[SelectTester]].design
     Select.stops(dut) should be(
       Seq(
         Select.Stop(
@@ -139,7 +138,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[Top]].design
     val bbs = Select.collectDeep(top) { case b: BB => b }
     assert(bbs.size == 1)
   }
@@ -153,7 +152,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[Top]].design
     val bbs = Select.collectDeep(top) { case b: BB => b }
     assert(bbs.size == 1)
   }
@@ -168,7 +167,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    }).elaborate.apply(1).asInstanceOf[DesignAnnotation[Top]].design
     val bbs = Select.collectDeep(top) { case b: BB => b }
     assert(bbs.size == 1)
   }
@@ -247,7 +246,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     }
 
     class MyWrapperModule extends RawModule {
-      implicit val mg = new chisel3.internal.MacroGenerated {}
+      implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
 
       val definition = Definition(new MyIntermediateInstance)
 
@@ -269,7 +268,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     }
 
     class MyTopModule extends RawModule {
-      implicit val mg = new chisel3.internal.MacroGenerated {}
+      implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
 
       Module(new MyWrapperModule)
 
