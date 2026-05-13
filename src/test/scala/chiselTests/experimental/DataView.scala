@@ -526,7 +526,8 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     class Fizz(val fizz: UInt) extends Bundle
 
     implicit val foo2bar: DataView[Foo, Bar] = DataView[Foo, Bar](f => new Bar(chiselTypeClone(f.foo)), _.foo -> _.bar)
-    implicit val bar2fizz: DataView[Bar, Fizz] = DataView[Bar, Fizz](b => new Fizz(chiselTypeClone(b.bar)), _.bar -> _.fizz)
+    implicit val bar2fizz: DataView[Bar, Fizz] =
+      DataView[Bar, Fizz](b => new Fizz(chiselTypeClone(b.bar)), _.bar -> _.fizz)
 
     implicit val foo2fizz: DataView[Foo, Fizz] = foo2bar.andThen(bar2fizz)
 
@@ -822,7 +823,8 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val in = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
       val foo = Wire(UInt(8.W))
-      implicit val dv: DataView[BundleA, BundleB] = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (foo, b.buzz))
+      implicit val dv: DataView[BundleA, BundleB] =
+        DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (foo, b.buzz))
       out := in.viewAs[BundleB]
     }
     val err = the[InvalidViewException] thrownBy (ChiselStage.emitSystemVerilog(new MyModule))
@@ -837,7 +839,8 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val fizz = UInt(8.W)
       val buzz = UInt(8.W)
     }
-    implicit val dv: DataView[BundleA, BundleB] = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (3.U, b.buzz))
+    implicit val dv: DataView[BundleA, BundleB] =
+      DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (3.U, b.buzz))
     implicit val dv2: DataView[BundleB, BundleA] = dv.invert(_ => new BundleA)
     class MyModule extends Module {
       val in = IO(Input(new BundleA))
@@ -1252,7 +1255,8 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
 
   it should "still error if the mapping is non-total in the view" in {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
-    implicit val dv: DataView[UInt, MyBundle] = PartialDataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
+    implicit val dv: DataView[UInt, MyBundle] =
+      PartialDataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(new MyBundle(UInt(8.W), UInt(8.W))))
