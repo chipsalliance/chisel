@@ -11,7 +11,7 @@ import chisel3.experimental.VecLiterals._
 import chisel3.probe._
 import chisel3.properties.Property
 import chisel3.reflect.DataMirror.internal.chiselTypeClone
-import chisel3.util.{Decoupled, DecoupledIO, Valid, ValidIO}
+import chisel3.util.{Decoupled, DecoupledIO, Valid}
 import circt.stage.ChiselStage
 import scala.collection.immutable.SeqMap
 import org.scalatest.flatspec.AnyFlatSpec
@@ -24,8 +24,8 @@ object SimpleBundleDataView {
   class BundleB(val w: Int) extends Bundle {
     val bar = UInt(w.W)
   }
-  implicit val v1 = DataView[BundleA, BundleB](a => new BundleB(a.w), _.foo -> _.bar)
-  implicit val v2 = v1.invert(b => new BundleA(b.w))
+  implicit val v1: DataView[BundleA, BundleB] = DataView[BundleA, BundleB](a => new BundleB(a.w), _.foo -> _.bar)
+  implicit val v2: DataView[BundleB, BundleA] = v1.invert(b => new BundleA(b.w))
 }
 
 object VecBundleDataView {
@@ -34,7 +34,7 @@ object VecBundleDataView {
     val bar = UInt(8.W)
   }
   implicit val v1: DataView[MyBundle, Vec[UInt]] = DataView(_ => Vec(2, UInt(8.W)), _.foo -> _(1), _.bar -> _(0))
-  implicit val v2 = v1.invert(_ => new MyBundle)
+  implicit val v2: DataView[Vec[UInt], MyBundle] = v1.invert(_ => new MyBundle)
 }
 
 object FlatDecoupledDataView {
@@ -48,18 +48,18 @@ object FlatDecoupledDataView {
     val fizz = Output(UInt(8.W))
     val buzz = Output(UInt(8.W))
   }
-  implicit val view = DataView[FlatDecoupled, DecoupledIO[FizzBuzz]](
+  implicit val view: DataView[FlatDecoupled, DecoupledIO[FizzBuzz]] = DataView[FlatDecoupled, DecoupledIO[FizzBuzz]](
     _ => Decoupled(new FizzBuzz),
     _.valid -> _.valid,
     _.ready -> _.ready,
     _.fizz -> _.bits.fizz,
     _.buzz -> _.bits.buzz
   )
-  implicit val view2 = view.invert(_ => new FlatDecoupled)
+  implicit val view2: DataView[DecoupledIO[FizzBuzz], FlatDecoupled] = view.invert(_ => new FlatDecoupled)
 }
 
 object ValidExtensions {
-  implicit def view[T <: Data] = DataView[T, Valid[T]](
+  implicit def view[T <: Data]: DataView[T, Valid[T]] = DataView[T, Valid[T]](
     x => Valid(x.cloneType), // Valid will strip direction with `Output(...)` anyway
     _ -> _.bits,
     (_, v) => true.B -> v.valid
@@ -71,7 +71,7 @@ object DontCareDataView {
     val a = UInt(8.W)
     val b = UInt(8.W)
   }
-  implicit def view = DataView[UInt, Foo](
+  implicit def view: DataView[UInt, Foo] = DataView[UInt, Foo](
     _ => new Foo,
     _ -> _.a,
     (_, f) => DontCare -> f.b
@@ -285,7 +285,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     class Bar(val x: Int) extends Foo(x) {
       val bar = UInt(x.W)
     }
-    implicit val view = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
+    implicit val view: DataView[Bar, Foo] = PartialDataView.supertype[Bar, Foo](b => new Foo(b.x))
     class MyModule extends Module {
       val fooIn = IO(Input(new Foo(8)))
       val barOut = IO(Output(new Bar(8)))
@@ -525,8 +525,8 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     class Bar(val bar: UInt) extends Bundle
     class Fizz(val fizz: UInt) extends Bundle
 
-    implicit val foo2bar = DataView[Foo, Bar](f => new Bar(chiselTypeClone(f.foo)), _.foo -> _.bar)
-    implicit val bar2fizz = DataView[Bar, Fizz](b => new Fizz(chiselTypeClone(b.bar)), _.bar -> _.fizz)
+    implicit val foo2bar: DataView[Foo, Bar] = DataView[Foo, Bar](f => new Bar(chiselTypeClone(f.foo)), _.foo -> _.bar)
+    implicit val bar2fizz: DataView[Bar, Fizz] = DataView[Bar, Fizz](b => new Fizz(chiselTypeClone(b.bar)), _.bar -> _.fizz)
 
     implicit val foo2fizz: DataView[Foo, Fizz] = foo2bar.andThen(bar2fizz)
 
@@ -708,7 +708,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val foo = Vec(4, UInt(8.W))
       val bar = UInt(2.W)
     }
-    implicit val myView = DataView[(Vec[UInt], UInt), MyBundle](
+    implicit val myView: DataView[(Vec[UInt], UInt), MyBundle] = DataView[(Vec[UInt], UInt), MyBundle](
       _ => new MyBundle,
       _._1 -> _.foo,
       _._2 -> _.bar
@@ -748,7 +748,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val a = Wire(new A)
       val b = Wire(new B)
 
-      implicit val view = DataView[A, B](
+      implicit val view: DataView[A, B] = DataView[A, B](
         _ => new B,
         _.bool -> _.reset_0,
         _.asyncreset -> _.reset_1
@@ -788,7 +788,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
 
   it should "error if the mapping is non-total in the view" in {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
-    implicit val dv = DataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
+    implicit val dv: DataView[UInt, MyBundle] = DataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
     class MyModule extends Module {
       val tpe = new MyBundle(UInt(8.W), UInt(8.W))
       val in = IO(Input(UInt(8.W)))
@@ -800,7 +800,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "error if the mapping is non-total in the target" in {
-    implicit val dv = DataView[(UInt, UInt), UInt](_ => UInt(), _._1 -> _)
+    implicit val dv: DataView[(UInt, UInt), UInt] = DataView[(UInt, UInt), UInt](_ => UInt(), _._1 -> _)
     class MyModule extends Module {
       val a, b = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
@@ -822,7 +822,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val in = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
       val foo = Wire(UInt(8.W))
-      implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (foo, b.buzz))
+      implicit val dv: DataView[BundleA, BundleB] = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (foo, b.buzz))
       out := in.viewAs[BundleB]
     }
     val err = the[InvalidViewException] thrownBy (ChiselStage.emitSystemVerilog(new MyModule))
@@ -837,8 +837,8 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val fizz = UInt(8.W)
       val buzz = UInt(8.W)
     }
-    implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (3.U, b.buzz))
-    implicit val dv2 = dv.invert(_ => new BundleA)
+    implicit val dv: DataView[BundleA, BundleB] = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.fizz, (_, b) => (3.U, b.buzz))
+    implicit val dv2: DataView[BundleB, BundleA] = dv.invert(_ => new BundleA)
     class MyModule extends Module {
       val in = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
@@ -855,7 +855,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     class BundleB extends Bundle {
       val bar = UInt(4.W)
     }
-    implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.bar)
+    implicit val dv: DataView[BundleA, BundleB] = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.bar)
     class MyModule extends Module {
       val in = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
@@ -873,7 +873,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
     class BundleB extends Bundle {
       val bar = UInt(4.W)
     }
-    implicit val dv = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.bar)
+    implicit val dv: DataView[BundleA, BundleB] = DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.bar)
     class MyModule extends Module {
       val in = IO(Input(new BundleA))
       val out = IO(Output(new BundleB))
@@ -906,7 +906,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
 
   it should "error when calling .viewAs on non-hardware Data" in {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
-    implicit val view =
+    implicit val view: DataView[(UInt, UInt), MyBundle] =
       DataView[(UInt, UInt), MyBundle](x => new MyBundle(x._1.cloneType, x._2.cloneType), _._1 -> _.foo, _._2 -> _.bar)
     class MyModule extends Module {
       (UInt(8.W), UInt(8.W)).viewAs[MyBundle]
@@ -1023,7 +1023,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "error if a literal is used as part of the view" in {
-    implicit val dv =
+    implicit val dv: DataView[Valid[UInt], UInt] =
       DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> true.B))
     class MyModule extends Module {
       val in = IO(Input(Valid(UInt(8.W))))
@@ -1082,7 +1082,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "error if DontCare is used as part of the view" in {
-    implicit val dv =
+    implicit val dv: DataView[Valid[UInt], UInt] =
       DataView.mapping[Valid[UInt], UInt](_.bits.cloneType, (v, x) => Seq(v.bits -> x, v.valid -> DontCare))
     class MyModule extends Module {
       val in = IO(Input(Valid(UInt(8.W))))
@@ -1153,7 +1153,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val b = UInt(4.W)
       val c = UInt(4.W)
     }
-    implicit val dv =
+    implicit val dv: DataView[BundleA, BundleB] =
       DataView[BundleA, BundleB](_ => new BundleB, _.foo -> _.c, _.bar -> _.a, (_, b) => 6.U(4.W) -> b.b)
     class MyModule extends Module {
       val bunA = (new BundleA).Lit(_.foo -> 0xa.U, _.bar -> 0xd.U)
@@ -1177,7 +1177,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
       val foo = Vec(2, UInt(4.W))
       val bar = Vec(2, Box(UInt(4.W)))
     }
-    implicit val dv = DataView[Vec[UInt], MyBundle](
+    implicit val dv: DataView[Vec[UInt], MyBundle] = DataView[Vec[UInt], MyBundle](
       _ => new MyBundle,
       _(0) -> _.foo(0),
       _(1) -> _.bar(1).value,
@@ -1252,7 +1252,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
 
   it should "still error if the mapping is non-total in the view" in {
     class MyBundle(val foo: UInt, val bar: UInt) extends Bundle
-    implicit val dv = PartialDataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
+    implicit val dv: DataView[UInt, MyBundle] = PartialDataView[UInt, MyBundle](_ => new MyBundle(UInt(), UInt()), _ -> _.bar)
     class MyModule extends Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(new MyBundle(UInt(8.W), UInt(8.W))))
@@ -1263,7 +1263,7 @@ class DataViewSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "NOT error if the mapping is non-total in the target" in {
-    implicit val dv = PartialDataView[(UInt, UInt), UInt](_ => UInt(), _._2 -> _)
+    implicit val dv: DataView[(UInt, UInt), UInt] = PartialDataView[(UInt, UInt), UInt](_ => UInt(), _._2 -> _)
     class MyModule extends Module {
       val a, b = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
