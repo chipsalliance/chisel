@@ -14,7 +14,8 @@ class Decoder(bitpats: List[String]) extends Module {
     val inst = Input(UInt(32.W))
     val matched = Output(Bool())
   })
-  io.matched := VecInit(bitpats.map(BitPat(_) === io.inst)).reduce(_ || _)
+  val matches: Seq[Bool] = bitpats.map(bp => BitPat(bp) === io.inst)
+  io.matched := matches.reduce((a: Bool, b: Bool) => a || b)
 }
 
 class DecoderTester(pairs: List[(String, String)]) extends Module {
