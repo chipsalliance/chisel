@@ -6,7 +6,7 @@ import chisel3.simulator._
 import chisel3.util.circt.dpi._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers._
 import svsim._
 
 class VerilatorSimulator(val workspacePath: String) extends Simulator[verilator.Backend] {
@@ -107,7 +107,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       }
       thrown.getMessage must include("observed value 12 != 5")
       (thrown.getMessage must include).regex(
-        """ @\[src/test/scala-2/chiselTests/simulator/SimulatorSpec\.scala:\d+:\d+\]"""
+        """ @\[src/test/scala/chiselTests/simulator/SimulatorSpec\.scala:\d+:\d+\]"""
       )
       thrown.getMessage must include("gcd.io.result.expect(5)")
       thrown.getMessage must include("                    ^")
