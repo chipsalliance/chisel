@@ -14,10 +14,30 @@ import chisel3.util.circt.{PlusArgsTest, PlusArgsValue}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-import java.nio.file.FileSystems
-import scala.reflect.io.Directory
+import java.nio.file.{FileSystems, Files, Path}
+import scala.jdk.CollectionConverters._
 
 class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck {
+
+  private def deleteRecursively(path: Path): Unit = {
+    if (Files.exists(path)) {
+      if (Files.isDirectory(path)) {
+        val stream = Files.newDirectoryStream(path)
+        try stream.iterator.asScala.foreach(deleteRecursively)
+        finally stream.close()
+      }
+      Files.delete(path)
+    }
+  }
+
+  private def deepFiles(path: Path): Seq[Path] = {
+    if (!Files.exists(path)) Seq.empty
+    else {
+      val stream = Files.walk(path)
+      try stream.iterator.asScala.filter(Files.isRegularFile(_)).toSeq
+      finally stream.close()
+    }
+  }
 
   describe("scalatest.ChiselSim") {
 
@@ -318,8 +338,8 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
           FileSystems.getDefault().getPath("test_run_dir", "foo")
       }
 
-      val directory = Directory(FileSystems.getDefault().getPath("test_run_dir", "foo").toFile())
-      directory.deleteRecursively()
+      val directory = FileSystems.getDefault().getPath("test_run_dir", "foo")
+      deleteRecursively(directory)
 
       simulate(new Foo()) { _ => }(
         hasSimulator = implicitly[HasSimulator],
@@ -331,10 +351,10 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       )
 
       info(s"found expected directory: '$directory'")
-      assert(directory.exists)
-      assert(directory.isDirectory)
+      assert(Files.exists(directory))
+      assert(Files.isDirectory(directory))
 
-      val allFiles = directory.deepFiles.toSeq.map(_.toString).toSet
+      val allFiles = deepFiles(directory).map(_.toString).toSet
       for (
         file <- Seq(
           "test_run_dir/foo/workdir-verilator/Makefile",
