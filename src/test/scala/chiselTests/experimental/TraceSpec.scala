@@ -9,7 +9,7 @@ import chisel3.testing.HasTestingDirectory
 import chisel3.testing.scalatest.TestingDirectory
 import chisel3.util.experimental.InlineInstance
 import circt.stage.ChiselStage
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.annotations.TargetToken.{Instance, OfModule, Ref}
 import firrtl.annotations.{CompleteTarget, InstanceTarget, ReferenceTarget}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -95,7 +95,7 @@ class TraceSpec extends AnyFlatSpec with Matchers with TestingDirectory {
         data
           .flatMap(finalTarget(annos))
           .toSet
-          .map { target: CompleteTarget =>
+          .map { (target: CompleteTarget) =>
             s"""public_flat_rd -module "${target.tokens.collectFirst { case OfModule(m) =>
                 m
               }.get}" -var "${target.tokens.collectFirst { case Ref(r) => r }.get}""""
