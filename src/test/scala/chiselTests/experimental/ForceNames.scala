@@ -27,7 +27,7 @@ object ForceNamesHierarchy {
     val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
     val inst = Module(new MyLeaf)
-    forceName(inst, "inst")
+    chisel3.util.experimental.forceName(inst, "inst")
     inst.in := in
     out := inst.out
   }
