@@ -336,4 +336,57 @@ class FixedIOModuleSpec extends AnyFlatSpec with Matchers with FileCheck {
            |""".stripMargin
       )
   }
+
+  "FixedIORawModule" should "support a tuple IO generator with multiple Data" in {
+    class Foo extends FixedIORawModule[(UInt, UInt)]((Output(UInt(8.W)), Input(UInt(4.W)))) {
+      io._1 := io._2
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: module Foo :
+           |CHECK:   output io_1 : UInt<8>
+           |CHECK:   input io_2 : UInt<4>
+           |""".stripMargin
+      )
+  }
+
+  "FixedIORawModule" should "support a tuple IO generator containing Bundles" in {
+    class InBundle extends Bundle {
+      val a = UInt(8.W)
+      val b = Bool()
+    }
+    class OutBundle extends Bundle {
+      val x = UInt(8.W)
+    }
+    class Foo extends FixedIORawModule[(InBundle, OutBundle)]((Input(new InBundle), Output(new OutBundle))) {
+      io._2.x := io._1.a
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: module Foo :
+           |CHECK:   input io_1 : { a : UInt<8>, b : UInt<1>}
+           |CHECK:   output io_2 : { x : UInt<8>}
+           |""".stripMargin
+      )
+  }
+
+  "FixedIORawModule" should "support a Seq IO generator" in {
+    class Foo extends FixedIORawModule[Seq[UInt]](Seq.fill(3)(Output(UInt(4.W)))) {
+      io.foreach(_ := 0.U)
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK: module Foo :
+           |CHECK:   output io_0 : UInt<4>
+           |CHECK:   output io_1 : UInt<4>
+           |CHECK:   output io_2 : UInt<4>
+           |""".stripMargin
+      )
+  }
 }
