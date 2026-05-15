@@ -5,6 +5,7 @@ package chiselTests.stage
 import chisel3._
 import chisel3.layer.{Layer, LayerConfig}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation, RemapLayer}
+import firrtl.annoSeqToSeq
 import firrtl.options.OptionsException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
