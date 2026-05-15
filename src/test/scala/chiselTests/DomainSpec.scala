@@ -110,20 +110,43 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
-  they should "be capable of being forwarded with the domain define operation" in {
+  they should "be capable of being forwarded with the domain define operation or connects" in {
 
     class Foo extends RawModule {
       val a = IO(Input(ClockDomain.Type()))
       val b = IO(Output(ClockDomain.Type()))
 
       domain.define(b, a)
+      b := a
+      b <> a
+      b :<= a
+      b :<>= a
     }
 
     ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
-      """|CHECK: module Foo :
-         |CHECK:   domain_define b = a
+      """|CHECK:         module Foo :
+         |CHECK-COUNT-5:   domain_define b = a
+         |CHECK-NOT:       domain_define
          |""".stripMargin
     }
+
+  }
+
+  they should "error if connecting two different kinds of domains with :=" in {
+
+    object DomainA extends Domain
+    object DomainB extends Domain
+
+    class Foo extends RawModule {
+      val a = IO(Input(DomainA.Type()))
+      val b = IO(Output(DomainB.Type()))
+      b := a
+    }
+
+    val exception = intercept[ChiselException] {
+      ChiselStage.elaborate(new Foo, Array("--throw-on-first-error"))
+    }
+    exception.getMessage should include("are different kinds of domains")
 
   }
 

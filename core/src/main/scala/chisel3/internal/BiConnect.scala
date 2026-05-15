@@ -116,6 +116,22 @@ private[chisel3] object BiConnect {
         }
         pushCommand(DefInvalid(sourceInfo, left_a.lref(sourceInfo)))
       case (DontCare, right_a: Analog) => connect(sourceInfo, right, left, context_mod)
+      // Two domains are bi-connected at the root.  `domain_define` has no
+      // direction, so :<=/<> are simply lowered to the same node as `domain.define`.
+      case (left_d: chisel3.domain.Type, right_d: chisel3.domain.Type) =>
+        // Pick the directional sense using the same rule as Records: if the
+        // left-hand side can't be a sink, flip so that the sink is writable.
+        val (sink, source) =
+          if (!MonoConnect.canBeSink(left_d, context_mod) && MonoConnect.canBeSink(right_d, context_mod)) {
+            (right_d, left_d)
+          } else {
+            (left_d, right_d)
+          }
+        try {
+          MonoConnect.domainDefine(sourceInfo, sink, source, context_mod)
+        } catch {
+          case MonoConnectException(message) => throw BiConnectException(message)
+        }
       case (left_e: Element, right_e: Element) => {
         elemConnect(sourceInfo, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
