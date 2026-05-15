@@ -105,8 +105,7 @@ object FixedIOModule {
 class FixedIOExtModule[A](
   final val ioGenerator: A,
   params:                Map[String, Param] = Map.empty[String, Param]
-)(
-  implicit val ioDataProduct: DataProduct[A])
+)(implicit val ioDataProduct: DataProduct[A])
     extends ExtModule(params)
     with FixedIOBaseModule[A] {
   final val io: A = FixedIO.bindPorts(ioGenerator, "io")(UnlocatableSourceInfo).asInstanceOf[A]
