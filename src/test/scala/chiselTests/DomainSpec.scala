@@ -8,7 +8,7 @@ import chisel3.domains.ClockDomain
 import chisel3.experimental.dataview._
 import chisel3.properties.Property
 import chisel3.testing.FileCheck
-import chisel3.experimental.hierarchy.{Instantiate, instantiable, public}
+import chisel3.experimental.hierarchy.{instantiable, public, Instantiate}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
