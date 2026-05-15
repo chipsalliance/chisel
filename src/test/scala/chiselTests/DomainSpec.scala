@@ -8,6 +8,7 @@ import chisel3.domains.ClockDomain
 import chisel3.experimental.dataview._
 import chisel3.properties.Property
 import chisel3.testing.FileCheck
+import chisel3.experimental.hierarchy.{Instantiate, instantiable, public}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -125,6 +126,29 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
          |""".stripMargin
     }
 
+  }
+
+  they should "work if only a Definition has a domain" in {
+
+    @instantiable
+    class Baz extends RawModule {
+      @public
+      val a = IO(Input(ClockDomain.Type()))
+    }
+
+    @instantiable
+    class Bar extends RawModule {
+      private val baz = Instantiate(new Baz)
+    }
+
+    class Foo extends RawModule {
+      private val bar = Instantiate(new Bar)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo).fileCheck() {
+      """|CHECK: domain ClockDomain :
+         |""".stripMargin
+    }
   }
 
   behavior of "The associate method"
