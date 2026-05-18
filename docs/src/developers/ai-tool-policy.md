@@ -35,4 +35,4 @@ Using AI to regenerate copyrighted material does not remove the copyright.
 
 ## References
 
-This policy is closely related to and derived from the [CIRCT AI Tool UseP q0olicy](https://circt.llvm.org/docs/AIToolPolicy/) which is derived from the [LLVM AI Tool Use Policy](https://llvm.org/docs/AIToolPolicy.html).
+This policy is closely related to and derived from the [CIRCT AI Tool Use policy](https://circt.llvm.org/docs/AIToolPolicy/) which is derived from the [LLVM AI Tool Use Policy](https://llvm.org/docs/AIToolPolicy.html).
