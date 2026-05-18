@@ -172,6 +172,11 @@ object ChiselTypeHelpers {
     t.baseClasses.contains(bundleTpe)
   }
 
+  def isAutoTypenamed(t: Type)(using Context): Boolean = {
+    val autoTypenameTpe = getClassIfDefined("chisel3.experimental.HasAutoTypename")
+    t.baseClasses.contains(autoTypenameTpe)
+  }
+
   def isTupleType(t: Type)(using Context): Boolean = {
     ctx.definitions.isTupleClass(t.typeSymbol)
   }

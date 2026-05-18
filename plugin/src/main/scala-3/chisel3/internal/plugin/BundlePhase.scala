@@ -103,8 +103,14 @@ object BundleHelpers {
         case Some(accessor) => tpd.Select(thiz, accessor.asTerm.termRef)
         case None           => tpd.Select(thiz, paramSym.name)
       }
+      // Skip cloning for by-name params: ExprType(T).baseClasses includes
+      // T's parents, so isData would return true for a by-name Data,
+      // but the by-name accessor returns the underlying value, which the
+      // constructor expects as a Function0 (after ElimByName). Cloning would
+      // try to feed a Data where a Function0 is expected.
+      val isByName = paramSym.info.isInstanceOf[ExprType]
       val cloned: tpd.Tree =
-        if (ChiselTypeHelpers.isData(paramSym.info))
+        if (!isByName && ChiselTypeHelpers.isData(paramSym.info))
           cloneTypeFull(select)
         else select
       if (paramSym.info.isRepeatedParam)
@@ -163,7 +169,7 @@ object BundleHelpers {
 
       val currentFields: List[tpd.Tree] = sym.info.decls.toList.collect {
         case m if isBundleDataField(m) =>
-          val name = m.name.show
+          val name = m.name.mangledString
           // Look up the member in bundleSym to handle inherited fields
           val memberInBundle = bundleSym.info.nonPrivateMember(m.name)
           val fieldSym = memberInBundle.alternatives
@@ -178,7 +184,10 @@ object BundleHelpers {
         sym.info.parents.flatMap { parentTpe =>
           parentTpe.classSymbol match {
             case parentSym: ClassSymbol
-                if !ChiselTypeHelpers.isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
+                if !ChiselTypeHelpers.isExactBundle(parentSym)
+                  && parentSym != defn.ObjectClass
+                  && parentSym != defn.AnyClass
+                  && parentSym != defn.AnyValClass =>
               getAllBundleFields(parentSym, depth + 1)
             case _ => Nil
           }
@@ -190,6 +199,38 @@ object BundleHelpers {
     }
 
     getAllBundleFields(bundleSym)
+  }
+
+  def generateAutoTypename(
+    record:  tpd.TypeDef,
+    thiz:    tpd.This,
+    conArgs: List[tpd.Tree]
+  )(using Context): Option[tpd.DefDef] = {
+    if (record.symbol.isAnonymousClass || record.symbol.isRefinementClass) {
+      report.error(
+        "Users cannot mix 'HasAutoTypename' into an anonymous Record. Create a named class.",
+        record.sourcePos
+      )
+      None
+    } else {
+      val iterableTpe =
+        requiredClassRef("scala.collection.Iterable").appliedTo(defn.AnyType)
+
+      val typeNameSym = newSymbol(
+        record.symbol,
+        Names.termName("_typeNameConParams"),
+        Flags.Method | Flags.Override | Flags.Protected,
+        MethodType(Nil, Nil, iterableTpe)
+      )
+
+      val vectorModule = tpd.ref(requiredModule("scala.collection.immutable.Vector").termRef)
+      val rhs = tpd.Apply(
+        tpd.TypeApply(tpd.Select(vectorModule, nme.apply), List(tpd.TypeTree(defn.AnyType))),
+        List(tpd.SeqLiteral(conArgs, tpd.TypeTree(defn.AnyType)))
+      )
+
+      Some(tpd.DefDef(typeNameSym.asTerm, rhs))
+    }
   }
 
   def generateElements(record: tpd.TypeDef)(using Context): tpd.DefDef = {
@@ -220,11 +261,11 @@ class ChiselBundlePhase extends PluginPhase {
   val phaseName: String = "chiselBundlePhase"
   override val runsAfter = Set(PickleQuotes.name)
 
-  override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
+  private def transformBundleTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
     if (
       ChiselTypeHelpers.isRecord(record.tpe)
-      && record.isClassDef
-      && !record.symbol.flags.is(Flags.Abstract)
+        && record.isClassDef
+        && !record.symbol.flags.is(Flags.Abstract)
     ) {
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz:     tpd.This = tpd.This(record.symbol.asClass)
@@ -255,20 +296,50 @@ class ChiselBundlePhase extends PluginPhase {
         )
       }
 
+      val autoTypenameOpt: Option[tpd.DefDef] =
+        if (ChiselTypeHelpers.isAutoTypenamed(record.tpe) && conArgsOpt.isDefined)
+          BundleHelpers.generateAutoTypename(record, thiz, conArgsOpt.get.flatten)
+        else None
+
       record match {
-        case td @ tpd.TypeDef(name, tmpl: tpd.Template) => {
-          val newDefs = elementsImplOpt ++: usingPluginOpt ++: cloneTypeImplOpt.toList
+        case td @ tpd.TypeDef(name, tmpl: tpd.Template) =>
+          val newDefs = elementsImplOpt ++: usingPluginOpt ++: autoTypenameOpt ++: cloneTypeImplOpt.toList
           val newTemplate =
             if (tmpl.body.size >= 1)
               cpy.Template(tmpl)(body = newDefs ++: tmpl.body)
             else
               cpy.Template(tmpl)(body = newDefs)
           tpd.cpy.TypeDef(td)(name, newTemplate)
-        }
-        case _ => super.transformTypeDef(record)
+        case _ => record
       }
     } else {
-      super.transformTypeDef(record)
+      record
     }
+  }
+
+  // MegaPhase tree traversal does not descend into NamedArg children
+  // which means that anonymous Bundle TypeDefs like
+  // `tpe = new Bundle{ ... }`
+  // are never visited by transformTypeDef. Override transformOther to
+  // manually descend into NamedArg and rewrite any contained Bundle
+  // TypeDefs
+  override def transformOther(tree: tpd.Tree)(using Context): tpd.Tree = tree match {
+    case named: tpd.NamedArg =>
+      val rewriter = new tpd.TreeMap {
+        override def transform(t: tpd.Tree)(using Context): tpd.Tree = t match {
+          case td: tpd.TypeDef if td.isClassDef =>
+            transformBundleTypeDef(td) match {
+              case rewritten: tpd.TypeDef => super.transform(rewritten)
+              case other => super.transform(other)
+            }
+          case _ => super.transform(t)
+        }
+      }
+      tpd.cpy.NamedArg(named)(named.name, rewriter.transform(named.arg))
+    case _ => super.transformOther(tree)
+  }
+
+  override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
+    transformBundleTypeDef(record)
   }
 }
