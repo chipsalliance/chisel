@@ -30,7 +30,8 @@ Contributors may use AI tools to assist with their work, but must:
 
 ## Legal Requirements
 
-Contributors using AI tools must still ensure they have the legal right to contribute code under the Apache-2.0 WITH LLVM-exception license. Using AI to regenerate copyrighted material does not remove the copyright.
+Contributors using AI tools must still ensure they have the legal right to contribute code under the Apache-2.0 license.
+Using AI to regenerate copyrighted material does not remove the copyright.
 
 ## References
 
