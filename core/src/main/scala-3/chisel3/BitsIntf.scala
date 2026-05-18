@@ -207,11 +207,11 @@ private[chisel3] trait UIntIntf { self: UInt =>
   @deprecated("Use unary_- which has the same behavior", "Chisel 6.8.0")
   def unary_-%(using SourceInfo): UInt = _impl_unary_-%
 
-  override def +(that: UInt): UInt = _impl_+(that)
-  override def -(that: UInt): UInt = _impl_-(that)
-  override def /(that: UInt): UInt = _impl_/(that)
-  override def %(that: UInt): UInt = _impl_%(that)
-  override def *(that: UInt): UInt = _impl_*(that)
+  override def +(that: UInt)(using SourceInfo): UInt = _impl_+(that)
+  override def -(that: UInt)(using SourceInfo): UInt = _impl_-(that)
+  override def /(that: UInt)(using SourceInfo): UInt = _impl_/(that)
+  override def %(that: UInt)(using SourceInfo): UInt = _impl_%(that)
+  override def *(that: UInt)(using SourceInfo): UInt = _impl_*(that)
 
   /** Multiplication operator
     *
@@ -221,7 +221,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $singleCycleMul
     * @group Arithmetic
     */
-  def *(that: SInt): SInt = _impl_*(that)
+  def *(that: SInt)(using SourceInfo): SInt = _impl_*(that)
 
   /** Addition operator (expanding width)
     *
@@ -230,7 +230,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def +&(that: UInt): UInt = _impl_+&(that)
+  def +&(that: UInt)(using SourceInfo): UInt = _impl_+&(that)
 
   /** Addition operator (constant width)
     *
@@ -239,7 +239,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $maxWidth
     * @group Arithmetic
     */
-  def +%(that: UInt): UInt = _impl_+%(that)
+  def +%(that: UInt)(using SourceInfo): UInt = _impl_+%(that)
 
   /** Subtraction operator (increasing width)
     *
@@ -248,7 +248,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def -&(that: UInt): UInt = _impl_-&(that)
+  def -&(that: UInt)(using SourceInfo): UInt = _impl_-&(that)
 
   /** Subtraction operator (constant width)
     *
@@ -257,7 +257,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $maxWidth
     * @group Arithmetic
     */
-  def -%(that: UInt): UInt = _impl_-%(that)
+  def -%(that: UInt)(using SourceInfo): UInt = _impl_-%(that)
 
   /** Bitwise and operator
     *
@@ -266,7 +266,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $maxWidth
     * @group Bitwise
     */
-  def &(that: UInt): UInt = _impl_&(that)
+  def &(that: UInt)(using SourceInfo): UInt = _impl_&(that)
 
   /** Bitwise or operator
     *
@@ -275,7 +275,7 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $maxWidth
     * @group Bitwise
     */
-  def |(that: UInt): UInt = _impl_|(that)
+  def |(that: UInt)(using SourceInfo): UInt = _impl_|(that)
 
   /** Bitwise exclusive or (xor) operator
     *
@@ -284,9 +284,9 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * $maxWidth
     * @group Bitwise
     */
-  def ^(that: UInt): UInt = _impl_^(that)
+  def ^(that: UInt)(using SourceInfo): UInt = _impl_^(that)
 
-  def abs: UInt = _absImpl
+  def abs(using SourceInfo): UInt = _absImpl
 
   override def unary_~(using SourceInfo): UInt = _impl_unary_~
 
@@ -296,14 +296,14 @@ private[chisel3] trait UIntIntf { self: UInt =>
     * @return a hardware [[Bool]] resulting from every bit of this $coll or'd together
     * @group Bitwise
     */
-  def orR: Bool = _orRImpl
+  def orR(using SourceInfo): Bool = _orRImpl
 
   /** And reduction operator
     *
     * @return a hardware [[Bool]] resulting from every bit of this $coll and'd together
     * @group Bitwise
     */
-  def andR: Bool = _andRImpl
+  def andR(using SourceInfo): Bool = _andRImpl
 
   /** Exclusive or (xor) reduction operator
     *
@@ -312,10 +312,10 @@ private[chisel3] trait UIntIntf { self: UInt =>
     */
   final def xorR(using SourceInfo): Bool = _xorRImpl
 
-  override def <(that:  UInt): Bool = _impl_<(that)
-  override def >(that:  UInt): Bool = _impl_>(that)
-  override def <=(that: UInt): Bool = _impl_<=(that)
-  override def >=(that: UInt): Bool = _impl_>=(that)
+  override def <(that:  UInt)(using SourceInfo): Bool = _impl_<(that)
+  override def >(that:  UInt)(using SourceInfo): Bool = _impl_>(that)
+  override def <=(that: UInt)(using SourceInfo): Bool = _impl_<=(that)
+  override def >=(that: UInt)(using SourceInfo): Bool = _impl_>=(that)
 
   /** Dynamic not equals operator
     *
@@ -407,13 +407,13 @@ private[chisel3] trait SIntIntf { self: SInt =>
   def unary_-%(using SourceInfo): SInt = _impl_unary_-%
 
   /** add (default - no growth) operator */
-  override def +(that: SInt): SInt = _impl_+(that)
+  override def +(that: SInt)(using SourceInfo): SInt = _impl_+(that)
 
   /** subtract (default - no growth) operator */
-  override def -(that: SInt): SInt = _impl_-(that)
-  override def *(that: SInt): SInt = _impl_*(that)
-  override def /(that: SInt): SInt = _impl_/(that)
-  override def %(that: SInt): SInt = _impl_%(that)
+  override def -(that: SInt)(using SourceInfo): SInt = _impl_-(that)
+  override def *(that: SInt)(using SourceInfo): SInt = _impl_*(that)
+  override def /(that: SInt)(using SourceInfo): SInt = _impl_/(that)
+  override def %(that: SInt)(using SourceInfo): SInt = _impl_%(that)
 
   /** Multiplication operator
     *
@@ -477,7 +477,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * $maxWidth
     * @group Bitwise
     */
-  def |(that: SInt): SInt = _impl_|(that)
+  def |(that: SInt)(using SourceInfo): SInt = _impl_|(that)
 
   /** Bitwise exclusive or (xor) operator
     *
@@ -490,10 +490,10 @@ private[chisel3] trait SIntIntf { self: SInt =>
 
   override def unary_~(using SourceInfo): SInt = _impl_unary_~
 
-  override def <(that:  SInt): Bool = _impl_<(that)
-  override def >(that:  SInt): Bool = _impl_>(that)
-  override def <=(that: SInt): Bool = _impl_<=(that)
-  override def >=(that: SInt): Bool = _impl_>=(that)
+  override def <(that:  SInt)(using SourceInfo): Bool = _impl_<(that)
+  override def >(that:  SInt)(using SourceInfo): Bool = _impl_>(that)
+  override def <=(that: SInt)(using SourceInfo): Bool = _impl_<=(that)
+  override def >=(that: SInt)(using SourceInfo): Bool = _impl_>=(that)
 
   /** Dynamic not equals operator
     *
@@ -501,7 +501,7 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
     * @group Comparison
     */
-  def =/=(that: SInt): Bool = _impl_=/=(that)
+  def =/=(that: SInt)(using SourceInfo): Bool = _impl_=/=(that)
 
   /** Dynamic equals operator
     *
@@ -509,9 +509,9 @@ private[chisel3] trait SIntIntf { self: SInt =>
     * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
     * @group Comparison
     */
-  def ===(that: SInt): Bool = _impl_===(that)
+  def ===(that: SInt)(using SourceInfo): Bool = _impl_===(that)
 
-  def abs: SInt = _absImpl
+  def abs(using SourceInfo): SInt = _absImpl
 
   override def <<(that: Int)(using SourceInfo):    SInt = _impl_<<(that)
   override def <<(that: BigInt)(using SourceInfo): SInt = _impl_<<(that)
@@ -561,7 +561,7 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
     * @return the bitwise or of this $coll and `that`
     * @group Bitwise
     */
-  def |(that: Bool): Bool = _impl_|(that)
+  def |(that: Bool)(using SourceInfo): Bool = _impl_|(that)
 
   /** Bitwise exclusive or (xor) operator
     *

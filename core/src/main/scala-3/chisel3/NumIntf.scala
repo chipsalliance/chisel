@@ -2,6 +2,8 @@
 
 package chisel3
 
+import chisel3.experimental.SourceInfo
+
 // REVIEW TODO: Further discussion needed on what Num actually is.
 
 private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
@@ -18,7 +20,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * $maxWidth
     * @group Arithmetic
     */
-  def +(that: T): T
+  def +(that: T)(using SourceInfo): T
 
   /** Multiplication operator
     *
@@ -28,7 +30,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * $singleCycleMul
     * @group Arithmetic
     */
-  def *(that: T): T
+  def *(that: T)(using SourceInfo): T
 
   /** Division operator
     *
@@ -38,7 +40,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * @todo full rules
     * @group Arithmetic
     */
-  def /(that: T): T
+  def /(that: T)(using SourceInfo): T
 
   /** Modulo operator
     *
@@ -47,7 +49,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * $singleCycleDiv
     * @group Arithmetic
     */
-  def %(that: T): T
+  def %(that: T)(using SourceInfo): T
 
   /** Subtraction operator
     *
@@ -56,7 +58,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * $maxWidthPlusOne
     * @group Arithmetic
     */
-  def -(that: T): T
+  def -(that: T)(using SourceInfo): T
 
   /** Less than operator
     *
@@ -64,7 +66,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * @return a hardware [[Bool]] asserted if this $coll is less than `that`
     * @group Comparison
     */
-  def <(that: T): Bool
+  def <(that: T)(using SourceInfo): Bool
 
   /** Less than or equal to operator
     *
@@ -72,7 +74,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * @return a hardware [[Bool]] asserted if this $coll is less than or equal to `that`
     * @group Comparison
     */
-  def <=(that: T): Bool
+  def <=(that: T)(using SourceInfo): Bool
 
   /** Greater than operator
     *
@@ -80,7 +82,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * @return a hardware [[Bool]] asserted if this $coll is greater than `that`
     * @group Comparison
     */
-  def >(that: T): Bool
+  def >(that: T)(using SourceInfo): Bool
 
   /** Greater than or equal to operator
     *
@@ -88,7 +90,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * @return a hardware [[Bool]] asserted if this $coll is greather than or equal to `that`
     * @group Comparison
     */
-  def >=(that: T): Bool
+  def >=(that: T)(using SourceInfo): Bool
 
   /** Absolute value operator
     *
@@ -96,11 +98,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * $unchangedWidth
     * @group Arithmetic
     */
-  @deprecated(
-    "Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead",
-    "Chisel 3.5"
-  )
-  def abs: T
+  def abs(using SourceInfo): T
 
   /** Minimum operator
     *
@@ -109,7 +107,7 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * $maxWidth
     * @group Arithmetic
     */
-  def min(that: T): T =
+  def min(that: T)(using SourceInfo): T =
     Mux(this < that, this.asInstanceOf[T], that)
 
   /** Maximum operator
@@ -119,6 +117,6 @@ private[chisel3] trait NumIntf[T <: Data] { self: Num[T] =>
     * $maxWidth
     * @group Arithmetic
     */
-  def max(that: T): T =
+  def max(that: T)(using SourceInfo): T =
     Mux(this < that, that, this.asInstanceOf[T])
 }
