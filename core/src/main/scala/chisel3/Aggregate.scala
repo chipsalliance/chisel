@@ -1349,12 +1349,6 @@ abstract class Bundle extends Record {
     */
   protected def _elementsImpl: Iterable[(String, Any)] = throwException(mustUsePluginMsg)
 
-
-  // Used by the Scala 3 `selectDynamic` extension to allow user
-  // code to access Option-typed Bundle fields on anonymous Bundles
-  // whose refined type is lost.
-  private[chisel3] def _elementsRaw: Iterable[(String, Any)] = _elementsImpl
-
   /**
     * Overridden by [[IgnoreSeqInBundle]] to allow arbitrary Seqs of Chisel elements.
     */

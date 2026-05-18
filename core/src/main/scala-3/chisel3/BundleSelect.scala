@@ -14,7 +14,6 @@ package chisel3
   */
 extension (b: Bundle) {
   def selectDynamic(field: String): Any =
-    b._elementsImpl
-      .collectFirst { case (`field`, v) => v }
+    b._elementsImpl.collectFirst { case (`field`, v) => v }
       .getOrElse(throw new NoSuchElementException(s"key not found: $field"))
 }
