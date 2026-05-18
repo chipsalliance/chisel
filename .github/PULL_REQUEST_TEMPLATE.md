@@ -13,6 +13,8 @@ Please be sure to elaborate on any API changes or deprecations and any impact on
 
 <!--
 Uncomment the following optional section if you need to add more details. Delete the fields you don't need.
+
+If you used AI on this PR, please see our AI Tool Use Policy: https://www.chisel-lang.org/docs/developers/ai-tool-policy
 -->
 
 <!--
