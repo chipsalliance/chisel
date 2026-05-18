@@ -2,7 +2,7 @@
 
 <!--
 Describe what this PR changes and why it's needed.
-If necessary, describe any future work this change adds or any negative effects of this change (tech debt, code smells)
+If necessary, describe any future work this change adds or any negative effects of this change (tech debt, code smells).
 -->
 
 ### Release Notes
@@ -17,7 +17,7 @@ Uncomment the following optional section if you need to add more details. Delete
 
 <!--
 ### Development notes
--- AI tool(s) used: 
--- Merge strategy (defaults to squash): 
--- Milestone: 
+- AI tool(s) used: 
+- Merge strategy (defaults to squash): 
+- Milestone: 
 -->
