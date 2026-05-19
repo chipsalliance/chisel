@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.{BaseModule, ExtModule, Param}
-import chisel3.experimental.hierarchy.core.{Lookupable, LookupableImpl}
+import chisel3.experimental.hierarchy.core.Lookupable
 
 /** A module or external module whose IO is generated from a specific generator.
   * This module may have no additional IO created other than what is specified
@@ -14,21 +14,15 @@ sealed trait FixedIOBaseModule[A](using lookupable: Lookupable[A]) extends BaseM
   /** A generator of IO */
   protected def ioGenerator: A
 
-  final val io: A = (lookupable: @unchecked) match {
-    case impl: LookupableImpl[A] =>
-      val dataElems = impl.in(ioGenerator)
-      val names = LazyList.from(0).map(i => ('a' + i).toChar.toString)
-      val ports = dataElems.zip(names).map { case (d, name) =>
-        val p = IO(d)
-        p.suggestName(name)
-        p
-      }
-      impl.out(ioGenerator, ports.iterator)
-    case _ =>
-      throw new Exception(
-        "FixedIOBaseModule requires a LookupableImpl-based Lookupable. " +
-          "Custom Lookupable extensions (deprecated since Chisel 7.0.0) are not supported."
-      )
+  final val io: A = {
+    val dataElems = lookupable.in(ioGenerator)
+    val names = LazyList.from(0).map(i => ('a' + i).toChar.toString)
+    val ports = dataElems.zip(names).map { case (d, name) =>
+      val p = IO(d)
+      p.suggestName(name)
+      p
+    }
+    lookupable.out(ioGenerator, ports.iterator)
   }
   endIOCreation()
 
