@@ -53,9 +53,9 @@ private[chisel3] class ModuleClone[T <: BaseModule](val getProto: T)(implicit si
 
   private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
     val record = _portsRecord
-    // Use .forceName to re-use default name resolving behavior
-    record.forceName(default = this.desiredName, namespace)
-    // Now take the Ref that forceName set and convert it to the correct Arg
+    // Use ._forceName to re-use default name resolving behavior
+    record._forceName(default = this.desiredName, namespace)
+    // Now take the Ref that _forceName set and convert it to the correct Arg
     val instName = record.getRef match {
       case Ref(name) => name
       case bad       => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")

@@ -99,7 +99,13 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.util.Reverse$"),
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.ltl.Property$"),
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.ltl.Sequence$"),
-    ProblemFilter.exclude[MissingClassProblem]("chisel3.Cover$Impl")
+    ProblemFilter.exclude[MissingClassProblem]("chisel3.Cover$Impl"),
+    // HasId.forceName is package private
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.Data.forceName*"),
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.MemBase.forceName*"),
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName*"),
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.forceName*"),
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.properties.DynamicObject.forceName*")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)
