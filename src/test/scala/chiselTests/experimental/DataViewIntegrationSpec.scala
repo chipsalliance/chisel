@@ -22,7 +22,7 @@ object DataViewIntegrationSpec {
   }
 
   // It's not clear if a view of a Module ever _can_ be total since internal nodes are part of the Module
-  implicit def queueView[T <: Data] = PartialDataView[Queue[T], QueueIntf[T]](
+  implicit def queueView[T <: Data]: DataView[Queue[T], QueueIntf[T]] = PartialDataView[Queue[T], QueueIntf[T]](
     q => new QueueIntf(q.gen, q.entries),
     _.io -> _.ports,
     // Some token internal signal
