@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.experimental.hierarchy.{instantiable, public}
 import chisel3.experimental.{BaseModule, ExtModule, Param}
 import chisel3.experimental.hierarchy.core.Lookupable
 
@@ -9,12 +10,13 @@ import chisel3.experimental.hierarchy.core.Lookupable
   * This module may have no additional IO created other than what is specified
   * by its `ioGenerator` abstract member.
   */
+@instantiable
 sealed trait FixedIOBaseModule[A](using lookupable: Lookupable[A]) extends BaseModule {
 
   /** A generator of IO */
   protected def ioGenerator: A
 
-  final val io: A = {
+  @public final val io: A = {
     val dataElems = lookupable.in(ioGenerator)
     val names = LazyList.from(0).map(i => ('a' + i).toChar.toString)
     val ports = dataElems.zip(names).map { case (d, name) =>
