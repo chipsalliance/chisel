@@ -214,7 +214,7 @@ private[chisel3] trait HasId extends chisel3.InstanceId {
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
-  private[chisel3] def forceName(
+  private[chisel3] def _forceName(
     default:    => String,
     namespace:  Namespace,
     errorIfDup: Boolean = false,
@@ -1079,7 +1079,7 @@ private[chisel3] object Builder extends LazyLogging {
         try {
           val m = f
           if (!inDefinition) { // This avoids definition name index skipping with D/I
-            m.forceName(m.name, globalNamespace)
+            m._forceName(m.name, globalNamespace)
           }
           m
         } catch {

@@ -111,18 +111,18 @@ abstract class RawModule extends BaseModule {
   private def nameId(id: HasId) = id match {
     case id: ModuleClone[_]   => id.setRefAndPortsRef(_namespace) // special handling
     case id: InstanceClone[_] => id.setAsInstanceRef()
-    case id: BaseModule       => id.forceName(default = id.desiredName, _namespace)
-    case id: MemBase[_]       => id.forceName(default = "MEM", _namespace)
-    case id: stop.Stop        => id.forceName(default = "stop", _namespace)
-    case id: assert.Assert    => id.forceName(default = "assert", _namespace)
-    case id: assume.Assume    => id.forceName(default = "assume", _namespace)
-    case id: cover.Cover      => id.forceName(default = "cover", _namespace)
-    case id: printf.Printf    => id.forceName(default = "printf", _namespace)
+    case id: BaseModule       => id._forceName(default = id.desiredName, _namespace)
+    case id: MemBase[_]       => id._forceName(default = "MEM", _namespace)
+    case id: stop.Stop        => id._forceName(default = "stop", _namespace)
+    case id: assert.Assert    => id._forceName(default = "assert", _namespace)
+    case id: assume.Assume    => id._forceName(default = "assume", _namespace)
+    case id: cover.Cover      => id._forceName(default = "cover", _namespace)
+    case id: printf.Printf    => id._forceName(default = "printf", _namespace)
     case id: DynamicObject => {
       // Force name of the DynamicObject, and set its Property[ClassType] type's ref to the DynamicObject.
       // The type's ref can't be set upon instantiation, because the DynamicObject hasn't been named yet.
       // This also updates the source Class ref to the DynamicObject ref now that it's named.
-      id.forceName(default = "_object", _namespace)
+      id._forceName(default = "_object", _namespace)
       id.getReference.setRef(id.getRef)
       id.setSourceClassRef()
     }
@@ -136,23 +136,23 @@ abstract class RawModule extends BaseModule {
       if (id.isSynthesizable) {
         id.topBinding match {
           case OpBinding(_, _) =>
-            id.forceName(default = "_T", _namespace)
+            id._forceName(default = "_T", _namespace)
           case MemoryPortBinding(_, _) =>
-            id.forceName(default = "MPORT", _namespace)
+            id._forceName(default = "MPORT", _namespace)
           case PortBinding(_) =>
-            id.forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
+            id._forceName(default = "PORT", _namespace, true, x => ModuleIO(this, x))
           case RegBinding(_, _) =>
-            id.forceName(default = "REG", _namespace)
+            id._forceName(default = "REG", _namespace)
           case WireBinding(_, _) =>
-            id.forceName(default = "_WIRE", _namespace)
+            id._forceName(default = "_WIRE", _namespace)
           case InstanceChoiceBinding(_, _) =>
-            id.forceName(default = "_INST", _namespace)
+            id._forceName(default = "_INST", _namespace)
           // probes have their refs set eagerly
           case _ => // don't name literals
         }
       }
     case m: SramTarget =>
-      id.forceName(default = "MEM", _namespace)
+      id._forceName(default = "MEM", _namespace)
   }
 
   private[chisel3] override def generateComponent(): Option[Component] = {
