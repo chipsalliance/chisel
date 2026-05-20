@@ -178,7 +178,10 @@ object BundleHelpers {
         sym.info.parents.flatMap { parentTpe =>
           parentTpe.classSymbol match {
             case parentSym: ClassSymbol
-                if !ChiselTypeHelpers.isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
+                if !ChiselTypeHelpers.isExactBundle(parentSym)
+                  && parentSym != defn.ObjectClass
+                  && parentSym != defn.AnyClass
+                  && parentSym != defn.AnyValClass =>
               getAllBundleFields(parentSym, depth + 1)
             case _ => Nil
           }
