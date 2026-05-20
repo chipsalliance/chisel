@@ -163,6 +163,14 @@ object BundleHelpers {
       )
     }
 
+    // Stop collecting fields if this is the topmost Bundle
+    def isRootBundle(parentSym: ClassSymbol): Boolean = {
+      ChiselTypeHelpers.isExactBundle(parentSym)
+      || parentSym == defn.ObjectClass
+      || parentSym == defn.AnyClass
+      || parentSym == defn.AnyValClass
+    }
+
     // Recursively get all bundle fields from this class and its parents
     def getAllBundleFields(sym: ClassSymbol, depth: Int = 0): List[tpd.Tree] = {
       val thisRef: tpd.Tree = tpd.This(bundleSym)
@@ -183,8 +191,7 @@ object BundleHelpers {
       val parentFields: List[tpd.Tree] = if (!ChiselTypeHelpers.isExactBundle(sym)) {
         sym.info.parents.flatMap { parentTpe =>
           parentTpe.classSymbol match {
-            case parentSym: ClassSymbol
-                if !ChiselTypeHelpers.isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
+            case parentSym: ClassSymbol if !isRootBundle(parentSym) =>
               getAllBundleFields(parentSym, depth + 1)
             case _ => Nil
           }
