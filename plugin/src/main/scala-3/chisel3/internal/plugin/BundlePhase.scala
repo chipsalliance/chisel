@@ -192,6 +192,38 @@ object BundleHelpers {
     getAllBundleFields(bundleSym)
   }
 
+  def generateAutoTypename(
+    record:  tpd.TypeDef,
+    thiz:    tpd.This,
+    conArgs: List[tpd.Tree]
+  )(using Context): Option[tpd.DefDef] = {
+    if (record.symbol.isAnonymousClass || record.symbol.isRefinementClass) {
+      report.error(
+        "Users cannot mix 'HasAutoTypename' into an anonymous Record. Create a named class.",
+        record.sourcePos
+      )
+      None
+    } else {
+      val iterableTpe =
+        requiredClassRef("scala.collection.Iterable").appliedTo(defn.AnyType)
+
+      val typeNameSym = newSymbol(
+        record.symbol,
+        Names.termName("_typeNameConParams"),
+        Flags.Method | Flags.Override | Flags.Protected,
+        MethodType(Nil, Nil, iterableTpe)
+      )
+
+      val vectorModule = tpd.ref(requiredModule("scala.collection.immutable.Vector").termRef)
+      val rhs = tpd.Apply(
+        tpd.TypeApply(tpd.Select(vectorModule, nme.apply), List(tpd.TypeTree(defn.AnyType))),
+        List(tpd.SeqLiteral(conArgs, tpd.TypeTree(defn.AnyType)))
+      )
+
+      Some(tpd.DefDef(typeNameSym.asTerm, rhs))
+    }
+  }
+
   def generateElements(record: tpd.TypeDef)(using Context): tpd.DefDef = {
     val bundleSym = record.symbol.asClass
     val currentFields: List[tpd.Tree] = getBundleFields(record)
@@ -255,9 +287,14 @@ class ChiselBundlePhase extends PluginPhase {
         )
       }
 
+      val autoTypenameOpt: Option[tpd.DefDef] =
+        if (ChiselTypeHelpers.isAutoTypenamed(record.tpe) && conArgsOpt.isDefined)
+          BundleHelpers.generateAutoTypename(record, thiz, conArgsOpt.get.flatten)
+        else None
+
       record match {
         case td @ tpd.TypeDef(name, tmpl: tpd.Template) => {
-          val newDefs = elementsImplOpt ++: usingPluginOpt ++: cloneTypeImplOpt.toList
+          val newDefs = elementsImplOpt ++: usingPluginOpt ++: autoTypenameOpt ++: cloneTypeImplOpt.toList
           val newTemplate =
             if (tmpl.body.size >= 1)
               cpy.Template(tmpl)(body = newDefs ++: tmpl.body)
