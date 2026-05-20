@@ -163,7 +163,7 @@ object BundleHelpers {
 
       val currentFields: List[tpd.Tree] = sym.info.decls.toList.collect {
         case m if isBundleDataField(m) =>
-          val name = m.name.show
+          val name = m.name.mangledString
           // Look up the member in bundleSym to handle inherited fields
           val memberInBundle = bundleSym.info.nonPrivateMember(m.name)
           val fieldSym = memberInBundle.alternatives
