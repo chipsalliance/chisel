@@ -220,7 +220,7 @@ class ChiselBundlePhase extends PluginPhase {
   val phaseName: String = "chiselBundlePhase"
   override val runsAfter = Set(PickleQuotes.name)
 
-  override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
+  private def transformBundleTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
     if (
       ChiselTypeHelpers.isRecord(record.tpe)
       && record.isClassDef
@@ -265,10 +265,36 @@ class ChiselBundlePhase extends PluginPhase {
               cpy.Template(tmpl)(body = newDefs)
           tpd.cpy.TypeDef(td)(name, newTemplate)
         }
-        case _ => super.transformTypeDef(record)
+        case _ => record
       }
     } else {
-      super.transformTypeDef(record)
+      record
     }
+  }
+
+  // MegaPhase tree traversal does not descend into NamedArg children
+  // which means that anonymous Bundle TypeDefs like
+  // `tpe = new Bundle{ ... }`
+  // are never visited by transformTypeDef. Override transformOther to
+  // manually descend into NamedArg and rewrite any contained Bundle
+  // TypeDefs
+  override def transformOther(tree: tpd.Tree)(using Context): tpd.Tree = tree match {
+    case named: tpd.NamedArg =>
+      val rewriter = new tpd.TreeMap {
+        override def transform(t: tpd.Tree)(using Context): tpd.Tree = t match {
+          case td: tpd.TypeDef if td.isClassDef =>
+            transformBundleTypeDef(td) match {
+              case rewritten: tpd.TypeDef => super.transform(rewritten)
+              case other => super.transform(other)
+            }
+          case _ => super.transform(t)
+        }
+      }
+      tpd.cpy.NamedArg(named)(named.name, rewriter.transform(named.arg))
+    case _ => super.transformOther(tree)
+  }
+
+  override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
+    transformBundleTypeDef(record)
   }
 }
