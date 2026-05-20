@@ -7,7 +7,7 @@ import circt.stage.ChiselStage
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import org.scalatest.matchers.should.Matchers._
 import svsim._
 
 private object EmitDPIImplementation {
