@@ -16,7 +16,9 @@ import scala.collection.mutable
 /** Use to select Chisel components in a module, after that module has been constructed. */
 object Select extends SelectIntf {
 
-  def _instancesOfImpl[T <: BaseModule](shouldMatch: T => Boolean)(parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
+  def _instancesOfImpl[T <: BaseModule](
+    shouldMatch: Instance[BaseModule] => Boolean
+  )(parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
     check(parent)
     implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
     parent.proto._component.get match {
@@ -37,13 +39,9 @@ object Select extends SelectIntf {
     }
   }
 
-  def _allInstancesOfImpl[T <: BaseModule](shouldMatch: T => Boolean)(root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
-    val soFar = if (shouldMatch(root)) Seq(root.toInstance.asInstanceOf[Instance[T]]) else Nil
-    val allLocalInstances = instancesIn(root)
-    soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
-  }
-
-  def _definitionsOfImpl[T <: BaseModule](shouldMatch: T => Boolean)(parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
+  def _definitionsOfImpl[T <: BaseModule](
+    shouldMatch: Definition[BaseModule] => Boolean
+  )(parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     check(parent)
     implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
     type DefType = Definition[T]
@@ -71,7 +69,9 @@ object Select extends SelectIntf {
     defList.reverse
   }
 
-  def _allDefinitionsOfImpl[T <: BaseModule](shouldMatch: T => Boolean)(root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
+  def _allDefinitionsOfImpl[T <: BaseModule](
+    shouldMatch: Definition[BaseModule] => Boolean
+  )(root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     type DefType = Definition[T]
     val allDefSet = mutable.HashSet[Definition[BaseModule]]()
     val defSet = mutable.HashSet[DefType]()
@@ -90,6 +90,7 @@ object Select extends SelectIntf {
     rec(root.toDefinition)
     defList.toList
   }
+
   /** Return just leaf components of expanded node
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included

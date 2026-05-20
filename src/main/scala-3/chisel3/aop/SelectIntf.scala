@@ -37,8 +37,11 @@ private[aop] trait SelectIntf { self: Select.type =>
     * @param root top of the hierarchy to search for instances/modules
     * of given type
     */
-  def allInstancesOf[T <: BaseModule: ClassTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] =
-    self._allInstancesOfImpl(_.asInstanceOf[Instance[T]].isA[T])(root)
+  def allInstancesOf[T <: BaseModule: ClassTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
+    val soFar = if (root.isA[T]) Seq(root.toInstance.asInstanceOf[Instance[T]]) else Nil
+    val allLocalInstances = instancesIn(root)
+    soFar ++ (allLocalInstances.flatMap(allInstancesOf[T]))
+  }
 
   /** Selects all Definitions of instances/modules directly instantiated
     * within given module, of provided type
