@@ -163,7 +163,7 @@ object BundleHelpers {
 
       val currentFields: List[tpd.Tree] = sym.info.decls.toList.collect {
         case m if isBundleDataField(m) =>
-          val name = m.name.mangledString
+          val name = m.name.show
           // Look up the member in bundleSym to handle inherited fields
           val memberInBundle = bundleSym.info.nonPrivateMember(m.name)
           val fieldSym = memberInBundle.alternatives
@@ -178,10 +178,7 @@ object BundleHelpers {
         sym.info.parents.flatMap { parentTpe =>
           parentTpe.classSymbol match {
             case parentSym: ClassSymbol
-                if !ChiselTypeHelpers.isExactBundle(parentSym)
-                  && parentSym != defn.ObjectClass
-                  && parentSym != defn.AnyClass
-                  && parentSym != defn.AnyValClass =>
+                if !ChiselTypeHelpers.isExactBundle(parentSym) && ChiselTypeHelpers.isBundle(parentTpe) =>
               getAllBundleFields(parentSym, depth + 1)
             case _ => Nil
           }
