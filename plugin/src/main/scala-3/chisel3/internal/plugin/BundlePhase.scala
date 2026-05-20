@@ -103,8 +103,14 @@ object BundleHelpers {
         case Some(accessor) => tpd.Select(thiz, accessor.asTerm.termRef)
         case None           => tpd.Select(thiz, paramSym.name)
       }
+      // Skip cloning for by-name params: ExprType(T).baseClasses includes
+      // T's parents, so isData would return true for a by-name Data,
+      // but the by-name accessor returns the underlying value, which the
+      // constructor expects as a Function0 (after ElimByName). Cloning would
+      // try to feed a Data where a Function0 is expected.
+      val isByName = paramSym.info.isInstanceOf[ExprType]
       val cloned: tpd.Tree =
-        if (ChiselTypeHelpers.isData(paramSym.info))
+        if (!isByName && ChiselTypeHelpers.isData(paramSym.info))
           cloneTypeFull(select)
         else select
       if (paramSym.info.isRepeatedParam)
