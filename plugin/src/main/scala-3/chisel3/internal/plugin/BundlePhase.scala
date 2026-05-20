@@ -103,14 +103,8 @@ object BundleHelpers {
         case Some(accessor) => tpd.Select(thiz, accessor.asTerm.termRef)
         case None           => tpd.Select(thiz, paramSym.name)
       }
-      // Skip cloning for by-name params: ExprType(T).baseClasses includes
-      // T's parents, so isData would return true for a by-name Data,
-      // but the by-name accessor returns the underlying value, which the
-      // constructor expects as a Function0 (after ElimByName). Cloning would
-      // try to feed a Data where a Function0 is expected.
-      val isByName = paramSym.info.isInstanceOf[ExprType]
       val cloned: tpd.Tree =
-        if (!isByName && ChiselTypeHelpers.isData(paramSym.info))
+        if (ChiselTypeHelpers.isData(paramSym.info))
           cloneTypeFull(select)
         else select
       if (paramSym.info.isRepeatedParam)
@@ -261,7 +255,7 @@ class ChiselBundlePhase extends PluginPhase {
   val phaseName: String = "chiselBundlePhase"
   override val runsAfter = Set(PickleQuotes.name)
 
-  private def transformBundleTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
+  override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
     if (
       ChiselTypeHelpers.isRecord(record.tpe)
       && record.isClassDef
@@ -302,7 +296,7 @@ class ChiselBundlePhase extends PluginPhase {
         else None
 
       record match {
-        case td @ tpd.TypeDef(name, tmpl: tpd.Template) =>
+        case td @ tpd.TypeDef(name, tmpl: tpd.Template) => {
           val newDefs = elementsImplOpt ++: usingPluginOpt ++: autoTypenameOpt ++: cloneTypeImplOpt.toList
           val newTemplate =
             if (tmpl.body.size >= 1)
@@ -310,36 +304,11 @@ class ChiselBundlePhase extends PluginPhase {
             else
               cpy.Template(tmpl)(body = newDefs)
           tpd.cpy.TypeDef(td)(name, newTemplate)
-        case _ => record
+        }
+        case _ => super.transformTypeDef(record)
       }
     } else {
-      record
+      super.transformTypeDef(record)
     }
-  }
-
-  // MegaPhase tree traversal does not descend into NamedArg children
-  // which means that anonymous Bundle TypeDefs like
-  // `tpe = new Bundle{ ... }`
-  // are never visited by transformTypeDef. Override transformOther to
-  // manually descend into NamedArg and rewrite any contained Bundle
-  // TypeDefs
-  override def transformOther(tree: tpd.Tree)(using Context): tpd.Tree = tree match {
-    case named: tpd.NamedArg =>
-      val rewriter = new tpd.TreeMap {
-        override def transform(t: tpd.Tree)(using Context): tpd.Tree = t match {
-          case td: tpd.TypeDef if td.isClassDef =>
-            transformBundleTypeDef(td) match {
-              case rewritten: tpd.TypeDef => super.transform(rewritten)
-              case other => super.transform(other)
-            }
-          case _ => super.transform(t)
-        }
-      }
-      tpd.cpy.NamedArg(named)(named.name, rewriter.transform(named.arg))
-    case _ => super.transformOther(tree)
-  }
-
-  override def transformTypeDef(record: tpd.TypeDef)(using Context): tpd.Tree = {
-    transformBundleTypeDef(record)
   }
 }
