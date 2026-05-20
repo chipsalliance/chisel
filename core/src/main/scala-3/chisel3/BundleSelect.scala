@@ -20,4 +20,3 @@ extension (b: Bundle) {
     impl.selectDynamic(field)
   }
 }
-
