@@ -16,7 +16,7 @@ import scala.collection.mutable
 /** Use to select Chisel components in a module, after that module has been constructed. */
 object Select extends SelectIntf {
 
-  def _instancesOfImpl[T <: BaseModule](
+  protected def _instancesOfImpl[T <: BaseModule](
     shouldMatch: Instance[BaseModule] => Boolean
   )(parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
     check(parent)
@@ -39,7 +39,7 @@ object Select extends SelectIntf {
     }
   }
 
-  def _definitionsOfImpl[T <: BaseModule](
+  protected def _definitionsOfImpl[T <: BaseModule](
     shouldMatch: Definition[BaseModule] => Boolean
   )(parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     check(parent)
@@ -69,7 +69,7 @@ object Select extends SelectIntf {
     defList.reverse
   }
 
-  def _allDefinitionsOfImpl[T <: BaseModule](
+  protected def _allDefinitionsOfImpl[T <: BaseModule](
     shouldMatch: Definition[BaseModule] => Boolean
   )(root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
     type DefType = Definition[T]

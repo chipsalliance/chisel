@@ -13,9 +13,7 @@ private[aop] trait SelectIntf { self: Select.type =>
 
   /** Selects all Instances of instances/modules directly instantiated
     * within given module, of provided type
-    *
-    * @note IMPORTANT: this function requires summoning a ClassTag[T],
-    * which will fail if T is an inner class.
+
     * @note IMPORTANT: this function ignores type
     * parameters. E.g. instancesOf[List[Int]] would return
     * List[String].
@@ -28,8 +26,6 @@ private[aop] trait SelectIntf { self: Select.type =>
   /** Selects all Instances directly and indirectly instantiated within
     * given root hierarchy, of provided type
     *
-    * @note IMPORTANT: this function requires summoning a ClassTag[T],
-    * which will fail if T is an inner class.
     * @note IMPORTANT: this function ignores type
     * parameters. E.g. allInstancesOf[List[Int]] would return
     * List[String].
@@ -46,8 +42,6 @@ private[aop] trait SelectIntf { self: Select.type =>
   /** Selects all Definitions of instances/modules directly instantiated
     * within given module, of provided type
     *
-    * @note IMPORTANT: this function requires summoning a ClassTag[T],
-    * which will fail if T is an inner class.
     * @note IMPORTANT: this function ignores type
     * parameters. E.g. definitionsOf[List[Int]] would return
     * List[String].
@@ -61,9 +55,6 @@ private[aop] trait SelectIntf { self: Select.type =>
   /** Selects all Definition's directly and indirectly instantiated
     * within given root hierarchy, of provided type
     *
-    * @note IMPORTANT: this function requires summoning a ClassTag[T],
-    * which will fail if T is an inner class, i.e.  a class defined
-    * within another class.
     * @note IMPORTANT: this function ignores type
     * parameters. E.g. allDefinitionsOf[List[Int]] would return
     * List[String].
