@@ -41,12 +41,26 @@ def firtoolGithubLink(version: String): String = s"https://github.com/llvm/circt
 // release == true only includes releases
 // release == false only includes pre-releases
 def generateTable(allVersions: Seq[(SemanticVersion, String)], release: Boolean, logger: Logger): String = {
-  // Finally apply a filter for releases vs. pre-releases
-  val result = allVersions.filter { case (v, _) => v.prerelease ^ release }
+  val filtered = allVersions.filter { case (v, _) => v.prerelease ^ release }
 
-  val header = Vector("| Chisel Version | Firtool Version |", "| --- | --- |")
-  val table = (header ++ result.map { case (sv, fv) =>
-    s"| ${sv.serialize} | [$fv](${firtoolGithubLink(fv)}) |"
-  }).mkString("\n")
-  table
+  // Group by major version, sorted newest first
+  val grouped = filtered.groupBy { case (v, _) => v.major }.toSeq.sortBy { case (major, _) => -major }
+
+  val sections = grouped.zipWithIndex.map { case ((major, versions), idx) =>
+    val openAttr = if (idx == 0) " open" else ""
+    val rows = versions.map { case (sv, fv) =>
+      s"| ${sv.serialize} | [$fv](${firtoolGithubLink(fv)}) |"
+    }.mkString("\n")
+
+    s"""|<details$openAttr>
+        |<summary>Chisel ${major}.x</summary>
+        |
+        || Chisel Version | Firtool Version |
+        || --- | --- |
+        |$rows
+        |
+        |</details>""".stripMargin
+  }
+
+  sections.mkString("\n\n")
 }
