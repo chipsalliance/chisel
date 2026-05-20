@@ -7,10 +7,9 @@ import chisel3.aop.Select
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import circt.stage.ChiselStage
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, AnnotationSeq}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.reflect.runtime.universe.TypeTag
 
 class SelectTester(results: Seq[Int]) extends Module {
   val values = VecInit(results.map(_.U))
@@ -247,7 +246,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     }
 
     class MyWrapperModule extends RawModule {
-      implicit val mg = new chisel3.internal.MacroGenerated {}
+      implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
 
       val definition = Definition(new MyIntermediateInstance)
 
@@ -269,7 +268,7 @@ class SelectSpec extends AnyFlatSpec with Matchers {
     }
 
     class MyTopModule extends RawModule {
-      implicit val mg = new chisel3.internal.MacroGenerated {}
+      implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}
 
       Module(new MyWrapperModule)
 

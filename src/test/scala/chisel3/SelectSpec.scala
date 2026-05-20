@@ -4,6 +4,7 @@ package chisel3
 
 import chisel3.aop.Select
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import firrtl.annoSeqToSeq
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
