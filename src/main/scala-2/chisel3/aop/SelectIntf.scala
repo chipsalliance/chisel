@@ -23,7 +23,7 @@ private[aop] trait SelectIntf { self: Select.type =>
     * @param parent hierarchy which instantiates the returned Definitions
     */
   def instancesOf[T <: BaseModule: TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] =
-    self._instancesOfImpl[T](_.asInstanceOf[Instance[T]].isA[T])(parent)
+    self._instancesOfImpl[T](_.isA[T])(parent)
 
   /** Selects all Instances directly and indirectly instantiated within
     * given root hierarchy, of provided type
@@ -56,7 +56,7 @@ private[aop] trait SelectIntf { self: Select.type =>
     * Definitions
     */
   def definitionsOf[T <: BaseModule: TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] =
-    self._definitionsOfImpl[T](_.asInstanceOf[Instance[T]].isA[T])(parent)
+    self._definitionsOfImpl[T](_.isA[T])(parent)
 
   /** Selects all Definition's directly and indirectly instantiated
     * within given root hierarchy, of provided type
@@ -72,5 +72,5 @@ private[aop] trait SelectIntf { self: Select.type =>
     * given type
     */
   def allDefinitionsOf[T <: BaseModule: TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] =
-    self._allDefinitionsOfImpl[T](_.asInstanceOf[Instance[T]].isA[T])(root)
+    self._allDefinitionsOfImpl[T](_.isA[T])(root)
 }
