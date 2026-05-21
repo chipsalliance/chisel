@@ -13,5 +13,10 @@ package chisel3
   * will obviously error.
   */
 extension (b: Bundle) {
-  def selectDynamic(field: String): Any = b.elements(field)
+  def selectDynamic(field: String): Any = {
+    val impl = new scala.reflect.Selectable {
+      override protected def selectedValue = b
+    }
+    impl.selectDynamic(field)
+  }
 }
