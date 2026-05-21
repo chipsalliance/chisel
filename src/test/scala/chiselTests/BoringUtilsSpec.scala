@@ -77,13 +77,13 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
     * Without disabling deduplication, this test will fail.
     */
   class TopTester extends ShouldntAssertTester {
-    val dut = Module(new Top(4))
+    val dut: Top = Module(new Top(4))
     BoringUtils.bore(dut.sources(1).x, Seq(dut.sinks(1).x, dut.sinks(2).x))
     BoringUtils.bore(dut.sources(2).x, Seq(dut.sinks(3).x, dut.sinks(4).x, dut.sinks(5).x))
   }
 
   class TopTesterFail extends ShouldntAssertTester {
-    val dut = Module(new Top(4))
+    val dut: Top = Module(new Top(4))
     BoringUtils.addSource(dut.sources(1).x, "foo", disableDedup = true)
     BoringUtils.addSink(dut.sinks(1).x, "foo", disableDedup = true)
     BoringUtils.addSink(dut.sinks(2).x, "foo", disableDedup = true)
@@ -117,7 +117,7 @@ class BoringUtilsSpec extends AnyFlatSpec with Matchers with LogUtils with FileC
   }
 
   class InternalBoreTester extends ShouldntAssertTester {
-    val dut = Module(new InternalBore)
+    val dut: InternalBore = Module(new InternalBore)
     dut.in := true.B
     chisel3.assert(dut.out === true.B)
   }

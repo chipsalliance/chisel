@@ -3,8 +3,8 @@
 package chisel3.experimental.hierarchy
 
 import scala.quoted.*
-import chisel3.experimental.hierarchy.core.{Hierarchy, Lookupable}
-import chisel3.experimental.hierarchy.public
+import chisel3.experimental.hierarchy.core.{Hierarchy, Instance, Lookupable}
+import chisel3.experimental.hierarchy.{instantiable, public}
 
 private[hierarchy] inline def hierarchyLookupAux[A, B, C0](
   inst:        Hierarchy[A],
@@ -17,6 +17,29 @@ private[hierarchy] inline def hierarchyLookupAux[A, B, C0](
 }
 
 private[hierarchy] object HierarchyLookupMacro {
+  // Search a symbol for a no-arg val/def member with the given name.
+  // Used by resolvePublicField as a single-symbol probe.
+  private def memberLookup(using q: Quotes)(sym: q.reflect.Symbol, name: String): q.reflect.Symbol = {
+    import q.reflect.*
+    sym.fieldMember(name) match {
+      case s if s != Symbol.noSymbol => s
+      case _ =>
+        sym.methodMember(name).find(_.paramSymss.flatten.isEmpty).getOrElse(Symbol.noSymbol)
+    }
+  }
+
+  // Collect the class symbols that contribute members to `tpe`.
+  // For intersection types `A & B`, the syntactic typeSymbol picks one
+  // arm only, so we descend into AndType to gather both.
+  private def classParts(using q: Quotes)(tpe: q.reflect.TypeRepr): List[q.reflect.Symbol] = {
+    import q.reflect.*
+    def go(t: TypeRepr): List[Symbol] = t.dealias match {
+      case AndType(l, r) => go(l) ++ go(r)
+      case other         => List(other.typeSymbol).filter(_ != Symbol.noSymbol)
+    }
+    go(tpe).distinct
+  }
+
   // Resolve @public member of A from its string name and return its
   // symbol and widened type
   private def resolvePublicField[A: Type](
@@ -24,15 +47,17 @@ private[hierarchy] object HierarchyLookupMacro {
   )(using q: Quotes): (q.reflect.Symbol, q.reflect.TypeRepr) = {
     import q.reflect.*
     val tpe = TypeRepr.of[A]
-    val typeSym = tpe.typeSymbol
-    // Handle vals inherited from parent of an instance: fieldMember
-    // is declared in the Instance, while methodMember is the Scala 3
-    // representation of vals inherited from the parent
-    val fieldSym = typeSym.fieldMember(name) match {
-      case s if s != Symbol.noSymbol => s
-      case _ =>
-        typeSym.methodMember(name).find(_.paramSymss.flatten.isEmpty).getOrElse(Symbol.noSymbol)
-    }
+    // Build the search order: each component of A (handling AndType)
+    // first, then their inherited base classes. A direct lookup uses
+    // `fieldMember`; falling back to a no-arg `methodMember` covers
+    // inherited vals which Dotty represents as accessor methods.
+    val seedSyms = classParts(tpe)
+    val searchSyms =
+      seedSyms ++ seedSyms.flatMap(_.typeRef.baseClasses).distinct
+    val fieldSym = searchSyms.iterator
+      .map(s => memberLookup(s, name))
+      .find(_ != Symbol.noSymbol)
+      .getOrElse(Symbol.noSymbol)
     if (fieldSym == Symbol.noSymbol) {
       report.errorAndAbort(
         s"value `$name` is not a member of ${tpe.show}"
@@ -95,6 +120,22 @@ private[hierarchy] object HierarchyLookupMacro {
     }
   }
 
+  // Returns true if `tpe` (or any of its base classes) carries the
+  // `@instantiable` annotation. Used to enable a synthesized fallback
+  // Lookupable for user types that the Scala 2 macro would have given
+  // an IsInstantiable parent.
+  private def hasInstantiableAnnotation(using q: Quotes)(
+    tpe: q.reflect.TypeRepr
+  ): Boolean = {
+    import q.reflect.*
+    val instantiableSym = TypeRepr.of[instantiable].typeSymbol
+    val sym = tpe.typeSymbol
+    sym.annotations.exists(_.tpe.typeSymbol == instantiableSym) ||
+    sym.typeRef.baseClasses.exists { bc =>
+      bc.annotations.exists(_.tpe.typeSymbol == instantiableSym)
+    }
+  }
+
   def selectDynamicImpl[A: Type](
     inst:     Expr[Hierarchy[A]],
     nameExpr: Expr[String]
@@ -110,17 +151,33 @@ private[hierarchy] object HierarchyLookupMacro {
           if (fieldTpe <:< TypeRepr.of[chisel3.Data]) TypeRepr.of[Lookupable.Aux[t, t]]
           else TypeRepr.of[Lookupable[t]]
 
-        val lookupableTerm = summonOrAbort(
-          refinedType,
-          explanation =>
-            s"value `$name` in ${TypeRepr.of[A].show} has type ${fieldTpe.show} which has no Lookupable instance"
-        )
+        val lookupableTermOpt = Implicits.search(refinedType) match {
+          case s: ImplicitSearchSuccess => Some(s.tree)
+          case _: ImplicitSearchFailure => None
+        }
 
-        val cTpe = extractCType(lookupableTerm.tpe.widen.dealias)
-        cTpe.asType match {
-          case '[c] =>
-            val aux = lookupableTerm.asExprOf[Lookupable.Aux[t, c]]
-            '{ hierarchyLookupAux[A, t, c](${ inst }, $selector)(using $aux) }
+        lookupableTermOpt match {
+          case Some(lookupableTerm) =>
+            val cTpe = extractCType(lookupableTerm.tpe.widen.dealias)
+            cTpe.asType match {
+              case '[c] =>
+                val aux = lookupableTerm.asExprOf[Lookupable.Aux[t, c]]
+                '{ hierarchyLookupAux[A, t, c](${ inst }, $selector)(using $aux) }
+            }
+          case None if hasInstantiableAnnotation(fieldTpe) =>
+            // Synthesize a Lookupable for @instantiable user types so
+            // Scala 3 cross-compiles do not need IsInstantiable in the
+            // type hierarchy. Mirrors Lookupable.lookupIsInstantiable.
+            '{
+              hierarchyLookupAux[A, t, Instance[t]](
+                ${ inst },
+                $selector
+              )(using InstantiableLookupable.synthesize[t])
+            }
+          case None =>
+            report.errorAndAbort(
+              s"value `$name` in ${TypeRepr.of[A].show} has type ${fieldTpe.show} which has no Lookupable instance"
+            )
         }
     }
   }

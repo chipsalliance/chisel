@@ -295,14 +295,14 @@ object Examples {
   }
 
   @instantiable
-  class LeafInstantiable(val bundle: Data) {
-    @public val bundle = bundle
+  class LeafInstantiable(_bundle: Data) {
+    @public val bundle: Data = _bundle
   }
 
   @instantiable
-  class NestedInstantiable(val in: LeafInstantiable, val out: LeafInstantiable) {
-    @public val in = in
-    @public val out = out
+  class NestedInstantiable(_in: LeafInstantiable, _out: LeafInstantiable) {
+    @public val in:  LeafInstantiable = _in
+    @public val out: LeafInstantiable = _out
   }
 
   @instantiable
@@ -313,7 +313,7 @@ object Examples {
 
     @public val leafOut = new LeafInstantiable(out)
     @public val leafIn = new LeafInstantiable(in)
-    @public val nested = new NestedInstantiable(in = leafIn, out = leafOut)
+    @public val nested = new NestedInstantiable(_in = leafIn, _out = leafOut)
 
   }
   @instantiable

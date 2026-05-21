@@ -1049,6 +1049,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
       // properly compared for equality when they reference the same underlying proto.
       import chisel3.aop.Select
       import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+      import firrtl.annoSeqToSeq
 
       class TestHarness extends Module {
         val addOne = Module(new AddOne)

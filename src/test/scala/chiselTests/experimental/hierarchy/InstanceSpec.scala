@@ -6,11 +6,13 @@ package experimental.hierarchy
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
+import chisel3.experimental.hierarchy._
 import chisel3.testing.scalatest.FileCheck
 import chisel3.util.{DecoupledIO, Valid}
 import chisel3.experimental.{attach, Analog}
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import circt.stage.ChiselStage
+import firrtl.annoSeqToSeq
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -605,7 +607,7 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
         @public override val overriddenVal = 12
         @public final val finalVal = 12
         @public lazy val lazyValue = 12
-        @public val value = value
+        @public override val value:        Int = 13
         @public final override lazy val x: Int = 3
         @public override final lazy val y: Int = 4
       }

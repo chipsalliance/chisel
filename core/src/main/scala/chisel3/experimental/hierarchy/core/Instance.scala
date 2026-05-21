@@ -32,7 +32,11 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
     case Proto(value: IsInstantiable)   => None
     case Clone(i: BaseModule)           => Some(i)
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
-    case _                              => throw new InternalErrorException(s"Match error: underlying=$underlying")
+    // Scala 3 @instantiable user types do not extend IsInstantiable (the
+    // Scala 2 macro adds that parent automatically; the Scala 3 path does
+    // not). Treat any other Proto-wrapped value the same as IsInstantiable.
+    case Proto(_) => None
+    case _        => throw new InternalErrorException(s"Match error: underlying=$underlying")
   }
 
   /** @return the context this instance. Note that for non-module clones, getInnerDataContext will be the same as getClonedParent */
@@ -40,6 +44,7 @@ final case class Instance[+A] private[chisel3] (private[chisel3] val underlying:
     case Proto(value: BaseModule)       => value._parent
     case Clone(i: BaseModule)           => i._parent
     case Clone(i: InstantiableClone[_]) => i.getInnerContext
+    case Proto(_)                       => None
     case _                              => throw new InternalErrorException(s"Match error: underlying=$underlying")
   }
 
