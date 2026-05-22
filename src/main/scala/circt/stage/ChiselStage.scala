@@ -34,6 +34,7 @@ class ChiselStage extends Stage {
         Dependency[chisel3.stage.phases.AddImplicitOutputFile],
         Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
         Dependency[chisel3.stage.phases.AddSerializationAnnotations],
+        Dependency[chisel3.stage.phases.AddDebugIntrinsics],
         Dependency[chisel3.stage.phases.Convert],
         Dependency[chisel3.stage.phases.AddDedupGroupAnnotations],
         Dependency[circt.stage.phases.AddImplicitOutputFile],
@@ -56,6 +57,7 @@ object ChiselStage {
   private def phase = new PhaseManager(
     Seq(
       Dependency[chisel3.stage.phases.Elaborate],
+      Dependency[chisel3.stage.phases.AddDebugIntrinsics],
       Dependency[chisel3.stage.phases.Convert],
       Dependency[chisel3.stage.phases.AddDedupGroupAnnotations],
       Dependency[circt.stage.phases.AddImplicitOutputFile],
