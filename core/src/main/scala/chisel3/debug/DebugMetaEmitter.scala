@@ -69,15 +69,16 @@ private[chisel3] object DebugIntrinsics {
       case _                                            => Seq.empty
     }
 
-    private def hasOpaqueCtor(target: Any): Boolean = target match {
+    private def suppressDebugParams(target: Any): Boolean = target match {
       case _: chisel3.Bits | _: chisel3.Clock | _: chisel3.Reset => true
       case _: chisel3.experimental.Analog => true
       case _: chisel3.Vec[_] | _: chisel3.EnumType => true
-      case _                                       => target.getClass.getName == "chisel3.util.MixedVec"
+      case _: chisel3.debug.SuppressDebugParams => true
+      case _ => false
     }
 
     private def extractParams(target: Any): Seq[ClassParam] =
-      if (hasOpaqueCtor(target)) Nil else ctorExtractor.getCtorParams(target)
+      if (suppressDebugParams(target)) Nil else ctorExtractor.getCtorParams(target)
 
     private def paramsAttr(params: Seq[ClassParam]): Seq[(String, Param)] =
       if (params.isEmpty) Nil else Seq("params" -> StringParam(json.write(params)))
@@ -112,7 +113,7 @@ private[chisel3] object DebugIntrinsics {
       // CIRCT's CirctDebugVarConverter matches leaves to the root by exact equality.
       val childParent: Option[String] = parent.orElse(Some(signalRef(target)))
       val subCmds: Seq[Command] = target match {
-        case e: EnumType => createEnumDefIntrinsic(e, si).toSeq
+        case e:      EnumType => createEnumDefIntrinsic(e, si).toSeq
         case record: Record =>
           record.elements.values.flatMap(createIntrinsic(_, childParent, si)).toSeq
         case vecLike: VecLike[_] =>

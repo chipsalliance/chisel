@@ -20,23 +20,16 @@ private[debug] case class ClassParam(
 )
 
 private[debug] object ClassParam {
-  // Manual writer keeps `value` flat (`null` / `v`); `json.macroRW` would array-wrap it (`[]` / `[v]`).
-  implicit val rw: json.ReadWriter[ClassParam] = json
-    .readwriter[ujson.Value]
-    .bimap(
-      p =>
-        ujson.Obj(
-          "name" -> p.name,
-          "typeName" -> p.typeName,
-          "value" -> p.value.getOrElse(ujson.Null)
-        ),
-      j =>
-        ClassParam(
-          j("name").str,
-          j("typeName").str,
-          j.obj.get("value").filterNot(_ == ujson.Null)
-        )
-    )
+  implicit val rw: json.ReadWriter[ClassParam] = {
+    // Default upickle serializes Option as array; use value-or-null instead.
+    implicit val optRw: json.ReadWriter[Option[ujson.Value]] = json
+      .readwriter[ujson.Value]
+      .bimap[Option[ujson.Value]](
+        p => p.getOrElse(ujson.Null),
+        j => Option.when(j != ujson.Null)(j)
+      )
+    json.macroRW
+  }
 }
 
 private[debug] object CtorParamExtractor {
