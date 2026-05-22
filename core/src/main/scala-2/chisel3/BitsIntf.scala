@@ -881,6 +881,34 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
   /** @group SourceInfoTransformMacro */
   def do_&&(that: Bool)(implicit sourceInfo: SourceInfo): Bool = _impl_&&(that)
 
+  /** Logical AND operator, Bool with Data
+    * @param that a hardware Data type
+    * @return Every bit of RHS, logically ANDed by Bool on LHS. Shorthand for Mux(this, that, 0)
+    */
+  def &&[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_&&[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = Mux(this, that, 0.U.asTypeOf(that))
+
+  /** Logical OR operator, Bool with Data
+    * @param that a hardware Data type
+    * @return Every bit of RHS, logically ORed by Bool on LHS. Shorthand for Mux(this, all-ones, that)
+    */
+  def ||[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_||[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T =
+    Mux(this, ((1 << that.getWidth) - 1).U.asTypeOf(that), that)
+
+  /** Logical XOR operator, Bool with Data
+    * @param that a hardware Data type
+    * @return Every bit of RHS, logically XORed by Bool on LHS. Shorthand for Mux(this, ~that, that)
+    */
+  def ^^[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_^^[T <: Data](that: T)(implicit sourceInfo: SourceInfo): T = Mux(this, (~(that.asUInt)).asTypeOf(that), that)
+
   override def do_asBool(implicit sourceInfo: SourceInfo): Bool = _asBoolImpl
 
   /** Reinterprets this $coll as a clock */

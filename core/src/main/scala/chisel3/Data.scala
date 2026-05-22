@@ -1063,6 +1063,15 @@ object Data {
     }
   }
 
+  /** Implement Boolean operator on arbitrary Types, with Bool on RHS.
+   *  This class makes the operators commutative.
+   */
+  implicit class BooleanOperators[T <: Data](lhs: T)(implicit sourceInfo: SourceInfo) {
+    def &&(rhs: Bool): T = rhs && lhs
+    def ||(rhs: Bool): T = rhs || lhs
+    def ^^(rhs: Bool): T = rhs ^^ lhs
+  }
+
   implicit class AsReadOnly[T <: Data](self: T) {
 
     /** Returns a read-only view of this Data
