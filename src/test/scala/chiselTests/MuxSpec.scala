@@ -22,6 +22,21 @@ class MuxTester extends Module {
   dontCareMux2 := Mux(1.B, 3.U, DontCare) // note: Mux output of type Element
   assert(dontCareMux2 === 3.U)
 
+  assert(AndEach(false.B, 51.U) === 0.U)
+  assert(AndEach(true.B, 51.U) === 51.U)
+  val myBundle = new Bundle {
+    val a = UInt(4.W)
+    val b = Vec(2, UInt(4.W))
+  }
+  val b = Wire(myBundle)
+  b.a := 9.U
+  b.b(0) := 3.U
+  b.b(1) := 5.U
+  val bQualified = AndEach(true.B, b)
+  val bDisqualified = AndEach(false.B, b)
+  assert(bQualified === b)
+  assert(bDisqualified === 0.U.asTypeOf(b))
+
   Mux(0.B, 3.U, DontCare) // just to make sure nothing crashes, any result is valid
   stop()
 }

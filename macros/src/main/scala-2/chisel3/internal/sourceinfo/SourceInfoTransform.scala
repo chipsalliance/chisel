@@ -102,6 +102,15 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+object LogicalEachTransform
+class LogicalEachTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[T: c.WeakTypeTag](cond: c.Tree, data: c.Tree): c.Tree = {
+    val tpe = weakTypeOf[T]
+    q"$thisObj.do_apply[$tpe]($cond, $data)($implicitSourceInfo)"
+  }
+}
+
 class MuxLookupTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
 
