@@ -12,7 +12,7 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, Design
 import chisel3.testing.{FileCheck, HasTestingDirectory}
 import chisel3.testing.scalatest.TestingDirectory
 import circt.stage.{CIRCTTarget, CIRCTTargetAnnotation, ChiselStage}
-import firrtl.AnnotationSeq
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import java.nio.file.Paths
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers

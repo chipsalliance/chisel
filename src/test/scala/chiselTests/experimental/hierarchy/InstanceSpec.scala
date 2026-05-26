@@ -10,6 +10,7 @@ import chisel3.testing.scalatest.FileCheck
 import chisel3.util.{DecoupledIO, Valid}
 import chisel3.experimental.{attach, Analog}
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import firrtl.annoSeqToSeq
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -639,7 +640,7 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
         @public override val overriddenVal = 12
         @public final val finalVal = 12
         @public lazy val lazyValue = 12
-        @public val value = value
+        @public override val value = value
         @public final override lazy val x: Int = 3
         @public override final lazy val y: Int = 4
       }
@@ -1317,7 +1318,9 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
       }
       ChiselStage.emitCHIRRTL(new Top)
     }
-    it("(9.b): it should not work on inner classes") {
+    // Due to the differences between ClassTag in Scala 3 and TypeTag
+    // in Scala 2, isA should work on inner classes in  Scala 3
+    ignore("(9.b): it should not work on inner classes") {
       class InnerClass extends Module
       class Top extends Module {
         val d = Definition(new InnerClass)

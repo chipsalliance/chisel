@@ -8,6 +8,7 @@ import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{instantiable, public, Definition, Instance}
 import chisel3.testing.scalatest.FileCheck
 import chiselTests.experimental.ExtensionMethods.ChiselStageHelpers
+import firrtl.annoSeqToSeq
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
