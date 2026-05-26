@@ -81,8 +81,7 @@ object Examples {
   }
   @instantiable
   class AddTwoParameterized(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneParameterized]])
-      extends Module
-       {
+      extends Module {
     val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
     val addOnes = makeParameterizedOnes(width)
@@ -91,9 +90,7 @@ object Examples {
     addOnes.zip(addOnes.tail).foreach { case (head, tail) => tail.in := head.out }
   }
   @instantiable
-  class AddTwoWithNested(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneWithNested]])
-      extends Module
-       {
+  class AddTwoWithNested(width: Int, makeParameterizedOnes: Int => Seq[Instance[AddOneWithNested]]) extends Module {
     val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
     val addOnes = makeParameterizedOnes(width)
@@ -203,73 +200,73 @@ object Examples {
     @public val x = Wire(UInt(3.W))
   }
   @instantiable
-  class HasList() extends Module  {
+  class HasList() extends Module {
     @public val y = List(1, 2, 3)
     @public val x = List.fill(3)(Wire(UInt(3.W)))
   }
   @instantiable
-  class HasSeq() extends Module  {
+  class HasSeq() extends Module {
     @public val y = Seq(1, 2, 3)
     @public val x = Seq.fill(3)(Wire(UInt(3.W)))
   }
   @instantiable
-  class HasOption() extends Module  {
+  class HasOption() extends Module {
     @public val x: Option[UInt] = Some(Wire(UInt(3.W)))
   }
   @instantiable
-  class HasEither() extends Module  {
+  class HasEither() extends Module {
     @public val x: Either[Bool, UInt] = Right(Wire(UInt(3.W)).suggestName("x"))
     @public val y: Either[Bool, UInt] = Left(Wire(Bool()).suggestName("y"))
   }
   @instantiable
-  class HasTuple2() extends Module  {
+  class HasTuple2() extends Module {
     val x = Wire(UInt(3.W))
     val y = Wire(Bool())
     @public val xy = (x, y)
   }
   @instantiable
-  class HasTuple5() extends Module  {
+  class HasTuple5() extends Module {
     val wire = Wire(UInt(3.W))
     val inst = Module(new AddOne)
     @public val tup = (3, wire, "hi", inst, List(1, 2, 3))
   }
   @instantiable
-  class HasHasTarget() extends Module  {
+  class HasHasTarget() extends Module {
     val sram = SRAM(1024, UInt(8.W), 1, 1, 0)
     @public val x: HasTarget = sram.underlying.get
   }
   @instantiable
-  class HasVec() extends Module  {
+  class HasVec() extends Module {
     @public val x = VecInit(1.U, 2.U, 3.U)
   }
   @instantiable
-  class HasIndexedVec() extends Module  {
+  class HasIndexedVec() extends Module {
     val x = VecInit(1.U, 2.U, 3.U)
     @public val y = x(1)
   }
   @instantiable
-  class HasSubFieldAccess extends Module  {
+  class HasSubFieldAccess extends Module {
     val in = IO(Input(Valid(UInt(8.W))))
     @public val valid = in.valid
     @public val bits = in.bits
   }
   @instantiable
-  class HasPublicConstructorArgs(@public val int: Int) extends Module  {
+  class HasPublicConstructorArgs(@public val int: Int) extends Module {
     @public val x = Wire(UInt(3.W))
   }
   @instantiable
-  class InstantiatesHasVec() extends Module  {
+  class InstantiatesHasVec() extends Module {
     @public val i0 = Instance(Definition(new HasVec()))
     @public val i1 = Module(new HasVec())
   }
   @instantiable
-  class HasUninferredReset() extends Module  {
+  class HasUninferredReset() extends Module {
     @public val in = IO(Input(UInt(3.W)))
     @public val out = IO(Output(UInt(3.W)))
     out := RegNext(in)
   }
   @instantiable
-  abstract class HasBlah() extends Module  {
+  abstract class HasBlah() extends Module {
     @public val blah: Int
   }
 
@@ -278,12 +275,12 @@ object Examples {
     val blah = 10
   }
   @instantiable
-  class HasTypeParams[D <: Data](d: D) extends Module  {
+  class HasTypeParams[D <: Data](d: D) extends Module {
     @public val blah = Wire(d)
   }
 
   @instantiable
-  class HasMultipleTypeParamsInside extends Module  {
+  class HasMultipleTypeParamsInside extends Module {
     val tpDef0 = Definition(new HasTypeParams(Bool()))
     val tpDef1 = Definition(new HasTypeParams(UInt(4.W)))
     val i00 = Instance(tpDef0)
@@ -293,7 +290,7 @@ object Examples {
   }
 
   @instantiable
-  class HasMems() extends Module  {
+  class HasMems() extends Module {
     @public val mem = Mem(8, UInt(32.W))
     @public val syncReadMem = SyncReadMem(8, UInt(32.W))
   }
@@ -310,7 +307,7 @@ object Examples {
   }
 
   @instantiable
-  class AddOneNestedInstantiableData(width: Int) extends Module  {
+  class AddOneNestedInstantiableData(width: Int) extends Module {
     @public val in = IO(Input(UInt(width.W)))
     @public val out = IO(Output(UInt(width.W)))
     out := in + 1.U
@@ -321,7 +318,7 @@ object Examples {
 
   }
   @instantiable
-  class HasUnsanitaryBundleField extends Module  {
+  class HasUnsanitaryBundleField extends Module {
     class Interface extends Bundle {
       val `a-x` = UInt(8.W)
     }
@@ -333,13 +330,13 @@ object Examples {
   }
 
   @instantiable
-  class HasAnalogWire extends RawModule  {
+  class HasAnalogWire extends RawModule {
     @public val port = IO(Analog(8.W))
     @public val wire = Wire(Analog(32.W))
     attach(port, wire)
   }
 
-  class AddTwoNestedInstantiableData(width: Int) extends Module  {
+  class AddTwoNestedInstantiableData(width: Int) extends Module {
     val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
     val addOneDef = Definition(new AddOneNestedInstantiableData(width))
@@ -354,9 +351,7 @@ object Examples {
     i1.nested.in.bundle := i0.nested.out.bundle
   }
 
-  class AddTwoNestedInstantiableDataSubmodule(addOneDef: Definition[AddOneNestedInstantiableData])
-      extends Module
-       {
+  class AddTwoNestedInstantiableDataSubmodule(addOneDef: Definition[AddOneNestedInstantiableData]) extends Module {
     val in = IO(Input(UInt(addOneDef.in.getWidth.W)))
     val out = IO(Output(UInt(addOneDef.out.getWidth.W)))
     val i0 = Instance(addOneDef)
@@ -370,7 +365,7 @@ object Examples {
     i1.nested.in.bundle := i0.nested.out.bundle
   }
 
-  class AddTwoNestedInstantiableDataWrapper(width: Int) extends Module  {
+  class AddTwoNestedInstantiableDataWrapper(width: Int) extends Module {
     val in = IO(Input(UInt(width.W)))
     val out = IO(Output(UInt(width.W)))
 
@@ -384,14 +379,14 @@ object Examples {
   }
 
   @instantiable
-  class HasPublicUnit extends Module  {
+  class HasPublicUnit extends Module {
     @public val x: Unit = ()
     // Should also work in type-parameterized lookupable things
     @public val y: (Data, Unit) = (Wire(UInt(3.W)), ())
   }
 
   @instantiable
-  class HasPublicActualDirection extends Module  {
+  class HasPublicActualDirection extends Module {
     val io = IO(new Bundle {
       val input = Input(UInt(8.W))
       val output = Output(UInt(8.W))
@@ -421,7 +416,7 @@ object Examples {
   }
 
   @instantiable
-  class HasUserDefinedType extends Module  {
+  class HasUserDefinedType extends Module {
     val defn = Definition(new AddOne)
     val inst0: Instance[AddOne] = Instance(defn)
     val inst1: Instance[AddOne] = Instance(defn)
