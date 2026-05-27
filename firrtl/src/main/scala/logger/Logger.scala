@@ -63,6 +63,7 @@ private class LoggerState {
   val classToLevelCache = new scala.collection.mutable.HashMap[String, LogLevel.Value]
   var logClassNames = false
   var stream:             PrintStream = Console.out
+  var errorStream:        PrintStream = Console.err
   var fromInvoke:         Boolean = false // this is used to not have invokes re-create run-state
   var stringBufferOption: Option[Logger.OutputCaptor] = None
 
@@ -79,6 +80,7 @@ private class LoggerState {
     newState.globalLevel = this.globalLevel
     newState.classLevels ++= this.classLevels
     newState.stream = this.stream
+    newState.errorStream = this.errorStream
     newState.logClassNames = this.logClassNames
     newState
   }
@@ -211,10 +213,15 @@ object Logger {
     */
   private def showMessage(level: LogLevel.Value, className: String, message: => String): Unit = {
     def logIt(): Unit = {
+      // Use errorStream for Error and Warn levels, stream for others
+      val stream = level match {
+        case LogLevel.Error | LogLevel.Warn => state.errorStream
+        case _                              => state.stream
+      }
       if (state.logClassNames) {
-        state.stream.println(s"[$level:$className] $message")
+        stream.println(s"[$level:$className] $message")
       } else {
-        state.stream.println(message)
+        stream.println(message)
       }
     }
     testPackageNameMatch(className, level) match {
@@ -243,6 +250,7 @@ object Logger {
     state.logClassNames = false
     state.globalLevel = LogLevel.Error
     state.stream = System.out
+    state.errorStream = Console.err
   }
 
   /**
@@ -302,24 +310,53 @@ object Logger {
   /**
     * Set the logging destination to a file name
     * @param fileName destination name
+    * @deprecated Use setStandardOutput and setErrorOutput instead. This method sets both standard and error streams to the same file.
     */
+  @deprecated(
+    "Use setStandardOutput and setErrorOutput instead. This method sets both standard and error streams to the same file.",
+    "Chisel 7.10.0"
+  )
   def setOutput(fileName: String): Unit = {
     state.stream = new PrintStream(new FileOutputStream(new File(fileName)))
+    state.errorStream = new PrintStream(new FileOutputStream(new File(fileName)))
   }
 
   /**
     * Set the logging destination to a print stream
     * @param stream destination stream
+    * @deprecated Use setStandardOutput and setErrorOutput instead. This method sets both standard and error streams to the same stream.
     */
+  @deprecated(
+    "Use setStandardOutput and setErrorOutput instead. This method sets both standard and error streams to the same stream.",
+    "Chisel 7.10.0"
+  )
   def setOutput(stream: PrintStream): Unit = {
+    state.stream = stream
+    state.errorStream = stream
+  }
+
+  /**
+    * Set the standard logging destination to a print stream (for Info, Debug, Trace levels)
+    * @param stream destination stream for standard output
+    */
+  def setStandardOutput(stream: PrintStream): Unit = {
     state.stream = stream
   }
 
   /**
-    * Sets the logging destination to Console.out
+    * Set the error logging destination to a print stream (for Error and Warn levels)
+    * @param stream destination stream for errors and warnings
+    */
+  def setErrorOutput(stream: PrintStream): Unit = {
+    state.errorStream = stream
+  }
+
+  /**
+    * Sets the logging destination to Console.out and Console.err
     */
   def setConsole(): Unit = {
     state.stream = Console.out
+    state.errorStream = Console.err
   }
 
   /**

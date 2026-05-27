@@ -44,7 +44,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "setting level to None will result in warn messages" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
           Logger.setLevel(LogLevel.None)
 
           val r1 = new Logger1
@@ -62,7 +63,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "only warn and error shows up by default" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
 
           val r1 = new Logger1
           r1.run()
@@ -79,7 +81,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "setting level to warn will result in error and warn messages" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
           Logger.setLevel(LogLevel.Warn)
 
           val r1 = new Logger1
@@ -95,7 +98,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "setting level to info will result in error, info, and warn messages" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
           Logger.setLevel(LogLevel.Info)
 
           val r1 = new Logger1
@@ -111,10 +115,12 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "setting level to debug will result in error, info, debug, and warn messages" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
 
           Logger.setLevel(LogLevel.Error)
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
           Logger.setLevel(LogLevel.Debug)
 
           val r1 = new Logger1
@@ -131,10 +137,12 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "setting level to trace will result in error, info, debug, trace, and warn messages" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
 
           Logger.setLevel(LogLevel.Error)
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
           Logger.setLevel(LogLevel.Trace)
 
           val r1 = new Logger1
@@ -154,7 +162,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
         "capture logging from LogsInfo2" in {
           Logger.makeScope() {
             val captor = new OutputCaptor
-            Logger.setOutput(captor.printStream)
+            Logger.setStandardOutput(captor.printStream)
+            Logger.setErrorOutput(captor.printStream)
 
             Logger.setLevel("loggertests.LogsInfo2", LogLevel.Info)
 
@@ -172,7 +181,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
         "capture logging from LogsInfo2 using class" in {
           Logger.makeScope() {
             val captor = new OutputCaptor
-            Logger.setOutput(captor.printStream)
+            Logger.setStandardOutput(captor.printStream)
+            Logger.setErrorOutput(captor.printStream)
 
             Logger.setLevel(classOf[LogsInfo2], LogLevel.Info)
 
@@ -190,7 +200,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
         "capture logging from LogsInfo3" in {
           Logger.makeScope() {
             val captor = new OutputCaptor
-            Logger.setOutput(captor.printStream)
+            Logger.setStandardOutput(captor.printStream)
+            Logger.setErrorOutput(captor.printStream)
 
             Logger.setLevel("loggertests.LogsInfo3", LogLevel.Info)
 
@@ -210,7 +221,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
         "both log because of package, also showing re-run after change works" in {
           Logger.makeScope() {
             val captor = new OutputCaptor
-            Logger.setOutput(captor.printStream)
+            Logger.setStandardOutput(captor.printStream)
+            Logger.setErrorOutput(captor.printStream)
 
             Logger.setLevel(LogLevel.Error)
             Logger.setLevel("loggertests", LogLevel.Error)
@@ -240,7 +252,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "check for false positives" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
 
           Logger.setLevel("bad-loggertests", LogLevel.Info)
 
@@ -258,7 +271,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "show that class specific level supercedes global level" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
 
           Logger.setLevel(LogLevel.Info)
           Logger.setLevel("loggertests.LogsInfo2", LogLevel.Error)
@@ -277,7 +291,8 @@ class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with 
       "Show that printstream remains across makeScopes" in {
         Logger.makeScope() {
           val captor = new Logger.OutputCaptor
-          Logger.setOutput(captor.printStream)
+          Logger.setStandardOutput(captor.printStream)
+          Logger.setErrorOutput(captor.printStream)
 
           logger.error("message 1")
           Logger.makeScope() {

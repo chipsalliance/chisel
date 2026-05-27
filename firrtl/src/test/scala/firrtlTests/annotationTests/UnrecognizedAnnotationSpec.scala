@@ -36,7 +36,8 @@ class UnrecognizedAnnotationSpec extends FirrtlFlatSpec {
     // Default log level is error, which the JSON parsing uses here
     Logger.makeScope(Seq()) {
       val captor = new OutputCaptor
-      Logger.setOutput(captor.printStream)
+      Logger.setStandardOutput(captor.printStream)
+      Logger.setErrorOutput(captor.printStream)
 
       val parsingError = intercept[UnrecogizedAnnotationsException] {
         JsonProtocol.deserialize(
