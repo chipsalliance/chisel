@@ -106,60 +106,61 @@ object ChiselTypeHelpers {
     t.baseClasses.contains(ignoreSeqTpe)
   }
 
-  def isBoxedData(tpe: Type, ignoreSeq: Boolean = false)(using Context): Boolean = {
+  // Walk through Option/Iterable wrappers, returning true when
+  // `contains` holds at any reachable leaf. Iterable matches are
+  // suppressed when `ignoreSeq` is set
+  private def isBoxedWith(tpe: Type, ignoreSeq: Boolean, contains: Type => Boolean)(using Context): Boolean = {
     val optionClass = getClassIfDefined("scala.Option")
     val iterableClass = getClassIfDefined("scala.collection.Iterable")
 
-    // Check if a type is data or a tuple that contains Data
-    def containsData(t: Type): Boolean = {
-      isData(t) || (isTupleType(t) && tupleHasData(t))
-    }
+    def rec(tpe: Type): Boolean = tpe match {
+      case AppliedType(tycon, List(arg)) =>
+        tycon match {
+          case tp: TypeRef =>
+            val isIterable = tp.symbol.derivesFrom(iterableClass)
+            val isOption = tp.symbol.derivesFrom(optionClass)
 
-    // Check if any element of a tuple type is a Data or contains Data
+            (isOption, isIterable, contains(arg)) match {
+              case (true, false, true)  => true
+              case (false, true, true)  => !ignoreSeq
+              case (false, true, false) => rec(arg)
+              case (true, false, false) => rec(arg)
+              case _                    => false
+            }
+          case _ =>
+            // anonymous subtype of Iterable, or AppliedType from a higher-kinded type
+            rec(arg)
+        }
+
+      case tr: TypeRef =>
+        // Follow abstract type aliases like trait Seq[A] by looking at their info
+        tr.info match {
+          case TypeBounds(lo, hi) if lo != hi => rec(hi)
+          case TypeAlias(alias)               => rec(alias)
+          case _                              => false
+        }
+      case _ => false
+    }
+    rec(tpe)
+  }
+
+  def isBoxedData(tpe: Type, ignoreSeq: Boolean = false)(using Context): Boolean = {
     def tupleHasData(t: Type): Boolean = t match {
       case AppliedType(_, args) =>
         args.exists(arg => isData(arg) || (isTupleType(arg) && tupleHasData(arg)))
       case _ => false
     }
+    def containsData(t: Type): Boolean =
+      isData(t) || (isTupleType(t) && tupleHasData(t))
 
-    // Recursion here is needed only for nested iterables. These
-    // nested iterable may or may not have Data in their leaves.
-    def rec(tpe: Type): Boolean = {
-      tpe match {
-        case AppliedType(tycon, List(arg)) =>
-          tycon match {
-            case tp: TypeRef =>
-              val isIterable = tp.symbol.derivesFrom(iterableClass)
-              val isOption = tp.symbol == optionClass
+    isBoxedWith(tpe, ignoreSeq, containsData)
+  }
 
-              (isOption, isIterable, containsData(arg)) match {
-                case (true, false, true)  => true // Option with Data or tuple containing Data
-                case (false, true, true)  => !ignoreSeq // Iterable with Data
-                case (false, true, false) => rec(arg) // Possibly nested iterable
-                case _                    => false
-              }
-            case _ =>
-              // anonymous subtype of Iterable,
-              // or AppliedType from higher-kinded type
-              rec(arg)
-          }
+  def isBoxedNamed(tpe: Type, ignoreSeq: Boolean = false)(using Context): Boolean = {
+    def containsNamed(t: Type): Boolean =
+      isDirectlyNamed(t) || (isTupleType(t) && tupleHasNamed(t))
 
-        case tr: TypeRef =>
-          // Follow abstract type aliases like trait Seq[A] by looking at their info
-          tr.info match {
-            case TypeBounds(lo, hi) if lo != hi =>
-              // Try upper bound if available
-              rec(hi)
-            case TypeAlias(alias) =>
-              rec(alias)
-            case _ =>
-              false
-          }
-        case _ =>
-          false
-      }
-    }
-    rec(tpe)
+    isBoxedWith(tpe, ignoreSeq, containsNamed)
   }
 
   def isRecord(t: Type)(using Context): Boolean = {
@@ -210,21 +211,27 @@ object ChiselTypeHelpers {
     isDirectlyNamed(t) || (isTupleType(t) && tupleHasNamed(t))
   }
 
+  // Check if a tuple-element type is named, contains named, or is a
+  // container (Option/Iterable) of something that contains named
+  private def isFieldNamed(arg: Type)(using Context): Boolean = {
+    isDirectlyNamed(arg) ||
+    isData(arg) ||
+    (isTupleType(arg) && tupleHasNamed(arg)) ||
+    isBoxedData(arg) ||
+    isBoxedNamed(arg)
+  }
+
   // Check if any element of a tuple type is a NamedComponent
   def tupleHasNamed(t: Type)(using Context): Boolean = t match {
     case AppliedType(_, args) =>
-      args.exists { arg =>
-        isDirectlyNamed(arg) || (isTupleType(arg) && tupleHasNamed(arg))
-      }
+      args.exists(isFieldNamed)
     case _ => false
   }
 
   // Get per-element naming info for tuple types (true if element should be named)
   def tupleFieldsOfInterest(t: Type)(using Context): List[Boolean] = t match {
     case AppliedType(_, args) =>
-      args.map { arg =>
-        isDirectlyNamed(arg) || (isTupleType(arg) && tupleHasNamed(arg))
-      }
+      args.map(isFieldNamed)
     case _ => Nil
   }
 
@@ -248,7 +255,7 @@ object ChiselTypeHelpers {
         tycon match {
           case tp: TypeRef =>
             val isIterable = tp.symbol.derivesFrom(iterableClass)
-            val isOption = tp.symbol == optionClass
+            val isOption = tp.symbol.derivesFrom(optionClass)
             if (isOption || isIterable) isLeaf(arg) || rec(arg)
             else false
           case _ => rec(arg)
