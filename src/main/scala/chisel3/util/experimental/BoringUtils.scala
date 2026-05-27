@@ -12,7 +12,6 @@ import chisel3.internal.{throwException, Builder, BuilderContextCache, NamedComp
 import chisel3.internal.binding.{BlockBinding, CrossModuleBinding, PortBinding, SecretPortBinding}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import chisel3.internal.firrtl.ir.Block
-import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation}
 import firrtl.annotations.{ComponentName, ModuleName}
 
 /** An exception related to BoringUtils
@@ -122,92 +121,6 @@ object BoringUtils {
   }
   /* True if the requested name (value) exists in the namespace */
   private def checkName(value: String): Boolean = boringNamespace.contains(value)
-
-  /** Add a named source cross module reference
-    * @param component source circuit component
-    * @param name unique identifier for this source
-    * @param disableDedup disable deduplication of this source component (this should be true if you are trying to wire
-    * from specific identical sources differently)
-    * @param uniqueName if true, this will use a non-conflicting name from the global namespace
-    * @return the name used
-    * @note if a uniqueName is not specified, the returned name may differ from the user-provided name
-    */
-  @deprecated(
-    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
-    "Chisel 6.0"
-  )
-  def addSource(
-    component:    NamedComponent,
-    name:         String,
-    disableDedup: Boolean = false,
-    uniqueName:   Boolean = false
-  ): String = {
-
-    val id = if (uniqueName) { newName(name) }
-    else { name }
-    annotate(component)(
-      Seq(SourceAnnotation(component.toNamed, id), DontTouchAnnotation(component.toNamed)) ++ Option.when(disableDedup)(
-        NoDedupAnnotation(component.toNamed.module)
-      )
-    )
-    id
-  }
-
-  /** Add a named sink cross module reference. Multiple sinks may map to the same source.
-    * @param component sink circuit component
-    * @param name unique identifier for this sink that must resolve to
-    * @param disableDedup disable deduplication of this sink component (this should be true if you are trying to wire
-    * specific, identical sinks differently)
-    * @param forceExists if true, require that the provided `name` parameter already exists in the global namespace
-    * @throws BoringUtilsException if name is expected to exist and it doesn't
-    */
-  @deprecated(
-    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
-    "Chisel 6.0"
-  )
-  def addSink(
-    component:    InstanceId,
-    name:         String,
-    disableDedup: Boolean = false,
-    forceExists:  Boolean = false
-  ): Unit = {
-
-    if (forceExists && !checkName(name)) {
-      throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace")
-    }
-    def moduleName = component.toNamed match {
-      case c: ModuleName    => c
-      case c: ComponentName => c.module
-      case _ => throw new ChiselException("Can only add a Module or Component sink", null)
-    }
-    // annotate doesn't support InstanceId (which is deprecated) because InstanceId doesn't implement toRelativeTarget
-    // this API is deprecated anyway so probably fine to not check it.
-    annotate()(Seq(SinkAnnotation(component.toNamed, name)) ++ Option.when(disableDedup)(NoDedupAnnotation(moduleName)))
-  }
-
-  /** Connect a source to one or more sinks
-    * @param source a source component
-    * @param sinks one or more sink components
-    * @return the name of the signal used to connect the source to the
-    * sinks
-    * @note the returned name will be based on the name of the source
-    * component
-    */
-  @deprecated(
-    "Please use the new Boring API instead (BoringUtils.bore(source)). This will be removed in Chisel 7.0",
-    "Chisel 6.0"
-  )
-  def bore(source: Data, sinks: Seq[Data]): String = {
-    val boringName =
-      try {
-        source.instanceName
-      } catch {
-        case _: Exception => "bore"
-      }
-    val genName = addSource(source, boringName, true, true)
-    sinks.foreach(addSink(_, genName, true, true))
-    genName
-  }
 
   private def boreOrTap[A <: Data](
     _source:     A,
