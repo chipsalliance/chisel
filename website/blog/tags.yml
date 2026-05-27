@@ -5,3 +5,6 @@ release:
 talk:
   label: "Talk/Publication"
   description: "Blog posts referring to talks or other publications"
+kb:
+  label: "Knowledge base"
+  description: "Knowledge sharing about Chisel internals, features and other topics"
