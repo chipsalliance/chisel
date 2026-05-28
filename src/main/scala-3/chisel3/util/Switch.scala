@@ -37,10 +37,12 @@ private object SwitchMacros {
       case Inlined(_, _, Block(head, tail)) => head :+ tail
     }
 
-    // List of params and blocks as in `is(params) { block }`
+    // List of params and blocks as in `is(params) { block }`. The
+    // parameter list may have one Iterable arg, one Element arg, or
+    // multiple Element args (the `is(v: T, vr: T*)` overload).
     val isCallExprs: List[Expr[(Iterable[T], () => Any)]] = statements.flatMap {
-      case Apply(Apply(fun, List(paramArg)), List(blockArg)) if isApplySymbol(fun.symbol) =>
-        Some(buildIsCallExpr[T](paramArg, blockArg))
+      case Apply(Apply(fun, paramArgs), List(blockArg)) if isApplySymbol(fun.symbol) =>
+        Some(buildIsCallExpr[T](paramArgs, blockArg))
 
       case term =>
         report.errorAndAbort(
@@ -65,14 +67,27 @@ private object SwitchMacros {
 
   private def buildIsCallExpr[T <: Element: Type](
     using Quotes
-  )(paramArg: quotes.reflect.Term, blockArg: quotes.reflect.Term): Expr[(Iterable[T], () => Any)] = {
+  )(paramArgs: List[quotes.reflect.Term], blockArg: quotes.reflect.Term): Expr[(Iterable[T], () => Any)] = {
     import quotes.reflect.*
 
-    val paramsExpr: Expr[Iterable[T]] = paramArg.asExpr match {
-      case '{ $iter: Iterable[T] } => iter
-      case '{ $elem: T }           => '{ Seq($elem) }
-      case other =>
-        report.errorAndAbort(s"is() parameter must be an Element or Iterable[Element], got: ${other.show}")
+    // Unwrap any vararg wrappers added by the typer (`Typed(SeqLiteral(...), Repeated)`).
+    val flatArgs: List[Term] = paramArgs.flatMap {
+      case Typed(Repeated(elems, _), _) => elems
+      case Repeated(elems, _)           => elems
+      case other                        => List(other)
+    }
+
+    val paramsExpr: Expr[Iterable[T]] = flatArgs match {
+      case List(single) =>
+        single.asExpr match {
+          case '{ $iter: Iterable[T] } => iter
+          case '{ $elem: T }           => '{ Seq($elem) }
+          case other =>
+            report.errorAndAbort(s"is() parameter must be an Element or Iterable[Element], got: ${other.show}")
+        }
+      case multi =>
+        val elemExprs = multi.map(_.asExprOf[T])
+        '{ Seq(${ Varargs(elemExprs) }*) }
     }
 
     val blockExpr: Expr[() => Any] = blockArg.asExpr match {
