@@ -1847,8 +1847,9 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       val e = intercept[ChiselException] {
         ChiselStage.emitCHIRRTL(new MyModule, args = Array("--throw-on-first-error"))
       }
-      e.getMessage should include(
-        "mismatched widths of <unknown>.out: IO[UInt<4>] and <unknown>.in: IO[UInt<8>] might require truncation of <unknown>.in: IO[UInt<8>]"
+      // names show up as `null` in Scala 3 and `<unknown>` in Scala 2
+      e.getMessage should include regex(
+        "mismatched widths of .* and .* might require truncation of .*"
       )
     }
   }
