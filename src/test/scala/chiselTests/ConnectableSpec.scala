@@ -1848,7 +1848,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         ChiselStage.emitCHIRRTL(new MyModule, args = Array("--throw-on-first-error"))
       }
       // names show up as `null` in Scala 3 and `<unknown>` in Scala 2
-      e.getMessage should include regex(
+      (e.getMessage should include).regex(
         "mismatched widths of .* and .* might require truncation of .*"
       )
     }
