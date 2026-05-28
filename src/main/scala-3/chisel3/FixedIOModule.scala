@@ -16,6 +16,8 @@ sealed trait FixedIOBaseModule[A](using lookupable: Lookupable[A]) extends BaseM
   /** A generator of IO */
   protected def ioGenerator: A
 
+  private[chisel3] def _lookupable: Lookupable[A] = lookupable
+
   @public final val io: A = {
     val dataElems = lookupable.in(ioGenerator)
     val names = LazyList.from(0).map(i => ('a' + i).toChar.toString)

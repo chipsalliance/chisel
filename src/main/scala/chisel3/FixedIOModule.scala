@@ -22,6 +22,8 @@ sealed trait FixedIOBaseModule[A] extends BaseModule {
 
   protected implicit def dataProduct: DataProduct[A]
 
+  private[chisel3] def _lookupable: Lookupable[A] = lookupable
+
   // No @public, lookups implemented manually in companion object.
   final val io: A = {
     val a = ioGenerator
