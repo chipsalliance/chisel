@@ -101,6 +101,7 @@ object v extends Module {
   def scala2Compiler(scalaVersion: String) = mvn"org.scala-lang:scala-compiler:$scalaVersion"
   def scala3Compiler(scalaVersion: String) = mvn"org.scala-lang::scala3-compiler:$scalaVersion"
   def scalaLibrary(scalaVersion:   String) = mvn"org.scala-lang:scala-library:$scalaVersion"
+  def scala3Staging(scalaVersion:  String) = mvn"org.scala-lang::scala3-staging:$scalaVersion"
 
   def circt(version: String, os: String, platform: String) =
     s"https://github.com/llvm/circt/releases/download/firtool-${version}/circt-full-shared-${os}-${platform}.tar.gz"
@@ -320,7 +321,8 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
   def compileMvnDeps = Seq(v.scalatest)
 
   object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
-    def mvnDeps = Seq(v.scalatest, v.scalacheck)
+    def mvnDeps = Seq(v.scalatest, v.scalacheck) ++
+      (if (v.isScala3(crossScalaVersion)) Seq(v.scala3Staging(_scalaVersion)) else Nil)
 
     // TODO: enable sandbox and run tests in parallel
     override def testSandboxWorkingDir = false
