@@ -439,6 +439,15 @@ object Examples {
     out  := wire
   }
 
+  class OpaqueRecordBundle extends Bundle {
+    val x = new OpaqueRecord
+  }
+
+  @instantiable
+  class HasFlatIOWithOpaque extends RawModule {
+    @public val io = FlatIO(new OpaqueRecordBundle)
+  }
+
   // For test 9.c in DefinitionSpec - testing .toDefinition on Instance from imported Definition
   @instantiable
   class BarForImport extends RawModule {

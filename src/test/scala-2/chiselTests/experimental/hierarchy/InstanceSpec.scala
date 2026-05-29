@@ -350,6 +350,21 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
              |""".stripMargin
         )
     }
+    it("(1.p): should work on views (e.g. FlatIO) containing OpaqueTypes") {
+      class Top extends Module {
+        val definition = Definition(new HasFlatIOWithOpaque)
+        val i0 = Instance(definition)
+        mark(i0.io.x, "x")
+      }
+      ChiselStage
+        .emitCHIRRTL(new Top)
+        .fileCheck()(
+          """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|Top/i0:HasFlatIOWithOpaque>x"
+             |CHECK-NEXT: "tag":"x"
+             |""".stripMargin
+        )
+    }
   }
   describe("(2) Annotations on designs not in the same chisel compilation") {
     // Extract the built `AddTwo` module for use in other tests.
