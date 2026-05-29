@@ -39,10 +39,12 @@ private[chisel3] object instantiableMacro {
       (resultStats, extensions)
     }
     def hasIsInstantiable(parents: List[Tree]): Boolean = {
-      val isInstantiableTpe = c.typecheck(tq"chisel3.experimental.hierarchy.IsInstantiable", mode = c.TYPEmode).tpe
+      lazy val isInstantiableTpe = c.typecheck(tq"chisel3.experimental.hierarchy.IsInstantiable", mode = c.TYPEmode).tpe
       parents.exists { p =>
-        val tpe = c.typecheck(p.duplicate, mode = c.TYPEmode, silent = true).tpe
-        tpe != null && (tpe =:= isInstantiableTpe)
+        p.toString.split('.').last == "IsInstantiable" && {
+          val tpe = c.typecheck(p.duplicate, mode = c.TYPEmode, silent = true).tpe
+          tpe != null && (tpe =:= isInstantiableTpe)
+        }
       }
     }
     val result = {
