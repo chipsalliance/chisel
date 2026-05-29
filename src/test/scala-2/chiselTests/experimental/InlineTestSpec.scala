@@ -67,7 +67,7 @@ object ProtocolChecks {
   }
 }
 
-trait HasTestsProperty extends RawModule with HasTests {
+trait HasTestsProperty { this: RawModule with HasTests =>
   def enableTestsProperty: Boolean
 
   val testNames = Option.when(enableTestsProperty) {
