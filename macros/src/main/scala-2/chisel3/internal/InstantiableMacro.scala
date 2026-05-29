@@ -38,8 +38,13 @@ private[chisel3] object instantiableMacro {
       }
       (resultStats, extensions)
     }
-    def hasIsInstantiable(parents: List[Tree]): Boolean =
-      parents.exists(p => p.toString.split('.').last == "IsInstantiable")
+    def hasIsInstantiable(parents: List[Tree]): Boolean = {
+      val isInstantiableTpe = c.typecheck(tq"chisel3.experimental.hierarchy.IsInstantiable", mode = c.TYPEmode).tpe
+      parents.exists { p =>
+        val tpe = c.typecheck(p.duplicate, mode = c.TYPEmode, silent = true).tpe
+        tpe != null && (tpe <:< isInstantiableTpe)
+      }
+    }
     val result = {
       val (clz, objOpt) = annottees.map(_.tree).toList match {
         case Seq(c, o) => (c, Some(o))
