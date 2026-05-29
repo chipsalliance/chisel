@@ -329,6 +329,24 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
+    it("(1.o): should work on OpaqueTypes") {
+      class Top extends Module {
+        val defn = Definition(new HasOpaqueType)
+        mark(defn.in, "in")
+        mark(defn.wire, "wire")
+      }
+      ChiselStage
+        .emitCHIRRTL(new Top)
+        .fileCheck()(
+          """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|HasOpaqueType>in"
+             |CHECK-NEXT: "tag":"in"
+             |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|HasOpaqueType>wire"
+             |CHECK-NEXT: "tag":"wire"
+             |""".stripMargin
+        )
+    }
   }
   describe("(2): Annotations on designs not in the same chisel compilation") {
     // Extract the built `AddTwo` module for use in other tests.
