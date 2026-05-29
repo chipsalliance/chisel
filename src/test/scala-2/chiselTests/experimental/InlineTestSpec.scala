@@ -33,7 +33,7 @@ object TestHarnessWithMonitorSocket {
 @instantiable
 trait HasMonitorSocket { this: RawModule =>
   protected def makeProbe(bundle: ProtocolBundle): ProtocolBundle = {
-    val monProbe = chisel3.IO(probe.Probe(chiselTypeOf(bundle)))
+    val monProbe = IO(probe.Probe(chiselTypeOf(bundle)))
     probe.define(monProbe, probe.ProbeValue(bundle))
     monProbe
   }
