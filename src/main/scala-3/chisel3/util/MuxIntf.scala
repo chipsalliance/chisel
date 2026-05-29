@@ -35,19 +35,14 @@ private[chisel3] trait MuxLookupObjIntf { self: MuxLookup.type =>
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  def applyEnum[S <: EnumType, T <: Data](
-    key:     S,
-    default: T,
-    mapping: Seq[(S, T)]
-  )(
-    using SourceInfo
-  ): T = _applyEnumImpl(key, default, mapping)
+  def apply[T <: Data](key: UInt, default: T)(mapping: Seq[(UInt, T)])(using SourceInfo): T =
+    _applyImpl(key, default, mapping)
 
   /** @param key a key to search for
     * @param default a default value if nothing is found
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  def apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)])(using SourceInfo): T =
-    _applyImpl(key, default, mapping)
+  def apply[S <: EnumType, T <: Data](key: S, default: T)(mapping: Seq[(S, T)])(using SourceInfo): T =
+    _applyEnumImpl(key, default, mapping)
 }
