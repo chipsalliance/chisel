@@ -162,7 +162,7 @@ class PathFromInstanceToTarget extends RawModule {
 
 class ToTargetSpec extends AnyFlatSpec with Matchers {
 
-  var m: InstanceNameModule = _
+  var m: InstanceNameModule = null
   ChiselStage.emitCHIRRTL { m = new InstanceNameModule; m }
 
   val mn = "InstanceNameModule"

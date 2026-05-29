@@ -27,8 +27,9 @@ private[chisel3] trait ModuleChoiceObjIntf { self: ModuleChoice.type =>
     * @throws java.lang.IllegalArgumentException if the cases do not belong to the same option.
     */
   def apply[T <: Data](
-    default: => FixedIOBaseModule[T],
-    choices: Seq[(Case, () => FixedIOBaseModule[T])]
+    default: => FixedIOBaseModule[T]
+  )(
+    choices: => Seq[(Case, () => FixedIOBaseModule[T])]
   )(
     using SourceInfo
   ): T = _applyImpl(default, choices)

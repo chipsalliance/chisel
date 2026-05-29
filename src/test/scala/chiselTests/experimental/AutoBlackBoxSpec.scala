@@ -15,7 +15,7 @@ class AutoBlackBoxSpec extends AnyFlatSpec with Matchers {
       ChiselStage
         .emitCHIRRTL(
           new chisel3.Module {
-            implicit val info = SourceLine("Foo.scala", 1, 2)
+            implicit val info: SourceLine = SourceLine("Foo.scala", 1, 2)
             Instantiate(
               new AutoBlackBox(
                 """module BlackBoxPassthrough

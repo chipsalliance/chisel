@@ -147,7 +147,7 @@ class ChiselNamingPhase extends PluginPhase {
     val name = sym.name
     val rhs = tree.rhs
 
-    val valName: String = tree.name.show
+    val valName: String = tree.name.mangledString
     val nameLiteral = Literal(Constant(valName))
     val prefixLiteral =
       if (valName.head == '_')
@@ -156,7 +156,8 @@ class ChiselNamingPhase extends PluginPhase {
 
     val isData = ChiselTypeHelpers.isData(tpt)
     val isBoxedData = ChiselTypeHelpers.isBoxedData(tpt)
-    val isNamedComp = isData || isBoxedData || ChiselTypeHelpers.isNamed(tpt)
+    val isBoxedNamed = ChiselTypeHelpers.isBoxedNamed(tpt)
+    val isNamedComp = isData || isBoxedData || ChiselTypeHelpers.isNamed(tpt) || isBoxedNamed
     val isPrefixed = isNamedComp || ChiselTypeHelpers.isPrefixed(tpt)
 
     // Check if this is an unapply pattern (tuple destructuring)
