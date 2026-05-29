@@ -42,7 +42,7 @@ private[chisel3] object instantiableMacro {
       val isInstantiableTpe = c.typecheck(tq"chisel3.experimental.hierarchy.IsInstantiable", mode = c.TYPEmode).tpe
       parents.exists { p =>
         val tpe = c.typecheck(p.duplicate, mode = c.TYPEmode, silent = true).tpe
-        tpe != null && (tpe <:< isInstantiableTpe)
+        tpe != null && (tpe =:= isInstantiableTpe)
       }
     }
     val result = {
