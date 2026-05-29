@@ -35,14 +35,13 @@ private[hierarchy] object HierarchyLookupMacro {
     // Handle vals inherited from parent of an instance: fieldMember
     // is declared in the Instance, while methodMember is the Scala 3
     // representation of vals inherited from the parent
-    val fieldSym = syms.iterator
-      .map { typeSym =>
-        typeSym.fieldMember(name) match {
-          case s if s != Symbol.noSymbol => s
-          case _ =>
-            typeSym.methodMember(name).find(_.paramSymss.flatten.isEmpty).getOrElse(Symbol.noSymbol)
-        }
+    val fieldSym = syms.iterator.map { typeSym =>
+      typeSym.fieldMember(name) match {
+        case s if s != Symbol.noSymbol => s
+        case _ =>
+          typeSym.methodMember(name).find(_.paramSymss.flatten.isEmpty).getOrElse(Symbol.noSymbol)
       }
+    }
       .find(_ != Symbol.noSymbol)
       .getOrElse(Symbol.noSymbol)
     if (fieldSym == Symbol.noSymbol) {
