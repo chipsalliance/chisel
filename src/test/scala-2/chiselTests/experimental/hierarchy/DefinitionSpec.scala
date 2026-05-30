@@ -329,6 +329,38 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
+    it("(1.o): should work on OpaqueTypes") {
+      class Top extends Module {
+        val defn = Definition(new HasOpaqueType)
+        mark(defn.in, "in")
+        mark(defn.wire, "wire")
+      }
+      ChiselStage
+        .emitCHIRRTL(new Top)
+        .fileCheck()(
+          """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|HasOpaqueType>in"
+             |CHECK-NEXT: "tag":"in"
+             |CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|HasOpaqueType>wire"
+             |CHECK-NEXT: "tag":"wire"
+             |""".stripMargin
+        )
+    }
+    it("(1.p): should work on views (e.g. FlatIO) containing OpaqueTypes") {
+      class Top extends Module {
+        val defn = Definition(new HasFlatIOWithOpaque)
+        mark(defn.io.x, "x")
+      }
+      ChiselStage
+        .emitCHIRRTL(new Top)
+        .fileCheck()(
+          """|CHECK:      "class":"chiselTests.experimental.hierarchy.Annotations$MarkAnnotation"
+             |CHECK-NEXT: "target":"~|HasFlatIOWithOpaque>x"
+             |CHECK-NEXT: "tag":"x"
+             |""".stripMargin
+        )
+    }
   }
   describe("(2): Annotations on designs not in the same chisel compilation") {
     // Extract the built `AddTwo` module for use in other tests.
@@ -847,7 +879,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
   }
   describe("(7): @instantiable and @public should compose with DataView") {
     import chisel3.experimental.dataview._
-    ignore("(7.a): should work on simple Views") {
+    it("(7.a): should work on simple Views") {
       @instantiable
       class MyModule extends RawModule {
         val in = IO(Input(UInt(8.W)))

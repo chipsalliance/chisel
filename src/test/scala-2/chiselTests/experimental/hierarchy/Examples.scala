@@ -5,8 +5,9 @@ package chiselTests.experimental.hierarchy
 import chisel3._
 import chisel3.util.{SRAM, Valid}
 import chisel3.experimental.hierarchy._
-import chisel3.experimental.{attach, Analog, BaseModule}
+import chisel3.experimental.{attach, Analog, BaseModule, OpaqueType}
 import chisel3.reflect.DataMirror
+import scala.collection.immutable.SeqMap
 
 object Examples {
   import Annotations._
@@ -422,6 +423,29 @@ object Examples {
     val wire = Wire(UInt(8.W))
     @public val simple = UserDefinedType("foo", wire, inst0)
     @public val parameterized = ParameterizedUserDefinedType(List(1, 2, 3), inst1)
+  }
+
+  class OpaqueRecord extends Record with OpaqueType {
+    private val underlying = UInt(8.W)
+    val elements = SeqMap("" -> underlying)
+  }
+
+  @instantiable
+  class HasOpaqueType extends Module {
+    @public val in = IO(Input(new OpaqueRecord))
+    @public val out = IO(Output(new OpaqueRecord))
+    @public val wire = Wire(new OpaqueRecord)
+    wire := in
+    out := wire
+  }
+
+  class OpaqueRecordBundle extends Bundle {
+    val x = new OpaqueRecord
+  }
+
+  @instantiable
+  class HasFlatIOWithOpaque extends RawModule {
+    @public val io = FlatIO(new OpaqueRecordBundle)
   }
 
   // For test 9.c in DefinitionSpec - testing .toDefinition on Instance from imported Definition
