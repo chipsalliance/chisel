@@ -432,11 +432,11 @@ object Examples {
 
   @instantiable
   class HasOpaqueType extends Module {
-    @public val in   = IO(Input(new OpaqueRecord))
-    @public val out  = IO(Output(new OpaqueRecord))
+    @public val in = IO(Input(new OpaqueRecord))
+    @public val out = IO(Output(new OpaqueRecord))
     @public val wire = Wire(new OpaqueRecord)
     wire := in
-    out  := wire
+    out := wire
   }
 
   class OpaqueRecordBundle extends Bundle {
