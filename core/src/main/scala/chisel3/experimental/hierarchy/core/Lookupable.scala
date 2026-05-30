@@ -452,7 +452,7 @@ object Lookupable {
       def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
         val ret = that(definition.proto)
         if (isView(ret)) {
-          ??? // TODO!!!!!!  cloneViewToContext(ret, instance, ioMap, instance.getInnerDataContext)
+          cloneViewToContext(ret, definition.cache, None, definition.getInnerDataContext)
         } else {
           doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
         }
