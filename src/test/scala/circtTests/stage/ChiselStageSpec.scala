@@ -10,7 +10,7 @@ import chisel3.testing.scalatest.FileCheck
 import circt.stage.{ChiselStage, FirtoolOption, PreserveAggregate}
 
 import _root_.logger.LogLevel
-import firrtl.EmittedVerilogCircuitAnnotation
+import firrtl.{annoSeqToSeq, seqToAnnoSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.stage.FirrtlCircuitAnnotation
 
 import java.io.File
@@ -123,12 +123,12 @@ object ChiselStageSpec {
   }
 
   class RecoverableErrorFakeSourceInfo extends RawModule {
-    implicit val info = SourceLine("Foo", 3, 10)
+    implicit val info: SourceLine = SourceLine("Foo", 3, 10)
     3.U >> -1
   }
 
   class ErrorCaughtByFirtool extends RawModule {
-    implicit val info = SourceLine("Foo", 3, 10)
+    implicit val info: SourceLine = SourceLine("Foo", 3, 10)
     val w = Wire(UInt(8.W))
   }
 
@@ -552,7 +552,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       message should include("Something bad happened")
 
       info("The exception should not contain a stack trace")
-      exception.getStackTrace should be(Array())
+      exception.getStackTrace should be(Array.empty[StackTraceElement])
     }
 
     it("should NOT include a stack trace for recoverable errors") {
@@ -569,7 +569,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       message should include("Fatal errors during hardware elaboration. Look above for error list.")
 
       info("The exception should not contain a stack trace")
-      exception.getStackTrace should be(Array())
+      exception.getStackTrace should be(Array.empty[StackTraceElement])
     }
 
     it("should include a stack trace for recoverable errors with '--throw-on-first-error'") {
@@ -617,9 +617,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
 
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
-      lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 122:9: Negative shift amounts are illegal (got -1)"
-      )
+      lines(0) should include("src/test/scala/circtTests/stage/ChiselStageSpec.scala 122:")
+      lines(0) should include(": Negative shift amounts are illegal (got -1)")
       lines(1) should include("    3.U >> -1")
       lines(2) should include("        ^")
     }
@@ -638,9 +637,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       val lines = stdout.split("\n")
       // Fuzzy includes aren't ideal but there is ANSI color in these strings that is hard to match
       lines.size should equal(2)
-      lines(0) should include(
-        "src/test/scala-2/circtTests/stage/ChiselStageSpec.scala 122:9: Negative shift amounts are illegal (got -1)"
-      )
+      lines(0) should include("src/test/scala/circtTests/stage/ChiselStageSpec.scala 122:")
+      lines(0) should include(": Negative shift amounts are illegal (got -1)")
       (lines(1) should not).include("3.U >> -1")
     }
 
@@ -743,8 +741,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       import chisel3.util.experimental.InlineInstance
 
       trait SimpleIO { this: RawModule =>
-        val a = IO(Input(Bool()))
-        val b = IO(Output(Bool()))
+        val a = chisel3.IO(Input(Bool()))
+        val b = chisel3.IO(Output(Bool()))
       }
 
       class Bar extends RawModule with SimpleIO with InlineInstance {
@@ -781,8 +779,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       import chisel3.util.experimental.FlattenInstance
 
       trait SimpleIO { this: RawModule =>
-        val a = IO(Input(Bool()))
-        val b = IO(Output(Bool()))
+        val a = chisel3.IO(Input(Bool()))
+        val b = chisel3.IO(Output(Bool()))
       }
 
       class Baz extends RawModule with SimpleIO {
@@ -941,8 +939,8 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       import chisel3.util.experimental.{forceName, InlineInstance}
 
       trait SimpleIO { this: RawModule =>
-        val a = IO(Input(Bool()))
-        val b = IO(Output(Bool()))
+        val a = chisel3.IO(Input(Bool()))
+        val b = chisel3.IO(Output(Bool()))
       }
 
       class Baz extends RawModule with SimpleIO {
@@ -1388,7 +1386,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       message should include("Something bad happened")
 
       info("The exception should not contain a stack trace")
-      exception.getStackTrace should be(Array())
+      exception.getStackTrace should be(Array.empty[StackTraceElement])
     }
 
     it("should NOT include a stack trace for recoverable errors") {
@@ -1401,7 +1399,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       message should include("Fatal errors during hardware elaboration. Look above for error list.")
 
       info("The exception should not contain a stack trace")
-      exception.getStackTrace should be(Array())
+      exception.getStackTrace should be(Array.empty[StackTraceElement])
     }
 
     it("should report a specific error if firtool is not found on the PATH") {
@@ -1415,7 +1413,7 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       message should include("Chisel requires firtool, the MLIR-based FIRRTL Compiler (MFC), to generate Verilog.")
 
       info("The exception should not contain a stack trace")
-      exception.getStackTrace should be(Array())
+      exception.getStackTrace should be(Array.empty[StackTraceElement])
     }
 
   }
