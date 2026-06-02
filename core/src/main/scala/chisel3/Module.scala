@@ -714,11 +714,19 @@ package experimental {
       *
       * Includes the module prefix for user-defined modules (but not for blackboxes).
       */
-    private[chisel3] def _proposedName: String = this match {
-      // PseudoModules (e.g. Instances) and BlackBoxes have their names set by desiredName.
-      case _: PseudoModule => desiredName
-      case _: BaseBlackBox => desiredName
-      case _ => this.modulePrefix + desiredName
+    private[chisel3] def _proposedName: String = {
+      val dn = desiredName
+      // Handle Scala 3 null values
+      if (dn == null)
+        throw new NullPointerException(
+          s"desiredName of ${this.getClass.getName} is null"
+        )
+      this match {
+        // PseudoModules (e.g. Instances) and BlackBoxes have their names set by desiredName.
+        case _: PseudoModule => dn
+        case _: BaseBlackBox => dn
+        case _ => this.modulePrefix + dn
+      }
     }
 
     /** Legalized name of this module. */
