@@ -24,6 +24,6 @@ private[chisel3] trait SimLogIntf { self: SimLog =>
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def printf(fmt: String, data: Bits*)(using sourceInfo: SourceInfo): chisel3.printf.Printf =
+  def printf(fmt: String, data: Bits*)(using SourceInfo): chisel3.printf.Printf =
     self.printf(Printable.pack(fmt, data*))
 }
