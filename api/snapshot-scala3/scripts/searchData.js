@@ -4730,6 +4730,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/SimLog.html#","e":false,"i":"","n":"SimLog","t":"SimLog","d":"chisel3","k":"trait","x":""},
 {"l":"chisel3/SimLog.html#flush-6ea","e":false,"i":"","n":"flush","t":"flush()(implicit sourceInfo: SourceInfo): Unit","d":"chisel3.SimLog","k":"def","x":""},
 {"l":"chisel3/SimLog.html#printf-315","e":false,"i":"","n":"printf","t":"printf(pable: Printable)(implicit sourceInfo: SourceInfo): Printf","d":"chisel3.SimLog","k":"def","x":""},
+{"l":"chisel3/SimLog.html#printf-fffff7fb","e":false,"i":"","n":"printf","t":"printf(fmt: String, data: Bits*)(using SourceInfo): Printf","d":"chisel3.SimLog","k":"def","x":""},
 {"l":"chisel3/SimLog$.html#","e":false,"i":"","n":"SimLog","t":"SimLog","d":"chisel3","k":"object","x":""},
 {"l":"chisel3/SimLog$.html#StdErr-0","e":false,"i":"","n":"StdErr","t":"StdErr: SimLog","d":"chisel3.SimLog","k":"val","x":""},
 {"l":"chisel3/SimLog$.html#file-fffff8b7","e":false,"i":"","n":"file","t":"file(filename: String)(implicit sourceInfo: SourceInfo): SimLog","d":"chisel3.SimLog","k":"def","x":""},
