@@ -213,13 +213,22 @@ class UIntLitZeroWidthTester extends Module {
   stop()
 }
 
-trait ShiftRightWidthBehavior extends WidthHelpers {
-  // The UInt and SInt objects don't share a type, so make one up that they can conform to structurally
-  type BitsFactory[T <: Bits] = {
-    def apply():         T
-    def apply(w: Width): T
+trait BitsFactory[T <: Bits] {
+  def apply():         T
+  def apply(w: Width): T
+}
+object BitsFactory {
+  val uintFactory: BitsFactory[UInt] = new BitsFactory[UInt] {
+    def apply():         UInt = UInt()
+    def apply(w: Width): UInt = UInt(w)
   }
+  val sintFactory: BitsFactory[SInt] = new BitsFactory[SInt] {
+    def apply():         SInt = SInt()
+    def apply(w: Width): SInt = SInt(w)
+  }
+}
 
+trait ShiftRightWidthBehavior extends WidthHelpers {
   def testShiftRightWidthBehavior[T <: Bits](
     factory: BitsFactory[T]
   )(chiselMinWidth: Int, firrtlMinWidth: Int, args: Iterable[String] = Nil): Unit = {
@@ -551,13 +560,13 @@ class UIntOpsSpec extends AnyPropSpec with Matchers with LogUtils with ShiftRigh
   }
 
   property("Static right-shift should have a minimum width of 0") {
-    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 0)
+    testShiftRightWidthBehavior(BitsFactory.uintFactory)(chiselMinWidth = 0, firrtlMinWidth = 0)
   }
 
   property("Static right-shift should have width of 0 in Chisel and 1 in FIRRTL with --use-legacy-width") {
     val args = Array("--use-legacy-width")
 
-    testShiftRightWidthBehavior(UInt)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
+    testShiftRightWidthBehavior(BitsFactory.uintFactory)(chiselMinWidth = 0, firrtlMinWidth = 1, args = args)
 
     // Focused test to show the mismatch
     class TestModule extends Module {
