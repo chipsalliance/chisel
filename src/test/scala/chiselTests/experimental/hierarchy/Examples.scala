@@ -50,7 +50,7 @@ object Examples {
     out := in + 1.U
   }
   @instantiable
-  class AddOneBlackBox extends ExtModule with IsInstantiable {
+  class AddOneBlackBox extends ExtModule {
     @public val io = FlatIO(new Bundle {
       val in = Input(UInt(32.W))
       val out = Output(UInt(32.W))
@@ -450,11 +450,11 @@ object Examples {
 
   // For test 9.c in DefinitionSpec - testing .toDefinition on Instance from imported Definition
   @instantiable
-  class BarForImport extends RawModule with IsInstantiable {
+  class BarForImport extends RawModule {
     @public val a = WireInit(false.B)
   }
   @instantiable
-  class FooForImport extends RawModule with IsInstantiable {
+  class FooForImport extends RawModule {
     @public val bar = Module(new BarForImport)
   }
 }

@@ -1320,14 +1320,16 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
     }
     // Due to the differences between ClassTag in Scala 3 and TypeTag
     // in Scala 2, isA should work on inner classes in  Scala 3
-    ignore("(9.b): it should not work on inner classes") {
-      class InnerClass extends Module
-      class Top extends Module {
-        val d = Definition(new InnerClass)
-        "require(d.isA[Module])" should compile // ensures that the test below is checking something useful
-        "require(d.isA[InnerClass])" shouldNot compile
+    if (chisel3.BuildInfo.scalaVersion(0).toInt < 3) {
+      it("(9.b): it should not work on inner classes") {
+        class InnerClass extends Module
+        class Top extends Module {
+          val d = Definition(new InnerClass)
+          "require(d.isA[Module])" should compile // ensures that the test below is checking something useful
+          "require(d.isA[InnerClass])" shouldNot compile
+        }
+        ChiselStage.emitCHIRRTL(new Top)
       }
-      ChiselStage.emitCHIRRTL(new Top)
     }
     it("(9.c): it should work on super classes") {
       class InnerClass extends Module
