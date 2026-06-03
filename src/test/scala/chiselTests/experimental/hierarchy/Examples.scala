@@ -126,7 +126,7 @@ object Examples {
     io.out := io.in
   }
   @instantiable
-  class WireContainer {
+  class WireContainer extends IsInstantiable {
     @public val innerWire = Wire(UInt(32.W))
   }
   @instantiable
@@ -138,7 +138,7 @@ object Examples {
     out := wireContainer.innerWire
   }
   @instantiable
-  class AddOneContainer {
+  class AddOneContainer extends IsInstantiable {
     @public val i0 = Module(new AddOne)
   }
   @instantiable
@@ -150,7 +150,7 @@ object Examples {
     out := moduleContainer.i0.out
   }
   @instantiable
-  class AddOneInstanceContainer {
+  class AddOneInstanceContainer extends IsInstantiable {
     val definition = Definition(new AddOne)
     @public val i0 = Instance(definition)
   }
@@ -163,7 +163,7 @@ object Examples {
     out := instanceContainer.i0.out
   }
   @instantiable
-  class AddOneContainerContainer {
+  class AddOneContainerContainer extends IsInstantiable {
     @public val container = new AddOneContainer
   }
   @instantiable
@@ -175,7 +175,7 @@ object Examples {
     out := containerContainer.container.i0.out
   }
   @instantiable
-  class Viewer(val y: AddTwo, markPlease: Boolean) {
+  class Viewer(val y: AddTwo, markPlease: Boolean) extends IsInstantiable {
     @public val x = y
     if (markPlease) mark(x.i0.innerWire, "first")
   }
@@ -296,14 +296,14 @@ object Examples {
   }
 
   @instantiable
-  class LeafInstantiable(val bundle: Data) {
-    @public val bundle = bundle
+  class LeafInstantiable(val _bundle: Data) extends IsInstantiable {
+    @public val bundle = _bundle
   }
 
   @instantiable
-  class NestedInstantiable(val in: LeafInstantiable, val out: LeafInstantiable) {
-    @public val in = in
-    @public val out = out
+  class NestedInstantiable(val _in: LeafInstantiable, val _out: LeafInstantiable) extends IsInstantiable {
+    @public val in = _in
+    @public val out = _out
   }
 
   @instantiable
@@ -314,7 +314,7 @@ object Examples {
 
     @public val leafOut = new LeafInstantiable(out)
     @public val leafIn = new LeafInstantiable(in)
-    @public val nested = new NestedInstantiable(in = leafIn, out = leafOut)
+    @public val nested = new NestedInstantiable(_in = leafIn, _out = leafOut)
 
   }
   @instantiable
