@@ -26,14 +26,14 @@ class TestHarnessWithMonitorSocket[M <: RawModule with HasMonitorSocket](test: T
 }
 
 object TestHarnessWithMonitorSocket {
-  implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket] =
+  implicit def testharnessGenerator[M <: RawModule with HasMonitorSocket]: TestHarnessGenerator[M] =
     TestHarnessGenerator[M](new TestHarnessWithMonitorSocket(_))
 }
 
 @instantiable
 trait HasMonitorSocket { this: RawModule =>
   protected def makeProbe(bundle: ProtocolBundle): ProtocolBundle = {
-    val monProbe = IO(probe.Probe(chiselTypeOf(bundle)))
+    val monProbe = chisel3.IO(probe.Probe(chiselTypeOf(bundle)))
     probe.define(monProbe, probe.ProbeValue(bundle))
     monProbe
   }
@@ -67,7 +67,7 @@ object ProtocolChecks {
   }
 }
 
-trait HasTestsProperty { this: RawModule with HasTests =>
+trait HasTestsProperty extends RawModule with HasTests {
   def enableTestsProperty: Boolean
 
   val testNames = Option.when(enableTestsProperty) {

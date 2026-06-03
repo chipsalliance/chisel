@@ -24,15 +24,26 @@ private[hierarchy] object HierarchyLookupMacro {
   )(using q: Quotes): (q.reflect.Symbol, q.reflect.TypeRepr) = {
     import q.reflect.*
     val tpe = TypeRepr.of[A]
-    val typeSym = tpe.typeSymbol
+    // For intersection types like `RawModule & HasProtocolInterface`,
+    // typeSymbol returns only one arm. Walk both arms so a @public
+    // field on either side can be resolved.
+    def classParts(t: TypeRepr): List[Symbol] = t.dealias match {
+      case AndType(l, r) => classParts(l) ::: classParts(r)
+      case other         => List(other.typeSymbol)
+    }
+    val syms = classParts(tpe)
     // Handle vals inherited from parent of an instance: fieldMember
     // is declared in the Instance, while methodMember is the Scala 3
     // representation of vals inherited from the parent
-    val fieldSym = typeSym.fieldMember(name) match {
-      case s if s != Symbol.noSymbol => s
-      case _ =>
-        typeSym.methodMember(name).find(_.paramSymss.flatten.isEmpty).getOrElse(Symbol.noSymbol)
+    val fieldSym = syms.iterator.map { typeSym =>
+      typeSym.fieldMember(name) match {
+        case s if s != Symbol.noSymbol => s
+        case _ =>
+          typeSym.methodMember(name).find(_.paramSymss.flatten.isEmpty).getOrElse(Symbol.noSymbol)
+      }
     }
+      .find(_ != Symbol.noSymbol)
+      .getOrElse(Symbol.noSymbol)
     if (fieldSym == Symbol.noSymbol) {
       report.errorAndAbort(
         s"value `$name` is not a member of ${tpe.show}"
