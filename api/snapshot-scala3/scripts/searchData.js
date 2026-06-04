@@ -1516,6 +1516,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/domain.html#","e":false,"i":"","n":"chisel3.domain","t":"chisel3.domain","d":"","k":"package","x":""},
 {"l":"chisel3/domain.html#addDomain-fffff0a8","e":false,"i":"","n":"addDomain","t":"addDomain(domain: Domain): LinkedHashSet[Domain]","d":"chisel3.domain","k":"def","x":""},
 {"l":"chisel3/domain.html#define-179","e":false,"i":"","n":"define","t":"define[A <: Type](sink: A, source: A)(implicit sourceInfo: SourceInfo): Unit","d":"chisel3.domain","k":"def","x":""},
+{"l":"chisel3/domain.html#domainOf-e4a","e":false,"i":"","n":"domainOf","t":"domainOf(a: Data, kind: => Type)(implicit sourceInfo: SourceInfo): Type","d":"chisel3.domain","k":"def","x":""},
 {"l":"chisel3/domain.html#unsafeCast-881","e":false,"i":"","n":"unsafeCast","t":"unsafeCast[A <: Data, B <: Type](source: A, domains: B*)(implicit sourceInfo: SourceInfo): A","d":"chisel3.domain","k":"def","x":""},
 {"l":"chisel3/domain/Domain.html#","e":false,"i":"","n":"Domain","t":"Domain()(implicit val sourceInfo: SourceInfo)","d":"chisel3.domain","k":"class","x":""},
 {"l":"chisel3/domain/Domain.html#Type-393","e":false,"i":"","n":"Type","t":"Type(): Type","d":"chisel3.domain.Domain","k":"def","x":""},
