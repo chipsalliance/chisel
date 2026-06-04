@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.domain.{Domain, Field}
+import chisel3.domain.{domainOf, Domain, Field}
 import chisel3.domains.ClockDomain
 import chisel3.experimental.dataview._
 import chisel3.properties.Property
@@ -440,5 +440,39 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     intercept[IllegalArgumentException] {
       ChiselStage.elaborate(new Foo)
     }.getMessage should include("cannot associate a port or wire with zero domains")
+  }
+
+  behavior of "The domainOf API"
+
+  it should "return the type of a port" in {
+    class Foo extends RawModule {
+      val a = IO(Input(Bool()))
+      val A = IO(Input(ClockDomain.Type()))
+      val B = IO(Output(ClockDomain.Type()))
+      associate(a, A)
+
+      domain.define(B, domainOf(a, ClockDomain.Type()))
+    }
+
+    // Test that domain port `B` is connected to domain port `A`.
+    //
+    // Note: this test is slightly brittle as the temporary wire is left in.  It
+    // is fine if this, in a later version of `firtool` does a direct
+    // connection.
+    ChiselStage
+      .emitFIRRTLDialect(new Foo, firtoolOpts = Array("-domain-mode=infer-all"))
+      .fileCheck() {
+        """|CHECK:      %[[D:.+]] = firrtl.wire : !firrtl.domain
+           |CHECK-NEXT: firrtl.domain.define %[[D]], %A
+           |CHECK-NEXT: firrtl.domain.define %B, %[[D]]
+           |firrtl.domain.define
+           |""".stripMargin
+      }
+  }
+
+  it should "error if the domain of a non-hardware type is queried" in {
+    intercept[ExpectedHardwareException] {
+      domainOf(Bool(), ClockDomain.Type())
+    }
   }
 }

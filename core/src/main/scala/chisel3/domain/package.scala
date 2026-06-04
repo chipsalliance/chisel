@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.experimental.requireIsHardware
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.ir
 import chisel3.experimental.SourceInfo
@@ -40,6 +41,21 @@ package object domain {
     Builder.pushOp(
       ir.DefPrim(sourceInfo, source.cloneType, ir.PrimOp.UnsafeDomainCast, source.ref +: domains.map(_.ref): _*)
     )
+  }
+
+  /** For a hardware type [[Data]], get the domain type of that wire for a given
+    * domain kind.
+    *
+    * @param a some hardware
+    * @param kind a kind of domain
+    * @return the domain type of `a`
+    */
+  def domainOf(a: Data, kind: => domain.Type)(implicit sourceInfo: SourceInfo): domain.Type = {
+    requireIsHardware(a)
+    val _Domain = Wire(kind)
+    val _a = WireInit(a)
+    Module.currentModule.get.associate(_a, _Domain)
+    _Domain
   }
 
 }
