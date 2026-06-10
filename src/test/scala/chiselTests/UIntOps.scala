@@ -6,7 +6,7 @@ import circt.stage.ChiselStage
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.util.{is, log2Ceil, random, switch, Counter}
+import chisel3.util.{is, log2Ceil, random, switch, Counter, Fill}
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -94,6 +94,25 @@ class UIntOpsTester(a: Long, b: Long) extends Module {
 
   val oneWidthWire = dut.io.greatout.take(1)
   assert(oneWidthWire.getWidth == 1, "take(1) should return a one width")
+
+  val myBool = b.U(0)
+  val myUInt = a.U
+  val mask = Fill(myUInt.getWidth, myBool)
+  assert(
+    (myUInt && myBool) === (mask & myUInt),
+    "Logical AND of Bool with UInt should perform the logical on every bit"
+  )
+  assert(
+    (myUInt || myBool) === (mask | myUInt),
+    "Logical OR  of Bool with UInt should perform the logical on every bit"
+  )
+  assert(
+    (myUInt ^^ myBool) === (mask ^ myUInt),
+    "Logical XOR of Bool with UInt should perform the logical on every bit"
+  )
+  assert((myUInt && myBool) === (myBool && myUInt), "Logical AND of Bool with UInt should be commutative")
+  assert((myUInt || myBool) === (myBool || myUInt), "Logical OR  of Bool with UInt should be commutative")
+  assert((myUInt ^^ myBool) === (myBool ^^ myUInt), "Logical XOR of Bool with UInt should be commutative")
 
   stop()
 }
