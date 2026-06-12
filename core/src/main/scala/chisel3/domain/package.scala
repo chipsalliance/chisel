@@ -6,6 +6,7 @@ import chisel3.experimental.requireIsHardware
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.ir
 import chisel3.experimental.SourceInfo
+import chisel3.reflect.DataMirror
 
 package object domain {
 
@@ -56,6 +57,66 @@ package object domain {
     val _a = WireInit(a)
     Module.currentModule.get.associate(_a, _Domain)
     _Domain
+  }
+
+  /** Connect the aligned elements of [[source]] to the aligned elements of [[sink]], with each
+    * aligned [[source]] element cast to [[domains]].
+    *
+    * This is the aligned-direction half of a bidirectional unsafe domain cast.  Pair with
+    * [[unsafeConnectFlipped]] to replace `sink :<>= source` across a domain boundary:
+    * {{{
+    * domain.unsafeConnectAligned(y, x, B)   // aligned: x -> y, cast to B
+    * domain.unsafeConnectFlipped(y, x, A)   // flipped: y -> x, cast to A
+    * }}}
+    *
+    * @param sink    the Data whose aligned leaves are driven
+    * @param source  the Data whose aligned leaves are the sources (each cast to domains)
+    * @param domains variadic list of domains to cast each source element to
+    */
+  def unsafeConnectAligned[A <: Data](
+    sink:    A,
+    source:  A,
+    domains: domain.Type*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val sinkElts = DataMirror.collectAlignedDeep(sink) { case e: Element => e }
+    val sourceElts = DataMirror.collectAlignedDeep(source) { case e: Element => e }
+    require(
+      sinkElts.length == sourceElts.length,
+      s"unsafeConnectAligned: sink has ${sinkElts.length} aligned element(s) but source has ${sourceElts.length}"
+    )
+    sinkElts.zip(sourceElts).foreach { case (lhs, rhs) => lhs :<= domain.unsafeCast(rhs, domains: _*) }
+  }
+
+  /** Connect the flipped elements of [[source]] to the flipped elements of [[sink]], with each
+    * flipped [[sink]] element cast to [[domains]].
+    *
+    * This is the flipped-direction half of a bidirectional unsafe domain cast.  Pair with
+    * [[unsafeConnectAligned]] to replace `sink :<>= source` across a domain boundary:
+    * {{{
+    * domain.unsafeConnectAligned(y, x, B)   // aligned: x -> y, cast to B
+    * domain.unsafeConnectFlipped(y, x, A)   // flipped: y -> x, cast to A
+    * }}}
+    *
+    * @param sink    the Data whose flipped leaves are the sources (each cast to domains)
+    * @param source  the Data whose flipped leaves are driven
+    * @param domains variadic list of domains to cast each flipped sink element to
+    */
+  def unsafeConnectFlipped[A <: Data](
+    sink:    A,
+    source:  A,
+    domains: domain.Type*
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Unit = {
+    val sinkElts = DataMirror.collectFlippedDeep(sink) { case e: Element => e }
+    val sourceElts = DataMirror.collectFlippedDeep(source) { case e: Element => e }
+    require(
+      sinkElts.length == sourceElts.length,
+      s"unsafeConnectFlipped: sink has ${sinkElts.length} flipped element(s) but source has ${sourceElts.length}"
+    )
+    sinkElts.zip(sourceElts).foreach { case (rhs, lhs) => lhs :<= domain.unsafeCast(rhs, domains: _*) }
   }
 
 }
