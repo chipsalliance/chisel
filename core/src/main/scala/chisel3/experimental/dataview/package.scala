@@ -119,7 +119,7 @@ package object dataview {
       doBind(target, result, dataView, ViewWriteability.Default, Some(wrMap))
 
       result.setAllParents(Some(ViewParent))
-      result.forceName("view", Builder.viewNamespace)
+      result._forceName("view", Builder.viewNamespace)
       result
     }
   }
