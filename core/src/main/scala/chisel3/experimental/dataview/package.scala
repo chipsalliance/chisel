@@ -34,7 +34,17 @@ package object dataview {
       val result: V = dataView.mkView(target)
       requireIsChiselType(result, "viewAs")
 
-      doBind(target, result, dataView, writability)
+      // A role-bearing writability (from .asProducer/.asConsumer) applies read-only per-field based on
+      // alignment: a Producer view marks aligned fields read-only, a Consumer view marks flipped fields.
+      val role = writability match {
+        case ViewWriteability.ReadOnly(_, r)           => r
+        case ViewWriteability.ReadOnlyDeprecated(_, r) => r
+        case _                                         => None
+      }
+      val wrMap = role.map { r =>
+        computeAlignmentWritabilityMap(result, writability, markAligned = r == ConnectableRole.Producer)
+      }
+      doBind(target, result, dataView, if (wrMap.isDefined) ViewWriteability.Default else writability, wrMap)
 
       // Setting the parent marks these Data as Views
       result.setAllParents(Some(ViewParent))
@@ -73,7 +83,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ProducerReadOnly(getError), markAligned = true)
+    ): V = _viewAsImpl(ViewWriteability.ReadOnly(getError, Some(ConnectableRole.Producer)))
 
     private[chisel3] def viewAsConsumer[V <: Data](
       getError: SourceInfo => String
@@ -81,7 +91,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ConsumerReadOnly(getError), markAligned = false)
+    ): V = _viewAsImpl(ViewWriteability.ReadOnly(getError, Some(ConnectableRole.Consumer)))
 
     private[chisel3] def viewAsProducerDeprecated[V <: Data](
       getWarning: SourceInfo => Warning
@@ -89,7 +99,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ProducerReadOnlyDeprecated(getWarning), markAligned = true)
+    ): V = _viewAsImpl(ViewWriteability.ReadOnlyDeprecated(getWarning, Some(ConnectableRole.Producer)))
 
     private[chisel3] def viewAsConsumerDeprecated[V <: Data](
       getWarning: SourceInfo => Warning
@@ -97,31 +107,7 @@ package object dataview {
       implicit dataproduct: DataProduct[T],
       dataView:             DataView[T, V],
       sourceInfo:           SourceInfo
-    ): V = _viewAsWithAlignmentWritability(ViewWriteability.ConsumerReadOnlyDeprecated(getWarning), markAligned = false)
-
-    /** Create a view with per-field writability based on alignment.
-      * @param readOnly the ViewWriteability to apply to the marked fields
-      * @param markAligned if true, aligned fields get readOnly; if false, flipped fields get readOnly
-      */
-    private def _viewAsWithAlignmentWritability[V <: Data](
-      readOnly:    ViewWriteability,
-      markAligned: Boolean
-    )(
-      implicit dataproduct: DataProduct[T],
-      dataView:             DataView[T, V],
-      sourceInfo:           SourceInfo
-    ): V = {
-      val result: V = dataView.mkView(target)
-      requireIsChiselType(result, "viewAs")
-
-      val wrMap = computeAlignmentWritabilityMap(result, readOnly, markAligned)
-
-      doBind(target, result, dataView, ViewWriteability.Default, Some(wrMap))
-
-      result.setAllParents(Some(ViewParent))
-      result._forceName("view", Builder.viewNamespace)
-      result
-    }
+    ): V = _viewAsImpl(ViewWriteability.ReadOnlyDeprecated(getWarning, Some(ConnectableRole.Consumer)))
   }
 
   /** Provides `viewAsSupertype` for subclasses of [[Record]] */
@@ -322,6 +308,8 @@ package object dataview {
     val allMembers: Iterable[Data] =
       DataMirror.collectMembers(view) { case d => d }
     // Build per-field writability: markAligned=true marks aligned fields, false marks flipped
+    // Note: we emit an entry for EVERY member (including Default ones) because
+    // AggregateViewBinding.lookupWritability relies on these entries for its parent fallback.
     allMembers.map { m =>
       m -> (if (alignedSet.contains(m) == markAligned) readOnly else default)
     }.toMap

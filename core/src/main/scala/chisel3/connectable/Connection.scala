@@ -60,8 +60,8 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
   def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
     // Role-tagged views must go through the slow path for role enforcement checks
     val hasRole =
-      Connection.detectRoleWriteability(consumer.base).isDefined ||
-        Connection.detectRoleWriteability(producer.base).isDefined
+      Connection.roleOf(consumer.base).isDefined ||
+        Connection.roleOf(producer.base).isDefined
     if (hasRole) false
     else {
       val typeEquivalent =
@@ -116,20 +116,29 @@ private[chisel3] object Connection {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    checkRoleEnforcement(cRoot, pRoot)
-    doConnection(cRoot, pRoot, cOp)
+    if (!checkRoleEnforcement(cRoot, pRoot)) {
+      doConnection(cRoot, pRoot, cOp)
+    }
   }
 
+  /** Check that role-tagged views (.asProducer/.asConsumer) are used on the correct side.
+    *
+    * @return true if a hard (non-deprecated) violation was reported, in which case the caller
+    *         should skip the actual connection to avoid piling on per-field writability errors.
+    */
   private def checkRoleEnforcement[T <: Data](
     consumer: Connectable[T],
     producer: Connectable[T]
   )(
     implicit sourceInfo: SourceInfo
-  ): Unit = {
-    detectRoleWriteability(consumer.base).foreach {
-      case _: ViewWriteability.ProducerReadOnly =>
+  ): Boolean = {
+    var hardViolation = false
+    // .asProducer must not be used on the consumer (LHS)
+    roleOf(consumer.base).foreach {
+      case (ConnectableRole.Producer, false) =>
         Builder.error(".asProducer cannot be used on the consumer (LHS) of a connection operator")
-      case _: ViewWriteability.ProducerReadOnlyDeprecated =>
+        hardViolation = true
+      case (ConnectableRole.Producer, true) =>
         Builder.warning(
           Warning(
             WarningID.AsProducerDeprecated,
@@ -138,10 +147,12 @@ private[chisel3] object Connection {
         )
       case _ => ()
     }
-    detectRoleWriteability(producer.base).foreach {
-      case _: ViewWriteability.ConsumerReadOnly =>
+    // .asConsumer must not be used on the producer (RHS)
+    roleOf(producer.base).foreach {
+      case (ConnectableRole.Consumer, false) =>
         Builder.error(".asConsumer cannot be used on the producer (RHS) of a connection operator")
-      case _: ViewWriteability.ConsumerReadOnlyDeprecated =>
+        hardViolation = true
+      case (ConnectableRole.Consumer, true) =>
         Builder.warning(
           Warning(
             WarningID.AsConsumerDeprecated,
@@ -150,20 +161,23 @@ private[chisel3] object Connection {
         )
       case _ => ()
     }
+    hardViolation
   }
 
-  /** Detect whether a Data has a role-tagged ViewWriteability from its binding */
-  private[connectable] def detectRoleWriteability(data: Data): Option[ViewWriteability] = {
-    def isRoleTagged(wr: ViewWriteability): Boolean = wr match {
-      case _: ViewWriteability.ProducerReadOnly | _: ViewWriteability.ConsumerReadOnly |
-          _: ViewWriteability.ProducerReadOnlyDeprecated | _: ViewWriteability.ConsumerReadOnlyDeprecated =>
-        true
-      case _ => false
+  /** Detect the connectable role of a Data from its binding, if it is a role-tagged view.
+    *
+    * @return Some((role, isDeprecated)) where isDeprecated is true for the warn-only variants.
+    */
+  private[connectable] def roleOf(data: Data): Option[(ConnectableRole, Boolean)] = {
+    def extract(wr: ViewWriteability): Option[(ConnectableRole, Boolean)] = wr match {
+      case ViewWriteability.ReadOnly(_, Some(r))           => Some((r, false))
+      case ViewWriteability.ReadOnlyDeprecated(_, Some(r)) => Some((r, true))
+      case _                                               => None
     }
     data.topBindingOpt match {
-      case Some(ViewBinding(_, wr)) if isRoleTagged(wr) => Some(wr)
+      case Some(ViewBinding(_, wr)) => extract(wr)
       case Some(avb: AggregateViewBinding) =>
-        avb.writabilityMap.flatMap(_.values.find(isRoleTagged))
+        avb.writabilityMap.flatMap(_.values.flatMap(extract).headOption)
       case _ => None
     }
   }

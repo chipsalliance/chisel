@@ -434,4 +434,188 @@ class AsProducerConsumerSpec extends AnyFlatSpec with Matchers with LogUtils {
       out.asConsumerDeprecated :<>= in
     })
   }
+
+  // ======================== Vec ========================
+
+  behavior.of("asProducer/asConsumer with Vec")
+
+  it should "make aligned Vec[Bundle] elements read-only as producer" in {
+    // data is aligned → read-only as producer
+    checkProducerAlignedError(new RawModule {
+      val w = Wire(Vec(2, new MixedBundle))
+      val p = w.asProducer
+      p(0).data := 1.U
+    })
+    // ready is flipped → writable as producer
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val w = Wire(Vec(2, new MixedBundle))
+      val p = w.asProducer
+      p(0).ready := true.B
+    })
+  }
+
+  it should "make flipped Vec[Bundle] elements read-only as consumer" in {
+    // ready is flipped → read-only as consumer
+    checkConsumerFlippedError(new RawModule {
+      val w = Wire(Vec(2, new MixedBundle))
+      val c = w.asConsumer
+      c(0).ready := true.B
+    })
+    // data and valid are aligned → writable as consumer
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val w = Wire(Vec(2, new MixedBundle))
+      val c = w.asConsumer
+      c(0).data := 1.U
+      c(0).valid := true.B
+    })
+  }
+
+  it should "preserve per-leaf alignment for a Flipped(Vec[Bundle]) viewed as producer" in {
+    // Observed behavior: Flipped on a Wire of an aggregate does NOT invert the
+    // per-leaf alignment of the resulting hardware (a Wire is its own reference;
+    // the outer Flipped on the wire's type is coerced away). So the alignment
+    // matches the plain Vec case:
+    //   data/valid: aligned → read-only as producer
+    //   ready: flipped → writable as producer
+    checkProducerAlignedError(new RawModule {
+      val w = Wire(Flipped(Vec(2, new MixedBundle)))
+      val p = w.asProducer
+      p(0).data := 1.U // aligned → read-only as producer
+    })
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val w = Wire(Flipped(Vec(2, new MixedBundle)))
+      val p = w.asProducer
+      p(0).ready := true.B // flipped → writable as producer
+    })
+  }
+
+  it should "make all elements of a plain Vec[UInt] read-only as producer" in {
+    checkProducerAlignedError(new RawModule {
+      val w = Wire(Vec(2, UInt(8.W)))
+      val p = w.asProducer
+      p(0) := 1.U
+    })
+  }
+
+  // ======================== Probe ========================
+
+  behavior.of("asProducer/asConsumer with Probe")
+
+  class ProbeBundle extends Bundle {
+    val data = UInt(8.W)
+    val p = Probe(Bool())
+  }
+
+  it should "view a probe-containing bundle as producer and keep aligned fields read-only" in {
+    checkProducerAlignedError(new RawModule {
+      val w = Wire(new ProbeBundle)
+      // Make the underlying wire legal by defining the probe.
+      val b = WireInit(false.B)
+      define(w.p, ProbeValue(b))
+      val p = w.asProducer
+      p.data := 1.U // aligned → read-only as producer
+    })
+  }
+
+  // ======================== DontCare ========================
+
+  behavior.of("asProducer/asConsumer with DontCare")
+
+  it should "allow assigning DontCare to a writable (flipped) producer-view field" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val w = Wire(new MixedBundle)
+      val p = w.asProducer
+      p.ready := DontCare // flipped → writable
+    })
+  }
+
+  it should "still hard-error when assigning DontCare to an aligned producer-view field" in {
+    checkProducerAlignedError(new RawModule {
+      val w = Wire(new MixedBundle)
+      val p = w.asProducer
+      p.data := DontCare // aligned → read-only, even with DontCare RHS
+    })
+  }
+
+  it should "allow plain assignment of DontCare to an unviewed wire" in {
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val out = Wire(new MixedBundle)
+      out := DontCare
+    })
+  }
+
+  // ======================== CHIRRTL equivalence ========================
+
+  behavior.of("CHIRRTL equivalence")
+
+  it should "connect the same leaf fields for out.asConsumer :<>= in.asProducer as out :<>= in" in {
+    val plain = ChiselStage.emitCHIRRTL(new RawModule {
+      override def desiredName = "Plain"
+      val in = IO(Flipped(new MixedBundle))
+      val out = IO(new MixedBundle)
+      out :<>= in
+    })
+    val viewed = ChiselStage.emitCHIRRTL(new RawModule {
+      override def desiredName = "Viewed"
+      val in = IO(Flipped(new MixedBundle))
+      val out = IO(new MixedBundle)
+      out.asConsumer :<>= in.asProducer
+    })
+    // Observed benign difference: the plain form emits a single *bulk* connect
+    // ("connect out, in"), while the view form expands it into the explicit
+    // per-leaf connects it is equivalent to ("connect out.data, in.data", etc.,
+    // with the flipped `ready` connected in the reverse direction). Both are
+    // semantically identical. To assert equivalence we normalize each to the set
+    // of leaf field names that participate in connects, expanding a bulk
+    // root-to-root connect into the full set of MixedBundle leaves.
+    val leaves = Set("data", "valid", "ready")
+    def connectedLeaves(chirrtl: String): Set[String] =
+      chirrtl.linesIterator
+        .map(_.trim)
+        .filter(_.startsWith("connect "))
+        .flatMap { line =>
+          val mentioned = leaves.filter(f => line.contains("." + f))
+          // A bare root-to-root bulk connect (no field suffixes) covers all leaves.
+          if (mentioned.isEmpty) leaves else mentioned
+        }
+        .toSet
+    connectedLeaves(viewed) should be(connectedLeaves(plain))
+    // And the plain form is bulk while the viewed form is expanded, confirming
+    // the difference is purely structural (bulk vs. inlined per-leaf connects).
+    plain should include("connect out, in")
+    viewed should include("connect out.data, in.data")
+  }
+
+  // ======================== Composition with .readOnly ========================
+
+  behavior.of("composition with .readOnly (regression for stacked writability)")
+
+  it should "hard-error (not warn) when writing through readOnly.asProducerDeprecated" in {
+    // The underlying .readOnly is a hard read-only; stacking the deprecated
+    // producer view must NOT downgrade it to a warning.
+    checkError("Cannot connect to read-only value")(new RawModule {
+      val w = Wire(new MixedBundle)
+      val p = w.readOnly.asProducerDeprecated
+      p.data := 1.U
+    })
+  }
+
+  it should "not merely warn when writing through readOnly.asProducerDeprecated" in {
+    // Confirm it throws rather than only emitting a warning.
+    an[Exception] should be thrownBy {
+      ChiselStage.emitCHIRRTL(new RawModule {
+        val w = Wire(new MixedBundle)
+        val p = w.readOnly.asProducerDeprecated
+        p.data := 1.U
+      })
+    }
+  }
+
+  it should "hard-error (not warn) when writing a flipped field through readOnly.asConsumerDeprecated" in {
+    checkError("Cannot connect to read-only value")(new RawModule {
+      val w = Wire(new MixedBundle)
+      val c = w.readOnly.asConsumerDeprecated
+      c.ready := true.B
+    })
+  }
 }

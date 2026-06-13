@@ -1070,15 +1070,15 @@ object Data {
       * It is illegal to connect to the return value of this method.
       * This Data this method is called on must be a hardware type.
       */
-    def readOnly(implicit sourceInfo: SourceInfo): T = {
-      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
-      if (alreadyReadOnly) {
-        self
-      } else {
-        self.viewAsReadOnly(_ => "Cannot connect to read-only value")
-      }
-    }
+    def readOnly(implicit sourceInfo: SourceInfo): T =
+      viewOrSelf(self)(self.viewAsReadOnly(_ => "Cannot connect to read-only value"))
   }
+
+  /** Returns `self` unchanged if it is already read-only (a literal or a [[ReadOnlyBinding]]),
+    * otherwise returns the result of `mk` (the read-only view to build).
+    */
+  private def viewOrSelf[T <: Data](self: T)(mk: => T): T =
+    if (self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])) self else mk
 
   implicit class AsProducerConsumer[T <: Data](self: T) {
 
@@ -1090,14 +1090,8 @@ object Data {
       * This should only be used on the producer (RHS) of Connectable operators
       * (e.g., `consumer :<>= producer.asProducer`).
       */
-    def asProducer(implicit sourceInfo: SourceInfo): T = {
-      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
-      if (alreadyReadOnly) {
-        self
-      } else {
-        self.viewAsProducer(_ => "Cannot connect to producer's aligned field")
-      }
-    }
+    def asProducer(implicit sourceInfo: SourceInfo): T =
+      viewOrSelf(self)(self.viewAsProducer(_ => "Cannot connect to producer's aligned field"))
 
     /** Returns a view of this Data marked as a consumer.
       *
@@ -1107,44 +1101,30 @@ object Data {
       * This should only be used on the consumer (LHS) of Connectable operators
       * (e.g., `consumer.asConsumer :<>= producer`).
       */
-    def asConsumer(implicit sourceInfo: SourceInfo): T = {
-      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
-      if (alreadyReadOnly) {
-        self
-      } else {
-        self.viewAsConsumer(_ => "Cannot connect to consumer's flipped field")
-      }
-    }
+    def asConsumer(implicit sourceInfo: SourceInfo): T =
+      viewOrSelf(self)(self.viewAsConsumer(_ => "Cannot connect to consumer's flipped field"))
 
     /** Like [[asProducer]] but issues deprecation warnings instead of errors.
       *
       * Use this to migrate existing code toward [[asProducer]] incrementally.
       */
-    def asProducerDeprecated(implicit sourceInfo: SourceInfo): T = {
-      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
-      if (alreadyReadOnly) {
-        self
-      } else {
+    def asProducerDeprecated(implicit sourceInfo: SourceInfo): T =
+      viewOrSelf(self)(
         self.viewAsProducerDeprecated(info =>
           Warning(WarningID.AsProducerDeprecated, "Cannot connect to producer's aligned field")(info)
         )
-      }
-    }
+      )
 
     /** Like [[asConsumer]] but issues deprecation warnings instead of errors.
       *
       * Use this to migrate existing code toward [[asConsumer]] incrementally.
       */
-    def asConsumerDeprecated(implicit sourceInfo: SourceInfo): T = {
-      val alreadyReadOnly = self.isLit || self.topBindingOpt.exists(_.isInstanceOf[ReadOnlyBinding])
-      if (alreadyReadOnly) {
-        self
-      } else {
+    def asConsumerDeprecated(implicit sourceInfo: SourceInfo): T =
+      viewOrSelf(self)(
         self.viewAsConsumerDeprecated(info =>
           Warning(WarningID.AsConsumerDeprecated, "Cannot connect to consumer's flipped field")(info)
         )
-      }
-    }
+      )
   }
 }
 

@@ -130,6 +130,13 @@ private[chisel3] object binding {
   // It is a source (RHS). It may only be connected/applied to sinks.
   case class DontCareBinding() extends UnconstrainedBinding
 
+  /** The connectable "role" of a view created by `.asProducer` / `.asConsumer`. */
+  sealed trait ConnectableRole
+  object ConnectableRole {
+    case object Producer extends ConnectableRole
+    case object Consumer extends ConnectableRole
+  }
+
   /** Views are able to restrict writability of the target */
   sealed trait ViewWriteability {
 
@@ -142,24 +149,12 @@ private[chisel3] object binding {
       */
     final def reportIfReadOnly[A](onPass: => A)(onFail: => A)(implicit info: SourceInfo): A = this match {
       case ViewWriteability.Default => onPass
-      case ViewWriteability.ReadOnlyDeprecated(getWarning) =>
+      case ViewWriteability.ReadOnlyDeprecated(getWarning, _) =>
         Builder.warning(getWarning(info))
         onPass // This is just a warning so we propagate the pass value.
-      case ViewWriteability.ReadOnly(getError) =>
+      case ViewWriteability.ReadOnly(getError, _) =>
         Builder.error(getError(info))
         onFail
-      case ViewWriteability.ProducerReadOnly(getError) =>
-        Builder.error(getError(info))
-        onFail
-      case ViewWriteability.ConsumerReadOnly(getError) =>
-        Builder.error(getError(info))
-        onFail
-      case ViewWriteability.ProducerReadOnlyDeprecated(getWarning) =>
-        Builder.warning(getWarning(info))
-        onPass
-      case ViewWriteability.ConsumerReadOnlyDeprecated(getWarning) =>
-        Builder.warning(getWarning(info))
-        onPass
     }
 
     final def reportIfReadOnlyUnit(onPass: => Unit)(implicit info: SourceInfo): Unit =
@@ -176,7 +171,8 @@ private[chisel3] object binding {
     }
 
     /** Signals that will eventually become read only */
-    case class ReadOnlyDeprecated(getWarning: SourceInfo => Warning) extends ViewWriteability {
+    case class ReadOnlyDeprecated(getWarning: SourceInfo => Warning, role: Option[ConnectableRole] = None)
+        extends ViewWriteability {
       override def combine(that: ViewWriteability): ViewWriteability = that match {
         case ro: ReadOnly => ro
         case _ => this
@@ -184,34 +180,8 @@ private[chisel3] object binding {
     }
 
     /** Signals that are read only */
-    case class ReadOnly(getError: SourceInfo => String) extends ViewWriteability {
+    case class ReadOnly(getError: SourceInfo => String, role: Option[ConnectableRole] = None) extends ViewWriteability {
       override def combine(that: ViewWriteability): ViewWriteability = this
-    }
-
-    /** Read only for aligned fields of a producer view (created by .asProducer) */
-    case class ProducerReadOnly(getError: SourceInfo => String) extends ViewWriteability {
-      override def combine(that: ViewWriteability): ViewWriteability = this
-    }
-
-    /** Read only for flipped fields of a consumer view (created by .asConsumer) */
-    case class ConsumerReadOnly(getError: SourceInfo => String) extends ViewWriteability {
-      override def combine(that: ViewWriteability): ViewWriteability = this
-    }
-
-    /** Deprecated warning for aligned fields of a producer view (created by .asProducerDeprecated) */
-    case class ProducerReadOnlyDeprecated(getWarning: SourceInfo => Warning) extends ViewWriteability {
-      override def combine(that: ViewWriteability): ViewWriteability = that match {
-        case ro: ProducerReadOnly => ro
-        case _ => this
-      }
-    }
-
-    /** Deprecated warning for flipped fields of a consumer view (created by .asConsumerDeprecated) */
-    case class ConsumerReadOnlyDeprecated(getWarning: SourceInfo => Warning) extends ViewWriteability {
-      override def combine(that: ViewWriteability): ViewWriteability = that match {
-        case ro: ConsumerReadOnly => ro
-        case _ => this
-      }
     }
   }
 
