@@ -233,6 +233,38 @@ class AsProducerConsumerSpec extends AnyFlatSpec with Matchers with LogUtils {
     checkConsumerOnRHSError(ioModule((out, in) => out :#= in.asConsumer))
   }
 
+  // ======================== roleOf edge cases ========================
+
+  behavior.of("role recovery (roleOf)")
+
+  // Connection.roleOf recovers the Producer/Consumer role from a view's binding, but it can
+  // only see the role where computeAlignmentWritabilityMap actually marked a field read-only.
+  // A consumer view marks *flipped* fields, so a fully-aligned target (e.g. a standalone UInt
+  // or an all-aligned Bundle) produces an all-Default writability map and roleOf returns None.
+  // As a result, side enforcement does not fire for such a view used on the wrong side. The
+  // two tests below pin this asymmetry: the aligned *producer* view (which marks the aligned
+  // field read-only) is caught, but the aligned *consumer* view is not. If roleOf is taught to
+  // track the role independently of per-field writability, the second test should tighten to a
+  // checkConsumerOnRHSError.
+
+  it should "catch an all-aligned asProducer used on the LHS (role recovered from the read-only field)" in {
+    checkProducerOnLHSError(new RawModule {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      out.asProducer :<>= in
+    })
+  }
+
+  it should "(known limitation) NOT catch an all-aligned asConsumer used on the RHS" in {
+    // A standalone UInt is fully aligned, so asConsumer marks nothing read-only and the
+    // Consumer role is lost. The misuse on the RHS therefore elaborates without error.
+    ChiselStage.emitCHIRRTL(new RawModule {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      out :<>= in.asConsumer
+    })
+  }
+
   // ======================== Combined usage ========================
 
   behavior.of("asProducer and asConsumer together")
