@@ -180,3 +180,71 @@ class MyBundle extends Bundle {
 val x = WireInit(0.U.asTypeOf(new MyBundle))
 x.bar := 123.U
 ```
+
+### [W009] Producer view used incorrectly
+
+`.asProducerDeprecated` is a migration aid for `.asProducer`, which marks a `Data` as the producer
+(right-hand side) of a [`Connectable`](connectable) operator.
+This warning occurs when `.asProducerDeprecated` is used in a way that `.asProducer` rejects as an error:
+
+* connecting to an *aligned* field of the producer view (aligned fields are outputs from the producer's
+  perspective, so they are read-only), or
+* using the producer view on the consumer (left-hand) side of a connection operator.
+
+It can be fixed by correcting the usage and migrating to `.asProducer`.
+For example, the producer view below is mistakenly placed on the left-hand side:
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val fwd = UInt(8.W)
+  val bwd = Flipped(UInt(8.W))
+}
+val producer = Wire(new MyBundle)
+val consumer = Wire(new MyBundle)
+consumer.asProducerDeprecated :<>= producer
+```
+
+Because the left-hand side is the consumer, the fix is to tag it with `.asConsumer` (and the right-hand
+side with `.asProducer`):
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val fwd = UInt(8.W)
+  val bwd = Flipped(UInt(8.W))
+}
+val producer = Wire(new MyBundle)
+val consumer = Wire(new MyBundle)
+consumer.asConsumer :<>= producer.asProducer
+```
+
+### [W010] Consumer view used incorrectly
+
+`.asConsumerDeprecated` is a migration aid for `.asConsumer`, which marks a `Data` as the consumer
+(left-hand side) of a [`Connectable`](connectable) operator.
+This warning occurs when `.asConsumerDeprecated` is used in a way that `.asConsumer` rejects as an error:
+
+* connecting to a *flipped* field of the consumer view (flipped fields are inputs from the consumer's
+  perspective, so they are read-only), or
+* using the consumer view on the producer (right-hand) side of a connection operator.
+
+It can be fixed by correcting the usage and migrating to `.asConsumer`.
+For example, the consumer view below is mistakenly placed on the right-hand side:
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val fwd = UInt(8.W)
+  val bwd = Flipped(UInt(8.W))
+}
+val producer = Wire(new MyBundle)
+val consumer = Wire(new MyBundle)
+consumer :<>= producer.asConsumerDeprecated
+```
+
+Because the right-hand side is the producer, the fix is to tag it with `.asProducer` (and the left-hand
+side with `.asConsumer`):
+```scala mdoc:compile-only
+class MyBundle extends Bundle {
+  val fwd = UInt(8.W)
+  val bwd = Flipped(UInt(8.W))
+}
+val producer = Wire(new MyBundle)
+val consumer = Wire(new MyBundle)
+consumer.asConsumer :<>= producer.asProducer
+```
