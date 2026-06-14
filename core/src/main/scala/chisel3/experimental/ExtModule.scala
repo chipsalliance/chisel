@@ -23,19 +23,27 @@ private[chisel3] object BlackBoxHelpers {
   implicit class BlackBoxInlineAnnoHelpers(anno: BlackBoxInlineAnno.type) extends LazyLogging {
 
     /** Generate a BlackBoxInlineAnno from a Java Resource and a module name. */
-    def fromResource(resourceName: String, moduleName: ModuleName) = try {
-      val blackBoxFile = os.resource / os.RelPath(resourceName.dropWhile(_ == '/'))
-      val contents = os.read(blackBoxFile)
+    def fromResource(resourceName: String, moduleName: ModuleName): BlackBoxInlineAnno = {
+      // Resources are looked up relative to the root of the classpath, so drop any leading slashes.
+      val relativeResource = resourceName.dropWhile(_ == '/')
+      val stream = Thread.currentThread().getContextClassLoader.getResourceAsStream(relativeResource)
+      if (stream == null) {
+        throw new BlackBoxNotFoundException(resourceName, s"Unable to find resource '$resourceName'!")
+      }
+      val contents =
+        try {
+          scala.io.Source.fromInputStream(stream)(scala.io.Codec.UTF8).mkString
+        } finally {
+          stream.close()
+        }
       if (contents.size > BigInt(2).pow(20)) {
         val message =
           s"Black box resource $resourceName, which will be converted to an inline annotation, is greater than 1 MiB." +
             "This may affect compiler performance. Consider including this resource via a black box path."
         logger.warn(message)
       }
-      BlackBoxInlineAnno(moduleName, blackBoxFile.last, contents)
-    } catch {
-      case e: os.ResourceNotFoundException =>
-        throw new BlackBoxNotFoundException(resourceName, e.getMessage)
+      val fileName = relativeResource.split('/').last
+      BlackBoxInlineAnno(moduleName, fileName, contents)
     }
   }
 }

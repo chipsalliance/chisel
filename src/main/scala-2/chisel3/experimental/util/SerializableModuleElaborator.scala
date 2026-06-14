@@ -19,8 +19,11 @@ trait SerializableModuleElaborator {
     * Implementation of a config API to serialize the [[SerializableModuleParameter]]
     * @example
     * {{{
-    *  def config(parameter: MySerializableModuleParameter) =
-    *    os.write.over(os.pwd / "config.json", configImpl(parameter))
+    *  def config(parameter: MySerializableModuleParameter): Unit = {
+    *    val out = java.nio.file.Files.newOutputStream(java.nio.file.Paths.get("config.json"))
+    *    try configImpl(parameter).writeBytesTo(out)
+    *    finally out.close()
+    *  }
     * }}}
     */
   def configImpl[P <: SerializableModuleParameter: universe.TypeTag](
@@ -35,10 +38,16 @@ trait SerializableModuleElaborator {
     * @return A tuple of Readable, where the first is the firrtl and the second is the serializable annotations
     * @example
     * {{{
-    *  def design(parameter: os.Path) = {
-    *    val (firrtl, annos) = designImpl[MySerializableModule, MySerializableModuleParameter](os.read.stream(parameter))
-    *    os.write.over(os.pwd / "GCD.fir", firrtl)
-    *    os.write.over(os.pwd / "GCD.anno.json", annos)
+    *  def design(parameter: java.nio.file.Path): Unit = {
+    *    val input = new String(java.nio.file.Files.readAllBytes(parameter), java.nio.charset.StandardCharsets.UTF_8)
+    *    val (firrtl, annos) = designImpl[MySerializableModule, MySerializableModuleParameter](input)
+    *    writeReadable(firrtl, java.nio.file.Paths.get("GCD.fir"))
+    *    writeReadable(annos, java.nio.file.Paths.get("GCD.anno.json"))
+    *  }
+    *  def writeReadable(data: geny.Readable, path: java.nio.file.Path): Unit = {
+    *    val out = java.nio.file.Files.newOutputStream(path)
+    *    try data.writeBytesTo(out)
+    *    finally out.close()
     *  }
     * }}}
     */
