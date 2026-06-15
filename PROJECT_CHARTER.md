@@ -90,7 +90,7 @@ a. Collaborators acknowledge that the copyright in all new contributions will be
 b. Except as described in Section 7.c., all contributions to the Project are subject to the following:
 
 - i. All new inbound code contributions to the Project must be made using [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) (the “Project License”).
-- ii. All new inbound code contributions must also be accompanied by a [Developer Certificate of Origin](http://developercertificate.org) sign-off in the source code system that is submitted through a TSC-approved contribution process.
+- ii. All new inbound code contributions, whether as a self-employed individual or an individual employed by a corporation, must be made pursuant to a binding Contributor License Agreement in the form approved by the TSC.  Self-employed individual contributors must agree to the ICLA (in the form approved by the TSC), and individuals employed by an organization must have that organization agree to the CCLA (in the form approved by the TSC).
 - iii. All outbound code will be made available under the Project License.
 - iv. Documentation will be received and made available by the Project under the Project License.
 - v. The Project may seek to integrate and contribute back to other open source projects (“Upstream Projects”), conforming to all license requirements of those projects.
