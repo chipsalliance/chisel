@@ -28,7 +28,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
   import global._
 
   val phaseName:             String = "chiselbundlephase"
-  val runsAfter:             List[String] = "typer" :: Nil
+  val runsAfter:             List[String] = "refchecks" :: Nil
   def newPhase(prev: Phase): Phase = new BundlePhase(prev)
 
   private class BundlePhase(prev: Phase) extends StdPhase(prev) {

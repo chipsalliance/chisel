@@ -16,7 +16,7 @@ class IdentifierComponent(val global: Global, arguments: ChiselPluginArguments)
     with TypingTransformers
     with ChiselOuterUtils {
   import global._
-  val runsAfter:              List[String] = "typer" :: Nil
+  val runsAfter:              List[String] = "refchecks" :: Nil
   val phaseName:              String = "identifiercomponent"
   def newPhase(_prev: Phase): ChiselComponentPhase = new ChiselComponentPhase(_prev)
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
