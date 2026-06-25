@@ -2980,6 +2980,8 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/testing/HasTestingDirectory$.html#temporary-7e8","e":false,"i":"","n":"temporary","t":"temporary(deleteOnExit: Boolean = ...): HasTestingDirectory","d":"chisel3.testing.HasTestingDirectory","k":"def","x":""},
 {"l":"chisel3/testing/HasTestingDirectory$.html#timestamp-0","e":false,"i":"","n":"timestamp","t":"timestamp: HasTestingDirectory","d":"chisel3.testing.HasTestingDirectory","k":"def","x":""},
 {"l":"chisel3/util.html#","e":false,"i":"","n":"chisel3.util","t":"chisel3.util","d":"","k":"package","x":""},
+{"l":"chisel3/util.html#ValidIO-0","e":false,"i":"","n":"ValidIO","t":"ValidIO[+T <: Data] = Valid[T]","d":"chisel3.util","k":"type","x":""},
+{"l":"chisel3/util.html#ValidIO-0","e":false,"i":"","n":"ValidIO","t":"ValidIO: Valid.type","d":"chisel3.util","k":"val","x":""},
 {"l":"chisel3/util/circt.html#","e":false,"i":"","n":"chisel3.util.circt","t":"chisel3.util.circt","d":"","k":"package","x":""},
 {"l":"chisel3/util/circt/dpi.html#","e":false,"i":"","n":"chisel3.util.circt.dpi","t":"chisel3.util.circt.dpi","d":"","k":"package","x":""},
 {"l":"chisel3/util/circt/dpi/DPIClockedVoidFunctionImport.html#","e":false,"i":"","n":"DPIClockedVoidFunctionImport","t":"DPIClockedVoidFunctionImport extends DPIFunctionImport","d":"chisel3.util.circt.dpi","k":"trait","x":""},
