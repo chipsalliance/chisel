@@ -251,8 +251,9 @@ chisel3.layers.Verification                          (Extract)
 │   └── chisel3.layers.Verification.Assert.Temporal  (Inline)
 ├── chisel3.layers.Verification.Assume               (Extract)
 │   └── chisel3.layers.Verification.Assume.Temporal  (Inline)
-└── chisel3.layers.Verification.Cover                (Extract)
-    └── chisel3.layers.Verification.Cover.Temporal   (Inline)
+├── chisel3.layers.Verification.Cover                (Extract)
+│   └── chisel3.layers.Verification.Cover.Temporal   (Inline)
+└── chisel3.layers.Verification.Debug                (Extract)
 ```
 
 These built-in layers are dual purpose.  First, these layers match the common
@@ -264,10 +265,10 @@ not fully supported by simulation tools.  Second, the Chisel standard library
 uses them for a number of its APIs.  _Unless otherwise wrapped in a different
 layer block, the following operations are automatically placed in layers_:
 
-* Prints are placed in the `Verification` layer
 * Assertions are placed in the `Verification.Assert` layer
 * Assumptions are placed in the `Verification.Assume` layer
 * Covers are placed in the `Verification.Cover` layer
+* Prints are placed in the `Verification.Debug` layer
 
 At this time, no operations are automatically placed in `Temporal` layers.  The
 `Temporal` layer is up to the user to use as needed.
@@ -552,21 +553,22 @@ circt.stage.ChiselStage.emitSystemVerilog(
 ### Design Verification Example
 
 Consider a use case where a design or design verification engineer would like to
-add some asserts and debug prints to a module.  The logic necessary for the
-asserts and debug prints requires additional computation.  All of this code
-should selectively included at Verilog elaboration time (not at Chisel
-elaboration time).  The engineer can use three layers to do this.
+add some asserts and prints to a module.  The prints are for the creation of an
+execution trace.  The logic necessary for the asserts and prints requires
+additional computation.  All of this code should selectively included at Verilog
+elaboration time (not at Chisel elaboration time).  The engineer can use three
+layers to do this.
 
 There are three layers used in this example:
 
 1. The built-in `Verification` layer
 1. The built-in `Assert` layer which is nested under the built-in `Verification`
    layer
-1. A user-defined `Debug` layer which is also nested under the built-in
+1. A user-defined `Trace` layer which is also nested under the built-in
    `Verification` layer
 
 The `Verification` layer can be used to store common logic used by both the
-`Assert` and `Debug` layers.  The latter two layers allow for separation of,
+`Assert` and `Trace` layers.  The latter two layers allow for separation of,
 respectively, assertions from prints.
 
 One way to write this in Scala is the following:
@@ -579,7 +581,7 @@ import chisel3.layers.Verification
 // User-defined layers are declared here.  Built-in layers do not need to be declared.
 object UserDefined {
   implicit val root: Layer = Verification
-  object Debug extends Layer(LayerConfig.Inline)
+  object Trace extends Layer(LayerConfig.Inline)
 }
 
 class Foo extends Module {
@@ -601,7 +603,7 @@ class Foo extends Module {
     }
 
     // This adds a `Debug` layer block.
-    block(UserDefined.Debug) {
+    block(UserDefined.Trace) {
       printf("a: %x, a_d0: %x", a, a_d0)
     }
 
@@ -618,13 +620,21 @@ following filenames.  One file is created for each extract layer:
 1. `layers_Foo_Verification_Assert.sv`
 
 Additionally, the resulting SystemVerilog will be sensitive to the preprocessor
-define `layer$Verification$Debug` due to the one inline layer we added.
+define `layer$Verification$Trace` due to the one inline layer we added.
 
 A user can then include any combination of these files in their design to
 include the optional functionality described by the `Verification` or
 `Verification.Assert` layers and enable debugging by setting the preprocessor
 macro.  The `Verification.Assert` bind file automatically includes the
 `Verification` bind file for the user.
+
+:::note
+
+By default, a Chisel `printf` will be put in the `Verification.Debug` extract
+layer.  This default behavior was changed in the above example by putting the
+`printf` inside the user-defined `Trace` inline layer.
+
+:::
 
 #### Implementation Notes
 
