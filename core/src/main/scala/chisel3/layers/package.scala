@@ -17,7 +17,8 @@ package object layers {
     Verification.Assume,
     Verification.Assume.Temporal,
     Verification.Cover,
-    Verification.Cover.Temporal
+    Verification.Cover.Temporal,
+    Verification.Debug
   )
 
 }

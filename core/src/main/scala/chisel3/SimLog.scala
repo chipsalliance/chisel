@@ -49,7 +49,7 @@ sealed trait SimLog extends SimLogIntf {
     _filename.foreach(Printable.checkScope(_, "SimLog filename "))
 
     when(!Module.reset.asBool) {
-      layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+      layer.block(layers.Verification.Debug, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
         Builder.pushCommand(Flush(sourceInfo, _filename, clock.ref))
       }
     }
@@ -81,7 +81,7 @@ sealed trait SimLog extends SimLogIntf {
     Printable.checkScope(pable, "printf ")
     _filename.foreach(Printable.checkScope(_, "SimLog filename "))
 
-    layer.block(layers.Verification, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
+    layer.block(layers.Verification.Debug, skipIfAlreadyInBlock = true, skipIfLayersEnabled = true) {
       Builder.pushCommand(Printf(printfId, sourceInfo, _filename, clock.ref, pable))
     }
     printfId
