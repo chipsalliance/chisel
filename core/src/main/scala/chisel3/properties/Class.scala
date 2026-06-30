@@ -153,7 +153,7 @@ object ClassType {
   def unsafeGetClassTypeByName(name: String): ClassType = ClassType(name)
 }
 
-sealed trait AnyClassType
+trait AnyClassType
 
 object AnyClassType {
   implicit val classTypeProvider: ClassTypeProvider[AnyClassType] = ClassTypeProvider(fir.AnyRefPropertyType)
