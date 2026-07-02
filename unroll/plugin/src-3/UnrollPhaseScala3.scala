@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 package unroll
 
 import dotty.tools.dotc.*

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 package unroll
 
 import scala.tools.nsc.symtab.Flags
