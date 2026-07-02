@@ -1,0 +1,37 @@
+package build.unroll
+
+import mill._
+import mill.api.Cross
+import mill.scalalib._
+
+import build._
+
+object `package` extends Module {
+  // https://github.com/com-lihaoyi/mill/issues/3693
+  object plugin extends Cross[UnrollPlugin](v.scalaCrossVersions.map(v.scalaCrossToVersion))
+}
+
+trait UnrollPlugin extends CrossSbtModule {
+  override def artifactName = "unroll-plugin"
+
+  def moduleDir = super.moduleDir / os.up
+
+  // Compiler plugins are built against concrete Scala versions.
+  override def crossFullScalaVersion = true
+
+  override def sources = Task.Sources {
+    val base = moduleDir / "plugin"
+    if (v.isScala3(crossScalaVersion)) base / "src-3"
+    else base / "src-2"
+  }
+
+  override def resources = Task.Sources(moduleDir / "plugin" / "resources")
+
+  override def mvnDeps = Task {
+    val annotation = mvn"com.lihaoyi::unroll-annotation:0.3.0"
+    val compiler =
+      if (v.isScala3(crossScalaVersion)) v.scala3Compiler(crossScalaVersion)
+      else v.scala2Compiler(crossScalaVersion)
+    super.mvnDeps() ++ Seq(annotation, compiler)
+  }
+}

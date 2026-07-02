@@ -1,0 +1,4 @@
+<plugin>
+    <name>unroll</name>
+    <classname>unroll.UnrollPluginScala2</classname>
+</plugin>

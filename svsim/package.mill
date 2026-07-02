@@ -15,17 +15,21 @@ object `package` extends Module {
 trait Svsim extends ChiselCrossModule with HasCommonOptions with ScalafmtModule {
 
   def moduleDir = super.moduleDir / os.up
+  def unrollPluginModule = unroll.plugin(_scalaVersion)
 
   override def scalacOptions = Task {
     super.scalacOptions() ++
+      Seq(s"-Xplugin:${unrollPluginModule.jar().path}") ++
       Option.when(!v.isScala3(crossScalaVersion))(
         "-Xsource-features:case-apply-copy-access"
       )
   }
 
-  def compileMvnDeps = Seq(mvn"com.lihaoyi::unroll-annotation:0.3.0")
+  override def scalacPluginClasspath = Task {
+    super.scalacPluginClasspath() ++ Seq(unrollPluginModule.jar())
+  }
 
-  def scalacPluginMvnDeps = Seq(mvn"com.lihaoyi:::unroll-plugin:0.3.0")
+  def compileMvnDeps = Seq(mvn"com.lihaoyi::unroll-annotation:0.3.0")
 
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def mvnDeps = Seq(v.scalatest, v.scalacheck)
