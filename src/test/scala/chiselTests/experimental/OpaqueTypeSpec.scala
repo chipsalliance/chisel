@@ -114,8 +114,8 @@ object OpaqueTypeSpec {
   }
   class Boxed[T <: Data](gen: T) extends MaybeBoxed[T] {
     def boxed = true
-    lazy val elements = SeqMap("underlying" -> gen)
-    def underlying = elements.head._2.asInstanceOf[T]
+    val underlying = gen
+    lazy val elements = SeqMap("underlying" -> underlying)
   }
   class Unboxed[T <: Data](gen: T) extends MaybeBoxed[T] with OpaqueType {
     def boxed = false
