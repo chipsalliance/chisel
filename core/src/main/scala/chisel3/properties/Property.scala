@@ -278,8 +278,12 @@ sealed trait Property[T] extends Element { self =>
   }
 
   /** Clone type by simply constructing a new Property[T].
+    *
+    * The instance mixes in `AnyClassType` (a no-member marker) so that the phantom
+    * `asInstanceOf[Property[ClassType] with AnyClassType]` casts (and `convertUnderlying` bridges) used
+    * for class-reference properties succeed under Scala 3. The static type is unchanged.
     */
-  override def cloneType: this.type = new Property[T] {
+  override def cloneType: this.type = new Property[T] with AnyClassTypeUnsealed {
     val tpe = self.tpe
   }.asInstanceOf[this.type]
 
@@ -735,7 +739,11 @@ object Property {
   }
 
   private[chisel3] def makeWithValueOpt[T](implicit _tpe: PropertyType[T]): Property[_tpe.Type] = {
-    new Property[_tpe.Type] {
+    // Mixes in `AnyClassType` (a no-member marker) so the phantom
+    // `asInstanceOf[Property[ClassType] with AnyClassType]` casts and
+    // `convertUnderlying` bridges used for class-reference properties
+    // succeed under Scala 3. The static return type is unchanged.
+    new Property[_tpe.Type] with AnyClassTypeUnsealed {
       val tpe: chisel3.properties.PropertyType[T] = _tpe
     }
   }

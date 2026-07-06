@@ -58,4 +58,14 @@ object Verification
         _sourceInfo = UnlocatableSourceInfo
       )
       with HasTemporalInlineLayer
+
+  /** The [[chisel3.layer.Layer]] where all printfs will be placed.  This layer
+    * _does not_ have a child temporal layer as it is not expected to be
+    * useful.
+    */
+  object Debug
+      extends Layer(LayerConfig.Extract(CustomOutputDir(Paths.get("verification", "debug"))))(
+        _parent = implicitly[Layer],
+        _sourceInfo = UnlocatableSourceInfo
+      )
 }

@@ -154,6 +154,7 @@ object ClassType {
 }
 
 sealed trait AnyClassType
+private[chisel3] trait AnyClassTypeUnsealed extends AnyClassType
 
 object AnyClassType {
   implicit val classTypeProvider: ClassTypeProvider[AnyClassType] = ClassTypeProvider(fir.AnyRefPropertyType)
