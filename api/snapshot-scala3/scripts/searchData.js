@@ -2185,7 +2185,6 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/layers/Verification$$Assert$.html#","e":false,"i":"","n":"Assert","t":"Assert extends Layer, HasTemporalInlineLayer","d":"chisel3.layers.Verification","k":"object","x":""},
 {"l":"chisel3/layers/Verification$$Assume$.html#","e":false,"i":"","n":"Assume","t":"Assume extends Layer, HasTemporalInlineLayer","d":"chisel3.layers.Verification","k":"object","x":""},
 {"l":"chisel3/layers/Verification$$Cover$.html#","e":false,"i":"","n":"Cover","t":"Cover extends Layer, HasTemporalInlineLayer","d":"chisel3.layers.Verification","k":"object","x":""},
-{"l":"chisel3/layers/Verification$$Debug$.html#","e":false,"i":"","n":"Debug","t":"Debug extends Layer","d":"chisel3.layers.Verification","k":"object","x":""},
 {"l":"chisel3/ltl.html#","e":false,"i":"","n":"chisel3.ltl","t":"chisel3.ltl","d":"","k":"package","x":""},
 {"l":"chisel3/ltl/AssertProperty$.html#","e":false,"i":"","n":"AssertProperty","t":"AssertProperty extends AssertPropertyLike","d":"chisel3.ltl","k":"object","x":""},
 {"l":"chisel3/ltl/AssertProperty$.html#apply-fffffc30","e":false,"i":"","n":"apply","t":"apply(cond: Bool, clock: Clock, disable: Disable, label: String)(using SourceInfo): Unit","d":"chisel3.ltl.AssertProperty","k":"def","x":""},
