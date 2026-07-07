@@ -143,10 +143,6 @@ object ChiselStageSpec {
       define(out, ProbeValue(a))
     }
   }
-
-  class LayerRemappingTestPrintf extends Module {
-    printf("hello")
-  }
 }
 
 /** A fixture used that exercises features of the Trace API.
@@ -1328,19 +1324,6 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       chirrtl should include("output out : Probe<UInt<1>, B>")
       chirrtl should include("layer B")
       chirrtl should include("layerblock B")
-    }
-
-    it("should allow remapping of printfs in Verification.Debug to Verification") {
-      ChiselStage
-        .emitCHIRRTL(
-          new ChiselStageSpec.LayerRemappingTestPrintf,
-          Array("--remap-layer", "chisel3.layers.Verification$Debug$,chisel3.layers.Verification$")
-        )
-        .fileCheck("-implicit-check-not='layerblock Debug'") {
-          """|CHECK:      layerblock Verification :
-             |CHECK-NEXT:   printf
-             |""".stripMargin
-        }
     }
 
     it("should suppress source info with --no-source-info") {

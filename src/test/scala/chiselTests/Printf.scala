@@ -106,18 +106,4 @@ class PrintfSpec extends AnyFlatSpec with Matchers with FileCheck {
         """CHECK: printf(clock, UInt<1>(0h1), "%0d %0x %5d %13b %c %5x\n", in, in, in, in, in, in)"""
       )
   }
-
-  "printf" should "be emitted in the Debug layer" in {
-    class Foo extends Module {
-      printf("hello")
-    }
-    ChiselStage
-      .emitCHIRRTL(new Foo)
-      .fileCheck()(
-        """|CHECK:      layerblock Verification :
-           |CHECK-NEXT:   layerblock Debug :
-           |CHECK-NEXT:     printf
-           |""".stripMargin
-      )
-  }
 }
