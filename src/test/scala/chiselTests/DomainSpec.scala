@@ -475,4 +475,31 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       domainOf(Bool(), ClockDomain.Type())
     }
   }
+
+  behavior of "The domain.Mux API"
+
+  it should "allow connection of two muxed outputs" in {
+    class Bar extends Bundle {
+      val x = Bool()
+      val y = Bool()
+    }
+    class Foo extends RawModule {
+      val A, B, SEL = IO(Input(ClockDomain.Type()))
+      val OUT = IO(Output(ClockDomain.Type()))
+      val a = IO(Input(new Bar))
+      associate(a, A)
+      val b = IO(Input(new Bar))
+      associate(b, B)
+      val sel = IO(Input(Bool()))
+      associate(sel, SEL)
+      val out = IO(Output(Bool()))
+      associate(out, OUT)
+
+      private val (pair, _) = domain.Mux(sel, a, b, ClockDomain("a_b_muxed"))
+
+      out :<= pair.x ^ pair.y
+    }
+
+    ChiselStage.emitSystemVerilog(new Foo, firtoolOpts = Array("--domain-mode=infer-all"))
+  }
 }
