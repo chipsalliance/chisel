@@ -13,10 +13,10 @@ import chisel3.experimental.SourceInfo
   * also be used to mux multiple signals at once, e.g., to mux between both a
   * clock/reset pair and have the resulting pair be on the same domain.
   *
-  * @param sel       the mux select
-  * @param outT      the value selected when `sel` is true
-  * @param outF      the value selected when `sel` is false
-  * @param outDomain the output domain to associate the muxed output with
+  * @param sel      the mux select
+  * @param t        the value selected when `sel` is true
+  * @param f        the value selected when `sel` is false
+  * @param domains  the output domains to associate the muxed output with
   * @return the muxed output data and the output domain it was associated with
   *
   * @note This is a glitchy!  This is not safe to use if `sel` will change while
@@ -24,19 +24,17 @@ import chisel3.experimental.SourceInfo
   */
 object Mux {
   def apply[A <: Data](
-    sel:        Bool,
-    outT:       A,
-    outF:       A,
-    outDomain:  domain.Type,
-    outDomains: domain.Type*
+    sel:     Bool,
+    t:       A,
+    f:       A,
+    domains: domain.Type*
   )(implicit sourceInfo: SourceInfo): A = {
-    val out = Wire(chiselTypeOf(outT))
-    val domains = outDomain +: outDomains
+    val out = Wire(chiselTypeOf(t))
     Module.currentModule.get.associate(out, domains: _*)
     out := chisel3.Mux(
-      domain.unsafeCast(sel, domains:  _*),
-      domain.unsafeCast(outT, domains: _*),
-      domain.unsafeCast(outF, domains: _*)
+      domain.unsafeCast(sel, domains: _*),
+      domain.unsafeCast(t, domains:   _*),
+      domain.unsafeCast(f, domains:   _*)
     )
     out
   }
