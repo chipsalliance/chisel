@@ -31,11 +31,12 @@ object Mux {
     outDomains: domain.Type*
   )(implicit sourceInfo: SourceInfo): A = {
     val out = Wire(chiselTypeOf(outT))
-    Module.currentModule.get.associate(out, Seq(outDomain) ++ outDomains: _*)
+    val domains = outDomain +: outDomains
+    Module.currentModule.get.associate(out, domains: _*)
     out := chisel3.Mux(
-      domain.unsafeCast(sel, Seq(outDomain) ++ outDomains:  _*),
-      domain.unsafeCast(outT, Seq(outDomain) ++ outDomains: _*),
-      domain.unsafeCast(outF, Seq(outDomain) ++ outDomains: _*)
+      domain.unsafeCast(sel, domains:  _*),
+      domain.unsafeCast(outT, domains: _*),
+      domain.unsafeCast(outF, domains: _*)
     )
     out
   }
