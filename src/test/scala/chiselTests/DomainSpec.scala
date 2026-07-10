@@ -16,19 +16,22 @@ import scala.annotation.nowarn
 
 class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
+  object PowerDomain extends Domain {
+
+    override def fields = Seq(
+      ("name", Field.String),
+      ("voltage", Field.Integer),
+      ("alwaysOn", Field.Boolean)
+    )
+
+    def apply(name: String, voltage: Int, alwaysOn: Boolean): domain.Type =
+      PowerDomain(Property(name), Property(voltage), Property(alwaysOn))
+
+  }
+
   behavior of "Domains"
 
   they should "emit FIRRTL for internal and user-defined domains" in {
-
-    object PowerDomain extends Domain {
-
-      override def fields = Seq(
-        ("name", Field.String),
-        ("voltage", Field.Integer),
-        ("alwaysOn", Field.Boolean)
-      )
-
-    }
 
     class Foo extends RawModule {
       val A = IO(Input(ClockDomain.Type()))
@@ -486,20 +489,44 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     class Foo extends RawModule {
       val A, B, SEL = IO(Input(ClockDomain.Type()))
       val OUT = IO(Output(ClockDomain.Type()))
-      val a = IO(Input(new Bar))
+      val a, b = IO(Input(new Bar))
       associate(a, A)
-      val b = IO(Input(new Bar))
       associate(b, B)
       val sel = IO(Input(Bool()))
       associate(sel, SEL)
       val out = IO(Output(Bool()))
       associate(out, OUT)
 
-      private val (pair, _) = domain.Mux(sel, a, b, ClockDomain("a_b_muxed"))
+      private val pair = domain.Mux(sel, a, b, ClockDomain("a_b_muxed"))
 
       out :<= pair.x ^ pair.y
     }
 
     ChiselStage.emitSystemVerilog(new Foo, firtoolOpts = Array("--domain-mode=infer-all"))
   }
+
+  it should "allow for multiple casts of different domain kinds" in {
+    class Foo extends RawModule {
+      val CLOCK_A, CLOCK_B = IO(Input(ClockDomain.Type()))
+      val POWER_A, POWER_B = IO(Input(PowerDomain.Type()))
+      val a, b, sel = IO(Input(Bool()))
+      val out = IO(Output(Bool()))
+
+      out :<= domain.Mux(sel, a, b, ClockDomain("clock_a_b_muxed"), PowerDomain("power_a_b_muxed", 42, false))
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck() {
+        """|CHECK-LABEL: module Foo :
+           |CHECK:         domain [[clock:.+]] of ClockDomain
+           |CHECK-NEXT:    domain [[power:.+]] of PowerDomain
+           |CHECK:         node [[sel:.+]] = unsafe_domain_cast(sel, [[clock]], [[power]])
+           |CHECK-NEXT:    node [[a:.+]] = unsafe_domain_cast(a, [[clock]], [[power]])
+           |CHECK-NEXT:    node [[b:.+]] = unsafe_domain_cast(b, [[clock]], [[power]])
+           |CHECK-NEXT:    mux([[sel]], [[a]], [[b]])
+           |""".stripMargin
+      }
+  }
+
 }

@@ -24,18 +24,19 @@ import chisel3.experimental.SourceInfo
   */
 object Mux {
   def apply[A <: Data](
-    sel:       Bool,
-    outT:      A,
-    outF:      A,
-    outDomain: domain.Type
-  )(implicit sourceInfo: SourceInfo): (A, domain.Type) = {
+    sel:        Bool,
+    outT:       A,
+    outF:       A,
+    outDomain:  domain.Type,
+    outDomains: domain.Type*
+  )(implicit sourceInfo: SourceInfo): A = {
     val out = Wire(chiselTypeOf(outT))
-    Module.currentModule.get.associate(out, outDomain)
-    out :<= chisel3.Mux(
-      domain.unsafeCast(sel, outDomain),
-      domain.unsafeCast(outT, outDomain),
-      domain.unsafeCast(outF, outDomain)
+    Module.currentModule.get.associate(out, Seq(outDomain) ++ outDomains: _*)
+    out := chisel3.Mux(
+      domain.unsafeCast(sel, Seq(outDomain) ++ outDomains:  _*),
+      domain.unsafeCast(outT, Seq(outDomain) ++ outDomains: _*),
+      domain.unsafeCast(outF, Seq(outDomain) ++ outDomains: _*)
     )
-    (out, outDomain)
+    out
   }
 }
