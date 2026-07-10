@@ -1530,6 +1530,8 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/domain/Field$$Type.html#","e":false,"i":"","n":"Type","t":"Type","d":"chisel3.domain.Field","k":"trait","x":""},
 {"l":"chisel3/domain/FieldAccessor.html#","e":false,"i":"","n":"FieldAccessor","t":"FieldAccessor extends Dynamic","d":"chisel3.domain","k":"class","x":""},
 {"l":"chisel3/domain/FieldAccessor.html#selectDynamic-51a","e":false,"i":"","n":"selectDynamic","t":"selectDynamic(fieldName: String): Property[_]","d":"chisel3.domain.FieldAccessor","k":"def","x":""},
+{"l":"chisel3/domain/Mux$.html#","e":false,"i":"","n":"Mux","t":"Mux","d":"chisel3.domain","k":"object","x":""},
+{"l":"chisel3/domain/Mux$.html#apply-92c","e":false,"i":"","n":"apply","t":"apply[A <: Data](sel: Bool, t: A, f: A, domains: Type*)(implicit sourceInfo: SourceInfo): A","d":"chisel3.domain.Mux","k":"def","x":""},
 {"l":"chisel3/domain/Type.html#","e":false,"i":"","n":"Type","t":"Type extends Element","d":"chisel3.domain","k":"class","x":""},
 {"l":"chisel3/domain/Type.html#asTypeOf-fed","e":false,"i":"","n":"asTypeOf","t":"asTypeOf[T <: Data](that: T)(using SourceInfo): T","d":"chisel3.domain.Type","k":"def","x":""},
 {"l":"chisel3/domain/Type.html#asUInt-0","e":false,"i":"","n":"asUInt","t":"asUInt: UInt","d":"chisel3.domain.Type","k":"def","x":""},
