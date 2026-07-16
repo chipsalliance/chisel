@@ -276,6 +276,30 @@ class LTLSpec extends AnyFlatSpec with Matchers with ChiselSim with FileCheck {
     ChiselStage.emitSystemVerilog(new EventuallyMod)
   }
 
+  class AlwaysMod extends RawModule {
+    implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
+    val a = IO(Input(Bool()))
+    val p0: Property = a.always
+    val p1: Property = Property.always(a)
+  }
+  it should "support property always operation" in {
+    val sourceLoc = "@[Foo.scala 1:2]"
+    ChiselStage
+      .emitCHIRRTL(new AlwaysMod)
+      .fileCheck()(
+        s"""|CHECK: node [[N0:.*]] = intrinsic(circt_ltl_not : UInt<1>, a) $sourceLoc
+            |CHECK: node [[E0:.*]] = intrinsic(circt_ltl_eventually : UInt<1>, [[N0]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_not : UInt<1>, [[E0]]) $sourceLoc
+            |CHECK: node [[N1:.*]] = intrinsic(circt_ltl_not : UInt<1>, a) $sourceLoc
+            |CHECK: node [[E1:.*]] = intrinsic(circt_ltl_eventually : UInt<1>, [[N1]]) $sourceLoc
+            |CHECK: intrinsic(circt_ltl_not : UInt<1>, [[E1]]) $sourceLoc
+            |""".stripMargin
+      )
+  }
+  it should "compile property always operation" in {
+    ChiselStage.emitSystemVerilog(new AlwaysMod)
+  }
+
   class BasicVerifMod extends RawModule {
     implicit val info: SourceInfo = SourceLine("Foo.scala", 1, 2)
     val a = IO(Input(Bool()))

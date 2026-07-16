@@ -234,6 +234,8 @@ sealed trait Property extends PropertyIntf {
 
   protected def _eventuallyImpl(implicit sourceInfo: SourceInfo): Property = Property._eventually(this)
 
+  protected def _alwaysImpl(implicit sourceInfo: SourceInfo): Property = Property._always(this)
+
   protected def _andPropImpl(other: Property)(implicit sourceInfo: SourceInfo): Property = Property._and(this, other)
 
   protected def _orPropImpl(other: Property)(implicit sourceInfo: SourceInfo): Property = Property._or(this, other)
@@ -267,6 +269,9 @@ object Property extends PropertyObjIntf {
 
   protected def _eventually(prop: Property)(implicit sourceInfo: SourceInfo): Property =
     OpaqueProperty(LTLEventuallyIntrinsic(prop.inner))
+
+  protected def _always(prop: Property)(implicit sourceInfo: SourceInfo): Property =
+    not(eventually(not(prop)))
 
   protected def _and(arg0: Property, argN: Property*)(implicit sourceInfo: SourceInfo): Property = {
     var lhs = arg0

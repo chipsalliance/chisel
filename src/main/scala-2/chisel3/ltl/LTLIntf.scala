@@ -92,6 +92,9 @@ private[chisel3] trait PropertyIntf { self: Property =>
   /** See [[Property.eventually]]. */
   def eventually(implicit sourceInfo: SourceInfo): Property = _eventuallyImpl
 
+  /** See [[Property.always]]. */
+  def always(implicit sourceInfo: SourceInfo): Property = _alwaysImpl
+
   /** See [[Property.and]]. */
   def and(other: Property)(implicit sourceInfo: SourceInfo): Property = _andPropImpl(other)
 
@@ -243,8 +246,23 @@ private[chisel3] trait PropertyObjIntf { self: Property.type =>
     * infinite number of cycles.
     *
     * Equivalent to `s_eventually prop` in SVA.
+    *
+    * This is the dual of `always`: `eventually(prop)` is equivalent to
+    * `not(always(not(prop)))`.
     */
   def eventually(prop: Property)(implicit sourceInfo: SourceInfo): Property = _eventually(prop)
+
+  /** Indicate that a property holds at all points in time. This is a *weak*
+    * always, so the property trivially holds by only being checked over a
+    * finite number of cycles. It does not require the property to hold beyond
+    * the available trace.
+    *
+    * Equivalent to `always prop` in SVA.
+    *
+    * This is the dual of `eventually`: `always(prop)` is defined as
+    * `not(eventually(not(prop)))`.
+    */
+  def always(prop: Property)(implicit sourceInfo: SourceInfo): Property = _always(prop)
 
   /** Form the conjunction of two properties. Equivalent to
     * `arg0 and arg1 and ... and argN` in SVA.
