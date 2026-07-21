@@ -1510,6 +1510,95 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
     }
   }
 
+  describe("(7b): Connectable between Options") {
+    it("(7b.a) :<>= connects Some to Some, and does nothing for None to None") {
+      class ConnectOptions extends Module {
+        val a: Option[UInt] = Some(IO(Output(UInt(3.W))))
+        val b: Option[UInt] = Some(IO(Input(UInt(3.W))))
+        a :<>= b
+
+        val c: Option[UInt] = None
+        val d: Option[UInt] = None
+        c :<>= d
+      }
+      val out = ChiselStage.emitCHIRRTL { new ConnectOptions() }
+      assert(out.contains("connect a, b"))
+    }
+    it("(7b.b) :<= connects Some to Some") {
+      class ConnectOptions extends Module {
+        val a = IO(Output(UInt(3.W)))
+        val b = IO(Input(UInt(3.W)))
+        Some(a) :<= Some(b)
+      }
+      val out = ChiselStage.emitCHIRRTL { new ConnectOptions() }
+      assert(out.contains("connect a, b"))
+    }
+    it("(7b.b2) :>= connects Some to Some") {
+      class ConnectOptions extends Module {
+        val c = IO(Output(UInt(3.W)))
+        val d = IO(Input(UInt(3.W)))
+        Some(d) :>= Some(c)
+      }
+      val out = ChiselStage.emitCHIRRTL { new ConnectOptions() }
+      assert(out.contains("skip"))
+      assert(!out.contains("connect"))
+    }
+    it("(7b.c) :#= connects Some to Some, and connects Some to DontCare") {
+      class ConnectOptions extends Module {
+        val a = IO(Output(UInt(3.W)))
+        val b = IO(Input(UInt(3.W)))
+        Some(a) :#= Some(b)
+
+        val c = IO(Output(UInt(3.W)))
+        val cOpt: Option[UInt] = Some(c)
+        cOpt :#= DontCare
+      }
+      val out = ChiselStage.emitCHIRRTL { new ConnectOptions() }
+      assert(out.contains("connect a, b"))
+      assert(out.contains("invalidate c"))
+    }
+    it("(7b.d) Connecting a Some to a None (or vice versa) is an error") {
+      class ConnectOptions extends Module {
+        val a: Option[UInt] = Some(IO(Output(UInt(3.W))))
+        val b: Option[UInt] = None
+        a :<>= b
+      }
+      intercept[ChiselException] {
+        ChiselStage.emitCHIRRTL(new ConnectOptions(), args = Array("--throw-on-first-error"))
+      }
+    }
+    it("(7b.e) Options work with fields nested within a Bundle") {
+      class OptBundle(hasData: Boolean) extends Bundle {
+        val valid = Bool()
+        val data = if (hasData) Some(Flipped(UInt(8.W))) else None
+      }
+      class ConnectNestedOptions extends Module {
+        val in = IO(Flipped(new OptBundle(true)))
+        val out = IO(new OptBundle(true))
+        out :<= in
+      }
+      val out = ChiselStage.emitCHIRRTL { new ConnectNestedOptions() }
+      assert(out.contains("connect out.valid, in.valid"))
+      assert(!out.contains("connect out.data, in.data"))
+      assert(!out.contains("connect in.data, out.data"))
+    }
+    it("(7b.f) Options that are flipped and nested within a Bundle are connected with :>=") {
+      class OptBundle(hasData: Boolean) extends Bundle {
+        val valid = Bool()
+        val data = if (hasData) Some(Flipped(UInt(8.W))) else None
+      }
+      class ConnectNestedOptions extends Module {
+        val in = IO(Flipped(new OptBundle(true)))
+        val out = IO(new OptBundle(true))
+        out :>= in
+      }
+      val out = ChiselStage.emitCHIRRTL { new ConnectNestedOptions() }
+      assert(out.contains("connect in.data, out.data"))
+      assert(!out.contains("connect out.valid, in.valid"))
+      assert(!out.contains("connect in.valid, out.valid"))
+    }
+  }
+
   describe("(8): Use Cases") {
     it("(8.a.a) Initalize wires with default values and :<>= to connect wires of mixed directions") {
       class MixedBundle extends Bundle {

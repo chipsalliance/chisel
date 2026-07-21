@@ -906,6 +906,10 @@ object Data {
   implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T])
       extends connectable.ConnectableVecOperators[T](consumer)
 
+  /** Provides :<>=, :<=, :>=, and :#= between a (consumer: Option[T]) and (producer: Option[T]) */
+  implicit class ConnectableOptionDefault[T <: Data](consumer: Option[T])
+      extends connectable.ConnectableOptionOperators[T](consumer)
+
   /** Can implicitly convert a Data to a Connectable
     *
     * Originally this was done with an implicit class, but all functions we want to

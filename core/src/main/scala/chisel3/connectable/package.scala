@@ -86,6 +86,78 @@ package object connectable {
     }
   }
 
+  /** ConnectableOption Typeclass defines the following operators on between a (consumer: Option[T]) and (producer: Option[T]): :<=, :>=, :<>=, :#=
+    *
+    * @param consumer the left-hand-side of the connection
+    */
+  implicit class ConnectableOptionOperators[T <: Data](consumer: Option[T]) extends ConnectableDocs {
+
+    /** $colonLessEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
+      */
+    def :<=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
+      case (Some(c), Some(p)) => c :<= p
+      case (None, None)       => ()
+      case _ =>
+        Builder.error(
+          s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
+        )
+    }
+
+    /** $colonGreaterEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
+      */
+    def :>=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
+      case (Some(c), Some(p)) => c :>= p
+      case (None, None)       => ()
+      case _ =>
+        Builder.error(
+          s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
+        )
+    }
+
+    /** $colonLessGreaterEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection
+      */
+    def :<>=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
+      case (Some(c), Some(p)) => c :<>= p
+      case (None, None)       => ()
+      case _ =>
+        Builder.error(
+          s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
+        )
+    }
+
+    /** $colonHashEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
+      */
+    def :#=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
+      case (Some(c), Some(p)) => c :#= p
+      case (None, None)       => ()
+      case _ =>
+        Builder.error(
+          s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
+        )
+    }
+
+    /** $colonHashEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
+      */
+    def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
+      for (c <- consumer) { c :#= DontCare }
+    }
+  }
+
   implicit class ConnectableDontCare(consumer: DontCare.type) extends ConnectableDocs {
 
     /** $colonGreaterEq
