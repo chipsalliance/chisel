@@ -1,9 +1,9 @@
-# Chisel 3 Documentation
+# Chisel Documentation
 
 This directory contains documentation on the code within this repository.
 Documents can either be written directly in markdown, or
 use embedded [mdoc](https://scalameta.org/mdoc/)
-which compiles against the `chisel3` (and dependencies) codebase
+which compiles against the `chisel` (and dependencies) codebase
 as part of the PR CI checks,
 forcing the documentation to remain current with the codebase.
 The `src` folder contains the source from which these are generated.
@@ -23,23 +23,45 @@ Our documentation strategy for this repository is as follows:
  * Any bugfixes, corner-cases, or answers to commonly asked questions requires a how-to guide.
  * Tutorials are kept in a separate repository.
 
-This documentation is hosted on the Chisel [website](https://www.chisel-lang.org).
-Currently, edits to this repo which are backported to the most recent stable branch
-(`3.4.x` at time of writing) will be picked up automatically by the
-website [repository](https://github.com/freechipsproject/www.chisel-lang.org) and pushed live within
-a day or so.
+## Where to put documentation
+
+Markdown sources live under `src`, organized by documentation type:
+
+| Directory | Contents |
+| --- | --- |
+| `src/explanations` | Explanation of a feature or concept |
+| `src/cookbooks` | How-to guides answering a specific question |
+| `src/appendix` | Supplementary material |
+| `src/developers` | Documentation for Chisel developers rather than users |
+| `src/resources` | Additional resources |
+| `src/images` | Images referenced by other pages |
+
 If you create a *new* document page, you probably also want to:
-  1. Make sure to add it to the "Contents" page of the corresponding directory [cookbooks](src/cookbooks/cookbooks.md),
-   [explanations](src/explanations/explanations.md), etc.
-  1. Update the sidebar on the website [here](https://github.com/freechipsproject/www.chisel-lang.org/blob/master/docs/src/main/resources/microsite/data/menu.yml).
+  1. Add it to the "Contents" page for the corresponding directory, for example
+     [cookbooks](src/cookbooks.md) or [explanations](src/explanations.md).
+  1. Add it to the website sidebar in [`website/sidebars.js`](../website/sidebars.js).
 
 ## mdoc
 
+### Prerequisites
+
+In addition to the usual Chisel development dependencies described in
+[CONTRIBUTING.md](../CONTRIBUTING.md), building the documentation requires:
+
+ * [Scala CLI](https://scala-cli.virtuslab.org/install), used while resolving
+   the firtool version associated with each Chisel release.
+ * [Verilator](https://verilator.org), because some pages elaborate and
+   simulate a design as part of their mdoc blocks.
+
+Both must be on your `PATH`. Without them the build fails partway through with
+`Cannot run program "scala-cli"` or `verilator not found on the PATH!`.
+
 ### Basic Use
 
-To build the documentation, run `docs/mdoc` via SBT in the root directory. The generated documents
-will appear in the `docs/generated` folder. To iterate on the documentation, you can run `docs/mdoc --watch`. For
-more `mdoc` instructions you can visit their [website](https://scalameta.org/mdoc/).
+To build the documentation, run `./mill mdoc` in the root directory.
+The generated documents will appear in the `docs/generated` folder.
+For more `mdoc` instructions you can visit their
+[website](https://scalameta.org/mdoc/).
 
 ### Custom `verilog` modifier
 
@@ -56,7 +78,7 @@ class MyModule extends RawModule {
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitVerilog(new MyModule)
+ChiselStage.emitSystemVerilog(new MyModule)
 ```
 ````
 The `verilog` modifier tells mdoc to run the Scala block, requiring that each Statement returns a String.
@@ -74,9 +96,28 @@ module MyModule(
   input  [7:0] in,
   output [7:0] out
 );
-  assign out = in + 8'h1; // @[main.scala 9:13]
+  assign out = in + 8'h1;
 endmodule
 ```
 ````
 
 Note that `imports` are okay in `mdoc:verilog` blocks, but any utility Scala code should be in a separate block.
+
+## Website
+
+This documentation is published on the Chisel
+[website](https://www.chisel-lang.org), which is built with
+[Docusaurus](https://docusaurus.io/) from the [`website`](../website)
+directory in this repository.
+Building it requires Node.js and npm in addition to the mdoc prerequisites
+above; see [`website/README.md`](../website/README.md) for the full details.
+
+To render the site locally and view your changes:
+
+```sh
+cd website
+make install  # only needed the first time
+make serve
+```
+
+`make build` produces the static site without serving it.
