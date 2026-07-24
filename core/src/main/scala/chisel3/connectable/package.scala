@@ -24,57 +24,46 @@ package object connectable {
     */
   implicit class ConnectableVecOperators[T <: Data](consumer: Vec[T]) extends ConnectableDocs {
 
+    /** Shared implementation for the Vec/Seq connection operators.
+      *
+      * @param producer the right-hand-side of the connection
+      * @param op the connection operator to apply to each pair of elements
+      */
+    private def connectSeq(producer: Seq[T])(op: (T, T) => Unit)(implicit sourceInfo: SourceInfo): Unit = {
+      if (consumer.length != producer.length)
+        Builder.error(
+          s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
+        )
+      for ((a, b) <- consumer.zip(producer)) { op(a, b) }
+    }
+
     /** $colonLessEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
       */
-    def :<=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-      if (consumer.length != producer.length)
-        Builder.error(
-          s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
-        )
-      for ((a, b) <- consumer.zip(producer)) { a :<= b }
-    }
+    def :<=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = connectSeq(producer)(_ :<= _)
 
     /** $colonGreaterEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    def :>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-      if (consumer.length != producer.length)
-        Builder.error(
-          s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
-        )
-      for ((a, b) <- consumer.zip(producer)) { a :>= b }
-    }
+    def :>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = connectSeq(producer)(_ :>= _)
 
     /** $colonLessGreaterEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    def :<>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-      if (consumer.length != producer.length)
-        Builder.error(
-          s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
-        )
-      for ((a, b) <- consumer.zip(producer)) { a :<>= b }
-    }
+    def :<>=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = connectSeq(producer)(_ :<>= _)
 
     /** $colonHashEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    def :#=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
-      if (consumer.length != producer.length)
-        Builder.error(
-          s"Vec (size ${consumer.length}) and Seq (size ${producer.length}) being connected have different lengths!"
-        )
-      for ((a, b) <- consumer.zip(producer)) { a :#= b }
-    }
+    def :#=(producer: Seq[T])(implicit sourceInfo: SourceInfo): Unit = connectSeq(producer)(_ :#= _)
 
     /** $colonHashEq
       *
@@ -92,61 +81,49 @@ package object connectable {
     */
   implicit class ConnectableOptionOperators[T <: Data](consumer: Option[T]) extends ConnectableDocs {
 
-    /** $colonLessEq
+    /** Shared implementation for the Option connection operators.
       *
-      * @group connection
-      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
+      * @param producer the right-hand-side of the connection
+      * @param op the connection operator to apply when both consumer and producer are non-empty
       */
-    def :<=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
-      case (Some(c), Some(p)) => c :<= p
+    private def connectOption(
+      producer: Option[T]
+    )(op: (T, T) => Unit)(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
+      case (Some(c), Some(p)) => op(c, p)
       case (None, None)       => ()
       case _ =>
         Builder.error(
           s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
         )
     }
+
+    /** $colonLessEq
+      *
+      * @group connection
+      * @param producer the right-hand-side of the connection; will always drive leaf connections, and never get driven by leaf connections ("aligned connection")
+      */
+    def :<=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = connectOption(producer)(_ :<= _)
 
     /** $colonGreaterEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection; will always be driven by leaf connections, and never drive leaf connections ("flipped connection")
       */
-    def :>=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
-      case (Some(c), Some(p)) => c :>= p
-      case (None, None)       => ()
-      case _ =>
-        Builder.error(
-          s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
-        )
-    }
+    def :>=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = connectOption(producer)(_ :>= _)
 
     /** $colonLessGreaterEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection
       */
-    def :<>=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
-      case (Some(c), Some(p)) => c :<>= p
-      case (None, None)       => ()
-      case _ =>
-        Builder.error(
-          s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
-        )
-    }
+    def :<>=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = connectOption(producer)(_ :<>= _)
 
     /** $colonHashEq
       *
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    def :#=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = (consumer, producer) match {
-      case (Some(c), Some(p)) => c :#= p
-      case (None, None)       => ()
-      case _ =>
-        Builder.error(
-          s"Connecting Options of different emptiness is not allowed: consumer is $consumer, producer is $producer"
-        )
-    }
+    def :#=(producer: Option[T])(implicit sourceInfo: SourceInfo): Unit = connectOption(producer)(_ :#= _)
 
     /** $colonHashEq
       *
