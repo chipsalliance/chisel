@@ -79,9 +79,13 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
                     |""".stripMargin)
     val output =
       try {
-        os.proc("espresso").call(stdin = input).out.chunks.mkString
+        import scala.sys.process._
+        val stdin = new java.io.ByteArrayInputStream(input.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+        (Process("espresso") #< stdin).!!
       } catch {
-        case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") =>
+        case e: java.io.IOException
+            if e.getMessage.contains("Cannot run program") ||
+              e.getMessage.contains("error=2, No such file or directory") =>
           throw EspressoNotFoundException
       }
     logger.trace(s"""espresso output table:
