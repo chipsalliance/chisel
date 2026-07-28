@@ -4,30 +4,9 @@ title:  "Connectable Operators"
 section: "chisel3"
 ---
 
-## Table of Contents
- * [Terminology](#terminology)
- * [Overview](#overview)
- * [Alignment: Flipped vs Aligned](#alignment-flipped-vs-aligned)
- * [Input/Output](#inputoutput)
- * [Connecting components with fully aligned members](#connecting-components-with-fully-aligned-members)
-   * [Mono-direction connection operator (`:=`)](#mono-direction-connection-operator-)
- * [Connecting components with mixed alignment members](#connecting-components-with-mixed-alignment-members)
-   * [Bi-direction connection operator (`:<>=`)](#bi-direction-connection-operator-)
-   * [Port-Direction Computation versus Connection-Direction Computation](#port-direction-computation-versus-connection-direction-computation)
-   * [Aligned connection operator (`:<=`)](#aligned-connection-operator-)
-   * [Flipped connection operator (`:>=`)](#flipped-connection-operator-)
-   * [Coercing mono-direction connection operator (`:#=`)](#coercing-mono-direction-connection-operator-)
- * [Connectable](#connectable)
-   * [Connecting Records](#connecting-records)
-   * [Defaults with waived connections](#defaults-with-waived-connections)
-   * [Connecting types with optional members](#connecting-types-with-optional-members)
-   * [Always ignore extra members (partial connection operator)](#always-ignore-errors-caused-by-extra-members-partial-connection-operator)
-   * [Connecting components with different widths](#connecting-components-with-different-widths)
- * [Techniques for connecting structurally inequivalent Chisel types](#techniques-for-connecting-structurally-inequivalent-chisel-types)
-   * [Connecting different sub-types of the same super-type, with colliding names](#connecting-different-sub-types-of-the-same-super-type-with-colliding-names)
-   * [Connecting sub-types to super-types by waiving extra members](#connecting-sub-types-to-super-types-by-waiving-extra-members)
-   * [Connecting different sub-types](#connecting-different-sub-types)
- * [FAQ](#faq)
+import TOCInline from '@theme/TOCInline';
+
+<TOCInline toc={toc} />
 
 ## Terminology
 
@@ -571,6 +550,97 @@ This generates the following Verilog, where the `special` field is not connected
 
 ```scala mdoc:verilog
 chisel3.docs.emitSystemVerilog(new Example15)
+```
+
+### Enforcing producer/consumer roles (`.asProducer`/`.asConsumer`)
+
+A common pattern in library code is a helper that builds a bidirectional bundle, drives some of its fields internally, and hands the bundle back to the caller to finish connecting.
+A `Decoupled` source is the canonical example: the library produces the `valid`/`bits` payload and expects the caller to supply only the `ready` backpressure.
+But because the returned value is just an ordinary `Wire`, nothing stops a caller from accidentally driving `valid` or `bits` themselves — overwriting what the library already drove and silently breaking the design.
+
+`.asProducer` and `.asConsumer` let the library encode that intent into the value it returns.
+They tag a component with its intended role, which does two things:
+
+ * the fields that role is *not* allowed to drive become **read-only**, so a caller who tries to override them gets an elaboration-time error; and
+ * the connection operators **reject** the value if it is used on the wrong side, catching a swapped or mis-placed operand.
+
+Recall from [Alignment: Flipped vs Aligned](#alignment-flipped-vs-aligned) that a producer drives its aligned members and is driven on its flipped members (and vice versa for a consumer).
+Accordingly:
+
+ * `.asProducer` marks the **aligned** members read-only (a producer should never have its outputs driven), leaving flipped members writable. It may only appear on the **right-hand side**.
+ * `.asConsumer` marks the **flipped** members read-only (a consumer should never have its inputs driven), leaving aligned members writable. It may only appear on the **left-hand side**.
+
+In the example below, the `source` helper drives the data path and returns it as a producer.
+The caller connects it with `:<>=`, supplying `ready` while being prevented from touching `valid`/`bits`:
+
+```scala mdoc:silent
+import chisel3.util.{Decoupled, DecoupledIO}
+
+class StreamProducer extends Module {
+  val out = IO(Decoupled(UInt(8.W)))
+
+  // Library helper: drives the payload internally, then hands the result back tagged
+  // as a producer so callers can only sink from it — never overwrite valid/bits.
+  def source(): DecoupledIO[UInt] = {
+    val w = Wire(Decoupled(UInt(8.W)))
+    w.valid := true.B
+    w.bits := 42.U
+    w.asProducer
+  }
+
+  out :<>= source()
+}
+```
+
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new StreamProducer)
+```
+
+Note that the library is free to drive `valid`/`bits` on the underlying wire *before* tagging it; `.asProducer` only constrains the *view* it returns, so the read-only restriction applies to the caller, not to the library code that produced the value.
+
+The tags catch two distinct kinds of mistake.
+
+**Driving a field the role does not own.** Because `.asProducer` makes aligned fields read-only, attempting to drive one is an error.
+The following fails to elaborate with `Cannot connect to producer's aligned field`:
+
+```scala
+// `valid` is aligned, so it is read-only on a producer view
+Wire(Decoupled(UInt(8.W))).asProducer.valid := true.B // error!
+```
+
+Flipped fields remain writable, so `Wire(Decoupled(UInt(8.W))).asProducer.ready := true.B` is still allowed.
+`.asConsumer` is symmetric: it makes the flipped fields (e.g. `ready`) read-only while leaving aligned fields (e.g. `valid`) writable.
+
+**Using a role on the wrong side.** A producer view on the left-hand side, or a consumer view on the right-hand side, is rejected regardless of which fields are touched.
+Given a `consumer` and a `producer` of the same type, both of the following fail to elaborate:
+
+```scala
+consumer.asProducer :<>= producer // error: .asProducer cannot be used on the consumer (LHS) of a connection operator
+consumer :<>= producer.asConsumer // error: .asConsumer cannot be used on the producer (RHS) of a connection operator
+```
+
+> Note: side enforcement relies on a field being marked read-only, so a fully-aligned component (such as a bare `UInt`) carries no flipped fields for `.asConsumer` to mark, and a misuse on the right-hand side cannot be detected in that case. `.asProducer` has no such limitation because an aligned component always has aligned fields to mark.
+
+#### Migrating existing code
+
+If you want to add these annotations to an existing design without immediately breaking it, use the `.asProducerDeprecated` and `.asConsumerDeprecated` variants.
+They behave identically but report a deprecation *warning* (see [Warnings](warnings)) instead of an error, so you can introduce the tags incrementally and fix the reported sites over time before switching to the hard-erroring `.asProducer`/`.asConsumer`.
+
+```scala mdoc:silent
+class StreamProducerMigrating extends Module {
+  val out = IO(Decoupled(UInt(8.W)))
+
+  // Same as `source` above, but tagging with the deprecated variant: misuse warns
+  // instead of erroring, so existing callers keep elaborating while you fix them.
+  def source(): DecoupledIO[UInt] = {
+    val w = Wire(Decoupled(UInt(8.W)))
+    w.valid := true.B
+    w.bits := 42.U
+    w.asProducerDeprecated
+  }
+
+  out :<>= source()
+}
 ```
 
 ## Techniques for connecting structurally inequivalent Chisel types

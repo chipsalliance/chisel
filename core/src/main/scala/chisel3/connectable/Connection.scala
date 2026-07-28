@@ -3,8 +3,9 @@
 package chisel3.connectable
 
 import chisel3.{Aggregate, BiConnectException, Data, DontCare, InternalErrorException, RawModule}
-import chisel3.internal.{BiConnect, Builder}
+import chisel3.internal.{BiConnect, Builder, Warning, WarningID}
 import chisel3.internal.Builder.pushCommand
+import chisel3.internal.binding._
 import chisel3.internal.firrtl.ir.DefInvalid
 import chisel3.experimental.{prefix, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.{attach, Analog}
@@ -57,20 +58,27 @@ private[chisel3] case object ColonLessGreaterEq extends Connection {
   val connectToProducer:       Boolean = true
   val alwaysConnectToConsumer: Boolean = false
   def canFirrtlConnect(consumer: Connectable[Data], producer: Connectable[Data]) = {
-    val typeEquivalent =
-      try {
-        BiConnect.canFirrtlConnectData(
-          consumer.base,
-          producer.base,
-          UnlocatableSourceInfo,
-          Builder.referenceUserModule
-        ) && consumer.base.typeEquivalent(producer.base)
-      } catch {
-        // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
-        //  when calling DirectionConnection.connect. Hence, we can just default to false to take the non-optimized emission path
-        case e: Throwable => false
-      }
-    (typeEquivalent && consumer.notWaivedOrSqueezedOrExcluded && producer.notWaivedOrSqueezedOrExcluded)
+    // Role-tagged views must go through the slow path for role enforcement checks
+    val hasRole =
+      Connection.roleOf(consumer.base).isDefined ||
+        Connection.roleOf(producer.base).isDefined
+    if (hasRole) false
+    else {
+      val typeEquivalent =
+        try {
+          BiConnect.canFirrtlConnectData(
+            consumer.base,
+            producer.base,
+            UnlocatableSourceInfo,
+            Builder.referenceUserModule
+          ) && consumer.base.typeEquivalent(producer.base)
+        } catch {
+          // For some reason, an error is thrown if its a View; since this is purely an optimization, any actual error would get thrown
+          //  when calling DirectionConnection.connect. Hence, we can just default to false to take the non-optimized emission path
+          case e: Throwable => false
+        }
+      (typeEquivalent && consumer.notWaivedOrSqueezedOrExcluded && producer.notWaivedOrSqueezedOrExcluded)
+    }
   }
 }
 
@@ -108,7 +116,70 @@ private[chisel3] object Connection {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    doConnection(cRoot, pRoot, cOp)
+    if (!checkRoleEnforcement(cRoot, pRoot)) {
+      doConnection(cRoot, pRoot, cOp)
+    }
+  }
+
+  /** Check that role-tagged views (.asProducer/.asConsumer) are used on the correct side.
+    *
+    * @return true if a hard (non-deprecated) violation was reported, in which case the caller
+    *         should skip the actual connection to avoid piling on per-field writability errors.
+    */
+  private def checkRoleEnforcement[T <: Data](
+    consumer: Connectable[T],
+    producer: Connectable[T]
+  )(
+    implicit sourceInfo: SourceInfo
+  ): Boolean = {
+    var hardViolation = false
+    // .asProducer must not be used on the consumer (LHS)
+    roleOf(consumer.base).foreach {
+      case (ConnectableRole.Producer, false) =>
+        Builder.error(".asProducer cannot be used on the consumer (LHS) of a connection operator")
+        hardViolation = true
+      case (ConnectableRole.Producer, true) =>
+        Builder.warning(
+          Warning(
+            WarningID.AsProducerDeprecated,
+            ".asProducer cannot be used on the consumer (LHS) of a connection operator"
+          )
+        )
+      case _ => ()
+    }
+    // .asConsumer must not be used on the producer (RHS)
+    roleOf(producer.base).foreach {
+      case (ConnectableRole.Consumer, false) =>
+        Builder.error(".asConsumer cannot be used on the producer (RHS) of a connection operator")
+        hardViolation = true
+      case (ConnectableRole.Consumer, true) =>
+        Builder.warning(
+          Warning(
+            WarningID.AsConsumerDeprecated,
+            ".asConsumer cannot be used on the producer (RHS) of a connection operator"
+          )
+        )
+      case _ => ()
+    }
+    hardViolation
+  }
+
+  /** Detect the connectable role of a Data from its binding, if it is a role-tagged view.
+    *
+    * @return Some((role, isDeprecated)) where isDeprecated is true for the warn-only variants.
+    */
+  private[connectable] def roleOf(data: Data): Option[(ConnectableRole, Boolean)] = {
+    def extract(wr: ViewWriteability): Option[(ConnectableRole, Boolean)] = wr match {
+      case ViewWriteability.ReadOnly(_, Some(r))           => Some((r, false))
+      case ViewWriteability.ReadOnlyDeprecated(_, Some(r)) => Some((r, true))
+      case _                                               => None
+    }
+    data.topBindingOpt match {
+      case Some(ViewBinding(_, wr)) => extract(wr)
+      case Some(avb: AggregateViewBinding) =>
+        avb.writabilityMap.flatMap(_.values.flatMap(extract).headOption)
+      case _ => None
+    }
   }
 
   private def connect(
