@@ -6,6 +6,7 @@ import chisel3.experimental.{BaseModule, SourceInfo}
 import chisel3.experimental.hierarchy.{InstanceClone, InstantiableClone, ModuleClone}
 
 import scala.annotation.implicitNotFound
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.HashMap
 import chisel3._
 import chisel3.experimental.dataview.{isView, reify, reifyIdentityView}
@@ -59,6 +60,18 @@ trait Lookupable[-B] {
   protected def getProto[A](h:      Hierarchy[A]):                      A = h.proto
   protected def getUnderlying[A](h: Hierarchy[A]):                      Underlying[A] = h.underlying
 
+  // Extract all leaf Data values from a value of type B for use by FixedIOBaseModule.
+  // Default returns empty; LookupableImpl subclasses override with the real extraction.
+  private[chisel3] def in(b: B): Seq[Data] = Seq.empty
+
+  // Reconstruct B by consuming IO-bound Data from the iterator, using `original` for non-Data parts.
+  // Default passes `original` through unchanged.
+  // Uses @uncheckedVariance to permit B in covariant return position within contravariant Lookupable[-B].
+  private[chisel3] def out(
+    original: B @uncheckedVariance,
+    iter:     Iterator[Data]
+  ): B @uncheckedVariance = original
+
   // Single method that may eventually replace instanceLookup and definitionLookup.
   private[chisel3] def hierarchyLookup[A](that: A => B, hierarchy: Hierarchy[A]): C = {
     hierarchy match {
@@ -70,12 +83,18 @@ trait Lookupable[-B] {
 }
 // Simplify the implementation of Lookupable by only having 1 virtual method.
 // Only the Chisel core types need separate implementations for Instance and Definition.
-private trait LookupableImpl[-B] extends Lookupable[B] {
+// Made package-private (instead of private) and invariant (instead of contravariant [-B]) so
+// subclasses can implement the typed `out` method returning B.
+private[chisel3] trait LookupableImpl[B] extends Lookupable[B] {
 
   protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C
 
   override def instanceLookup[A](that:   A => B, instance:   Instance[A]):   C = impl(that, instance)
   override def definitionLookup[A](that: A => B, definition: Definition[A]): C = impl(that, definition)
+
+  // Re-abstract so every LookupableImpl subclass must provide concrete implementations.
+  override private[chisel3] def in(b: B): Seq[Data]
+  override private[chisel3] def out(original: B, iter: Iterator[Data]): B
 }
 
 object Lookupable {
@@ -94,6 +113,8 @@ object Lookupable {
     type C = X
     type B = X
     override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = that(hierarchy.proto)
+    override private[chisel3] def in(b:  X): Seq[Data] = Seq.empty
+    override private[chisel3] def out(original: X, iter: Iterator[Data]): X = original
   }
 
   /** Factory method for creating Lookupable for user-defined types
@@ -103,11 +124,19 @@ object Lookupable {
     out: T1 => X
   )(
     implicit sourceInfo: SourceInfo
-  ): Simple[X] = new LookupableImpl[X] {
-    type C = X
-    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
-      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a)), hierarchy).asInstanceOf[T1]
-      out(t1res)
+  ): Simple[X] = {
+    val inFn = in
+    val outFn = out
+    val t1Look = implicitly[Lookupable[T1]]
+    new LookupableImpl[X] {
+      type C = X
+      override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+        val t1res = t1Look.hierarchyLookup[A](a => inFn(that(a)), hierarchy).asInstanceOf[T1]
+        outFn(t1res)
+      }
+      override private[chisel3] def in(b: X): Seq[Data] = t1Look.in(inFn(b))
+      override private[chisel3] def out(original: X, iter: Iterator[Data]): X =
+        outFn(t1Look.out(inFn(original), iter).asInstanceOf[T1])
     }
   }
 
@@ -118,12 +147,26 @@ object Lookupable {
     out: (T1, T2) => X
   )(
     implicit sourceInfo: SourceInfo
-  ): Simple[X] = new LookupableImpl[X] {
-    type C = X
-    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
-      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
-      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
-      out(t1res, t2res)
+  ): Simple[X] = {
+    val inFn = in
+    val outFn = out
+    val t1Look = implicitly[Lookupable[T1]]
+    val t2Look = implicitly[Lookupable[T2]]
+    new LookupableImpl[X] {
+      type C = X
+      override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+        val t1res = t1Look.hierarchyLookup[A](a => inFn(that(a))._1, hierarchy).asInstanceOf[T1]
+        val t2res = t2Look.hierarchyLookup[A](a => inFn(that(a))._2, hierarchy).asInstanceOf[T2]
+        outFn(t1res, t2res)
+      }
+      override private[chisel3] def in(b: X): Seq[Data] = {
+        val (v1, v2) = inFn(b)
+        t1Look.in(v1) ++ t2Look.in(v2)
+      }
+      override private[chisel3] def out(original: X, iter: Iterator[Data]): X = {
+        val (v1, v2) = inFn(original)
+        outFn(t1Look.out(v1, iter).asInstanceOf[T1], t2Look.out(v2, iter).asInstanceOf[T2])
+      }
     }
   }
 
@@ -134,13 +177,32 @@ object Lookupable {
     out: (T1, T2, T3) => X
   )(
     implicit sourceInfo: SourceInfo
-  ): Simple[X] = new LookupableImpl[X] {
-    type C = X
-    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
-      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
-      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
-      val t3res = implicitly[Lookupable[T3]].hierarchyLookup[A](a => in(that(a))._3, hierarchy).asInstanceOf[T3]
-      out(t1res, t2res, t3res)
+  ): Simple[X] = {
+    val inFn = in
+    val outFn = out
+    val t1Look = implicitly[Lookupable[T1]]
+    val t2Look = implicitly[Lookupable[T2]]
+    val t3Look = implicitly[Lookupable[T3]]
+    new LookupableImpl[X] {
+      type C = X
+      override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+        val t1res = t1Look.hierarchyLookup[A](a => inFn(that(a))._1, hierarchy).asInstanceOf[T1]
+        val t2res = t2Look.hierarchyLookup[A](a => inFn(that(a))._2, hierarchy).asInstanceOf[T2]
+        val t3res = t3Look.hierarchyLookup[A](a => inFn(that(a))._3, hierarchy).asInstanceOf[T3]
+        outFn(t1res, t2res, t3res)
+      }
+      override private[chisel3] def in(b: X): Seq[Data] = {
+        val (v1, v2, v3) = inFn(b)
+        t1Look.in(v1) ++ t2Look.in(v2) ++ t3Look.in(v3)
+      }
+      override private[chisel3] def out(original: X, iter: Iterator[Data]): X = {
+        val (v1, v2, v3) = inFn(original)
+        outFn(
+          t1Look.out(v1, iter).asInstanceOf[T1],
+          t2Look.out(v2, iter).asInstanceOf[T2],
+          t3Look.out(v3, iter).asInstanceOf[T3]
+        )
+      }
     }
   }
 
@@ -151,14 +213,35 @@ object Lookupable {
     out: (T1, T2, T3, T4) => X
   )(
     implicit sourceInfo: SourceInfo
-  ): Simple[X] = new LookupableImpl[X] {
-    type C = X
-    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
-      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
-      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
-      val t3res = implicitly[Lookupable[T3]].hierarchyLookup[A](a => in(that(a))._3, hierarchy).asInstanceOf[T3]
-      val t4res = implicitly[Lookupable[T4]].hierarchyLookup[A](a => in(that(a))._4, hierarchy).asInstanceOf[T4]
-      out(t1res, t2res, t3res, t4res)
+  ): Simple[X] = {
+    val inFn = in
+    val outFn = out
+    val t1Look = implicitly[Lookupable[T1]]
+    val t2Look = implicitly[Lookupable[T2]]
+    val t3Look = implicitly[Lookupable[T3]]
+    val t4Look = implicitly[Lookupable[T4]]
+    new LookupableImpl[X] {
+      type C = X
+      override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+        val t1res = t1Look.hierarchyLookup[A](a => inFn(that(a))._1, hierarchy).asInstanceOf[T1]
+        val t2res = t2Look.hierarchyLookup[A](a => inFn(that(a))._2, hierarchy).asInstanceOf[T2]
+        val t3res = t3Look.hierarchyLookup[A](a => inFn(that(a))._3, hierarchy).asInstanceOf[T3]
+        val t4res = t4Look.hierarchyLookup[A](a => inFn(that(a))._4, hierarchy).asInstanceOf[T4]
+        outFn(t1res, t2res, t3res, t4res)
+      }
+      override private[chisel3] def in(b: X): Seq[Data] = {
+        val (v1, v2, v3, v4) = inFn(b)
+        t1Look.in(v1) ++ t2Look.in(v2) ++ t3Look.in(v3) ++ t4Look.in(v4)
+      }
+      override private[chisel3] def out(original: X, iter: Iterator[Data]): X = {
+        val (v1, v2, v3, v4) = inFn(original)
+        outFn(
+          t1Look.out(v1, iter).asInstanceOf[T1],
+          t2Look.out(v2, iter).asInstanceOf[T2],
+          t3Look.out(v3, iter).asInstanceOf[T3],
+          t4Look.out(v4, iter).asInstanceOf[T4]
+        )
+      }
     }
   }
 
@@ -169,15 +252,38 @@ object Lookupable {
     out: (T1, T2, T3, T4, T5) => X
   )(
     implicit sourceInfo: SourceInfo
-  ): Simple[X] = new LookupableImpl[X] {
-    type C = X
-    override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
-      val t1res = implicitly[Lookupable[T1]].hierarchyLookup[A](a => in(that(a))._1, hierarchy).asInstanceOf[T1]
-      val t2res = implicitly[Lookupable[T2]].hierarchyLookup[A](a => in(that(a))._2, hierarchy).asInstanceOf[T2]
-      val t3res = implicitly[Lookupable[T3]].hierarchyLookup[A](a => in(that(a))._3, hierarchy).asInstanceOf[T3]
-      val t4res = implicitly[Lookupable[T4]].hierarchyLookup[A](a => in(that(a))._4, hierarchy).asInstanceOf[T4]
-      val t5res = implicitly[Lookupable[T5]].hierarchyLookup[A](a => in(that(a))._5, hierarchy).asInstanceOf[T5]
-      out(t1res, t2res, t3res, t4res, t5res)
+  ): Simple[X] = {
+    val inFn = in
+    val outFn = out
+    val t1Look = implicitly[Lookupable[T1]]
+    val t2Look = implicitly[Lookupable[T2]]
+    val t3Look = implicitly[Lookupable[T3]]
+    val t4Look = implicitly[Lookupable[T4]]
+    val t5Look = implicitly[Lookupable[T5]]
+    new LookupableImpl[X] {
+      type C = X
+      override protected def impl[A](that: A => X, hierarchy: Hierarchy[A]): C = {
+        val t1res = t1Look.hierarchyLookup[A](a => inFn(that(a))._1, hierarchy).asInstanceOf[T1]
+        val t2res = t2Look.hierarchyLookup[A](a => inFn(that(a))._2, hierarchy).asInstanceOf[T2]
+        val t3res = t3Look.hierarchyLookup[A](a => inFn(that(a))._3, hierarchy).asInstanceOf[T3]
+        val t4res = t4Look.hierarchyLookup[A](a => inFn(that(a))._4, hierarchy).asInstanceOf[T4]
+        val t5res = t5Look.hierarchyLookup[A](a => inFn(that(a))._5, hierarchy).asInstanceOf[T5]
+        outFn(t1res, t2res, t3res, t4res, t5res)
+      }
+      override private[chisel3] def in(b: X): Seq[Data] = {
+        val (v1, v2, v3, v4, v5) = inFn(b)
+        t1Look.in(v1) ++ t2Look.in(v2) ++ t3Look.in(v3) ++ t4Look.in(v4) ++ t5Look.in(v5)
+      }
+      override private[chisel3] def out(original: X, iter: Iterator[Data]): X = {
+        val (v1, v2, v3, v4, v5) = inFn(original)
+        outFn(
+          t1Look.out(v1, iter).asInstanceOf[T1],
+          t2Look.out(v2, iter).asInstanceOf[T2],
+          t3Look.out(v3, iter).asInstanceOf[T3],
+          t4Look.out(v4, iter).asInstanceOf[T4],
+          t5Look.out(v5, iter).asInstanceOf[T5]
+        )
+      }
     }
   }
 
@@ -447,9 +553,17 @@ object Lookupable {
     }
 
   implicit def lookupData[B <: Data](implicit sourceInfo: SourceInfo): Simple[B] =
-    new Lookupable[B] {
+    new LookupableImpl[B] {
       type C = B
-      def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+
+      override private[chisel3] def in(b: B): Seq[Data] = Seq(b)
+      override private[chisel3] def out(original: B, iter: Iterator[Data]): B = iter.next().asInstanceOf[B]
+
+      // impl is never called because instanceLookup and definitionLookup are both overridden below
+      protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C =
+        throw new InternalErrorException("lookupData.impl should never be called directly")
+
+      override def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
         val ret = that(definition.proto)
         if (isView(ret)) {
           cloneViewToContext(ret, definition.cache, None, definition.getInnerDataContext)
@@ -457,7 +571,7 @@ object Lookupable {
           doLookupData(ret, definition.cache, None, definition.getInnerDataContext)
         }
       }
-      def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
+      override def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
         val ret = that(instance.proto)
 
         // As Property ports are not yet Lookupable, they are skipped here.
@@ -519,6 +633,8 @@ object Lookupable {
       override protected def impl[A](that: A => B, hierarchy: Hierarchy[A]): C = {
         cloneMemToContext(that(hierarchy.proto), hierarchy.getInnerDataContext.get)
       }
+      override private[chisel3] def in(b: B): Seq[Data] = Seq.empty
+      override private[chisel3] def out(original: B, iter: Iterator[Data]): B = original
     }
 
   // TODO, this, cloneMemToContext, and cloneDataToContext should be unified
@@ -556,6 +672,8 @@ object Lookupable {
       override protected def impl[A](that: A => HasTarget, hierarchy: Hierarchy[A]): C = {
         cloneHasTargetToContext(that(hierarchy.proto), hierarchy.getInnerDataContext.get)
       }
+      override private[chisel3] def in(b: HasTarget): Seq[Data] = Seq.empty
+      override private[chisel3] def out(original: HasTarget, iter: Iterator[Data]): HasTarget = original
     }
 
   import scala.language.higherKinds // Required to avoid warning for lookupIterable type parameter
@@ -568,6 +686,10 @@ object Lookupable {
       val ret = that(hierarchy.proto).asInstanceOf[Iterable[B]]
       ret.map { (x: B) => lookupable.hierarchyLookup[A](_ => x, hierarchy) }.asInstanceOf[C]
     }
+    override private[chisel3] def in(fb: F[B]): Seq[Data] =
+      fb.asInstanceOf[Iterable[B]].flatMap(b => lookupable.in(b)).toSeq
+    override private[chisel3] def out(original: F[B], iter: Iterator[Data]): F[B] =
+      original.asInstanceOf[Iterable[B]].map(b => lookupable.out(b, iter).asInstanceOf[B]).asInstanceOf[F[B]]
   }
   implicit def lookupOption[B](
     implicit sourceInfo: SourceInfo,
@@ -578,6 +700,10 @@ object Lookupable {
       val ret = that(hierarchy.proto)
       ret.map { (x: B) => lookupable.hierarchyLookup[A](_ => x, hierarchy) }
     }
+    override private[chisel3] def in(o: Option[B]): Seq[Data] =
+      o.toSeq.flatMap(b => lookupable.in(b))
+    override private[chisel3] def out(original: Option[B], iter: Iterator[Data]): Option[B] =
+      original.map(b => lookupable.out(b, iter).asInstanceOf[B])
   }
   implicit def lookupEither[L, R](
     implicit sourceInfo: SourceInfo,
@@ -590,6 +716,14 @@ object Lookupable {
       ret.map { (x: R) => lookupableR.hierarchyLookup[A](_ => x, hierarchy) }.left.map { (x: L) =>
         lookupableL.hierarchyLookup[A](_ => x, hierarchy)
       }
+    }
+    override private[chisel3] def in(e: Either[L, R]): Seq[Data] = e match {
+      case Left(l)  => lookupableL.in(l)
+      case Right(r) => lookupableR.in(r)
+    }
+    override private[chisel3] def out(original: Either[L, R], iter: Iterator[Data]): Either[L, R] = original match {
+      case Left(l)  => Left(lookupableL.out(l, iter).asInstanceOf[L])
+      case Right(r) => Right(lookupableR.out(r, iter).asInstanceOf[R])
     }
   }
 
@@ -605,6 +739,10 @@ object Lookupable {
       val t2res = lookupableT2.hierarchyLookup[A](that(_)._2, hierarchy)
       (t1res, t2res)
     }
+    override private[chisel3] def in(t: (T1, T2)): Seq[Data] =
+      lookupableT1.in(t._1) ++ lookupableT2.in(t._2)
+    override private[chisel3] def out(original: (T1, T2), iter: Iterator[Data]): (T1, T2) =
+      (lookupableT1.out(original._1, iter).asInstanceOf[T1], lookupableT2.out(original._2, iter).asInstanceOf[T2])
   }
 
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
@@ -621,6 +759,13 @@ object Lookupable {
       val t3res = lookupableT3.hierarchyLookup[A](that(_)._3, hierarchy)
       (t1res, t2res, t3res)
     }
+    override private[chisel3] def in(t: (T1, T2, T3)): Seq[Data] =
+      lookupableT1.in(t._1) ++ lookupableT2.in(t._2) ++ lookupableT3.in(t._3)
+    override private[chisel3] def out(original: (T1, T2, T3), iter: Iterator[Data]): (T1, T2, T3) = (
+      lookupableT1.out(original._1, iter).asInstanceOf[T1],
+      lookupableT2.out(original._2, iter).asInstanceOf[T2],
+      lookupableT3.out(original._3, iter).asInstanceOf[T3]
+    )
   }
 
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
@@ -640,6 +785,14 @@ object Lookupable {
         val t4res = lookupableT4.hierarchyLookup[A](that(_)._4, hierarchy)
         (t1res, t2res, t3res, t4res)
       }
+      override private[chisel3] def in(t: (T1, T2, T3, T4)): Seq[Data] =
+        lookupableT1.in(t._1) ++ lookupableT2.in(t._2) ++ lookupableT3.in(t._3) ++ lookupableT4.in(t._4)
+      override private[chisel3] def out(original: (T1, T2, T3, T4), iter: Iterator[Data]): (T1, T2, T3, T4) = (
+        lookupableT1.out(original._1, iter).asInstanceOf[T1],
+        lookupableT2.out(original._2, iter).asInstanceOf[T2],
+        lookupableT3.out(original._3, iter).asInstanceOf[T3],
+        lookupableT4.out(original._4, iter).asInstanceOf[T4]
+      )
     }
 
   // TODO Once Lookupable return type change is removed, we can just call product factory above.
@@ -661,6 +814,17 @@ object Lookupable {
         val t5res = lookupableT5.hierarchyLookup[A](that(_)._5, hierarchy)
         (t1res, t2res, t3res, t4res, t5res)
       }
+      override private[chisel3] def in(t: (T1, T2, T3, T4, T5)): Seq[Data] =
+        lookupableT1.in(t._1) ++ lookupableT2.in(t._2) ++ lookupableT3.in(t._3) ++ lookupableT4.in(t._4) ++ lookupableT5
+          .in(t._5)
+      override private[chisel3] def out(original: (T1, T2, T3, T4, T5), iter: Iterator[Data]): (T1, T2, T3, T4, T5) =
+        (
+          lookupableT1.out(original._1, iter).asInstanceOf[T1],
+          lookupableT2.out(original._2, iter).asInstanceOf[T2],
+          lookupableT3.out(original._3, iter).asInstanceOf[T3],
+          lookupableT4.out(original._4, iter).asInstanceOf[T4],
+          lookupableT5.out(original._5, iter).asInstanceOf[T5]
+        )
     }
 
   @deprecated(
@@ -679,6 +843,8 @@ object Lookupable {
       }
       new Instance(Clone(underlying))
     }
+    override private[chisel3] def in(b: B): Seq[Data] = Seq.empty
+    override private[chisel3] def out(original: B, iter: Iterator[Data]): B = original
   }
 
   implicit def lookupIsLookupable[B <: IsLookupable](implicit sourceInfo: SourceInfo): Simple[B] = isLookupable[B]
