@@ -133,6 +133,14 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
     chirrtl should include(s"""propassign propOut, String("$input")""")
   }
 
+  it should "escape special characters in Property assertion messages" in {
+    ChiselStage.emitSystemVerilog(new RawModule {
+      val a = Property("foo")
+      val b = Property("foo")
+      (a === b).assert("name must be \"foo\"")
+    })
+  }
+
   it should "support Boolean as a Property type" in {
     val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
       val boolProp = IO(Input(Property[Boolean]()))
