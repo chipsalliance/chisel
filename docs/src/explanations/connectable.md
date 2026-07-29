@@ -17,6 +17,7 @@ section: "chisel3"
    * [Aligned connection operator (`:<=`)](#aligned-connection-operator-)
    * [Flipped connection operator (`:>=`)](#flipped-connection-operator-)
    * [Coercing mono-direction connection operator (`:#=`)](#coercing-mono-direction-connection-operator-)
+ * [Connecting Options](#connecting-options)
  * [Connectable](#connectable)
    * [Connecting Records](#connecting-records)
    * [Defaults with waived connections](#defaults-with-waived-connections)
@@ -391,6 +392,51 @@ This generates the following Verilog, where all members are driven from the lite
 ```scala mdoc:verilog
 chisel3.docs.emitSystemVerilog(new Example4b)
 ```
+
+## Connecting Options
+
+All four operators (`:<=`, `:>=`, `:<>=`, and `:#=`) are also defined between a consumer and producer that are both `Option[T]` (where `T <: Data`).
+This is useful for optional hardware that is gated behind an elaboration-time parameter, as it avoids having to unwrap the `Option`s by hand.
+
+The semantics are:
+ * if both the consumer and the producer are defined, the underlying components are connected with the given operator
+ * if both the consumer and the producer are empty, the connection is a no-op
+ * if exactly one of them is empty, it is an error
+
+The last case errors because it is almost always a bug for one side of a connection to exist while the other does not.
+If that is actually the intent, guard the connection explicitly (e.g. with `.zip` or `.foreach`) rather than relying on the operator.
+
+```scala mdoc:silent
+class Example4c(hasFoo: Boolean) extends RawModule {
+  val in  = Option.when(hasFoo)(IO(Input(UInt(32.W))))
+  val out = Option.when(hasFoo)(IO(Output(UInt(32.W))))
+  out :<>= in // connects when hasFoo is true, does nothing when hasFoo is false
+}
+```
+
+This generates the following Verilog when `hasFoo` is true:
+
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Example4c(true))
+```
+
+And the following Verilog when `hasFoo` is false, where no ports exist and nothing is connected:
+
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Example4c(false))
+```
+
+`:#=` additionally accepts `DontCare` as the producer, which invalidates the consumer if it is defined, and does nothing if it is empty:
+
+```scala mdoc:silent
+class Example4d(hasFoo: Boolean) extends RawModule {
+  val out = Option.when(hasFoo)(IO(Output(UInt(32.W))))
+  out :#= DontCare
+}
+```
+
+> Note: this is about connecting `Option`s directly. For connecting `Bundle`s that *contain* optional fields, see [this section](#connecting-types-with-optional-members).
+
 ## Connectable
 
 Sometimes a user wants to connect Chisel components which are not type equivalent.
@@ -468,6 +514,8 @@ chisel3.docs.emitSystemVerilog(new Example10)
 ```
 
 ### Connecting types with optional members
+
+The following is about `Bundle`s that *contain* optional members. For connecting two `Option`s directly, see [Connecting Options](#connecting-options).
 
 In the following example, we can use `:<>=` and `.waive` to connect two `MyDecoupledOpts`'s, where only one has a `bits` member.
 
