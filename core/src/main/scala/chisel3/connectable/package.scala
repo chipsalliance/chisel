@@ -127,11 +127,14 @@ package object connectable {
 
     /** $colonHashEq
       *
+      * If the consumer is empty, this is a no-op.
+      *
       * @group connection
       * @param producer the right-hand-side of the connection, all members will be driving, none will be driven-to
       */
-    def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
-      for (c <- consumer) { c :#= DontCare }
+    def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = consumer match {
+      case Some(c) => c :#= DontCare
+      case None    => ()
     }
   }
 
