@@ -1557,17 +1557,36 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       assert(out.contains("connect a, b"))
       assert(out.contains("invalidate c"))
     }
-    it("(7b.d) Connecting a Some to a None (or vice versa) is an error") {
-      class ConnectOptions extends Module {
-        val a: Option[UInt] = Some(IO(Output(UInt(3.W))))
-        val b: Option[UInt] = None
-        a :<>= b
+    it("(7b.d) Connecting Options of mismatched emptiness is an error") {
+      // Elaborates a Module connecting a consumer and producer Option with op, where
+      // hasConsumer/hasProducer control whether each side is defined, and expects an error.
+      def checkError(hasConsumer: Boolean, hasProducer: Boolean)(op: (Option[UInt], Option[UInt]) => Unit): Unit = {
+        class ConnectOptions extends Module {
+          val a = Option.when(hasConsumer)(IO(Output(UInt(3.W))))
+          val b = Option.when(hasProducer)(IO(Input(UInt(3.W))))
+          op(a, b)
+        }
+        val e = intercept[ChiselException] {
+          ChiselStage.emitCHIRRTL(new ConnectOptions(), args = Array("--throw-on-first-error"))
+        }
+        assert(e.getMessage.linesIterator.next().contains("Connecting Options of different emptiness is not allowed"))
       }
-      intercept[ChiselException] {
-        ChiselStage.emitCHIRRTL(new ConnectOptions(), args = Array("--throw-on-first-error"))
+      val ops = Seq[(Option[UInt], Option[UInt]) => Unit](_ :<>= _, _ :<= _, _ :>= _, _ :#= _)
+      for (op <- ops) {
+        checkError(hasConsumer = true, hasProducer = false)(op)
+        checkError(hasConsumer = false, hasProducer = true)(op)
       }
     }
-    it("(7b.e) Options work with fields nested within a Bundle") {
+    it("(7b.e) :#= DontCare on a None consumer is a no-op") {
+      // DontCare is not an Option, so it has no emptiness to mismatch; a None consumer is simply skipped
+      class ConnectOptions extends Module {
+        val a: Option[UInt] = None
+        a :#= DontCare
+      }
+      val out = ChiselStage.emitCHIRRTL { new ConnectOptions() }
+      assert(!out.contains("invalidate"))
+    }
+    it("(7b.f) optional Bundle fields that are missing on one side are not connected by :<=") {
       class OptBundle(hasData: Boolean) extends Bundle {
         val valid = Bool()
         val data = if (hasData) Some(Flipped(UInt(8.W))) else None
@@ -1582,7 +1601,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       assert(!out.contains("connect out.data, in.data"))
       assert(!out.contains("connect in.data, out.data"))
     }
-    it("(7b.f) Options that are flipped and nested within a Bundle are connected with :>=") {
+    it("(7b.g) optional Bundle fields that are flipped are connected by :>=") {
       class OptBundle(hasData: Boolean) extends Bundle {
         val valid = Bool()
         val data = if (hasData) Some(Flipped(UInt(8.W))) else None
@@ -1596,6 +1615,35 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       assert(out.contains("connect in.data, out.data"))
       assert(!out.contains("connect out.valid, in.valid"))
       assert(!out.contains("connect in.valid, out.valid"))
+    }
+    it("(7b.h) mismatched optional Bundle fields are an error") {
+      class OptBundle(hasData: Boolean) extends Bundle {
+        val valid = Bool()
+        val data = if (hasData) Some(Flipped(UInt(8.W))) else None
+      }
+      def check(hasConsumer: Boolean, hasProducer: Boolean, message: String)(op: (Data, Data) => Unit): Unit = {
+        class ConnectNestedOptions extends Module {
+          val in = IO(Flipped(new OptBundle(hasProducer)))
+          val out = IO(new OptBundle(hasConsumer))
+          op(out, in)
+        }
+        val e = intercept[ChiselException] {
+          ChiselStage.emitCHIRRTL(new ConnectNestedOptions(), args = Array("--throw-on-first-error"))
+        }
+        // Only check the first line: the remainder echoes the offending source line, which would
+        // trivially contain the expected message because it appears as a literal in this test.
+        assert(e.getMessage.linesIterator.next().contains(message))
+      }
+      // Producer has the field, consumer does not
+      check(hasConsumer = false, hasProducer = true, "unconnected producer field")(_ :<>= _)
+      check(hasConsumer = false, hasProducer = true, "unmatched producer field")(_ :<= _)
+      check(hasConsumer = false, hasProducer = true, "unconnected producer field")(_ :>= _)
+      check(hasConsumer = false, hasProducer = true, "unmatched producer field")(_ :#= _)
+      // Consumer has the field, producer does not
+      check(hasConsumer = true, hasProducer = false, "dangling consumer field")(_ :<>= _)
+      check(hasConsumer = false, hasProducer = true, "unmatched producer field")(_ :<= _)
+      check(hasConsumer = true, hasProducer = false, "dangling consumer field")(_ :>= _)
+      check(hasConsumer = false, hasProducer = true, "unmatched producer field")(_ :#= _)
     }
   }
 
