@@ -35,7 +35,7 @@ read these documents in the following order:
 * [Connectable Operators](explanations/connectable)
 * [Decoders](explanations/decoder)
 * [Intrinsic Modules](explanations/intrinsics)
-* [SystemVerilog DPI ABI](explanations/dpi)
+* [Calling Native Functions from Chisel (DPI)](explanations/dpi)
 * [Annotations](explanations/annotations)
 * [Source Locators](explanations/source-locators)
 * [Warnings](explanations/warnings)
@@ -44,4 +44,3 @@ read these documents in the following order:
 * [Probes](explanations/probes)
 * [Layers](explanations/layers)
 * [Module Prefixing](explanations/moduleprefix)
-* [Calling Native Functions from Chisel (DPI)](explanations/dpi)
