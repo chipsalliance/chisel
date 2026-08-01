@@ -16,11 +16,15 @@ is difficult to express directly in Chisel.
 The C/C++ implementation uses the `svdpi.h` header supplied by the simulator.
 This header defines DPI types and helper functions such as `svBitVecVal` and
 `svOpenArrayHandle`.
+Chisel does not provide this header; the simulator's include path must be used
+when compiling the native implementation.
 
 Here's a simple example that demonstrates printing a message from a C++
 function:
 
 ```c++
+#include <iostream>
+
 extern "C" void hello()
 {
     std::cout << "hello from c++\n";
@@ -58,11 +62,14 @@ interact with DPI.
 * A `Bundle` is lowered to a packed struct.
 * Integer values are lowered into two-state SystemVerilog types.
 
-Here, passive means that the type contains no directioned fields.
-For more information, see [Bundles and Vecs](bundles-and-vecs).
+Here, passive means that the type contains no flipped or otherwise directioned
+fields.
+For example, a `Bundle` passed to DPI must not contain `Input` or `Output`
+members.
 
-Small integer types must be compatible with C types and arguments are passed by
-value.
+The 8-, 16-, 32-, and 64-bit forms use SystemVerilog's `byte`, `shortint`,
+`int`, and `longint` types and are passed by value using the corresponding
+simulator DPI scalar types.
 Users are required to use the specific integer widths shown in the table below.
 Large integers are lowered to packed `bit` vectors and passed by pointer using
 `svBitVecVal`.
@@ -222,7 +229,8 @@ stride.
 * Can we call a DPI function in an initial block? -- No, not currently.
   Consider using a black box for initialization.
 * Can we call two clocked DPI calls and pass the result of one to the other within the same clock? -- No.
-  Clocked DPI calls on the same clock are dispatched together, so the intrinsic interface does not provide ordering guarantees for such side-effecting calls.
+  Do not rely on ordering between clocked DPI calls on the same clock.
+  Combine dependent operations into one DPI function when ordering matters.
 
 For the underlying representation and lowering rules, see the
 [FIRRTL DPI call intrinsic](https://circt.llvm.org/docs/Dialects/FIRRTL/#firrtlintdpicall-circtfirrtldpicallintrinsicop),
