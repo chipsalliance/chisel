@@ -54,6 +54,7 @@ class DPIIntrinsicTest extends Module {
     val b = Input(UInt(32.W))
     val add_clocked_result = Output(UInt(32.W))
     val add_unclocked_result = Output(UInt(32.W))
+    val sum_result = Output(UInt(32.W))
   })
 
   EmitDPIImplementation()
@@ -66,9 +67,15 @@ class DPIIntrinsicTest extends Module {
     RawClockedNonVoidFunctionCall("add", UInt(32.W), Some(Seq("lhs", "rhs")), Some("result"))(clock, true.B, io.a, io.b)
   val result_unclocked =
     RawUnclockedNonVoidFunctionCall("add", UInt(32.W), Some(Seq("lhs", "rhs")), Some("result"))(true.B, io.a, io.b)
+  val result_sum =
+    RawUnclockedNonVoidFunctionCall("sum", UInt(32.W), Some(Seq("array")), Some("result"))(
+      true.B,
+      VecInit(io.a, io.b, io.a)
+    )
 
   io.add_clocked_result := result_clocked
   io.add_unclocked_result := result_unclocked
+  io.sum_result := result_sum
 }
 
 object Hello extends DPIVoidFunctionImport {
@@ -143,6 +150,8 @@ class DPISpec extends AnyFunSpec with Matchers {
           dpi.io.b.poke(36.U)
           dpi.io.add_unclocked_result.peek()
           dpi.io.add_unclocked_result.expect(60)
+          dpi.io.sum_result.peek()
+          dpi.io.sum_result.expect(84)
 
           dpi.clock.step()
           dpi.io.a.poke(24.U)
@@ -151,6 +160,8 @@ class DPISpec extends AnyFunSpec with Matchers {
           dpi.io.add_clocked_result.expect(60)
           dpi.io.add_unclocked_result.peek()
           dpi.io.add_unclocked_result.expect(36)
+          dpi.io.sum_result.peek()
+          dpi.io.sum_result.expect(60)
         }
         .result
 
@@ -203,6 +214,7 @@ class DPISpec extends AnyFunSpec with Matchers {
       verilog should include("input  int lhs,")
       verilog should include("input  int rhs,")
       verilog should include("output int result")
+      verilog should include("input  int array[]")
     }
   }
 }

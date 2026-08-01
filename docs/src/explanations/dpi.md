@@ -1,189 +1,172 @@
 ---
 layout: docs
-title:  "Calling Native Functions from Chisel (DPI)"
+title:  "SystemVerilog DPI ABI"
 section: "chisel3"
 ---
 
-# Calling Native Functions from Chisel (DPI)
+# SystemVerilog DPI ABI
 
-## DPI Basics
+The `chisel3.util.circt.dpi` package provides intrinsic-based calls to
+SystemVerilog Direct Programming Interface (DPI) functions. The `Raw*` call
+objects create the `circt_dpi_call` intrinsic, which CIRCT lowers to an
+`import "DPI-C"` declaration and a call to that function.
 
-Chisel's DPI API allows you to integrate native code into your Chisel hardware designs. This enables you to leverage existing libraries or implement functionality that is difficult to express directly in Chisel.
+This page describes how Chisel types map to the generated SystemVerilog and
+the C/C++ DPI ABI.
 
-Here's a simple example that demonstrates printing a message from a C++ function:
-```c++
-extern "C" void hello()
-{
-    std::cout << "hello from c++\\n";
-}
-```
+## Basic Example
 
-To call this function from Chisel, we need to define a corresponding DPI object.
-
-```scala mdoc:silent
+```scala
 import chisel3._
 import chisel3.util.circt.dpi._
 
-object Hello extends DPIVoidFunctionImport {
-  override val functionName = "hello"
-  override val clocked = true
-  final def apply() = super.call()
-}
-
-class HelloTest extends Module {
-  Hello() // Print
-}
-```
-
-Output Verilog:
-
-```scala mdoc:verilog
-chisel3.docs.emitSystemVerilog(new HelloTest)
-```
-
-Explanation:
-
-* `Hello` inherits from `DPIVoidFunctionImport` which defines a DPI function with a void return type in C++.
-* `functionName` specifies the C-linkage name of the C++ function.
-* `clocked = true` indicates that its function call is invoked at the clock's posedge.
-* We define an `apply` method for a function-like syntax. This allows us to call the DPI function with `Hello()`
-
-## Type ABI
-
-Unlike normal Chisel compilation flow, we use a specific ABI for types to interact with DPI.
-
-### Argument Types
-
-* Operand and result types must be passive.
-* A `Vec` is lowered to an *unpacked* *open* array type, e.g., `a: Vec<4, UInt>` to `byte a []`.
-* A `Bundle` is lowered to a packed struct.
-* `Int`, `SInt`, `Clock`, `Reset` types are lowered into 2-state types.
-Small integer types (< 64 bit) must be compatible with C-types and arguments are passed by value. Users are required to use specific integer types for small integers shown in the table below. Large integers are lowered to bit and passed by reference.
-
-
-| Width | Verilog Type | Argument Passing Modes |
-| ----- | ------------ | ---------------------- |
-| 1     | bit          | value                  |
-| 8     | byte         | value                  |
-| 16    | shortint     | value                  |
-| 32    | int          | value                  |
-| 64    | longint      | value                  |
-| > 64  | bit [w-1:0]  | reference              |
-
-### Function Types
-The type of DPI object you need depends on the characteristics of your C++ function:
-
-* Return Type
-  * For functions that don't return a value (like hello), use `DPIVoidFunctionImport`.
-  * For functions with a return type (e.g., integer addition), use `DPINonVoidFunctionImport[T]`, where `T` is the return type.
-  * The output argument must be the last argument in DPI fuction.
-* Clocked vs. Unclocked:
-  * Clocked: The function call is evaluated at the associated clock's positive edge. By default, Chisel uses the current module's clock. For custom clocks, use `withClocked(clock) {..}`. If the function has a return value, it will be available in the next clock cycle.
-  * Unclocked: The function call is evaluated immediately.
-
-## Example: Adding Two Numbers
-Here's an example of a DPI function that calculates the sum of two numbers:
-
-```c++
-extern "C" void add(int lhs, int rhs, int* result)
-{
-    *result = lhs + rhs;
-}
-```
-
-```scala mdoc:silent
-trait AddBase extends DPINonVoidFunctionImport[UInt] {
-  override val functionName = "add"
-  override val ret = UInt(32.W)
-  override val inputNames = Some(Seq("lhs", "rhs"))
-  override val outputName = Some("result")
-  final def apply(lhs: UInt, rhs: UInt): UInt = super.call(lhs, rhs)
-}
-
-object AddClocked extends AddBase {
-  override val clocked = true
-}
-
-object AddUnclocked extends AddBase {
-  override val clocked = false
-}
-
-class AddTest extends Module {
+class DpiExample extends Module {
   val io = IO(new Bundle {
-    val a = Input(UInt(32.W))
-    val b = Input(UInt(32.W))
-    val c = Output(UInt(32.W))
-    val d = Output(UInt(32.W))
-    val en = Input(Bool())
+    val lhs = Input(UInt(32.W))
+    val rhs = Input(UInt(32.W))
+    val sum = Output(UInt(32.W))
   })
 
-  // Call DPI only when `en` is true.
-  when (io.en) {
-    io.c := AddClocked(io.a, io.b)
-    io.d := AddUnclocked(io.a, io.b)
-  } .otherwise {
-    io.c := 0.U(32.W)
-    io.d := 0.U(32.W)
-  }
+  val sum = RawUnclockedNonVoidFunctionCall(
+    "add",
+    UInt(32.W),
+    Some(Seq("lhs", "rhs")),
+    Some("result")
+  )(true.B, io.lhs, io.rhs)
+
+  io.sum := sum
 }
 ```
 
-```scala mdoc:verilog
-chisel3.docs.emitSystemVerilog(new AddTest)
+The `UInt(32.W)` result is emitted as one SystemVerilog `output` argument:
+
+```systemverilog
+import "DPI-C" context function void add(
+  input  int lhs,
+  input  int rhs,
+  output int result
+);
 ```
 
+The C/C++ function therefore returns `void` and writes the result through a
+pointer:
 
-Explanation:
-
-* `Add` inherits from `DPINonVoidFunctionImport[UInt]` because it returns a 32-bit unsigned integer.
-* `ret` specifies the return type.
-* `clocked` indicates that this is a clocked function call.
-* `inputNames` and `outputName` provide optional names for the function's arguments and return value (these are just for Verilog readability).
-
-## Example: Sum of an array
-Chisel vectors are converted into SystemVerilog open arrays when used with DPI. Since memory layout can vary between simulators, it's recommended to use `svSize` and `svGetBitArrElemVecVal` to access array elements.
-
-```c++
-extern "C" void sum(const svOpenArrayHandle array, int* result) {
-  // Get a length of the open array.
-  int size = svSize(array, 1);
-  // Initialize the result value.
-  *result = 0;
-  for(size_t i = 0; i < size; ++i) {
-    svBitVecVal vec;
-    svGetBitArrElemVecVal(&vec, array, i);
-    *result += vec;
-  }
+```cpp
+extern "C" void add(int lhs, int rhs, int *result) {
+  *result = lhs + rhs;
 }
 ```
 
-```scala mdoc:silent
+`NonVoidFunctionCall` refers to the Chisel expression result. It does not mean
+that the C function has a C return value.
 
-object Sum extends DPINonVoidFunctionImport[UInt] {
-  override val functionName = "sum"
-  override val ret = UInt(32.W)
-  override val clocked = false
-  override val inputNames = Some(Seq("array"))
-  override val outputName = Some("result")
-  final def apply(array: Vec[UInt]): UInt = super.call(array)
-}
+## Scalar ABI
 
-class SumTest extends Module {
-  val io = IO(new Bundle {
-    val a = Input(Vec(3, UInt(32.W)))
-    val sum_a = Output(UInt(32.W))
-  })
+All integer values in DPI declarations use two-state SystemVerilog types.
+The width determines the SystemVerilog type and how the value is passed to
+C/C++:
 
-  io.sum_a := Sum(io.a) // compute a[0] + a[1] + a[2]
+| Chisel width | SystemVerilog type | C/C++ ABI |
+| ---: | --- | --- |
+| 1 | `bit` | passed by value as `svBit` |
+| 8 | `byte` | passed by value |
+| 16 | `shortint` | passed by value |
+| 32 | `int` | passed by value |
+| 64 | `longint` | passed by value |
+| greater than 64 | `bit [W-1:0]` | passed by pointer using `svBitVecVal` |
+
+The simulator-provided `svdpi.h` is authoritative for the DPI typedefs. Use
+the corresponding C types from that header where available. In particular,
+do not assume that a 64-bit `longint` corresponds to C `long` on every
+platform; use the simulator's documented DPI prototype.
+
+Widths must be known and must be 1, 8, 16, 32, 64, or greater than 64. Other
+widths, such as 4 or 40, are rejected by the FIRRTL DPI intrinsic verifier.
+
+Values wider than 64 bits are packed bit vectors passed by pointer. The pointer
+refers to 32-bit `svBitVecVal` words as defined by `svdpi.h`; use the DPI
+helpers from that header rather than treating the value as a native C integer.
+
+The integer signedness of `UInt` and `SInt` does not select a different DPI
+scalar type. Both are lowered to the corresponding two-state SystemVerilog
+width. Apply any required signed or unsigned interpretation explicitly in
+C/C++.
+
+`Clock` and `enable` are intrinsic control operands. They do not appear in the
+DPI declaration. Only the `data` operands become DPI input arguments.
+
+## Arrays
+
+A Chisel `Vec` is lowered to an unpacked open array at the DPI boundary.
+For example, this raw intrinsic call uses 8-bit elements:
+
+```scala
+RawClockedVoidFunctionCall("consume_bytes", Some(Seq("values")))(
+  clock,
+  true.B,
+  VecInit(Seq(1.U(8.W), 2.U(8.W)))
+)
+```
+
+```systemverilog
+import "DPI-C" context function void consume_bytes(
+  input byte values[]
+);
+```
+
+The C/C++ side receives an `svOpenArrayHandle`, not a raw `byte *`.
+Use the standard open-array functions in `svdpi.h` to query and access it:
+
+```cpp
+#include "svdpi.h"
+
+extern "C" void consume_bytes(const svOpenArrayHandle values) {
+  const int size = svSize(values, 1);
+  const auto *value = static_cast<const char *>(svGetArrElemPtr1(values, 0));
+  // Use size and value here.
 }
 ```
 
-```scala mdoc:verilog
-chisel3.docs.emitSystemVerilog(new SumTest)
-```
+Use functions such as `svSize`, `svLow`, `svHigh`, and `svGetArrElemPtr1`.
+Do not depend on the handle layout or element stride.
 
-# FAQ
+The element type follows the scalar rules. For example, `Vec(n, Bool())`
+becomes `bit values[]`, `Vec(n, UInt(32.W))` becomes `int values[]`, and a
+nested `Vec` produces nested unpacked array dimensions.
 
-* Can we export functions? -- No, not currently. Consider using a black box for such functionality.
-* Can we call a DPI function in initial block? -- No, not currently. Consider using a black box for initialization.
-* Can we call two clocked DPI calls and pass the result to another within the same clock? -- No, not currently. Please merge the DPI functions into a single function.
+## Intrinsic Call Shapes
+
+The intrinsic API has three call objects:
+
+| Chisel call | DPI function shape |
+| --- | --- |
+| `RawClockedVoidFunctionCall` | `void f(input_args...)` |
+| `RawClockedNonVoidFunctionCall` | `void f(input_args..., output_pointer)` |
+| `RawUnclockedNonVoidFunctionCall` | `void f(input_args..., output_pointer)` |
+
+The clocked and unclocked forms have the same ABI. They differ in scheduling:
+
+- A clocked call is evaluated on the active edge of its supplied clock. Its
+  result behaves as state and is retained when `enable` is false.
+- An unclocked call is combinational. When `enable` is false, its result is
+  undefined and should be treated as unknown.
+
+`inputNames` supplies one SystemVerilog name for each input. `outputName` names
+the one output argument of a non-void call. Neither changes the C/C++ ABI.
+
+## Signature Rules
+
+All intrinsic call sites using the same DPI function name must have matching
+input and result types. CIRCT groups calls by function name and rejects
+mismatched signatures during lowering.
+
+The intrinsic requires passive operand and result types. Scalar integers and
+`Vec` values have the ABI described above. Bundles lower to packed
+SystemVerilog aggregates, but their direct C/C++ representation is not a
+portable scalar ABI. Inspect the generated declaration and simulator DPI
+prototype before using aggregate types.
+
+For the underlying representation and lowering rules, see the
+[FIRRTL DPI call intrinsic](https://circt.llvm.org/docs/Dialects/FIRRTL/#firrtlintdpicall-circtfirrtldpicallintrinsicop),
+the [Simulation Dialect DPI](https://circt.llvm.org/docs/Dialects/SimDPI/),
+and the [`LowerDPI` implementation](https://circt.llvm.org/doxygen/LowerDPI_8cpp_source.html).
