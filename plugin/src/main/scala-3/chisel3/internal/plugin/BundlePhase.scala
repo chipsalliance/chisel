@@ -269,7 +269,7 @@ class ChiselBundlePhase extends PluginPhase {
     if (
       ChiselTypeHelpers.isRecord(record.tpe)
       && record.isClassDef
-      && !record.symbol.flags.is(Flags.Abstract)
+      && !record.symbol.flags.isOneOf(Flags.AbstractOrTrait)
     ) {
       val isBundle: Boolean = ChiselTypeHelpers.isBundle(record.tpe)
       val thiz:     tpd.This = tpd.This(record.symbol.asClass)
@@ -292,7 +292,7 @@ class ChiselBundlePhase extends PluginPhase {
           record.symbol,
           Names.termName("_usingPlugin"),
           Flags.Method | Flags.Override | Flags.Protected,
-          defn.BooleanType
+          MethodType(Nil, Nil, defn.BooleanType)
         )
         tpd.DefDef(
           isPluginSym.asTerm,
