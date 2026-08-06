@@ -410,6 +410,17 @@ object Connectable {
     final def :#=(producer: DontCare.type)(implicit sourceInfo: SourceInfo): Unit = {
       connect(consumer, producer, ColonHashEq)
     }
+  }
 
+  implicit class ConnectableBitsOpExtension[T <: Bits](consumer: Connectable[T]) extends ConnectableDocs {
+
+    /** $colonPercentEq
+    * @group connection
+    * @param producer the right-hand-side of the connection
+    */
+    final def :%=[S <: Bits](lProducer: => S)(implicit evidence: T =:= S, sourceInfo: SourceInfo): Unit = {
+      val producer = prefix(consumer.base) { lProducer }
+      consumer :#= producer.squeeze
+    }
   }
 }

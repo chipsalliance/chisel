@@ -1274,6 +1274,34 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         Nil
       )
     }
+    it("(5.i) :%= truncates a UInt without needing .squeeze") {
+      class MyModule extends Module {
+        val in = IO(Flipped(UInt(3.W)))
+        val out = IO(UInt(1.W))
+        out :%= in
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq(
+          "connect out, in"
+        ),
+        Nil
+      )
+    }
+    it("(5.j) :%= truncates a SInt without needing .squeeze") {
+      class MyModule extends Module {
+        val in = IO(Flipped(SInt(3.W)))
+        val out = IO(SInt(1.W))
+        out :%= in
+      }
+      testCheck(
+        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
+        Seq(
+          "connect out, in"
+        ),
+        Nil
+      )
+    }
   }
   describe("(E): Connectable excluding") {
     import scala.collection.immutable.SeqMap
