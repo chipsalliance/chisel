@@ -29,7 +29,9 @@ object DebugTestUtils extends Matchers {
   }
 
   private def attrPart(name: String, value: String): String = s"""[^)]*$name\\s*=\\s*"${q(value)}""""
-  private def enumPart(et:   Option[String]):        String = et.fold("")(attrPart("enumTypeName", _))
+  // An enum node carries its variants inline (typeName + variants JSON + width).
+  private def enumPart(et: Option[String]): String =
+    et.fold("")(tn => attrPart("enumTypeName", tn) + """[^)]*variants\s*=\s*"""" + """[^)]*width\s*=""")
 
   private def intrinsic(kind: String, attrs: String*): String =
     s"""intrinsic\\(circt_debug_$kind<${attrs.mkString}"""
@@ -46,7 +48,6 @@ object DebugTestUtils extends Matchers {
       enumPart(enumTypeName)
     )
 
-  def enumDefPattern(typeName:    String): String = intrinsic("enumdef", attrPart("typeName", typeName))
   def moduleInfoPattern(typeName: String): String = intrinsic("moduleinfo", attrPart("typeName", typeName))
 
   // Collapse whitespace so regex helpers ignore line wrapping.
