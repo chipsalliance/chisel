@@ -151,4 +151,12 @@ package object connectable {
       }
     }
   }
+
+  /** ConnectableBits Typeclass defines the :%= operator on UInt and SInt: an explicit truncating connection operator
+  *
+  * @param consumer the left-hand-side of the connection
+  */
+  implicit class ConnectableBitsOperators[T <: Bits](consumer: T)
+      extends Connectable.ConnectableBitsOpExtension(Data.makeConnectableDefault(consumer))
+
 }

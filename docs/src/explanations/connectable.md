@@ -592,6 +592,27 @@ This generates the following Verilog, where `p` is truncated prior to driving `c
 chisel3.docs.emitSystemVerilog(new Example14)
 ```
 
+For `UInt`/`SInt`, the producer side of the connection can often have complex expressions on the
+right-hand side which makes the `.squeeze` API not great at displaying a truncating connection.
+`:%=` is a more visible alternative defined for only `UInt`/`SInt`:
+`c :%= p` is equivalent to `c :#= p.squeeze`.
+
+```scala mdoc:silent
+
+class Example14b extends RawModule {
+  val p = IO(Flipped(UInt(4.W)))
+  val c = IO(UInt(3.W))
+
+  c :%= p
+}
+```
+This generates the same truncating behavior as `Example14` above, but without needing
+to call `.squeeze` explicitly:
+
+```scala mdoc:verilog
+chisel3.docs.emitSystemVerilog(new Example14b)
+```
+
 ### Excluding members from any operator on a Connectable
 
 If a user wants to always exclude a field from a connect, use the `.exclude` mechanism which will never connect the field (as if it didn't exist to the connection).
