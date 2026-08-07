@@ -226,7 +226,12 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
   }
 }
 
-object Bits extends UIntFactory
+object Bits extends UIntFactory {
+
+  /** Provides :%= for Bits (UInt/SInt) */
+  implicit class ConnectableBitsDefault[T <: Bits](consumer: T)
+      extends connectable.ConnectableBitsOperators[T](consumer)
+}
 
 /** A data type for unsigned integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.

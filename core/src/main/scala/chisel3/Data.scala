@@ -902,10 +902,6 @@ object Data {
   /** Provides :<=, :>=, :<>=, and :#= between consumer and producer of the same T <: Data */
   implicit class ConnectableDefault[T <: Data](consumer: T) extends connectable.ConnectableOperators[T](consumer)
 
-  /** Provides :%= for Bits (UInt/SInt) */
-  implicit class ConnectableBitsDefault[T <: Bits](consumer: T)
-      extends connectable.ConnectableBitsOperators[T](consumer)
-
   /** Provides :<>=, :<=, :>=, and :#= between a (consumer: Vec) and (producer: Seq) */
   implicit class ConnectableVecDefault[T <: Data](consumer: Vec[T])
       extends connectable.ConnectableVecOperators[T](consumer)

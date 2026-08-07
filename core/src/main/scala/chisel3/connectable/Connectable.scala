@@ -236,6 +236,20 @@ object Connectable {
     *  - If the types of consumer and producer also have identical relative flips, then we can emit FIRRTL.<= as it is a stricter version of chisel3.:<>=
     *  - "turk-duck-en" is a dish where a turkey is stuffed with a duck, which is stuffed with a chicken; `:<>=` is a `:=` stuffed with a `<>`
     *
+    * @group connection
+    *
+    * @define colonPercentEq The explicit "truncating connection operator" between a `Bits` consumer and producer.
+    *
+    * For `consumer :%= producer`, the producer is always squeezed before connecting, so a width mismatch
+    * truncates instead of erroring out. This is identical to calling `consumer :#= producer.squeeze`.
+    *
+    * Symbol reference:
+    *  - ':' is the consumer side
+    *  - '=' is the producer side
+    *  - '%' means the producer is squeezed, so explicit truncation is allowed
+    *
+    * $chiselTypeRestrictions
+    *
     * @define chiselTypeRestrictions The following restrictions apply:
     *  - The Chisel type of consumer and producer must be the "same shape" recursively:
     *    - All ground types are the same (UInt and UInt are same, SInt and UInt are not), but widths can be different (implicit trunction/padding occurs)

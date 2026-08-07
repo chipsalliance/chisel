@@ -598,7 +598,6 @@ right-hand side which makes the `.squeeze` API not great at displaying a truncat
 `c :%= p` is equivalent to `c :#= p.squeeze`.
 
 ```scala mdoc:silent
-import scala.collection.immutable.SeqMap
 
 class Example14b extends RawModule {
   val p = IO(Flipped(UInt(4.W)))
