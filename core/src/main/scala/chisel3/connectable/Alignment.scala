@@ -2,8 +2,8 @@
 
 package chisel3.connectable
 
-import chisel3.{Aggregate, Data, DontCare, SpecifiedDirection}
-import chisel3.experimental.Analog
+import chisel3.{Aggregate, Bits, Data, DontCare, SInt, SpecifiedDirection}
+import chisel3.experimental.{Analog, SourceInfo}
 import chisel3.reflect.DataMirror
 import chisel3.internal.binding.{ChildBinding, TopBinding}
 
@@ -148,6 +148,23 @@ private[chisel3] case class ConnectableAlignment(base: Connectable[Data], align:
             }
           case (l, r) => None
         }.getOrElse(None)
+    }
+
+  // Return a truncated replacement for r if r is squeezed, wider than l, and both widths are known.
+  final def squeezeTruncationSite(o: ConnectableAlignment, l: Data, r: Data)(
+    implicit sourceInfo: SourceInfo
+  ): Option[Data] =
+    (l, r) match {
+      case (l: Bits, r: Bits) if base.squeezed.contains(r) || o.base.squeezed.contains(r) =>
+        (l.widthOption, r.widthOption) match {
+          case (Some(lw), Some(rw)) if lw < rw =>
+            r match {
+              case s: SInt => Some(s.take(lw).asSInt)
+              case _ => Some(r.take(lw))
+            }
+          case _ => None
+        }
+      case _ => None
     }
 
   // Whether the current member is waived

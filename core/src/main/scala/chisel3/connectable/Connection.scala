@@ -223,7 +223,10 @@ private[chisel3] object Connection {
                 case other        => throw new Exception(other.toString)
               }
               val lAndROpt = alignment.computeLandR(consumer, producer, connectionOp)
-              lAndROpt.foreach { case (l, r) => connect(l, r) }
+              lAndROpt.foreach { case (l, r) =>
+                val truncatedR = conAlign.squeezeTruncationSite(proAlign, l, r).getOrElse(r)
+                connect(l, truncatedR)
+              }
           }
         case other => throw new Exception(other.toString + " " + connectionOp)
       }

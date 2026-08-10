@@ -1135,7 +1135,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         Seq(
           "connect out.foo.valid, in.foo.valid",
           "connect in.foo.ready, out.foo.ready",
-          "connect out.foo.data, in.foo.data"
+          "bits(in.foo.data, 7, 0)"
         ),
         Nil
       )
@@ -1149,7 +1149,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "connect out, in"
+          "bits(in, 0, 0)"
         ),
         Nil
       )
@@ -1178,7 +1178,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         Seq(
           "connect out.valid, in.valid",
           "connect in.ready, out.ready",
-          "connect out.data.b, in.data.b"
+          "bits(in.data.b, 1, 0)"
         ),
         Nil
       )
@@ -1203,9 +1203,9 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "connect in3.v[0].ready, out3.v[0].ready",
-          "connect in3.v[1].ready, out3.v[1].ready",
-          "connect in3.v[2].ready, out3.v[2].ready"
+          "bits(out3.v[0].ready, 0, 0)",
+          "bits(out3.v[1].ready, 0, 0)",
+          "bits(out3.v[2].ready, 0, 0)"
         ),
         Nil
       )
@@ -1223,7 +1223,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "connect out, in"
+          "bits(in, 1, 0)"
         ),
         Nil
       )
@@ -1250,8 +1250,8 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "connect out.opaque, inA.opaque",
-          "connect out.opaque, inB.opaque"
+          "bits(inA.opaque, 1, 0)",
+          "bits(inB.opaque, 1, 0)"
         ),
         Nil
       )
@@ -1283,7 +1283,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "connect out, in"
+          "bits(in, 0, 0)"
         ),
         Nil
       )
@@ -1297,7 +1297,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
       testCheck(
         ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
         Seq(
-          "connect out, in"
+          "bits(in, 0, 0)"
         ),
         Nil
       )
@@ -2128,7 +2128,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
           ChiselStage.emitCHIRRTL(new MyModule()),
           Seq(
             "connect out.bar, in.bar",
-            "connect out.foo, in.foo"
+            "bits(in.foo, 0, 0)"
           ),
           Nil
         )
@@ -2168,7 +2168,7 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
           ChiselStage.emitCHIRRTL(new MyModule()),
           Seq(
             "connect out.bundle.bar, in.bundle.bar",
-            "connect out.bundle.foo, in.bundle.foo"
+            "bits(in.bundle.foo, 0, 0)"
           ),
           Nil
         )
