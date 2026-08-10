@@ -162,6 +162,11 @@ private[chisel3] case class ConnectableAlignment(base: Connectable[Data], align:
               case s: SInt => Some(s.take(lw).asSInt)
               case _ => Some(r.take(lw))
             }
+          case (Some(lw), None) =>
+            r match {
+              case s: SInt => Some(s.pad(lw).take(lw).asSInt)
+              case _ => Some(r.pad(lw).take(lw))
+            }
           case _ => None
         }
       case _ => None

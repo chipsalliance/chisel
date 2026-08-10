@@ -7,6 +7,7 @@ import chisel3.experimental.{Analog, OpaqueType}
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.VecLiterals._
 import chisel3.reflect.DataMirror
+import chisel3.testing.scalatest.FileCheck
 import circt.stage.ChiselStage
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -101,7 +102,7 @@ object ConnectableSpec {
 
 }
 
-class ConnectableSpec extends AnyFunSpec with Matchers {
+class ConnectableSpec extends AnyFunSpec with Matchers with FileCheck {
   import ConnectableSpec._
 
   def testCheck(firrtl: String, matches: Seq[String], nonMatches: Seq[String]): String = {
@@ -1130,15 +1131,15 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         val out = IO(new NestedDecoupled(false))
         out :<>= in.squeezeEach { case d: Decoupled => Seq(d.data) }
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "connect out.foo.valid, in.foo.valid",
-          "connect in.foo.ready, out.foo.ready",
-          "bits(in.foo.data, 7, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[node:.*]] = bits(in.foo.data, 7, 0)
+             |CHECK: connect out.foo.data, [[node]]
+             |CHECK: connect in.foo.ready, out.foo.ready
+             |CHECK: connect out.foo.valid, in.foo.valid
+             |""".stripMargin
+        )
     }
     it("(5.b) Squeeze works on UInt") {
       class MyModule extends Module {
@@ -1146,13 +1147,13 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         val out = IO(UInt(1.W))
         out :<>= in.squeeze
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "bits(in, 0, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[node:.*]] = bits(in, 0, 0)
+             |CHECK: connect out, [[node]]
+             |""".stripMargin
+        )
     }
     it("(5.c) BundleMap example can use programmatic squeezing") {
       class MyModule extends Module {
@@ -1173,15 +1174,15 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         // Programmatic
         BundleMap.waive(out) :<>= BundleMap.waive(in).squeezeAll
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "connect out.valid, in.valid",
-          "connect in.ready, out.ready",
-          "bits(in.data.b, 1, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[node:.*]] = bits(in.data.b, 1, 0)
+             |CHECK: connect out.data.b, [[node]]
+             |CHECK: connect in.ready, out.ready
+             |CHECK: connect out.valid, in.valid
+             |""".stripMargin
+        )
     }
     it(
       "(5.e) Mismatched aggregate containing backpressure must be squeezed only if actually connecting and requiring implicit truncation"
@@ -1200,15 +1201,17 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         // Should error, unless waived
         out3.squeezeAll :>= in3
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "bits(out3.v[0].ready, 0, 0)",
-          "bits(out3.v[1].ready, 0, 0)",
-          "bits(out3.v[2].ready, 0, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[node0:.*]] = bits(out3.v[0].ready, 0, 0)
+             |CHECK: connect in3.v[0].ready, [[node0]]
+             |CHECK: node [[node1:.*]] = bits(out3.v[1].ready, 0, 0)
+             |CHECK: connect in3.v[1].ready, [[node1]]
+             |CHECK: node [[node2:.*]] = bits(out3.v[2].ready, 0, 0)
+             |CHECK: connect in3.v[2].ready, [[node2]]
+             |""".stripMargin
+        )
     }
     it("(5.f) Squeeze works on OpaqueType") {
       class OpaqueRecord(width: Int) extends Record with OpaqueType {
@@ -1220,13 +1223,13 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         val out = IO(Output(new OpaqueRecord(2)))
         out :<>= in.squeeze
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "bits(in, 1, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[node:.*]] = bits(in, 1, 0)
+             |CHECK: connect out, [[node]]
+             |""".stripMargin
+        )
     }
     it("(5.g) Squeeze works on nested OpaqueType fields") {
       class OpaqueRecord(width: Int) extends Record with OpaqueType {
@@ -1247,14 +1250,15 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         out :<>= inA.squeeze(_.opaque)
         out :<>= inB.squeezeEach { case d: OpaqueRecord => Seq(d) }
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "bits(inA.opaque, 1, 0)",
-          "bits(inB.opaque, 1, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[nodeA:.*]] = bits(inA.opaque, 1, 0)
+             |CHECK: connect out.opaque, [[nodeA]]
+             |CHECK: node [[nodeB:.*]] = bits(inB.opaque, 1, 0)
+             |CHECK: connect out.opaque, [[nodeB]]
+             |""".stripMargin
+        )
     }
     it("(5.h) Squeeze all as") {
       class NestedDecoupled1 extends Bundle { val foo = new Decoupled(true) }
@@ -1280,13 +1284,13 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         val out = IO(UInt(1.W))
         out :%= in
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "bits(in, 0, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[node:.*]] = bits(in, 0, 0)
+             |CHECK: connect out, [[node]]
+             |""".stripMargin
+        )
     }
     it("(5.j) :%= truncates a SInt without needing .squeeze") {
       class MyModule extends Module {
@@ -1294,13 +1298,47 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
         val out = IO(SInt(1.W))
         out :%= in
       }
-      testCheck(
-        ChiselStage.emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error")),
-        Seq(
-          "bits(in, 0, 0)"
-        ),
-        Nil
-      )
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[node0:.*]] = bits(in, 0, 0)
+             |CHECK: node [[node1:.*]] = asSInt([[node0]])
+             |CHECK: connect out, [[node1]]
+             |""".stripMargin
+        )
+    }
+    it("(5.k) :%= truncates a UInt with an unknown/inferred producer width") {
+      class MyModule extends Module {
+        val out = IO(UInt(2.W))
+        val w = Wire(UInt())
+        w := 7.U
+        out :%= w
+      }
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[pad:.*]] = pad(w, 2)
+             |CHECK: node [[node:.*]] = bits([[pad]], 1, 0)
+             |CHECK: connect out, [[node]]
+             |""".stripMargin
+        )
+    }
+    it("(5.l) :%= truncates a SInt with an unknown/inferred producer width") {
+      class MyModule extends Module {
+        val out = IO(SInt(2.W))
+        val w = Wire(SInt())
+        w := 7.S
+        out :%= w
+      }
+      ChiselStage
+        .emitCHIRRTL({ new MyModule() }, args = Array("--full-stacktrace", "--throw-on-first-error"))
+        .fileCheck()(
+          """|CHECK: node [[pad:.*]] = pad(w, 2)
+             |CHECK: node [[bits:.*]] = bits([[pad]], 1, 0)
+             |CHECK: node [[node:.*]] = asSInt([[bits]])
+             |CHECK: connect out, [[node]]
+             |""".stripMargin
+        )
     }
   }
   describe("(E): Connectable excluding") {
@@ -2124,14 +2162,15 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
           out :<>= in
         }
 
-        testCheck(
-          ChiselStage.emitCHIRRTL(new MyModule()),
-          Seq(
-            "connect out.bar, in.bar",
-            "bits(in.foo, 0, 0)"
-          ),
-          Nil
-        )
+        ChiselStage
+          .emitCHIRRTL(new MyModule())
+          .fileCheck()(
+            """|CHECK: connect out.bar, in.bar
+               |CHECK: node [[node:.*]] = bits(in.foo, 0, 0)
+               |CHECK: connect out.foo, [[node]]
+               |""".stripMargin
+          )
+
       }
 
       it("(9.b.2) allows the user to customize the squeeze behavior of the Connectable for their class as consumer") {
@@ -2164,14 +2203,15 @@ class ConnectableSpec extends AnyFunSpec with Matchers {
           out :<>= in
         }
 
-        testCheck(
-          ChiselStage.emitCHIRRTL(new MyModule()),
-          Seq(
-            "connect out.bundle.bar, in.bundle.bar",
-            "bits(in.bundle.foo, 0, 0)"
-          ),
-          Nil
-        )
+        ChiselStage
+          .emitCHIRRTL(new MyModule())
+          .fileCheck()(
+            """|CHECK: connect out.bundle.bar, in.bundle.bar
+               |CHECK: node [[node:.*]] = bits(in.bundle.foo, 0, 0)
+               |CHECK: connect out.bundle.foo, [[node]]
+               |""".stripMargin
+          )
+
       }
     }
 
