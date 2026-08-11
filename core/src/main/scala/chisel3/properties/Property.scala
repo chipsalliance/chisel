@@ -348,13 +348,32 @@ sealed trait Property[T] extends Element { self =>
 
   /** Assert that this boolean property holds (only available for Property[Boolean])
     *
+    * This can be used to build up interpolated string messages as opposed to
+    * purely static messages.
+    *
+    * @param message a string property message
+    */
+  final def assert[U](message: Property[U])(
+    implicit evT: T =:= Boolean,
+    evU:          U =:= String,
+    sourceInfo:   SourceInfo
+  ): Unit = {
+    PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], message.asInstanceOf[Property[String]])
+  }
+
+  /** Assert that this boolean property holds (only available for Property[Boolean])
+    *
+    * This is a legacy method that supports a constant assertion message.  If
+    * you need an interpolated message, use the alternative assert that takes a
+    * `Property[String]` message.
+    *
     * @param message the assertion message
     */
   final def assert(message: String)(
-    implicit ev: T =:= Boolean,
-    sourceInfo:  SourceInfo
+    implicit evT: T =:= Boolean,
+    sourceInfo:   SourceInfo
   ): Unit = {
-    PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], message)
+    PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], Property[String](message))
   }
 
   /** Property equality comparison
@@ -685,12 +704,12 @@ object PropertyBooleanOps {
     * @param cond the boolean property condition
     * @param message the assertion message to display if the assertion fails
     */
-  def assert(cond: Property[Boolean], message: String)(implicit sourceInfo: SourceInfo): Unit =
+  def assert(cond: Property[Boolean], message: Property[String])(implicit sourceInfo: SourceInfo): Unit =
     Builder.referenceUserContainer match {
       case rm: RawModule =>
-        rm.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message))
+        rm.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message.ref))
       case cls: Class =>
-        cls.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message))
+        cls.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message.ref))
     }
 }
 
