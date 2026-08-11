@@ -573,7 +573,7 @@ chisel3.docs.emitSystemVerilog(new Example11)
 Non-`Connectable` operators implicitly truncate if a component with a larger width is connected to a component with a smaller width.
 `Connectable` operators disallow this implicit truncation behavior and require the driven component to be equal or larger in width that the sourcing component.
 
-If implicit truncation behavior is desired, then `Connectable` provides a `squeeze` mechanism which will allow the connection to continue with implicit truncation.
+If truncation behavior is desired, then `Connectable` provides a `squeeze` mechanism which will allow the connection to continue, truncating with an explicit bit extraction (e.g. `bits(...)`) in the emitted FIRRTL rather than relying on FIRRTL's own implicit width coercion. 
 
 ```scala mdoc:silent
 import scala.collection.immutable.SeqMap
@@ -592,10 +592,7 @@ This generates the following Verilog, where `p` is truncated prior to driving `c
 chisel3.docs.emitSystemVerilog(new Example14)
 ```
 
-For `UInt`/`SInt`, the producer side of the connection can often have complex expressions on the
-right-hand side which makes the `.squeeze` API not great at displaying a truncating connection.
-`:%=` is a more visible alternative defined for only `UInt`/`SInt`:
-`c :%= p` is equivalent to `c :#= p.squeeze`.
+For `UInt/SInt, :%=` is a more visible alternative defined for only `UInt/SInt`, letting you skip the explicit `.squeeze` call at the connection site: `c :%= p` is equivalent to `c :#= p.squeeze`.
 
 ```scala mdoc:silent
 
