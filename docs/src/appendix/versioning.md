@@ -17,7 +17,39 @@ An incremented `PATCH` version means there are backwards compatible bug fixes.
 ## Firtool Version
 
 Starting with Chisel v3.6, Chisel uses firtool (part of the [LLVM CIRCT](https://github.com/llvm/circt) project) to generate Verilog.
-Each version of Chisel is released against a specific version of firtool as specified in the following tables:
+Each version of Chisel is released against a specific version of firtool, shown in the tables below. Chisel automatically uses the corresponding version.
+
+### Setting Your Own Firtool Version
+
+:::tip
+
+The following instructions apply when emitting SystemVerilog from Chisel APIs like ChiselStage.
+Users are also encouraged to emit `.fir` from Chisel and invoke an installed firtool binary separately using their build tool of choice.
+
+:::
+
+To use a specific version, add a dependency on the desired [`org.chipsalliance::llvm-firtool`](https://central.sonatype.com/artifact/org.chipsalliance/llvm-firtool) release to your build. For example:
+
+```scala title="build.sbt"
+libraryDependencies += "org.chipsalliance" %% "llvm-firtool" % "1.153.0"
+```
+
+```scala title="build.mill"
+def mvnDeps = Agg(
+  mvn"org.chipsalliance::llvm-firtool:1.153.0"
+)
+```
+
+Alternatively, you can install firtool yourself from the [pre-built artifacts](https://github.com/llvm/circt/releases) or build it from source.
+To use your own installed firtool binary, set `CHISEL_FIRTOOL_PATH` to the directory containing the `firtool` binary you want Chisel to use.
+
+:::warning
+
+A given version of Chisel is only tested against the version listed in the tables below. It often works with other versions, but it is not guaranteed.
+
+:::
+
+### Firtool Version Tables
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
