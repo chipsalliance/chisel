@@ -282,6 +282,7 @@ class CIRCT extends Phase {
     val result = stdoutStream.toString
     logger.info(result)
     val errors = stderrStream.toString
+    if (errors.nonEmpty) logger.warn(errors)
     if (exitValue != 0)
       throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
     val finalAnnotations = if (split) {
