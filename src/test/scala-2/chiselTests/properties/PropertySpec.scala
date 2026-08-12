@@ -950,8 +950,8 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
 
   it should "not support expressions involving Property types that don't provide a typeclass instance" in {
     assertTypeError("""
-      val a = Property[String]()
-      val b = Property[String]()
+      val a = Property[Int]()
+      val b = Property[Int]()
       a ++ b
     """)
   }

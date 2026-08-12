@@ -46,6 +46,7 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
   override def mimaBinaryIssueFilters = super.mimaBinaryIssueFilters() ++ Seq(
     // chisel3.internal.firrtl.ir is package private
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.internal.firrtl.ir*"),
+    ProblemFilter.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.ir*"),
     ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.ir*"),
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.internal.firrtl.ir*"),
     ProblemFilter.exclude[MissingClassProblem]("chisel3.internal.firrtl.ir*"),
