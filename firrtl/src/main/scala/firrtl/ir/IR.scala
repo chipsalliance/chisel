@@ -421,7 +421,12 @@ case class Connect(info: Info, loc: Expression, expr: Expression) extends Statem
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class PropAssign(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo with UseSerializer
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
-case class PropertyAssert(info: Info, condition: Expression, message: Expression)
+case class PropertyAssert(info: Info, condition: Expression, message: String)
+    extends Statement
+    with HasInfo
+    with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class PropertyAssertExpression(info: Info, condition: Expression, message: Expression)
     extends Statement
     with HasInfo
     with UseSerializer

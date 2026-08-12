@@ -711,6 +711,14 @@ object PropertyBooleanOps {
     * @param cond the boolean property condition
     * @param message the assertion message to display if the assertion fails
     */
+  def assert(cond: Property[Boolean], message: String)(implicit sourceInfo: SourceInfo): Unit =
+    assert(cond, Property[String](message))
+
+  /** Assert that a boolean property holds
+    *
+    * @param cond the boolean property condition
+    * @param message a string property to evaluate and display if the assertion fails
+    */
   def assert(cond: Property[Boolean], message: Property[String])(implicit sourceInfo: SourceInfo): Unit =
     Builder.referenceUserContainer match {
       case rm: RawModule =>
