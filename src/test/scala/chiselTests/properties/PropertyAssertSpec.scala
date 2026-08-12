@@ -17,11 +17,15 @@ class PropertyAssertSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage
       .emitCHIRRTL(new RawModule {
         val prop = IO(Input(Property[Boolean]()))
+        val message = IO(Input(Property[String]()))
         prop.assert("must be true")
+        prop.assert(message)
       })
       .fileCheck() {
         """|CHECK: input prop : Bool
-           |CHECK: propassert prop, "must be true"
+           |CHECK: input message : String
+           |CHECK: propassert prop, String("must be true")
+           |CHECK: propassert prop, message
            |""".stripMargin
       }
   }
@@ -32,21 +36,28 @@ class PropertyAssertSpec extends AnyFlatSpec with Matchers with FileCheck {
         Definition(new Class {
           override def desiredName = "TestClass"
           val prop = IO(Input(Property[Boolean]()))
+          val message = IO(Input(Property[String]()))
           prop.assert("must be true")
+          prop.assert(message)
         })
       })
       .fileCheck() {
         """|CHECK: class TestClass :
            |CHECK: input prop : Bool
-           |CHECK: propassert prop, "must be true"
+           |CHECK: input message : String
+           |CHECK: propassert prop, String("must be true")
+           |CHECK: propassert prop, message
            |""".stripMargin
       }
   }
 
   it should "compile to SystemVerilog" in {
-    ChiselStage.emitSystemVerilog(new RawModule {
+    class Foo extends RawModule {
       val prop = IO(Input(Property[Boolean]()))
+      val username = IO(Input(Property[String]()))
       prop.assert("must be true")
-    })
+      prop.assert(Property("Hello ") ++ username ++ Property("!"))
+    }
+    ChiselStage.emitSystemVerilog(new Foo)
   }
 }

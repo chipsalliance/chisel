@@ -426,6 +426,11 @@ case class PropertyAssert(info: Info, condition: Expression, message: String)
     with HasInfo
     with UseSerializer
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class PropertyAssertExpression(info: Info, condition: Expression, message: Expression)
+    extends Statement
+    with HasInfo
+    with UseSerializer
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo with UseSerializer
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo with UseSerializer
