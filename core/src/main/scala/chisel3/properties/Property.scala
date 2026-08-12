@@ -628,6 +628,13 @@ object PropertySequenceOps {
       def concat(lhs: Property[S[U]], rhs: Property[S[U]])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.ListConcatOp, lhs, rhs)
     }
+
+  // Ensure that `++` is available for `Property[String]`.
+  implicit val stringOps: PropertySequenceOps[Property[String]] =
+    new PropertySequenceOps[Property[String]] {
+      def concat(lhs: Property[String], rhs: Property[String])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.StringConcatOp, lhs, rhs)
+    }
 }
 
 /** Typeclass for Property string operations.
