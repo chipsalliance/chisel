@@ -529,4 +529,45 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       }
   }
 
+  behavior of "Clock Domains"
+
+  they should "check that two domains are synchronous" in {
+
+    class Foo extends RawModule {
+      val A = ClockDomain("A")
+      val B = ClockDomain.rational(A, "_4to3")
+      ClockDomain.Relationship.assertSynchronous(A, B)
+    }
+
+    intercept[Exception] {
+      ChiselStage.emitSystemVerilog(
+        new Foo,
+        firtoolOpts =
+          Array("-default-layer-specialization=disable", "-domain-mode=infer-all", "-output-final-mlir", "/dev/null")
+      )
+    }.getMessage should include(
+      "Clock domain 'A' (with relationship 'synchronous' to clock domain 'A') and clock domain 'A_4to3' (with relationship 'rational' to clock domain 'A') are not synchronously related to each other.  They must have the same clock domain source and a synchronous relationship."
+    )
+
+  }
+
+  they should "check that two domains are rational" in {
+
+    class Foo extends RawModule {
+      val A = ClockDomain("A")
+      val B = ClockDomain("B")
+      ClockDomain.Relationship.assertRational(A, B)
+    }
+
+    intercept[Exception] {
+      ChiselStage.emitSystemVerilog(
+        new Foo,
+        firtoolOpts =
+          Array("-default-layer-specialization=disable", "-domain-mode=infer-all", "-output-final-mlir", "/dev/null")
+      )
+    }.getMessage should include(
+      "Clock domain 'A' (with relationship 'synchronous' to clock domain 'A') and clock domain 'B' (with relationship 'synchronous' to clock domain 'B') are not synchronously or rationally related to each other.  They must have the same clock domain source and a synchronous or rational relationship."
+    )
+  }
+
 }
