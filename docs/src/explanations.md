@@ -43,3 +43,4 @@ read these documents in the following order:
 * [Probes](explanations/probes)
 * [Layers](explanations/layers)
 * [Module Prefixing](explanations/moduleprefix)
+* [Chisel DPI](explanations/dpi)
