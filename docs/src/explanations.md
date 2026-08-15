@@ -35,6 +35,7 @@ read these documents in the following order:
 * [Connectable Operators](explanations/connectable)
 * [Decoders](explanations/decoder)
 * [Intrinsic Modules](explanations/intrinsics)
+* [Calling Native Functions from Chisel (DPI)](explanations/dpi)
 * [Annotations](explanations/annotations)
 * [Source Locators](explanations/source-locators)
 * [Warnings](explanations/warnings)
