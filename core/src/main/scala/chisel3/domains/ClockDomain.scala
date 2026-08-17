@@ -44,6 +44,26 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
       */
     object Rational extends Type
 
+    /** Return a boilerplate prelude string for assertions involving two domains.
+      */
+    private def assertPrelude(A: domain.Type, B: domain.Type): Property[String] = {
+      val A_name = A.field.name.asInstanceOf[Property[String]]
+      val A_source = A.field.source.asInstanceOf[Property[String]]
+      val A_relationship = A.field.relationship.asInstanceOf[Property[String]]
+      val B_name = B.field.name.asInstanceOf[Property[String]]
+      val B_source = B.field.source.asInstanceOf[Property[String]]
+      val B_relationship = B.field.relationship.asInstanceOf[Property[String]]
+      Property("Clock domain '") ++ A_name ++ Property(
+        "' (with relationship '"
+      ) ++ A_relationship ++ Property("' to clock domain '") ++ A_source ++ Property(
+        "') and clock domain '"
+      ) ++ B_name ++ Property(
+        "' (with relationship '"
+      ) ++ B_relationship ++ Property("' to clock domain '") ++ B_source ++ Property(
+        "')"
+      )
+    }
+
     /** Generate an assertion that two domains have a synchronous relationship.
       *
       * This is a building block of writing safe clock domain synchronizers.
@@ -58,7 +78,11 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
       val B_relationship = B.field.relationship.asInstanceOf[Property[String]]
       val sync = Property(ClockDomain.Relationship.Synchronous.toString)
       (A_source === B_source && A_relationship === sync && B_relationship === sync)
-        .assert("input and output must have the same clock source and be synchronous")
+        .assert(
+          assertPrelude(A, B) ++ Property(
+            " are not synchronously related to each other.  They must have the same clock domain source and a synchronous relationship."
+          )
+        )
     }
 
     /** Generate an assertion that two domains have a rational or synchronous relationship.
@@ -76,7 +100,11 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
       val sync = Property(ClockDomain.Relationship.Synchronous.toString)
       val rational = Property(ClockDomain.Relationship.Rational.toString)
       (A_source === B_source && (A_relationship === sync || A_relationship === rational) && (B_relationship === sync || B_relationship === rational))
-        .assert("input and output must have the same clock source and be synchronous or rational")
+        .assert(
+          assertPrelude(A, B) ++ Property(
+            " are not synchronously or rationally related to each other.  They must have the same clock domain source and a synchronous or rational relationship."
+          )
+        )
     }
 
   }

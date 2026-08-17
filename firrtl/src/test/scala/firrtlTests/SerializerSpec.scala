@@ -265,6 +265,16 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(probeRelease) should be("release(clock, cond, outProbe)")
   }
 
+  it should "serialize property assertion string messages as string property literals" in {
+    val assertion = PropertyAssert(NoInfo, Reference("condition"), "message")
+    Serializer.serialize(assertion) should be("propassert condition, String(\"message\")")
+  }
+
+  it should "serialize property assertion expression messages" in {
+    val assertion = PropertyAssertExpression(NoInfo, Reference("condition"), Reference("message"))
+    Serializer.serialize(assertion) should be("propassert condition, message")
+  }
+
   it should "support emitting domain defines" in {
     val define = DomainDefine(NoInfo, Reference("foo"), Reference("bar"))
     Serializer.serialize(define) should be("domain_define foo = bar")

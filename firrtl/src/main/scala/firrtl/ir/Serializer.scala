@@ -275,6 +275,10 @@ object Serializer {
     case DefNode(info, name, value)  => b ++= "node "; b ++= legalize(name); b ++= " = "; s(value); s(info)
     case Connect(info, loc, expr)    => b ++= "connect "; s(loc); b ++= ", "; s(expr); s(info)
     case PropAssign(info, loc, expr) => b ++= "propassign "; s(loc); b ++= ", "; s(expr); s(info)
+    case PropertyAssert(info, condition, message) =>
+      b ++= "propassert "; s(condition); b ++= ", "; s(StringPropertyLiteral(StringLit(message))); s(info)
+    case PropertyAssertExpression(info, condition, message) =>
+      b ++= "propassert "; s(condition); b ++= ", "; s(message); s(info)
     case c: Conditionally => b ++= sIt(c).mkString
     case EmptyStmt => b ++= "skip"
     case bb: Block => b ++= sIt(bb).mkString

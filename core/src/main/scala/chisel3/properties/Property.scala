@@ -348,13 +348,32 @@ sealed trait Property[T] extends Element { self =>
 
   /** Assert that this boolean property holds (only available for Property[Boolean])
     *
+    * This can be used to build up interpolated string messages as opposed to
+    * purely static messages.
+    *
+    * @param message a string property message
+    */
+  final def assert[U](message: Property[U])(
+    implicit evT: T =:= Boolean,
+    evU:          U =:= String,
+    sourceInfo:   SourceInfo
+  ): Unit = {
+    PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], message.asInstanceOf[Property[String]])
+  }
+
+  /** Assert that this boolean property holds (only available for Property[Boolean])
+    *
+    * This is a legacy method that supports a constant assertion message.  If
+    * you need an interpolated message, use the alternative assert that takes a
+    * `Property[String]` message.
+    *
     * @param message the assertion message
     */
   final def assert(message: String)(
-    implicit ev: T =:= Boolean,
-    sourceInfo:  SourceInfo
+    implicit evT: T =:= Boolean,
+    sourceInfo:   SourceInfo
   ): Unit = {
-    PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], message)
+    PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], Property[String](message))
   }
 
   /** Property equality comparison
@@ -609,6 +628,13 @@ object PropertySequenceOps {
       def concat(lhs: Property[S[U]], rhs: Property[S[U]])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.ListConcatOp, lhs, rhs)
     }
+
+  // Ensure that `++` is available for `Property[String]`.
+  implicit val stringOps: PropertySequenceOps[Property[String]] =
+    new PropertySequenceOps[Property[String]] {
+      def concat(lhs: Property[String], rhs: Property[String])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.StringConcatOp, lhs, rhs)
+    }
 }
 
 /** Typeclass for Property string operations.
@@ -686,11 +712,19 @@ object PropertyBooleanOps {
     * @param message the assertion message to display if the assertion fails
     */
   def assert(cond: Property[Boolean], message: String)(implicit sourceInfo: SourceInfo): Unit =
+    assert(cond, Property[String](message))
+
+  /** Assert that a boolean property holds
+    *
+    * @param cond the boolean property condition
+    * @param message a string property to evaluate and display if the assertion fails
+    */
+  def assert(cond: Property[Boolean], message: Property[String])(implicit sourceInfo: SourceInfo): Unit =
     Builder.referenceUserContainer match {
       case rm: RawModule =>
-        rm.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message))
+        rm.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message.ref))
       case cls: Class =>
-        cls.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message))
+        cls.addCommand(firrtl.ir.PropertyAssert(sourceInfo, cond.ref, message.ref))
     }
 }
 
