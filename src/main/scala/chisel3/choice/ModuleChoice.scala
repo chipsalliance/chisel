@@ -6,6 +6,7 @@ import scala.collection.immutable.ListMap
 
 import chisel3.{Data, FixedIOBaseModule, Module, SourceInfoDoc}
 import chisel3.experimental.{BaseModule, SourceInfo}
+import chisel3.experimental.hierarchy.core.Lookupable
 import chisel3.internal.{groupByIntoSeq, Builder}
 import chisel3.internal.binding.InstanceChoiceBinding
 import chisel3.internal.Builder.pushCommand
@@ -13,17 +14,21 @@ import chisel3.internal.firrtl.ir.DefInstanceChoice
 
 object ModuleChoice extends ModuleChoiceObjIntf {
 
-  protected def _applyImpl[T <: Data](
+  protected def _applyImpl[T](
     default: => FixedIOBaseModule[T],
     choices: Seq[(Case, () => FixedIOBaseModule[T])]
   )(
     implicit sourceInfo: SourceInfo
   ): T = {
     val instDefaultModule = Module.evaluate(default)
+    val lk: Lookupable[T] = instDefaultModule._lookupable
+
+    val defaultLeaves = lk.in(instDefaultModule.io)
 
     val choiceModules = choices.map { case (choice, module) =>
       val instModule = Module.evaluate(module())
-      if (!instModule.io.typeEquivalent(instDefaultModule.io)) {
+      val choiceLeaves = lk.in(instModule.io)
+      if (!defaultLeaves.zip(choiceLeaves).forall { case (a, b) => b.typeEquivalent(a) }) {
         Builder.error("Error: choice module IO bundles are not type equivalent")
       }
       Builder.options += choice
@@ -46,13 +51,14 @@ object ModuleChoice extends ModuleChoiceObjIntf {
     }
     val group = groupedChoices.head.name
 
-    val binding = instDefaultModule.io.cloneTypeFull
-    binding.bind(InstanceChoiceBinding(Builder.forcedUserModule, Builder.currentBlock))
+    val bindingLeaves = defaultLeaves.map(_.cloneTypeFull)
+    bindingLeaves.foreach(_.bind(InstanceChoiceBinding(Builder.forcedUserModule, Builder.currentBlock)))
+    val binding = lk.out(instDefaultModule.io, bindingLeaves.iterator)
 
     pushCommand(
       DefInstanceChoice(
         sourceInfo,
-        binding,
+        bindingLeaves.head,
         instDefaultModule,
         group,
         choiceModules.map { case (choice, instModule) =>
