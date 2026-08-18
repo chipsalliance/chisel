@@ -4,8 +4,10 @@ package chisel3.testing
 
 import firrtl.options.StageUtils.dramaticMessage
 import java.io.{ByteArrayOutputStream, IOException, PrintWriter}
-import java.nio.file.{Files, StandardOpenOption}
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
 import scala.Console.{withErr, withOut}
+import scala.io.Source
 import scala.util.control.NoStackTrace
 import scala.sys.process._
 
@@ -89,27 +91,36 @@ trait FileCheck {
       // Filecheck needs to have the thing to check in a file.
       //
       // TODO: This could be made ephemeral or use a named pipe?
-      val dir = os.FilePath(testingDirectory.getDirectory).resolveFrom(os.pwd)
-      os.makeDir.all(dir)
-      val tempDir = os.temp.dir(dir = dir, deleteOnExit = false)
-      val checkFile = tempDir / "check"
-      val inputFile = tempDir / "input"
-      os.write.over(target = checkFile, data = check, createFolders = true)
-      os.write.over(target = inputFile, data = input, createFolders = true)
+      val dir = testingDirectory.getDirectory.toAbsolutePath.normalize()
+      Files.createDirectories(dir)
+      val tempDir = Files.createTempDirectory(dir, "")
+      val checkFile = tempDir.resolve("check")
+      val inputFile = tempDir.resolve("input")
+      Files.write(checkFile, check.getBytes(StandardCharsets.UTF_8))
+      Files.write(inputFile, input.getBytes(StandardCharsets.UTF_8))
 
-      val extraArgs = os.Shellable(fileCheckArgs)
+      val command = Seq("FileCheck", checkFile.toString) ++ fileCheckArgs
       val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
       val stdoutWriter = new PrintWriter(stdoutStream)
       val stderrWriter = new PrintWriter(stderrStream)
-      val result =
+      val processIO = new ProcessIO(
+        // Feed the input file to FileCheck's stdin.
+        in = { stdin =>
+          try Files.copy(inputFile, stdin)
+          finally stdin.close()
+        },
+        out = { stdout =>
+          try Source.fromInputStream(stdout).getLines().foreach(stdoutWriter.println)
+          finally stdout.close()
+        },
+        err = { stderr =>
+          try Source.fromInputStream(stderr).getLines().foreach(stderrWriter.println)
+          finally stderr.close()
+        }
+      )
+      val exitCode =
         try {
-          os.proc("FileCheck", checkFile, extraArgs)
-            .call(
-              stdin = inputFile,
-              stdout = os.ProcessOutput.Readlines(stdoutWriter.println),
-              stderr = os.ProcessOutput.Readlines(stderrWriter.println),
-              check = false
-            )
+          Process(command).run(processIO).exitValue()
         } catch {
           case a: IOException if a.getMessage.startsWith("Cannot run program") =>
             throw new FileCheck.Exceptions.NotFound(a.getMessage)
@@ -117,15 +128,27 @@ trait FileCheck {
       stdoutWriter.close()
       stderrWriter.close()
 
-      result match {
-        case os.CommandResult(_, 0, _) => os.remove.all(tempDir)
-        case os.CommandResult(command, exitCode, _) =>
-          throw new FileCheck.Exceptions.NonZeroExitCode(
-            s"cat $inputFile | ${command.mkString(" ")}",
-            exitCode,
-            stderrStream.toString
-          )
+      if (exitCode == 0) {
+        deleteRecursively(tempDir)
+      } else {
+        throw new FileCheck.Exceptions.NonZeroExitCode(
+          s"cat $inputFile | ${command.mkString(" ")}",
+          exitCode,
+          stderrStream.toString
+        )
       }
+    }
+
+    /** Recursively delete a file or directory and its contents. */
+    private def deleteRecursively(path: Path): Unit = {
+      if (Files.isDirectory(path)) {
+        val stream = Files.newDirectoryStream(path)
+        try {
+          val it = stream.iterator()
+          while (it.hasNext) deleteRecursively(it.next())
+        } finally stream.close()
+      }
+      Files.deleteIfExists(path)
     }
 
   }

@@ -12,18 +12,30 @@ object SlangUtils {
 
   /** Use Slang to parse Verilog into Json AST. */
   def getVerilogAst(verilog: String): Value = {
-    val astFile = os.temp()
-    os.proc(
+    import scala.sys.process._
+    import java.nio.charset.StandardCharsets
+    import java.nio.file.Files
+    val astFile = Files.createTempFile("slang", ".json")
+    val verilogFile = Files.createTempFile("slang", ".sv")
+    astFile.toFile.deleteOnExit()
+    verilogFile.toFile.deleteOnExit()
+    Files.write(verilogFile, verilog.getBytes(StandardCharsets.UTF_8))
+    val command = Seq(
       "slang",
-      os.temp(verilog),
+      verilogFile.toString,
       "--single-unit",
       "--ignore-unknown-modules",
       "--compat",
       "vcs",
       "--ast-json",
-      astFile
-    ).call()
-    ujson.read(os.read(astFile))
+      astFile.toString
+    )
+    val stderr = new StringBuilder
+    val exitCode = command.!(ProcessLogger(_ => (), line => stderr.append(line).append('\n')))
+    if (exitCode != 0) {
+      throw new ChiselException(s"slang exited with non-zero exit code $exitCode:\n${stderr.toString}")
+    }
+    ujson.read(new String(Files.readAllBytes(astFile), StandardCharsets.UTF_8))
   }
 
   /** Extract IO from Verilog AST. */

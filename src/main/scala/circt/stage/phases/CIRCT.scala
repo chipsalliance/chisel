@@ -194,12 +194,15 @@ class CIRCT extends Phase {
     }
 
     // FIRRTL is serialized either in memory or to a file
-    val input: Either[Iterable[String], os.Path] =
+    val input: Either[Iterable[String], java.nio.file.Path] =
       if (circtOptions.dumpFir) {
-        val td = os.Path(stageOptions.targetDir, os.pwd)
+        val td = java.nio.file.Paths.get(stageOptions.targetDir).toAbsolutePath.normalize()
         val filename = firrtlOptions.outputFileName.getOrElse(circuitName)
-        val firPath = td / s"$filename.fir"
-        os.write.over(firPath, serialization, createFolders = true)
+        val firPath = td.resolve(s"$filename.fir")
+        java.nio.file.Files.createDirectories(firPath.getParent)
+        val writer = java.nio.file.Files.newBufferedWriter(firPath)
+        try serialization.foreach(writer.write)
+        finally writer.close()
         Right(firPath)
       } else {
         Left(serialization)
@@ -264,15 +267,29 @@ class CIRCT extends Phase {
     val stdoutStream, stderrStream = new java.io.ByteArrayOutputStream
     val stdoutWriter = new java.io.PrintWriter(stdoutStream)
     val stderrWriter = new java.io.PrintWriter(stderrStream)
-    val stdin: os.ProcessInput = input match {
-      case Left(it) => (it: os.Source) // Static cast to apply implicit conversion
-      case Right(_) => os.Pipe
-    }
-    val stdout = os.ProcessOutput.Readlines(stdoutWriter.println)
-    val stderr = os.ProcessOutput.Readlines(stderrWriter.println)
+    val processIO = new ProcessIO(
+      // When the FIRRTL is kept in memory (Left), pipe it to firtool's stdin.  When it was dumped to
+      // a file (Right), firtool reads it from the file argument, so we leave stdin empty.
+      in = { stdin =>
+        input.left.foreach { serialization =>
+          val writer = new java.io.OutputStreamWriter(stdin, java.nio.charset.StandardCharsets.UTF_8)
+          try serialization.foreach(writer.write)
+          finally writer.close()
+        }
+        stdin.close()
+      },
+      out = { stdout =>
+        try scala.io.Source.fromInputStream(stdout).getLines().foreach(stdoutWriter.println)
+        finally stdout.close()
+      },
+      err = { stderr =>
+        try scala.io.Source.fromInputStream(stderr).getLines().foreach(stderrWriter.println)
+        finally stderr.close()
+      }
+    )
     val exitValue =
       try {
-        os.proc(cmd).call(check = false, stdin = stdin, stdout = stdout, stderr = stderr).exitCode
+        Process(cmd).run(processIO).exitValue()
       } catch {
         case a: java.io.IOException if a.getMessage().startsWith("Cannot run program") =>
           throw new Exceptions.FirtoolNotFound(a.getMessage())
