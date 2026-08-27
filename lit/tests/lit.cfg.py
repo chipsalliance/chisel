@@ -4,7 +4,7 @@ from lit.llvm import llvm_config
 from lit.llvm.subst import ToolSubst
 
 config.name = 'CHISEL'
-config.test_format = lit.formats.ShTest(True)
+config.test_format = lit.formats.ShTest()
 config.suffixes = [".sc"]
 config.substitutions = [
     ('%SCALAVERSION', config.scala_version),
