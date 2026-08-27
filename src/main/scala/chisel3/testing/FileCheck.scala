@@ -4,7 +4,8 @@ package chisel3.testing
 
 import firrtl.options.StageUtils.dramaticMessage
 import java.io.{ByteArrayOutputStream, IOException, PrintWriter}
-import java.nio.file.{Files, StandardOpenOption}
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor, StandardOpenOption}
 import scala.Console.{withErr, withOut}
 import scala.util.control.NoStackTrace
 import scala.sys.process._
@@ -46,6 +47,26 @@ object FileCheck {
 }
 
 trait FileCheck {
+
+  private class FileDeleter extends SimpleFileVisitor[Path] {
+    override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+      Files.delete(file)
+      FileVisitResult.CONTINUE
+    }
+
+    override def postVisitDirectory(
+      dir: Path,
+      ioe: IOException
+    ): FileVisitResult = {
+      try {
+        Files.delete(dir)
+      } catch {
+        // This is best effort, leave directories if FUSE prevents deletion.
+        case _: java.nio.file.DirectoryNotEmptyException => ()
+      }
+      FileVisitResult.CONTINUE
+    }
+  }
 
   /** Helpers to run `FileCheck` on a string input. */
   implicit class StringHelpers(input: String) {
@@ -118,7 +139,7 @@ trait FileCheck {
       stderrWriter.close()
 
       result match {
-        case os.CommandResult(_, 0, _) => os.remove.all(tempDir)
+        case os.CommandResult(_, 0, _) => Files.walkFileTree(tempDir.toNIO, new FileDeleter)
         case os.CommandResult(command, exitCode, _) =>
           throw new FileCheck.Exceptions.NonZeroExitCode(
             s"cat $inputFile | ${command.mkString(" ")}",
