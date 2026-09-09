@@ -189,6 +189,8 @@ private[chisel3] trait BitsIntf extends ToBoolable { self: Bits =>
 
 private[chisel3] trait UIntIntf { self: UInt =>
 
+  override def pad(that: Int)(using SourceInfo): UInt = _padImpl(that)
+
   // TODO: refactor to share documentation with Num or add independent scaladoc
   /** Unary negation (constant width)
     *
@@ -388,6 +390,8 @@ private[chisel3] trait UIntIntf { self: UInt =>
 }
 
 private[chisel3] trait SIntIntf { self: SInt =>
+
+  override def pad(that: Int)(using SourceInfo): SInt = _padImpl(that)
 
   /** Unary negation (constant width)
     *
