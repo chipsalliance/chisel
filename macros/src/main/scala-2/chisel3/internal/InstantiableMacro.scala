@@ -14,8 +14,10 @@ private[chisel3] object instantiableMacro {
       val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
       extensions += q"implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}"
       paramss.flatten.foreach { param =>
-        if (param.mods.hasFlag(c.universe.Flag.PARAMACCESSOR) &&
-            param.mods.annotations.toString.contains("new public()")) {
+        if (
+          param.mods.hasFlag(c.universe.Flag.PARAMACCESSOR) &&
+          param.mods.annotations.toString.contains("new public()")
+        ) {
           extensions += atPos(param.pos)(q"def ${param.name} = ___module._lookup(_.${param.name})")
         }
       }
