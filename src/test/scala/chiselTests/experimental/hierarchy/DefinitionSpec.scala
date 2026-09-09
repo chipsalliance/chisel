@@ -550,14 +550,17 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         )
     }
     it("(3.k): should expose public constructor vals") {
-      """
       @instantiable
       class Foo(@public val x: Int, @public val y: Int = 0) extends Module
       class Top extends Module {
         val definition = Definition(new Foo(1))
-        definition.x
+        definition.x should be(1)
+        definition.y should be(0)
+        val instance = Instance(definition)
+        instance.x should be(1)
+        instance.y should be(0)
       }
-      """ should compile
+      ChiselStage.emitCHIRRTL(new Top) should include("module Foo :")
     }
     it("(3.l): should work on unimplemented vals in abstract classes/traits") {
       class Top() extends Module {
