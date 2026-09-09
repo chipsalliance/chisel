@@ -257,6 +257,9 @@ class SIntOpsSpec extends AnyPropSpec with Matchers with ShiftRightWidthBehavior
   }
 
   property("Calling .pad on a SInt literal should maintain the literal value") {
+    // Check that pad preserves the concrete return type for SInt.
+    val paddedLiteral: SInt = (-5).S.pad(6)
+
     -5.S.getWidth should be(4)
     -5.S.pad(2).litValue should be(-5)
     -5.S.pad(2).getWidth should be(4)

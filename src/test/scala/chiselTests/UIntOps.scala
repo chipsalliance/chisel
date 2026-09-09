@@ -642,6 +642,10 @@ class UIntOpsSpec extends AnyPropSpec with Matchers with LogUtils with ShiftRigh
   }
 
   property("Calling .pad on a UInt literl should maintain the literal value") {
+    // Check that pad preserves the concrete return type for UInt and Bits.
+    val paddedLiteral: UInt = 5.U.pad(4)
+    val paddedBits:    Bits = (5.U: Bits).pad(4)
+
     5.U.getWidth should be(3)
     5.U.pad(2).litValue should be(5)
     5.U.pad(2).getWidth should be(3)
