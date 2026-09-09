@@ -10,9 +10,15 @@ private[chisel3] object instantiableMacro {
 
   def impl(c: whitebox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
     import c.universe._
-    def processBody(stats: Seq[Tree]): (Seq[Tree], Iterable[Tree]) = {
+    def processBody(stats: Seq[Tree], paramss: List[List[ValDef]]): (Seq[Tree], Iterable[Tree]) = {
       val extensions = scala.collection.mutable.ArrayBuffer.empty[Tree]
       extensions += q"implicit val mg: chisel3.internal.MacroGenerated = new chisel3.internal.MacroGenerated {}"
+      paramss.flatten.foreach { param =>
+        if (param.mods.hasFlag(c.universe.Flag.PARAMACCESSOR) &&
+            param.mods.annotations.toString.contains("new public()")) {
+          extensions += atPos(param.pos)(q"def ${param.name} = ___module._lookup(_.${param.name})")
+        }
+      }
       // Note the triple `_` prefixing `module` is to avoid conflicts if a user marks a 'val module'
       //  with @public; in this case, the lookup code is ambiguous between the generated `def module`
       //  function and the argument to the generated implicit class.
@@ -60,7 +66,7 @@ private[chisel3] object instantiableMacro {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname.toString + c.freshName())
           val instname = TypeName(tpname.toString + c.freshName())
-          val (newStats, extensions) = processBody(stats)
+          val (newStats, extensions) = processBody(stats, paramss)
           val argTParams = tparams.map(_.name)
           val allParents =
             if (hasIsInstantiable(parents)) parents
@@ -76,7 +82,7 @@ private[chisel3] object instantiableMacro {
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname.toString + c.freshName())
           val instname = TypeName(tpname.toString + c.freshName())
-          val (newStats, extensions) = processBody(stats)
+          val (newStats, extensions) = processBody(stats, Nil)
           val argTParams = tparams.map(_.name)
           val allParents =
             if (hasIsInstantiable(parents)) parents
