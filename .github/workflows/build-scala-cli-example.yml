@@ -36,7 +36,7 @@ jobs:
       - name: Setup Scala-CLI
         uses: VirtusLab/scala-cli-setup@30de070d5e5cf2ed93c79009c9a3b69e7bead234 # v1.17.0
         with:
-          jvm: adoptium:17
+          jvm: temurin:17
       - name: Generate Chisel Scala CLI Example
         shell: bash
         run: |
