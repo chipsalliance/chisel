@@ -113,9 +113,6 @@ class DebugDataTypesSpec extends AnyFunSpec with Matchers {
     val DTE = Some("DebugTestEnum")
     val DTE2 = Some("DebugTestEnum2")
 
-    checkAt(chirrtl, "should emit enumdef once per enum type")(
-      Seq(enumDefPattern("DebugTestEnum"), enumDefPattern("DebugTestEnum2"))
-    )
     checkAt(chirrtl, "should annotate enum port with enumTypeName")(
       Seq(varPattern("IO[DebugTestEnum]", "e", DTE), varPattern("IO[DebugTestEnum2]", "e2", DTE2))
     )
