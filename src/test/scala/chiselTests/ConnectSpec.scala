@@ -130,5 +130,49 @@ class ConnectSpec extends AnyPropSpec with Matchers with ChiselSim {
     }
     val expectedTypeMismatchError = """.*@: Sink \(UInt<4>\) and Source \(SInt<4>\) have different types."""
     (typeMismatchError.getMessage should fullyMatch).regex(expectedTypeMismatchError)
+
+    val notHardwareLhsError = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          val w = Wire(UInt(8.W))
+          val bare = UInt(8.W)
+          bare := w
+        }
+      }
+    }
+    notHardwareLhsError.getMessage should include("left-hand side to be connected")
+
+    val notHardwareRhsError = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          val w = Wire(UInt(8.W))
+          val bare = UInt(8.W)
+          w := bare
+        }
+      }
+    }
+    notHardwareRhsError.getMessage should include("right-hand side to be connected")
+
+    val notHardwareBulkLhsError = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          val w = Wire(UInt(8.W))
+          val bare = UInt(8.W)
+          bare <> w
+        }
+      }
+    }
+    notHardwareBulkLhsError.getMessage should include("left-hand side to be bulk-connected")
+
+    val notHardwareBulkRhsError = the[ChiselException] thrownBy {
+      ChiselStage.emitCHIRRTL {
+        new RawModule {
+          val w = Wire(UInt(8.W))
+          val bare = UInt(8.W)
+          w <> bare
+        }
+      }
+    }
+    notHardwareBulkRhsError.getMessage should include("right-hand side to be bulk-connected")
   }
 }
