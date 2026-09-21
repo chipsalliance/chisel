@@ -548,8 +548,8 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    requireIsHardware(this, "data to be connected")
-    requireIsHardware(that, "data to be connected")
+    requireIsHardware(this, "left-hand side to be connected")
+    requireIsHardware(that, "right-hand side to be connected")
     this.topBinding match {
       case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
       case _ => // fine
@@ -569,8 +569,8 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   )(
     implicit sourceInfo: SourceInfo
   ): Unit = {
-    requireIsHardware(this, s"data to be bulk-connected")
-    requireIsHardware(that, s"data to be bulk-connected")
+    requireIsHardware(this, s"left-hand side to be bulk-connected")
+    requireIsHardware(that, s"right-hand side to be bulk-connected")
     (this.topBinding, that.topBinding) match {
       case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
       // DontCare cannot be a sink (LHS)
