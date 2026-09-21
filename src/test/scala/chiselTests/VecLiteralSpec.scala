@@ -534,7 +534,7 @@ class VecLiteralSpec extends AnyFreeSpec with Matchers with ChiselSim {
   }
 
   "Vec literals should use the width of the Vec element rather than the widths of the literals" in {
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+    ChiselStage.emitCHIRRTL(new RawModule {
       // Whether the user specifies a width or not.
       val lit0 = (Vec(2, UInt(4.W))).Lit(0 -> 0x3.U, 1 -> 0x2.U(3.W))
       lit0(0).getWidth should be(4)
@@ -544,9 +544,14 @@ class VecLiteralSpec extends AnyFreeSpec with Matchers with ChiselSim {
       lit1(0).getWidth should be(4)
       lit1(1).getWidth should be(4)
       val uint1 = Cat(lit1(1), lit1(0))
+
+      uint0.isLit should be(true)
+      uint0.getWidth should be(8)
+      uint0.litValue should be(0x23)
+      uint1.isLit should be(true)
+      uint1.getWidth should be(8)
+      uint1.litValue should be(0x23)
     })
-    chirrtl should include("node uint0 = cat(UInt<4>(0h2), UInt<4>(0h3))")
-    chirrtl should include("node uint1 = cat(UInt<4>(0h2), UInt<4>(0h3))")
   }
 
   "Calling .asUInt on a Vec literal should return a UInt literal and work outside of elaboration" in {

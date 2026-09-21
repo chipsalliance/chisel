@@ -101,8 +101,9 @@ class ReverseSpec extends AnyFlatSpec with Matchers {
 
   it should "have source locators when passed a UInt" in {
     class MyModule extends RawModule {
+      val in = IO(Input(UInt(4.W)))
       val out = IO(Output(UInt()))
-      out := Reverse("b1101".U)
+      out := Reverse(in)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r

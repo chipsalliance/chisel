@@ -128,12 +128,6 @@ object Fill extends FillObjIntf {
       case _ if n < 0 => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
       case 0          => UInt(0.W)
       case 1          => x
-      case _ if x.isLit =>
-        val width = x.getWidth
-        val value = (0 until n).foldLeft(BigInt(0)) { (value, _) =>
-          (value << width) | x.litValue
-        }
-        value.U((n * width).W)
       case _ if x.isWidthKnown && x.getWidth == 1 =>
         Mux(x.asBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
       case _ =>

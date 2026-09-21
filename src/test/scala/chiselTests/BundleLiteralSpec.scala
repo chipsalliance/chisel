@@ -350,13 +350,15 @@ class BundleLiteralSpec extends AnyFlatSpec with Matchers with ChiselSim with Lo
       val a = UInt(4.W)
       val b = UInt(4.W)
     }
-    val (stdout, _, chirrtl) = grabStdOutErr(ChiselStage.emitCHIRRTL(new RawModule {
+    val (stdout, _, _) = grabStdOutErr(ChiselStage.emitCHIRRTL(new RawModule {
       val lit = (new SimpleBundle).Lit(_.a -> 0xde.U, _.b -> 0xad.U)
       val x = Cat(lit.a, lit.b)
+      x.isLit should be(true)
+      x.getWidth should be(8)
+      x.litValue should be(0xed)
     }))
     stdout should include("[W007] Literal value ULit(222,) is too wide for field _.a with width 4")
     stdout should include("[W007] Literal value ULit(173,) is too wide for field _.b with width 4")
-    chirrtl should include("node x = cat(UInt<4>(0he), UInt<4>(0hd))")
   }
 
   "bundle literals with zero-width fields" should "not warn for 0.U" in {
@@ -364,14 +366,16 @@ class BundleLiteralSpec extends AnyFlatSpec with Matchers with ChiselSim with Lo
       val a = UInt(4.W)
       val b = UInt(0.W)
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(
+    ChiselStage.emitCHIRRTL(
       new RawModule {
         val lit = (new SimpleBundle).Lit(_.a -> 5.U, _.b -> 0.U)
         val x = Cat(lit.a, lit.b)
+        x.isLit should be(true)
+        x.getWidth should be(4)
+        x.litValue should be(5)
       },
       args = Array("--warnings-as-errors")
     )
-    chirrtl should include("node x = cat(UInt<4>(0h5), UInt<0>(0h0))")
   }
 
   "partial bundle literals" should "fail to pack" in {
@@ -403,14 +407,16 @@ class BundleLiteralSpec extends AnyFlatSpec with Matchers with ChiselSim with Lo
       val a = UInt(4.W)
       val b = UInt(4.W)
     }
-    val chirrtl = ChiselStage.emitCHIRRTL(new RawModule {
+    ChiselStage.emitCHIRRTL(new RawModule {
       // Whether the user specifies a width or not.
       val lit = (new SimpleBundle).Lit(_.a -> 0x3.U, _.b -> 0x3.U(3.W))
       lit.a.getWidth should be(4)
       lit.b.getWidth should be(4)
       val cat = Cat(lit.a, lit.b)
+      cat.isLit should be(true)
+      cat.getWidth should be(8)
+      cat.litValue should be(0x33)
     })
-    chirrtl should include("node cat = cat(UInt<4>(0h3), UInt<4>(0h3))")
   }
 
   "Calling .asUInt on a Bundle literal" should "return a UInt literal and work outside of elaboration" in {

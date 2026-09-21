@@ -33,19 +33,30 @@ private[chisel3] object SeqUtils {
       var hasUInt = false
       var hasSInt = false
       var width = 0.W
-      for (elt <- in) {
+      var litValue = BigInt(0)
+      var allLits = true
+      for (elt <- in.reverse) {
         elt match {
           case _: UInt => hasUInt = true
           case _: SInt => hasSInt = true
         }
+        allLits = allLits && elt.isLit
+        if (elt.isLit) {
+          val eltWidth = elt.getWidth
+          litValue = (litValue << eltWidth) | (elt.litValue & ((BigInt(1) << eltWidth) - 1))
+        }
         width += elt.width
       }
-      val args = if (hasUInt && hasSInt) {
-        in.view.map(asUIntArg(_))
+      if (allLits) {
+        UInt.Lit(litValue, width)
       } else {
-        in.view.map(_.ref)
+        val args = if (hasUInt && hasSInt) {
+          in.view.map(asUIntArg(_))
+        } else {
+          in.view.map(_.ref)
+        }
+        pushOp(DefPrim(sourceInfo, UInt(width), ConcatOp, args.reverse.toSeq: _*))
       }
-      pushOp(DefPrim(sourceInfo, UInt(width), ConcatOp, args.reverse.toSeq: _*))
     }
   }
 
