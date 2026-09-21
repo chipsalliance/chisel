@@ -81,6 +81,11 @@ class FillSpec extends AnyFlatSpec with Matchers {
     padded.isLit should be(true)
     padded.getWidth should be(24)
     padded.litValue should be(BigInt("0a0a0a", 16))
+
+    val bool = Fill(3, true.B)
+    bool.isLit should be(true)
+    bool.getWidth should be(3)
+    bool.litValue should be(7)
   }
 
   it should "have source locators when passed a Bits" in {
