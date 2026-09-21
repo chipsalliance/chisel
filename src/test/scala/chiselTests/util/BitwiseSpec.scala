@@ -11,8 +11,9 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
 
   it should "have source locators when passed a UInt" in {
     class MyModule extends RawModule {
+      val in = IO(Input(UInt(4.W)))
       val out = IO(Output(UInt()))
-      out := FillInterleaved(2, "b1000".U)
+      out := FillInterleaved(2, in)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
@@ -24,8 +25,9 @@ class FillInterleavedSpec extends AnyFlatSpec with Matchers {
 
   it should "have source locators when passed a Seq[Bool]" in {
     class MyModule extends RawModule {
+      val in = IO(Input(Vec(4, Bool())))
       val out = IO(Output(UInt()))
-      out := FillInterleaved(2, Seq(true.B, false.B, false.B, false.B))
+      out := FillInterleaved(2, in.toSeq)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
@@ -68,10 +70,24 @@ class PopCountSpec extends AnyFlatSpec with Matchers {
 
 class FillSpec extends AnyFlatSpec with Matchers {
   behavior.of("util.Fill")
+
+  it should "preserve literals" in {
+    val filled = Fill(3, "b10100101".U)
+    filled.isLit should be(true)
+    filled.getWidth should be(24)
+    filled.litValue should be(BigInt("a5a5a5", 16))
+
+    val padded = Fill(3, 10.U(8.W))
+    padded.isLit should be(true)
+    padded.getWidth should be(24)
+    padded.litValue should be(BigInt("0a0a0a", 16))
+  }
+
   it should "have source locators when passed a Bits" in {
     class MyModule extends RawModule {
+      val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt()))
-      out := Fill(2, "b1000".U)
+      out := Fill(2, in)
     }
     val chirrtl = ChiselStage.emitCHIRRTL(new MyModule)
     val cat = """cat.*BitwiseSpec\.scala""".r
