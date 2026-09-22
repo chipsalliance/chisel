@@ -26,6 +26,13 @@ class CatSpec extends AnyFlatSpec with Matchers {
 
   behavior.of("chisel3.util.Cat")
 
+  it should "preserve literals" in {
+    val result = Cat(10.U(8.W), (-2).S(4.W), 3.U(2.W))
+    result.isLit should be(true)
+    result.getWidth should be(14)
+    result.litValue should be(BigInt("2bb", 16))
+  }
+
   it should "not fail to elaborate a zero-element Vec" in {
 
     ChiselStage.emitCHIRRTL(new JackIsATypeSystemGod)
