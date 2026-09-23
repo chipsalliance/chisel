@@ -21,6 +21,7 @@ private[chisel3] object WarningID extends Enumeration {
   val ExtractFromVecSizeZero = Value(6)
   val BundleLiteralValueTooWide = Value(7)
   val AsTypeOfReadOnly = Value(8)
+  val CsaUnknownInputWidth = Value(9)
 }
 import WarningID.WarningID
 
