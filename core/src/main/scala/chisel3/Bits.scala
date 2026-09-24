@@ -657,7 +657,10 @@ sealed class Bool() extends UInt(1.W) with BoolIntf with Reset {
   }
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type = {
-    require(!w.known || w.get == 1)
+    require(
+      !w.known || w.get == 1,
+      s"a Bool is always 1 bit wide and cannot be resized to $w; did you mean to call .asUInt first?"
+    )
     new Bool().asInstanceOf[this.type]
   }
 
