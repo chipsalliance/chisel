@@ -74,33 +74,42 @@ object Module extends ModuleObjIntf {
 
     val savedPrefixStack = Builder.getModulePrefixStack
 
-    val module = Builder.State.guard(Builder.State.default) {
-      val module: T = bc
+    val module =
+      try {
+        Builder.State.guard(Builder.State.default) {
+          val module: T = bc
 
-      if (Builder.whenDepth != 0) {
-        throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
-      }
-      if (Builder.readyForModuleConstr) {
-        throwException(
-          "Error: attempted to instantiate a Module, but nothing happened. " +
-            "This is probably due to rewrapping a Module instance with Module()." +
-            sourceInfo.makeMessage(" See " + _)
-        )
-      }
+          if (Builder.whenDepth != 0) {
+            throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
+          }
+          if (Builder.readyForModuleConstr) {
+            throwException(
+              "Error: attempted to instantiate a Module, but nothing happened. " +
+                "This is probably due to rewrapping a Module instance with Module()." +
+                sourceInfo.makeMessage(" See " + _)
+            )
+          }
 
-      // Only add the component if the module generates one
-      val componentOpt = module.generateComponent()
-      for (component <- componentOpt) {
-        Builder.components += component
-      }
+          // Only add the component if the module generates one
+          val componentOpt = module.generateComponent()
+          for (component <- componentOpt) {
+            Builder.components += component
+          }
 
-      if (module.localModulePrefix.isDefined) {
-        Builder.popModulePrefix() // Pop localModulePrefix if it was defined
-      }
-      if (module.ignoreParentPrefix) Builder.setModulePrefixStack(savedPrefixStack)
+          if (module.localModulePrefix.isDefined) {
+            Builder.popModulePrefix() // Pop localModulePrefix if it was defined
+          }
+          if (module.ignoreParentPrefix) Builder.setModulePrefixStack(savedPrefixStack)
 
-      module
-    }
+          module
+        }
+      } catch {
+        case e: Throwable =>
+          // On failure, restore the prefix stack so a pushed localModulePrefix
+          // doesn't leak into whatever gets elaborated next.
+          Builder.setModulePrefixStack(savedPrefixStack)
+          throw e
+      }
 
     Builder.elaborationTrace.popModule(module.desiredName)
     module.moduleBuilt()
