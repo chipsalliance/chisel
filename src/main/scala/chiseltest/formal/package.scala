@@ -119,7 +119,7 @@ package object formal {
 
       // most basic check on result
       val result = bmcRes match {
-        case "" => Unsat  // Note this is only true for BMC
+        case backanno.UnsatOutput => Unsat  // Note this is only true for BMC
         case s => Sat(BasicWitness(s))
       }
 
