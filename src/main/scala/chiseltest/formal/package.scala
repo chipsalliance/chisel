@@ -78,7 +78,7 @@ package object formal {
       btor2file writeAll btor2DUT
 
       // Store absolute path
-      val fileAbsPath: String = btor2file.toAbsolute
+      val fileAbsPath: String = btor2file.path
       
       // Filter out non formal annotations and keep the first one
       val backanno = annotations.flatMap {
