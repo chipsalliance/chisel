@@ -728,25 +728,83 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
       )
   }
 
-  behavior.of("Failed earlier tests")
+  behavior.of("Module prefix restoration on failure")
 
-  it should "A" in {
-    class Foo extends RawModule {
-      override def localModulePrefix = Some("A")
-      throw new Exception("A")
+  it should "not leak a failed module's localModulePrefix into later elaborations" in {
+    class Failing extends RawModule {
+      override def localModulePrefix = Some("Leaked")
+      throw new Exception("boom")
     }
+    class Foo extends RawModule
+
     intercept[Exception] {
-      ChiselStage.elaborate(new Foo)
-    }
+      ChiselStage.elaborate(new Failing)
+    }.getMessage should include("boom")
+
+    Module.currentModulePrefix should be("")
+    ChiselStage
+      .emitCHIRRTL(new Foo)
+      .fileCheck()("CHECK: module Foo")
   }
 
-  it should "B" in {
-    class Foo extends RawModule {
-      override def localModulePrefix = Some("B")
+  it should "restore the parent's prefix when a child with localModulePrefix fails and the parent recovers" in {
+    class Failing extends RawModule {
+      override def localModulePrefix = Some("Leaked")
+      throw new Exception("boom")
+    }
+    class Foo extends RawModule
+
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        try { Module(new Failing) }
+        catch { case _: Exception => }
+        Module(new Foo)
+      }
     }
 
     ChiselStage
-      .emitCHIRRTL(new Foo)
-      .fileCheck()("CHECK: module B_Foo")
+      .emitCHIRRTL(new Top)
+      .fileCheck()(
+        """|CHECK:     module Outer_Foo :
+           |CHECK-NOT: Leaked
+           |""".stripMargin
+      )
+  }
+
+  it should "restore the parent's prefix when a child with ignoreParentPrefix fails" in {
+    class Failing extends RawModule {
+      override def ignoreParentPrefix = true
+      throw new Exception("boom")
+    }
+    class Foo extends RawModule
+
+    class Top extends RawModule {
+      withModulePrefix("Outer") {
+        try { Module(new Failing) }
+        catch { case _: Exception => }
+        Module(new Foo)
+      }
+    }
+
+    ChiselStage
+      .emitCHIRRTL(new Top)
+      .fileCheck()("CHECK: module Outer_Foo :")
+  }
+
+  it should "pop the prefix if a withModulePrefix block throws" in {
+    intercept[Exception] {
+      withModulePrefix("Leaked") { throw new Exception("boom") }
+    }.getMessage should be("boom")
+    Module.currentModulePrefix should be("")
+  }
+
+  it should "restore the prefix if a noModulePrefix block throws" in {
+    withModulePrefix("Outer") {
+      intercept[Exception] {
+        noModulePrefix { throw new Exception("boom") }
+      }.getMessage should be("boom")
+      Module.currentModulePrefix should be("Outer_")
+    }
+    Module.currentModulePrefix should be("")
   }
 }
