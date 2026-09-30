@@ -20,8 +20,7 @@ class SimpleTest extends Module {
   }
 }
 
-class 
-icationSpec extends AnyPropSpec with FileCheck {
+class VerificationSpec extends AnyPropSpec with FileCheck {
 
   property("basic equality check should work") {
     ChiselStage.emitCHIRRTL(new SimpleTest).fileCheck() {
