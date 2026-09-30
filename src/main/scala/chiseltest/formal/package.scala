@@ -68,9 +68,13 @@ package object formal {
       )
 
   trait Formal {
+    // Old API for compatability reasons
+    def verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit =
+      verifyRes(dut, annotations)
+
     // Converts the design to a formal model using the btor2 backend, then
     // runs the output through some model-checker, e.g. btormc
-    def verify[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult = {
+    def verifyRes[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult = {
       // start by running the btor2 backend
       val btor2DUT: String = ChiselStage.emitBtor2(
         dut,

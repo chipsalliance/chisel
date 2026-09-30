@@ -35,7 +35,7 @@ class VerifyBasicTest extends AnyFlatSpec with ChiselScalatestTester with Formal
   behavior of "SimpleCounter"
 
   it should "return unsat on k < 256" in {
-    val res = verify(
+    val res = verifyRes(
       new DualCounter,
       Seq(
         BoundedCheck(25),
@@ -47,7 +47,7 @@ class VerifyBasicTest extends AnyFlatSpec with ChiselScalatestTester with Formal
   }
 
   it should "return SAT on k > 256" in {
-    val res = verify(
+    val res = verifyRes(
       new DualCounter,
       Seq(
         BoundedCheck(500),
