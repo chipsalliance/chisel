@@ -72,8 +72,6 @@ object Module extends ModuleObjIntf {
     Builder.readyForModuleConstr = true
     Builder.elaborationTrace.pushModule()
 
-    val savedPrefixStack = Builder.getModulePrefixStack
-
     val module = Builder.State.guard(Builder.State.default) {
       val module: T = bc
 
@@ -93,11 +91,6 @@ object Module extends ModuleObjIntf {
       for (component <- componentOpt) {
         Builder.components += component
       }
-
-      if (module.localModulePrefix.isDefined) {
-        Builder.popModulePrefix() // Pop localModulePrefix if it was defined
-      }
-      if (module.ignoreParentPrefix) Builder.setModulePrefixStack(savedPrefixStack)
 
       module
     }
@@ -1011,7 +1004,7 @@ package experimental {
     def ignoreParentPrefix: Boolean = false
 
     // Clear the inherited prefix stack so modulePrefix and children ignore parent context.
-    // evaluate() saves the stack before construction and restores it after closing.
+    // Module.evaluate restores the stack (via Builder.State.guard) after the module is closed.
     if (ignoreParentPrefix) Builder.clearModulePrefixStack()
 
     /** The resolved module prefix used for this Module.
@@ -1139,11 +1132,12 @@ object withModulePrefix {
     if (prefix != "") {
       Builder.pushModulePrefix(prefix, includeSeparator)
     }
-    val res = block // execute block
-    if (prefix != "") {
-      Builder.popModulePrefix()
+    try block
+    finally {
+      if (prefix != "") {
+        Builder.popModulePrefix()
+      }
     }
-    res
   }
 }
 
@@ -1157,9 +1151,8 @@ object noModulePrefix {
     */
   def apply[T](block: => T): T = {
     val savedStack = Builder.clearModulePrefixStack()
-    val res = block
-    Builder.setModulePrefixStack(savedStack)
-    res
+    try block
+    finally Builder.setModulePrefixStack(savedStack)
   }
 }
 

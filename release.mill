@@ -106,7 +106,10 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.MemBase.forceName*"),
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.experimental.BaseModule.forceName*"),
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.VerificationStatement.forceName*"),
-    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.properties.DynamicObject.forceName*")
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.properties.DynamicObject.forceName*"),
+    // Builder.State is package-private and its shape changed to track module prefixes.
+    ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.internal.Builder#State.*"),
+    ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder#State.restore")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)

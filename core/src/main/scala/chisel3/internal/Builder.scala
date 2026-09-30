@@ -1235,7 +1235,9 @@ private[chisel3] object Builder extends LazyLogging {
     prefix:        Prefix,
     clock:         Option[Delayed[Clock]],
     reset:         Option[Delayed[Reset]],
-    enabledLayers: List[layer.Layer]
+    enabledLayers: List[layer.Layer],
+    // Pairs of module prefix and whether to include the separator (see `Builder.getModulePrefixStack`)
+    modulePrefixStack: List[(String, Boolean)]
   )
 
   object State {
@@ -1250,7 +1252,9 @@ private[chisel3] object Builder extends LazyLogging {
       prefix = Nil,
       clock = None,
       reset = None,
-      enabledLayers = Nil
+      enabledLayers = Nil,
+      // Module prefixes are inherited from the parent
+      modulePrefixStack = Builder.getModulePrefixStack
     )
 
     /** Capture the current [[Builder]] state.
@@ -1264,7 +1268,8 @@ private[chisel3] object Builder extends LazyLogging {
         prefix = Builder.getPrefix,
         clock = Builder.currentClockDelayed,
         reset = Builder.currentResetDelayed,
-        enabledLayers = Builder.enabledLayers.toList
+        enabledLayers = Builder.enabledLayers.toList,
+        modulePrefixStack = Builder.getModulePrefixStack
       )
     }
 
@@ -1272,7 +1277,7 @@ private[chisel3] object Builder extends LazyLogging {
       *
       * @param state the state to set the [[Builder]] to
       */
-    def restore(state: State) = {
+    def restore(state: State): Unit = {
       Builder.currentModule = state.currentModule
       Builder.whenStack = state.whenStack
       Builder.blockStack = state.blockStack
@@ -1280,12 +1285,14 @@ private[chisel3] object Builder extends LazyLogging {
       Builder.setPrefix(state.prefix)
       Builder.currentClock = state.clock
       Builder.currentReset = state.reset
+      Builder.setModulePrefixStack(state.modulePrefixStack)
       Builder.enabledLayers.clear()
       Builder.enabledLayers ++= state.enabledLayers
     }
 
     /** Run the `thunk` with the context provided by `state`.  Save the [[Builder]]
-      * state before the thunk and restore it afterwards.
+      * state before the thunk and restore it afterwards, even if the `thunk`
+      * throws.
       *
       * @param state change the [[Builder]] to this state when running the thunk
       * @param thunk some hardware to generate
@@ -1294,9 +1301,8 @@ private[chisel3] object Builder extends LazyLogging {
     def guard[A](state: State)(thunk: => A): A = {
       val old = save
       restore(state)
-      val result = thunk
-      restore(old)
-      result
+      try thunk
+      finally restore(old)
     }
 
   }
