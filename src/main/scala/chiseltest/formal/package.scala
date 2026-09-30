@@ -68,7 +68,7 @@ package object formal {
       )
 
   trait Formal {
-    // Old API for compatability reasons
+    // Old API for compatibility reasons
     def verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit =
       verifyRes(dut, annotations)
 
