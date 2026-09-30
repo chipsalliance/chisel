@@ -7,7 +7,8 @@ import circt.stage.ChiselStage
 import scala.annotation.compileTimeOnly
 import scala.sys.process._
 import scala.collection.mutable
-import scala.reflect.io._
+import java.nio.file.{Paths, Files}
+import java.nio.charset.StandardCharsets
 
 /**
  * Formal compatibility API placeholders.
@@ -81,13 +82,14 @@ package object formal {
         firtoolOpts = Array("-default-layer-specialization=enable")
       )
 
-      // Store the btor2 result to a file
+      // Store the btor2 result to a temp file in a backwards compatible manner (using java)
       val workdir: String = sys.props("user.dir")
-      val btor2file = File.makeTemp(suffix = ".btor2")
-      btor2file.writeAll(btor2DUT)
+      val btor2file = Files.createTempFile("dut", ".btor2")
+      Files.write(btor2file, btor2DUT.getBytes(StandardCharsets.UTF_8))
+      btor2file.toFile.deleteOnExit
 
       // Store absolute path
-      val fileAbsPath: String = btor2file.path
+      val fileAbsPath: String = btor2file.toString
 
       // Filter out non formal annotations and keep the first one
       val backanno = annotations.flatMap {
