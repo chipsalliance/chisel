@@ -7,7 +7,7 @@ import circt.stage.ChiselStage
 import scala.annotation.compileTimeOnly
 import scala.sys.process._
 import scala.collection.mutable
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 import java.nio.charset.StandardCharsets
 
 /**
