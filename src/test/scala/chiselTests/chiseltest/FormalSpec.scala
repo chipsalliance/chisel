@@ -1,5 +1,3 @@
-package chiselTests.chiseltest
-
 // SPDX-License-Identifier: Apache-2.0
 
 package chiselTests.chiseltest
@@ -27,7 +25,7 @@ class DualCounter extends Module {
   }
 
   // check that the register is monotonically increasing
-  assert(!io.en || count > prevCount)
+  AssertProperty(!io.en || count > prevCount)
 }
 
 /**

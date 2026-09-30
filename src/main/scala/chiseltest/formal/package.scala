@@ -70,7 +70,10 @@ package object formal {
     // runs the output through some model-checker, e.g. btormc
     def verify[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult = {
       // start by running the btor2 backend
-      val btor2DUT: String = ChiselStage.emitBtor2(dut)
+      val btor2DUT: String = ChiselStage.emitBtor2(
+        dut, 
+        firtoolOpts = Array("-default-layer-specialization=enable")
+      )
 
       // Store the btor2 result to a file
       val workdir: String = sys.props("user.dir")
@@ -114,7 +117,12 @@ package object formal {
         if (exitCode != 0) {
           throw new Exception(s"BMC invocation failed with output:\n${output.mkString("\n")}")
         }
-        output.head.trim
+
+        // output can be empty in some unsat cases
+        if (!output.isEmpty) 
+          output.foldLeft("\n")((acc, o) => acc + (o + "\n")).trim 
+        else 
+          ""
       }
 
       // most basic check on result
