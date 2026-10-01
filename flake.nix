@@ -23,6 +23,7 @@
             scala-cli
             llvm
             verilator
+            boolector
           ];
         in
         {
