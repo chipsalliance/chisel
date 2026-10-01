@@ -1,7 +1,7 @@
 //> using repository https://central.sonatype.com/repository/maven-snapshots
 //> using scala 2.13.18
-//> using dep org.chipsalliance::chisel:7.15.0+17-8de081e1-SNAPSHOT
-//> using plugin org.chipsalliance:::chisel-plugin:7.15.0+17-8de081e1-SNAPSHOT
+//> using dep org.chipsalliance::chisel:7.16.0+1-76ecda9e-SNAPSHOT
+//> using plugin org.chipsalliance:::chisel-plugin:7.16.0+1-76ecda9e-SNAPSHOT
 //> using options -unchecked -deprecation -language:reflectiveCalls -feature -Xcheckinit
 //> using options -Xfatal-warnings -Ywarn-dead-code -Ywarn-unused -Ymacro-annotations
 
