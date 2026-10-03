@@ -132,21 +132,27 @@ class SeparateElaborationSpec extends AnyFunSpec with Matchers with Utils with T
 
       class Testbench(defn: Definition[AddOne]) extends Module {
         val inst0 = Instance(defn)
-        val inst1 = Instance(defn)
+        val inst1 = Instance(defn.toInstance.toDefinition)
 
         inst0.in := 0.U
         inst1.in := 0.U
       }
 
-      // If there is a repeat module definition, FIRRTL emission will fail
-      (new ChiselStage).execute(
-        args = Array("-td", testDir, "--full-stacktrace", "--target", "chirrtl"),
-        annotations = Seq(ChiselGeneratorAnnotation(() => new Testbench(dutDef)), ImportDefinitionAnnotation(dutDef))
-      )
+      for (overrideName <- Seq(None, Some("RenamedAddOne"))) {
+        // If there is a repeat module definition, FIRRTL emission will fail
+        (new ChiselStage).execute(
+          args = Array("-td", testDir, "--full-stacktrace", "--target", "chirrtl"),
+          annotations = Seq(
+            ChiselGeneratorAnnotation(() => new Testbench(dutDef)),
+            ImportDefinitionAnnotation(dutDef, overrideName)
+          )
+        )
 
-      val tbFir = Source.fromFile(s"${testDir}/Testbench.fir").getLines().mkString
-      assert("extmodule AddOne".r.findAllMatchIn(tbFir).length == 1)
-      assert("""inst \S+ of AddOne""".r.findAllMatchIn(tbFir).length == 2)
+        val tbFir = Source.fromFile(s"${testDir}/Testbench.fir").getLines().mkString
+        assert("extmodule AddOne".r.findAllMatchIn(tbFir).length == 1)
+        assert("""inst \S+ of AddOne""".r.findAllMatchIn(tbFir).length == 2)
+        tbFir should include(s"defname = ${overrideName.getOrElse("AddOne")}")
+      }
     }
   }
 

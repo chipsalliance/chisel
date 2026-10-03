@@ -3,10 +3,8 @@
 package chisel3.stage.phases
 
 import chisel3.Module
-import chisel3.experimental.hierarchy.core.Definition
-import chisel3.experimental.BaseModule
 import chisel3.internal.ExceptionHelpers.ThrowableHelpers
-import chisel3.internal.{Builder, BuilderContextCache, DynamicContext, ElaborationTrace}
+import chisel3.internal.{Builder, BuilderContextCache, DefinitionRegistry, DynamicContext, ElaborationTrace}
 import chisel3.internal.firrtl.ir
 import chisel3.stage.{
   ChiselCircuitAnnotation,
@@ -21,7 +19,6 @@ import firrtl.options.{Dependency, Phase}
 import firrtl.options.Viewer.view
 import logger.{LoggerOptions, LoggerOptionsView}
 
-import scala.collection.mutable
 import scala.annotation.nowarn
 
 /** Elaborate all [[chisel3.stage.ChiselGeneratorAnnotation]]s into [[chisel3.stage.ChiselCircuitAnnotation]]s.
@@ -53,7 +50,7 @@ class Elaborate extends Phase {
             chiselOptions.sourceRoots,
             None,
             loggerOptions,
-            mutable.LinkedHashSet[Definition[_ <: BaseModule]](),
+            new DefinitionRegistry,
             BuilderContextCache.empty,
             chiselOptions.layerMap,
             chiselOptions.inlineTestIncluder,

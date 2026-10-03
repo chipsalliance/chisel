@@ -1089,7 +1089,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
     }
     it("(9.d): Definition equality should work correctly for deduplication") {
       // This test verifies that Definitions with the same proto are properly deduplicated
-      // in Builder.definitions (which uses LinkedHashSet).
+      // in Builder.definitions.
       //
       // Both definitionsIn and definitionsOf should create Definitions that can be
       // properly compared for equality when they reference the same underlying proto.

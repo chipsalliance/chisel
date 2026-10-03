@@ -105,6 +105,19 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
       }
       ChiselStage.emitCHIRRTL(new Top)
     }
+    it("(0.h): external definitions can be registered before desiredName is initialized") {
+      class EarlyDefinition extends ExtModule {
+        val definition = this.toDefinition
+        override val desiredName = "EarlyDefinition"
+      }
+      class Top extends RawModule {
+        val external = Module(new EarlyDefinition)
+        val instance = Instance(external.definition)
+      }
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("extmodule EarlyDefinition")
+      chirrtl should include("inst instance of EarlyDefinition")
+    }
   }
   describe("(1) Annotations on instances in same chisel compilation") {
     it("(1.a): should work on a single instance, annotating the instance") {

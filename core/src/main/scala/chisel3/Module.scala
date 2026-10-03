@@ -402,7 +402,7 @@ package experimental {
         val result = new Definition(Proto(b))
         // .toDefinition is sometimes called in Select APIs outside of Chisel elaboration
         if (Builder.inContext) {
-          Builder.definitions += result
+          Builder.definitions.add(result)
         }
         b.toDefinitionCalled = Some(si)
         result

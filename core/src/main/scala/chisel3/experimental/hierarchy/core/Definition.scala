@@ -133,7 +133,6 @@ object Definition extends SourceInfoDoc {
     Builder.layers ++= dynamicContext.layers
     Builder.options ++= dynamicContext.options
     Builder.domains ++= dynamicContext.domains
-    dynamicContext.definitions.foreach(Builder.addDefinition)
     module._circuit = Builder.currentModule
     module.toDefinition
   }
