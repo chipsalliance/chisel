@@ -105,6 +105,44 @@ class InstanceSpec extends AnyFunSpec with Matchers with Utils with FileCheck {
       }
       ChiselStage.emitCHIRRTL(new Top)
     }
+    it("(0.h): external definitions can be registered before desiredName is initialized") {
+      class EarlyDefinition extends ExtModule {
+        val definition = this.toDefinition
+        override val desiredName = "EarlyDefinition"
+      }
+      class Top extends RawModule {
+        val external = Module(new EarlyDefinition)
+        val instance = Instance(external.definition)
+      }
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("extmodule EarlyDefinition")
+      chirrtl should include("inst instance of EarlyDefinition")
+    }
+    it("(0.i): looking up an external definition should not evaluate unfinished module names") {
+      class Ready extends ExtModule
+      class Late(ready: Definition[Ready]) extends ExtModule {
+        private var resolvedName: String = null
+        override def desiredName = resolvedName
+        val definition = this.toDefinition
+        // This is a little contrived but the point is that an ExtModule constructor could call a
+        // function that creates Definitions that themselves have Instances.
+        val companion = Definition(new RawModule {
+          val instance = Instance(ready)
+          // The name becomes available only after the nested lookup.
+          resolvedName = "Late"
+        })
+      }
+      class Top extends RawModule {
+        val ready = Definition(new Ready)
+        val late = Module(new Late(ready))
+        val instance = Instance(late.definition)
+      }
+      val chirrtl = ChiselStage.emitCHIRRTL(new Top)
+      chirrtl should include("extmodule Ready")
+      chirrtl should include("extmodule Late")
+      chirrtl should include("inst instance of Ready")
+      chirrtl should include("inst instance of Late")
+    }
   }
   describe("(1) Annotations on instances in same chisel compilation") {
     it("(1.a): should work on a single instance, annotating the instance") {

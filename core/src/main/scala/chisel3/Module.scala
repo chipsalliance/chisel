@@ -88,6 +88,7 @@ object Module extends ModuleObjIntf {
 
       // Only add the component if the module generates one
       val componentOpt = module.generateComponent()
+      Builder.definitions.moduleClosed(module)
       for (component <- componentOpt) {
         Builder.components += component
       }
@@ -402,7 +403,7 @@ package experimental {
         val result = new Definition(Proto(b))
         // .toDefinition is sometimes called in Select APIs outside of Chisel elaboration
         if (Builder.inContext) {
-          Builder.definitions += result
+          Builder.definitions.add(result)
         }
         b.toDefinitionCalled = Some(si)
         result

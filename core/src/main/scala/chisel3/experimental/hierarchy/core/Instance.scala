@@ -4,14 +4,12 @@ package chisel3.experimental.hierarchy.core
 
 import chisel3._
 import chisel3.experimental.hierarchy.{InstantiableClone, ModuleClone}
-import chisel3.internal.{throwException, BaseBlackBox, Builder}
+import chisel3.internal.{throwException, Builder}
 import chisel3.experimental.{BaseModule, SourceInfo, UnlocatableSourceInfo}
 import chisel3.internal.firrtl.ir.{Component, DefBlackBox, DefClass, DefIntrinsicModule, DefModule, Port}
-import chisel3.properties.Class
 import firrtl.annotations.IsModule
 
 import scala.annotation.nowarn
-import chisel3.experimental.BaseIntrinsicModule
 
 /** User-facing Instance type.
   * Represents a unique instance of type `A` which are marked as @instantiable
@@ -131,7 +129,7 @@ object Instance extends SourceInfoDoc {
     }
   }
 
-  private class ImportedDefinitionExtModule(
+  private[chisel3] class ImportedDefinitionExtModule(
     override val desiredName: String,
     val importedDefinition:   Definition[BaseModule with IsInstantiable]
   ) extends ExtModule {
@@ -175,14 +173,7 @@ object Instance extends SourceInfoDoc {
     implicit sourceInfo: SourceInfo
   ): Instance[T] = {
     // Check to see if the module is already defined internally or externally
-    val existingMod = Builder.definitions.view.map(_.proto).exists {
-      case c: Class                       => c == definition.proto
-      case c: RawModule                   => c == definition.proto
-      case c: ImportedDefinitionExtModule => c.importedDefinition == definition
-      case c: BaseBlackBox                => c.name == definition.proto.name
-      case c: BaseIntrinsicModule         => c.name == definition.proto.name
-      case _ => false
-    }
+    val existingMod = Builder.definitions.contains(definition)
 
     if (!existingMod) {
       // Add a Definition that will get emitted as an ExtModule so that FIRRTL
