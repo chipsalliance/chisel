@@ -88,6 +88,7 @@ object Module extends ModuleObjIntf {
 
       // Only add the component if the module generates one
       val componentOpt = module.generateComponent()
+      Builder.definitions.moduleClosed(module)
       for (component <- componentOpt) {
         Builder.components += component
       }
