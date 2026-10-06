@@ -335,6 +335,30 @@ sealed trait Property[T] extends Element { self =>
   ): Property[T] =
     ev.shl(this, that)
 
+  /** Perform integer bitwise AND as defined by the FIRRTL Integer And Operation.
+    */
+  final def &(that: Property[T])(
+    implicit ev: PropertyBitwiseOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] =
+    ev.and(this, that)
+
+  /** Perform integer bitwise OR as defined by the FIRRTL Integer Or Operation.
+    */
+  final def |(that: Property[T])(
+    implicit ev: PropertyBitwiseOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] =
+    ev.or(this, that)
+
+  /** Perform integer bitwise NOT as defined by the FIRRTL Integer Not Operation.
+    */
+  final def unary_~(
+    implicit ev: PropertyBitwiseOps[Property[T]],
+    sourceInfo:  SourceInfo
+  ): Property[T] =
+    ev.not(this)
+
   /** Perform concatenation as defined by FIRRTL spec section List Concatenation Operation.
     */
   final def ++(
@@ -513,6 +537,28 @@ private object PropertyExpressionHelpers {
     wire.asInstanceOf[Property[T]]
   }
 
+  // Helper function to create a unary Property expression IR.
+  def unaryOp[T](
+    sourceInfo: SourceInfo,
+    op:         fir.PropPrimOp,
+    value:      Property[T]
+  ): Property[T] = {
+    implicit val info = sourceInfo
+
+    // Create a temporary Wire to assign the expression to (validates we're in a RawModule).
+    val wire = createPropertyWire(value)(sourceInfo)
+
+    // Create a PropExpr with the same type and the single operand.
+    val propExpr = ir.PropExpr(sourceInfo, value.tpe.getPropertyType(), op, List(value.ref))
+
+    // Add the PropAssign command.
+    val mod = Builder.referenceUserContainer.asInstanceOf[RawModule]
+    mod.addCommand(ir.PropAssign(sourceInfo, wire.lref, propExpr))
+
+    // Return the temporary Wire as the result.
+    wire.asInstanceOf[Property[T]]
+  }
+
   // Helper function for comparison operations that return Property[Boolean].
   def cmpOp[T](
     sourceInfo: SourceInfo,
@@ -609,6 +655,50 @@ object PropertyArithmeticOps {
         binOp(sourceInfo, fir.IntegerShrOp, lhs, rhs)
       def shl(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.IntegerShlOp, lhs, rhs)
+    }
+}
+
+/** Typeclass for integral Property bitwise operations.
+  */
+@implicitNotFound("bitwise operations are not supported on Property type ${T}")
+sealed trait PropertyBitwiseOps[T] {
+  def and(lhs:   T, rhs:                 T)(implicit sourceInfo: SourceInfo): T
+  def or(lhs:    T, rhs:                 T)(implicit sourceInfo: SourceInfo): T
+  def not(value: T)(implicit sourceInfo: SourceInfo):                         T
+}
+
+object PropertyBitwiseOps {
+  import PropertyExpressionHelpers._
+
+  // Type class instances for integral Property bitwise operations.
+  implicit val intBitwiseOps: PropertyBitwiseOps[Property[Int]] =
+    new PropertyBitwiseOps[Property[Int]] {
+      def and(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerAndOp, lhs, rhs)
+      def or(lhs: Property[Int], rhs: Property[Int])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerOrOp, lhs, rhs)
+      def not(value: Property[Int])(implicit sourceInfo: SourceInfo) =
+        unaryOp(sourceInfo, fir.IntegerNotOp, value)
+    }
+
+  implicit val longBitwiseOps: PropertyBitwiseOps[Property[Long]] =
+    new PropertyBitwiseOps[Property[Long]] {
+      def and(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerAndOp, lhs, rhs)
+      def or(lhs: Property[Long], rhs: Property[Long])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerOrOp, lhs, rhs)
+      def not(value: Property[Long])(implicit sourceInfo: SourceInfo) =
+        unaryOp(sourceInfo, fir.IntegerNotOp, value)
+    }
+
+  implicit val bigIntBitwiseOps: PropertyBitwiseOps[Property[BigInt]] =
+    new PropertyBitwiseOps[Property[BigInt]] {
+      def and(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerAndOp, lhs, rhs)
+      def or(lhs: Property[BigInt], rhs: Property[BigInt])(implicit sourceInfo: SourceInfo) =
+        binOp(sourceInfo, fir.IntegerOrOp, lhs, rhs)
+      def not(value: Property[BigInt])(implicit sourceInfo: SourceInfo) =
+        unaryOp(sourceInfo, fir.IntegerNotOp, value)
     }
 }
 

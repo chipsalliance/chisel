@@ -150,6 +150,26 @@ on integral `Property` typed values.
 | `>>`      | Perform shift right as defined by FIRRTL spec section Integer Shift Right Operation |
 | `<<`      | Perform shift left as defined by FIRRTL spec section Integer Shift Left Operation   |
 
+#### Integer Bitwise Operations
+
+The integral `Property` types, like `Property[Int]`, `Property[Long]` and
+`Property[BigInt]`, can also be used to build bitwise expressions in terms of
+`Property` values.
+
+The following table lists the bitwise operators that are supported on integral
+`Property` typed values.
+
+| Operation | Description                                                                         |
+| --------- | -----------                                                                         |
+| `&`       | Perform bitwise AND as defined by FIRRTL spec section Integer Bitwise And Operation |
+| `|`       | Perform bitwise OR as defined by FIRRTL spec section Integer Bitwise Or Operation   |
+| `~`       | Perform bitwise NOT as defined by FIRRTL spec section Integer Bitwise Not Operation |
+
+These operations use arbitrary-precision integer semantics. Negative values
+are interpreted using two's-complement sign extension, so `~x` is equivalent
+to `-x - 1`. The resulting property expressions remain in the FIRRTL
+representation.
+
 #### Sequence Operations
 
 The sequence `Property` types, like `Property[Seq[Int]]` support some basic

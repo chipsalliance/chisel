@@ -946,6 +946,221 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
     )
   }
 
+  behavior.of("PropertyBitwiseOps")
+
+  it should "support integer OR on Int, Long, and BigInt properties" in {
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val intA = IO(Input(Property[Int]()))
+        val intB = IO(Input(Property[Int]()))
+        val intOr = IO(Output(Property[Int]()))
+        val intLiteralOr = IO(Output(Property[Int]()))
+        intOr := intA | intB
+        intLiteralOr := Property(0xf0) | Property(5)
+
+        val longA = IO(Input(Property[Long]()))
+        val longB = IO(Input(Property[Long]()))
+        val longOr = IO(Output(Property[Long]()))
+        val longLiteralOr = IO(Output(Property[Long]()))
+        longOr := longA | longB
+        longLiteralOr := Property[Long](0xff00L) | Property[Long](6L)
+
+        val bigIntA = IO(Input(Property[BigInt]()))
+        val bigIntB = IO(Input(Property[BigInt]()))
+        val bigIntOr = IO(Output(Property[BigInt]()))
+        val bigIntLiteralOr = IO(Output(Property[BigInt]()))
+        bigIntOr := bigIntA | bigIntB
+        bigIntLiteralOr := Property[BigInt](0xff0000) | Property[BigInt](7)
+      }
+    }.fileCheck()(
+      """|CHECK: propassign _intOr_propExpr, integer_or(intA, intB)
+         |CHECK: propassign intOr, _intOr_propExpr
+         |CHECK: propassign _intLiteralOr_propExpr, integer_or(Integer(240), Integer(5))
+         |CHECK: propassign intLiteralOr, _intLiteralOr_propExpr
+         |CHECK: propassign _longOr_propExpr, integer_or(longA, longB)
+         |CHECK: propassign longOr, _longOr_propExpr
+         |CHECK: propassign _longLiteralOr_propExpr, integer_or(Integer(65280), Integer(6))
+         |CHECK: propassign longLiteralOr, _longLiteralOr_propExpr
+         |CHECK: propassign _bigIntOr_propExpr, integer_or(bigIntA, bigIntB)
+         |CHECK: propassign bigIntOr, _bigIntOr_propExpr
+         |CHECK: propassign _bigIntLiteralOr_propExpr, integer_or(Integer(16711680), Integer(7))
+         |CHECK: propassign bigIntLiteralOr, _bigIntLiteralOr_propExpr
+         |""".stripMargin
+    )
+  }
+
+  it should "support integer AND on Int, Long, and BigInt properties" in {
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val intA = IO(Input(Property[Int]()))
+        val intB = IO(Input(Property[Int]()))
+        val intAnd = IO(Output(Property[Int]()))
+        val intLiteralAnd = IO(Output(Property[Int]()))
+        intAnd := intA & intB
+        intLiteralAnd := Property(0xf0) & Property(0x0f)
+
+        val longA = IO(Input(Property[Long]()))
+        val longB = IO(Input(Property[Long]()))
+        val longAnd = IO(Output(Property[Long]()))
+        val longLiteralAnd = IO(Output(Property[Long]()))
+        longAnd := longA & longB
+        longLiteralAnd := Property[Long](0xff00L) & Property[Long](0x00ffL)
+
+        val bigIntA = IO(Input(Property[BigInt]()))
+        val bigIntB = IO(Input(Property[BigInt]()))
+        val bigIntAnd = IO(Output(Property[BigInt]()))
+        val bigIntLiteralAnd = IO(Output(Property[BigInt]()))
+        bigIntAnd := bigIntA & bigIntB
+        bigIntLiteralAnd := Property[BigInt](0xff0000) & Property[BigInt](0x00ff00)
+      }
+    }.fileCheck()(
+      """|CHECK: propassign _intAnd_propExpr, integer_and(intA, intB)
+         |CHECK: propassign intAnd, _intAnd_propExpr
+         |CHECK: propassign _intLiteralAnd_propExpr, integer_and(Integer(240), Integer(15))
+         |CHECK: propassign intLiteralAnd, _intLiteralAnd_propExpr
+         |CHECK: propassign _longAnd_propExpr, integer_and(longA, longB)
+         |CHECK: propassign longAnd, _longAnd_propExpr
+         |CHECK: propassign _longLiteralAnd_propExpr, integer_and(Integer(65280), Integer(255))
+         |CHECK: propassign longLiteralAnd, _longLiteralAnd_propExpr
+         |CHECK: propassign _bigIntAnd_propExpr, integer_and(bigIntA, bigIntB)
+         |CHECK: propassign bigIntAnd, _bigIntAnd_propExpr
+         |CHECK: propassign _bigIntLiteralAnd_propExpr, integer_and(Integer(16711680), Integer(65280))
+         |CHECK: propassign bigIntLiteralAnd, _bigIntLiteralAnd_propExpr
+         |""".stripMargin
+    )
+  }
+
+  it should "support integer NOT on Int, Long, and BigInt properties" in {
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val intA = IO(Input(Property[Int]()))
+        val intNot = IO(Output(Property[Int]()))
+        val intLiteralNot = IO(Output(Property[Int]()))
+        intNot := ~intA
+        intLiteralNot := ~Property(-3)
+
+        val longA = IO(Input(Property[Long]()))
+        val longNot = IO(Output(Property[Long]()))
+        val longLiteralNot = IO(Output(Property[Long]()))
+        longNot := ~longA
+        longLiteralNot := ~Property[Long](-9L)
+
+        val bigIntA = IO(Input(Property[BigInt]()))
+        val bigIntNot = IO(Output(Property[BigInt]()))
+        val bigIntLiteralNot = IO(Output(Property[BigInt]()))
+        bigIntNot := ~bigIntA
+        bigIntLiteralNot := ~Property[BigInt](-17)
+      }
+    }.fileCheck()(
+      """|CHECK: propassign _intNot_propExpr, integer_not(intA)
+         |CHECK: propassign intNot, _intNot_propExpr
+         |CHECK: propassign _intLiteralNot_propExpr, integer_not(Integer(-3))
+         |CHECK: propassign intLiteralNot, _intLiteralNot_propExpr
+         |CHECK: propassign _longNot_propExpr, integer_not(longA)
+         |CHECK: propassign longNot, _longNot_propExpr
+         |CHECK: propassign _longLiteralNot_propExpr, integer_not(Integer(-9))
+         |CHECK: propassign longLiteralNot, _longLiteralNot_propExpr
+         |CHECK: propassign _bigIntNot_propExpr, integer_not(bigIntA)
+         |CHECK: propassign bigIntNot, _bigIntNot_propExpr
+         |CHECK: propassign _bigIntLiteralNot_propExpr, integer_not(Integer(-17))
+         |CHECK: propassign bigIntLiteralNot, _bigIntLiteralNot_propExpr
+         |""".stripMargin
+    )
+  }
+
+  it should "support nested integer bitwise expressions" in {
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val a = IO(Input(Property[Int]()))
+        val b = IO(Input(Property[Int]()))
+        val c = IO(Input(Property[Int]()))
+        val result = IO(Output(Property[Int]()))
+        result := (a | b) & ~c
+      }
+    }.fileCheck()(
+      """|CHECK: propassign _result_propExpr, integer_or(a, b)
+         |CHECK: propassign _result_propExpr_1, integer_not(c)
+         |CHECK: propassign _result_propExpr_2, integer_and(_result_propExpr, _result_propExpr_1)
+         |CHECK: propassign result, _result_propExpr_2
+         |""".stripMargin
+    )
+  }
+
+  it should "reject OR for unsupported Property types" in {
+    assertTypeError("""
+      val a = Property[String]()
+      val b = Property[String]()
+      a | b
+    """)
+    assertTypeError("""
+      val a = Property[Seq[Int]]()
+      val b = Property[Seq[Int]]()
+      a | b
+    """)
+    assertTypeError("""
+      val a = Property[Int]()
+      val b = Property[Long]()
+      a | b
+    """)
+    assertTypeError("""
+      val a = Property[Boolean]()
+      val b = Property[Boolean]()
+      a | b
+    """)
+    assertTypeError("""
+      val a = Property[Double]()
+      val b = Property[Double]()
+      a | b
+    """)
+  }
+
+  it should "reject AND for unsupported Property types" in {
+    assertTypeError("""
+      val a = Property[String]()
+      val b = Property[String]()
+      a & b
+    """)
+    assertTypeError("""
+      val a = Property[Seq[Int]]()
+      val b = Property[Seq[Int]]()
+      a & b
+    """)
+    assertTypeError("""
+      val a = Property[Int]()
+      val b = Property[Long]()
+      a & b
+    """)
+    assertTypeError("""
+      val a = Property[Boolean]()
+      val b = Property[Boolean]()
+      a & b
+    """)
+    assertTypeError("""
+      val a = Property[Double]()
+      val b = Property[Double]()
+      a & b
+    """)
+  }
+
+  it should "reject NOT for unsupported Property types" in {
+    assertTypeError("""
+      val a = Property[String]()
+      ~a
+    """)
+    assertTypeError("""
+      val a = Property[Seq[Int]]()
+      ~a
+    """)
+    assertTypeError("""
+      val a = Property[Boolean]()
+      ~a
+    """)
+    assertTypeError("""
+      val a = Property[Double]()
+      ~a
+    """)
+  }
+
   behavior.of("PropertySeqOps")
 
   it should "not support expressions involving Property types that don't provide a typeclass instance" in {
