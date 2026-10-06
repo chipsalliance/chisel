@@ -21,7 +21,6 @@ private[chisel3] object DebugIntrinsics {
   }
 
   private class ComponentDebugEmitter extends LazyLogging {
-    private val emittedEnums = mutable.HashSet.empty[String]
     private val emittedIds = mutable.HashSet.empty[HasId]
 
     private val ctorExtractor = new CtorParamExtractor
@@ -113,7 +112,6 @@ private[chisel3] object DebugIntrinsics {
       // CIRCT's CirctDebugVarConverter matches leaves to the root by exact equality.
       val childParent: Option[String] = parent.orElse(Some(signalRef(target)))
       val subCmds: Seq[Command] = target match {
-        case e:      EnumType => createEnumDefIntrinsic(e, si).toSeq
         case record: Record =>
           record.elements.values.flatMap(createIntrinsic(_, childParent, si)).toSeq
         case vecLike: VecLike[_] =>
@@ -131,30 +129,13 @@ private[chisel3] object DebugIntrinsics {
       (fqn, fqn.split("\\.").last)
     }
 
-    private def createEnumDefIntrinsic(e: EnumType, si: SourceInfo): Option[Command] = {
-      val (fqn, simple) = enumNames(e)
-      if (!emittedEnums.add(fqn)) return None
+    // The width is what stops the downstream IntegerAttr from defaulting to i64.
+    private def enumVariantsParams(e: EnumType): Seq[(String, Param)] = {
       val variants = e.factory.allWithNames.map { case (v, name) => EnumVariant(name, v.litValue.toString) }
-      // Pass the enum's actual bit-width so LowerIntrinsics can build
-      // variantsMap with an IntegerAttr of matching width (otherwise
-      // it falls back to i64 and downstream consumers like EmitUHDI
-      // surface `underlyingTypeRef: "uint64"` for what is in fact a
-      // tiny enum). getWidth is always known for a Chisel EnumType.
       val widthParam: Seq[(String, Param)] =
         if (e.width.known) Seq("width" -> IntParam(BigInt(e.width.get)))
         else Nil
-      Some(
-        DefIntrinsic(
-          si,
-          "circt_debug_enumdef",
-          Nil,
-          Seq(
-            "typeName" -> StringParam(simple),
-            "fqn" -> StringParam(fqn),
-            "variants" -> StringParam(json.write(variants))
-          ) ++ widthParam
-        )
-      )
+      ("variants" -> StringParam(json.write(variants))) +: widthParam
     }
 
     private def createIntrinsic(target: BaseModule, si: SourceInfo): Seq[Command] = Seq(
@@ -184,7 +165,8 @@ private[chisel3] object DebugIntrinsics {
       val enumParam: Seq[(String, Param)] = target match {
         case e: EnumType =>
           val (fqn, simple) = enumNames(e)
-          Seq("enumTypeName" -> StringParam(simple), "enumFqn" -> StringParam(fqn))
+          Seq("enumTypeName" -> StringParam(simple), "enumFqn" -> StringParam(fqn)) ++
+            enumVariantsParams(e)
         case _ => Nil
       }
       val parentParam = parent.map("parent" -> StringParam(_)).toSeq

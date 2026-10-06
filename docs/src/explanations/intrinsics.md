@@ -60,8 +60,11 @@ The following intrinsics are emitted:
   and `name`.
 - `circt_debug_subfield` - one per Bundle/Vec element, linked to its parent via
   a `parent` attribute.
-- `circt_debug_enumdef` - one per `ChiselEnum` type (emitted once per circuit),
-  listing all variants and their literal values.
+
+A `ChiselEnum`-typed `circt_debug_var`/`circt_debug_subfield` additionally
+carries its enum metadata inline: `enumTypeName`, `enumFqn`, a JSON-encoded
+`variants` string listing all variants and their literal values, and the
+underlying bit `width`.
 
 Emission is opt-in and off by default. Enable it by passing
 `--with-experimental-debug-intrinsics` on the command line, or by adding
