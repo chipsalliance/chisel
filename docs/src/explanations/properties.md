@@ -165,11 +165,6 @@ The following table lists the bitwise operators that are supported on integral
 | `|`       | Perform bitwise OR as defined by FIRRTL spec section Integer Bitwise Or Operation   |
 | `~`       | Perform bitwise NOT as defined by FIRRTL spec section Integer Bitwise Not Operation |
 
-These operations use arbitrary-precision integer semantics. Negative values
-are interpreted using two's-complement sign extension, so `~x` is equivalent
-to `-x - 1`. The resulting property expressions remain in the FIRRTL
-representation.
-
 #### Sequence Operations
 
 The sequence `Property` types, like `Property[Seq[Int]]` support some basic
