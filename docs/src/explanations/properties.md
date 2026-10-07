@@ -162,7 +162,7 @@ The following table lists the bitwise operators that are supported on integral
 | Operation | Description                                                                         |
 | --------- | -----------                                                                         |
 | `&`       | Perform bitwise AND as defined by FIRRTL spec section Integer Bitwise And Operation |
-| `|`       | Perform bitwise OR as defined by FIRRTL spec section Integer Bitwise Or Operation   |
+| `\|`       | Perform bitwise OR as defined by FIRRTL spec section Integer Bitwise Or Operation   |
 | `~`       | Perform bitwise NOT as defined by FIRRTL spec section Integer Bitwise Not Operation |
 
 #### Sequence Operations
