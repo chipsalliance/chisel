@@ -463,7 +463,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     // is fine if this, in a later version of `firtool` does a direct
     // connection.
     ChiselStage
-      .emitFIRRTLDialect(new Foo, firtoolOpts = Array("-domain-mode=infer-all"))
+      .emitFIRRTLDialect(new Foo, firtoolOpts = Array("-domain-mode=infer-all", "-strip-domain=false"))
       .fileCheck() {
         """|CHECK:      %[[D:.+]] = firrtl.wire : !firrtl.domain
            |CHECK-NEXT: firrtl.domain.define %[[D]], %A
@@ -542,8 +542,13 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     intercept[Exception] {
       ChiselStage.emitSystemVerilog(
         new Foo,
-        firtoolOpts =
-          Array("-default-layer-specialization=disable", "-domain-mode=infer-all", "-output-final-mlir", "/dev/null")
+        firtoolOpts = Array(
+          "-default-layer-specialization=disable",
+          "-domain-mode=infer-all",
+          "-strip-domain=false",
+          "-output-final-mlir",
+          "/dev/null"
+        )
       )
     }.getMessage should include(
       "Clock domain 'A' (with relationship 'synchronous' to clock domain 'A') and clock domain 'A_4to3' (with relationship 'rational' to clock domain 'A') are not synchronously related to each other.  They must have the same clock domain source and a synchronous relationship."
@@ -562,8 +567,13 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     intercept[Exception] {
       ChiselStage.emitSystemVerilog(
         new Foo,
-        firtoolOpts =
-          Array("-default-layer-specialization=disable", "-domain-mode=infer-all", "-output-final-mlir", "/dev/null")
+        firtoolOpts = Array(
+          "-default-layer-specialization=disable",
+          "-domain-mode=infer-all",
+          "-strip-domain=false",
+          "-output-final-mlir",
+          "/dev/null"
+        )
       )
     }.getMessage should include(
       "Clock domain 'A' (with relationship 'synchronous' to clock domain 'A') and clock domain 'B' (with relationship 'synchronous' to clock domain 'B') are not synchronously or rationally related to each other.  They must have the same clock domain source and a synchronous or rational relationship."
