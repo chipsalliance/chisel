@@ -2,7 +2,7 @@
 
 package chisel3.choice
 
-import chisel3.{Data, FixedIOBaseModule}
+import chisel3.FixedIOBaseModule
 import chisel3.experimental.SourceInfo
 
 private[chisel3] trait ModuleChoiceObjIntf { self: ModuleChoice.type =>
@@ -26,7 +26,7 @@ private[chisel3] trait ModuleChoiceObjIntf { self: ModuleChoice.type =>
     *
     * @throws java.lang.IllegalArgumentException if the cases do not belong to the same option.
     */
-  def apply[T <: Data](
+  def apply[T](
     default: => FixedIOBaseModule[T]
   )(
     choices: => Seq[(Case, () => FixedIOBaseModule[T])]
