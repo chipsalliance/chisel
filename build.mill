@@ -95,7 +95,7 @@ object v extends Module {
   val json4s = mvn"io.github.json4s::json4s-native:4.1.0"
   val dataclass = mvn"io.github.alexarchambault::data-class:0.2.7"
   val commonText = mvn"org.apache.commons:commons-text:1.15.0"
-  val scopt = mvn"com.github.scopt::scopt:4.1.0"
+  val scopt = mvn"com.github.scopt::scopt:4.2.0"
   val mdoc = mvn"org.scalameta::mdoc:2.9.0"
 
   def scalaReflect(scalaVersion:   String) = mvn"org.scala-lang:scala-reflect:$scalaVersion"
