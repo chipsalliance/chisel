@@ -17,6 +17,7 @@ package object stage {
   @nowarn("cat=deprecation&msg=Use elaboratedCircuit instead")
   implicit object ChiselOptionsView extends OptionsView[ChiselOptions] {
 
+    @nowarn("cat=deprecation")
     def view(options: AnnotationSeq): ChiselOptions = options.collect { case a: ChiselOption => a }
       .foldLeft(new ChiselOptions()) { (c, x) =>
         x match {
@@ -34,10 +35,14 @@ package object stage {
           case RemapLayer(oldLayer, newLayer) => c.copy(layerMap = c.layerMap + ((oldLayer, newLayer)))
           case IncludeUtilMetadata            => c.copy(includeUtilMetadata = true)
           case UseSRAMBlackbox                => c.copy(useSRAMBlackbox = true)
+          case IncludeAutoTestsForModuleAnnotation(glob) =>
+            c.copy(autoTestIncluder = c.autoTestIncluder.includeModule(glob))
+          case IncludeAutoTestsWithNameAnnotation(glob) =>
+            c.copy(autoTestIncluder = c.autoTestIncluder.includeTest(glob))
           case IncludeInlineTestsForModuleAnnotation(glob) =>
-            c.copy(inlineTestIncluder = c.inlineTestIncluder.includeModule(glob))
+            c.copy(autoTestIncluder = c.autoTestIncluder.includeModule(glob))
           case IncludeInlineTestsWithNameAnnotation(glob) =>
-            c.copy(inlineTestIncluder = c.inlineTestIncluder.includeTest(glob))
+            c.copy(autoTestIncluder = c.autoTestIncluder.includeTest(glob))
           case SuppressSourceInfoAnnotation => c.copy(suppressSourceInfo = true)
         }
       }
