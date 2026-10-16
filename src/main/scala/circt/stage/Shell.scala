@@ -8,8 +8,8 @@ import chisel3.stage.{
   ChiselGeneratorAnnotation,
   ChiselOutputFileAnnotation,
   CircuitSerializationAnnotation,
-  IncludeInlineTestsForModule,
-  IncludeInlineTestsWithName,
+  IncludeAutoTestsForModule,
+  IncludeAutoTestsWithName,
   IncludeUtilMetadata,
   PrintFullStackTraceAnnotation,
   RemapLayer,
@@ -55,8 +55,8 @@ trait CLI extends BareShell { this: BareShell =>
     RemapLayer,
     IncludeUtilMetadata,
     UseSRAMBlackbox,
-    IncludeInlineTestsForModule,
-    IncludeInlineTestsWithName,
+    IncludeAutoTestsForModule,
+    IncludeAutoTestsWithName,
     SuppressSourceInfoAnnotation,
     EmitDebugIntrinsicsAnnotation
   ).foreach(_.addOptions(parser))

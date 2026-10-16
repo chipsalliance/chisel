@@ -53,7 +53,7 @@ class Elaborate extends Phase {
             new DefinitionRegistry,
             BuilderContextCache.empty,
             chiselOptions.layerMap,
-            chiselOptions.inlineTestIncluder,
+            chiselOptions.autoTestIncluder,
             chiselOptions.suppressSourceInfo,
             false,
             elaborationTrace
