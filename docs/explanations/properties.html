@@ -10,7 +10,7 @@
 
 
 <link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.5b455b69.css">
-<script src="/assets/js/runtime~main.05fbd7ac.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.fa3d9dc5.js" defer="defer"></script>
 <script src="/assets/js/main.4b461219.js" defer="defer"></script>
 </head>
 <body>
@@ -87,6 +87,13 @@ input <code>base</code> <code>Property[Int]</code> value.</p>
 <p>The following table lists the possible arithmetic operators that are supported
 on integral <code>Property</code> typed values.</p>
 <table><thead><tr><th>Operation</th><th>Description</th></tr></thead><tbody><tr><td><code>+</code></td><td>Perform addition as defined by FIRRTL spec section Integer Add Operation</td></tr><tr><td><code>*</code></td><td>Perform multiplication as defined by FIRRTL spec section Integer Multiply Operation</td></tr><tr><td><code>&gt;&gt;</code></td><td>Perform shift right as defined by FIRRTL spec section Integer Shift Right Operation</td></tr><tr><td><code>&lt;&lt;</code></td><td>Perform shift left as defined by FIRRTL spec section Integer Shift Left Operation</td></tr></tbody></table>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="integer-bitwise-operations">Integer Bitwise Operations<a href="#integer-bitwise-operations" class="hash-link" aria-label="Direct link to Integer Bitwise Operations" title="Direct link to Integer Bitwise Operations" translate="no">​</a></h4>
+<p>The integral <code>Property</code> types, like <code>Property[Int]</code>, <code>Property[Long]</code> and
+<code>Property[BigInt]</code>, can also be used to build bitwise expressions in terms of
+<code>Property</code> values.</p>
+<p>The following table lists the bitwise operators that are supported on integral
+<code>Property</code> typed values.</p>
+<table><thead><tr><th>Operation</th><th>Description</th></tr></thead><tbody><tr><td><code>&amp;</code></td><td>Perform bitwise AND as defined by FIRRTL spec section Integer Bitwise And Operation</td></tr><tr><td><code>|</code></td><td>Perform bitwise OR as defined by FIRRTL spec section Integer Bitwise Or Operation</td></tr><tr><td><code>~</code></td><td>Perform bitwise NOT as defined by FIRRTL spec section Integer Bitwise Not Operation</td></tr></tbody></table>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="sequence-operations">Sequence Operations<a href="#sequence-operations" class="hash-link" aria-label="Direct link to Sequence Operations" title="Direct link to Sequence Operations" translate="no">​</a></h4>
 <p>The sequence <code>Property</code> types, like <code>Property[Seq[Int]]</code> support some basic
 operations to create new sequences from existing sequences.</p>
