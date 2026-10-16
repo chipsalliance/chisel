@@ -111,10 +111,10 @@ object Instantiate extends InstantiateIntf {
     f:    K => A,
     tt:   Any
   ): Definition[A] = {
-    val modulePrefix = Module.currentModulePrefix
+    val dedupModulePrefix = Builder.getDedupModulePrefix
     Builder.contextCache
       .getOrElseUpdate(
-        CacheKey[A](boxAllData(args), tt, List(modulePrefix), Builder.elideLayerBlocks), {
+        CacheKey[A](boxAllData(args), tt, List(dedupModulePrefix), Builder.elideLayerBlocks), {
           // The definition needs to have no source locator because otherwise it will be unstably
           // derived from the first invocation of Instantiate for the particular Module
           Definition.apply(f(args))(UnlocatableSourceInfo)

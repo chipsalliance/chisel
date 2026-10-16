@@ -723,6 +723,12 @@ package experimental {
       }
     }
 
+    /** Proposed name used to group modules for deduplication, excluding non-blocking prefixes. */
+    private[chisel3] def _proposedDedupGroup: String = this match {
+      case _: PseudoModule | _: BaseBlackBox => _proposedName
+      case _                                  => this.dedupModulePrefix + desiredName
+    }
+
     /** Legalized name of this module. */
     final lazy val name = {
       def err(msg: String, cause: Throwable = null) = {
@@ -996,6 +1002,12 @@ package experimental {
       */
     def localModulePrefixUseSeparator: Boolean = true
 
+    /** Should [[localModulePrefix]] distinguish deduplication groups for this module and its children?
+      *
+      * Defaults to true. Override to false if this prefix should only affect module names.
+      */
+    def localModulePrefixBlocksDedup: Boolean = true
+
     /** If true, this module (and its children) ignores any inherited module prefix from the parent context
       * (i.e. from [[withModulePrefix]] or a parent's [[localModulePrefix]]), but still respects this
       * module's own [[localModulePrefix]].
@@ -1020,9 +1032,18 @@ package experimental {
         Builder.getModulePrefix
       }
 
+    private[chisel3] final val dedupModulePrefix: String =
+      withModulePrefix(
+        localModulePrefix.filter(_ => localModulePrefixAppliesToSelf).getOrElse(""),
+        localModulePrefixUseSeparator,
+        localModulePrefixBlocksDedup
+      ) {
+        Builder.getDedupModulePrefix
+      }
+
     // Apply localModulePrefix to children.
     localModulePrefix.foreach { prefix =>
-      Builder.pushModulePrefix(prefix, localModulePrefixUseSeparator)
+      Builder.pushModulePrefix(prefix, localModulePrefixUseSeparator, localModulePrefixBlocksDedup)
     }
 
     /** Hook to invoke hardware generators after the rest of the Module is constructed.
@@ -1115,23 +1136,19 @@ package experimental {
   */
 object withModulePrefix {
 
-  /** Prefixes modules with the given prefix
-    *
-    * Uses default separator.
+  /** Prefixes modules with the given prefix.
     *
     * @param prefix The module prefix, blank means ignore.
+    * @param includeSeparator Include the separator after the prefix.
+    * @param blocksDedup If false, this prefix does not distinguish deduplication groups or Instantiate definitions.
     */
-  def apply[T](prefix: String)(block: => T): T =
-    apply(prefix, true)(block)
-
-  /** Prefixes modules with the given prefix
-    *
-    * @param prefix The module prefix, blank means ignore.
-    * @param includeSeparator Include the separator after the prefix
-    */
-  def apply[T](prefix: String, includeSeparator: Boolean)(block: => T): T = {
+  def apply[T](
+    prefix: String,
+    includeSeparator: Boolean = true,
+    blocksDedup: Boolean = true
+  )(block: => T): T = {
     if (prefix != "") {
-      Builder.pushModulePrefix(prefix, includeSeparator)
+      Builder.pushModulePrefix(prefix, includeSeparator, blocksDedup)
     }
     try block
     finally {

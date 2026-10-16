@@ -457,8 +457,8 @@ private[chisel3] class ChiselContext() {
   // and the resulting .toTarget is very clearly useless (_$$View$$_...)
   val viewNamespace = Namespace.empty
 
-  // Pairs of Prefix and whether to include the separator
-  var modulePrefixStack: List[(String, Boolean)] = Nil
+  // Prefix, whether to include the separator, and whether the prefix blocks deduplication
+  var modulePrefixStack: List[(String, Boolean, Boolean)] = Nil
 }
 
 @nowarn("msg=Avoid custom annotations")
@@ -1177,9 +1177,9 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   // Puts a module prefix string onto the module prefix stack
-  def pushModulePrefix(prefix: String, includeSeparator: Boolean): Unit = {
+  def pushModulePrefix(prefix: String, includeSeparator: Boolean, blocksDedup: Boolean): Unit = {
     val context = chiselContext.get()
-    context.modulePrefixStack = (prefix, includeSeparator) :: context.modulePrefixStack
+    context.modulePrefixStack = (prefix, includeSeparator, blocksDedup) :: context.modulePrefixStack
   }
 
   // Remove the module prefix on top of the stack
@@ -1190,10 +1190,10 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   // Returns the current module prefix stack without modifying it
-  def getModulePrefixStack: List[(String, Boolean)] = chiselContext.get().modulePrefixStack
+  def getModulePrefixStack: List[(String, Boolean, Boolean)] = chiselContext.get().modulePrefixStack
 
   // Clears the module prefix stack and returns the prior value
-  def clearModulePrefixStack(): List[(String, Boolean)] = {
+  def clearModulePrefixStack(): List[(String, Boolean, Boolean)] = {
     val context = chiselContext.get()
     val old = context.modulePrefixStack
     context.modulePrefixStack = Nil
@@ -1201,7 +1201,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   // Set the module prefix stack
-  def setModulePrefixStack(stack: List[(String, Boolean)]): Unit = {
+  def setModulePrefixStack(stack: List[(String, Boolean, Boolean)]): Unit = {
     chiselContext.get().modulePrefixStack = stack
   }
 
@@ -1210,9 +1210,20 @@ private[chisel3] object Builder extends LazyLogging {
     val ctx = chiselContext.get()
     val modulePrefixStack = ctx.modulePrefixStack
     val sep = ctx.modulePrefixSeperator
-    modulePrefixStack.foldLeft("") { case (acc, (elt, useSep)) =>
+    modulePrefixStack.foldLeft("") { case (acc, (elt, useSep, _)) =>
       val s = if (useSep) sep else ""
       elt + s + acc
+    }
+  }
+
+  // Returns only the prefixes that distinguish deduplication groups.
+  def getDedupModulePrefix: String = {
+    val ctx = chiselContext.get()
+    val sep = ctx.modulePrefixSeperator
+    ctx.modulePrefixStack.collect { case (prefix, useSep, true) => (prefix, useSep) }.foldLeft("") {
+      case (acc, (elt, useSep)) =>
+        val s = if (useSep) sep else ""
+        elt + s + acc
     }
   }
 
@@ -1235,8 +1246,8 @@ private[chisel3] object Builder extends LazyLogging {
     clock:         Option[Delayed[Clock]],
     reset:         Option[Delayed[Reset]],
     enabledLayers: List[layer.Layer],
-    // Pairs of module prefix and whether to include the separator (see `Builder.getModulePrefixStack`)
-    modulePrefixStack: List[(String, Boolean)]
+    // Prefix, separator, and dedup behavior (see `Builder.getModulePrefixStack`)
+    modulePrefixStack: List[(String, Boolean, Boolean)]
   )
 
   object State {

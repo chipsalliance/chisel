@@ -34,7 +34,7 @@ class AddDedupGroupAnnotations extends Phase {
       case DefClass(_, _, _, _)              => false
       case x                                 => true
     }.collect {
-      case x if !(skipAnnos.contains(x.id.toTarget)) => DedupGroupAnnotation(x.id.toTarget, x.id._proposedName)
+      case x if !(skipAnnos.contains(x.id.toTarget)) => DedupGroupAnnotation(x.id.toTarget, x.id._proposedDedupGroup)
     }
     annos ++ annotations
   }

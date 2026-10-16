@@ -291,6 +291,48 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   behavior.of("BaseModule.localModulePrefix")
 
+  it should "not block deduplication when localModulePrefixBlocksDedup is false" in {
+    class Foo extends RawModule
+    class Bar extends RawModule {
+      override def localModulePrefix = Some("Outer")
+      override def localModulePrefixBlocksDedup = false
+      val foo = Module(new Foo)
+    }
+    class Top extends RawModule {
+      val bar = Module(new Bar)
+    }
+
+    val annotations =
+      new ChiselStage().execute(Array("--target", "chirrtl"), Seq(ChiselGeneratorAnnotation(() => new Top)))
+    val firrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+    firrtl should include("\"target\":\"~|Outer_Foo\"")
+    firrtl should include("\"group\":\"Foo\"")
+    firrtl should include("\"target\":\"~|Outer_Bar\"")
+    firrtl should include("\"group\":\"Bar\"")
+    firrtl should not include "\"group\":\"Outer_Foo\""
+    firrtl should not include "\"group\":\"Outer_Bar\""
+  }
+
+  it should "not block Instantiate sharing for children when localModulePrefixBlocksDedup is false" in {
+    class Top extends Module {
+      override def localModulePrefix = Some("Outer")
+      override def localModulePrefixBlocksDedup = false
+
+      val first = Instantiate(new AddOne(8))
+      val second = Instantiate(new AddOne(8))
+      first.in := 0.U
+      second.in := 0.U
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Top)
+    chirrtl should include("module Outer_AddOne")
+    chirrtl should not include "module Outer_AddOne_1"
+    chirrtl should include("inst first of Outer_AddOne")
+    chirrtl should include("inst second of Outer_AddOne")
+  }
+
   it should "set the prefix for a Module and its children" in {
 
     class Foo extends RawModule
@@ -472,6 +514,49 @@ class ModulePrefixSpec extends AnyFlatSpec with Matchers with FileCheck {
            |CHECK:         inst foo of Foo
            |""".stripMargin
       )
+  }
+
+  it should "exclude non-blocking prefixes from the dedup group" in {
+    class Foo extends RawModule
+    class Bar extends RawModule {
+      override def localModulePrefix = Some("Outer")
+      val foo = withModulePrefix("Inner", blocksDedup = false) {
+        Module(new Foo)
+      }
+    }
+    class Top extends RawModule {
+      val bar = Module(new Bar)
+    }
+
+    val annotations =
+      new ChiselStage().execute(Array("--target", "chirrtl"), Seq(ChiselGeneratorAnnotation(() => new Top)))
+    val firrtl = annotations.collectFirst { case a: CircuitSerializationAnnotation => a }.get
+      .emitLazily(annotations.collect { case a: DedupGroupAnnotation => a })
+      .mkString
+    firrtl should include("\"target\":\"~|Outer_Inner_Foo\"")
+    firrtl should include("\"group\":\"Outer_Foo\"")
+    firrtl should not include "\"group\":\"Outer_Inner_Foo\""
+    firrtl should include("\"group\":\"Outer_Bar\"")
+    firrtl should include("\"group\":\"Top\"")
+  }
+
+  it should "allow Instantiate definitions to be shared across non-blocking prefixes" in {
+    class Top extends Module {
+      val fooInst = withModulePrefix("Foo", blocksDedup = false) {
+        Instantiate(new AddOne(8))
+      }
+      val barInst = withModulePrefix("Bar", blocksDedup = false) {
+        Instantiate(new AddOne(8))
+      }
+      fooInst.in := 0.U
+      barInst.in := 0.U
+    }
+
+    val chirrtl = ChiselStage.emitCHIRRTL(new Top)
+    chirrtl should include("module Foo_AddOne")
+    chirrtl should not include "module Bar_AddOne"
+    chirrtl should include("inst fooInst of Foo_AddOne")
+    chirrtl should include("inst barInst of Foo_AddOne")
   }
 
   it should "still respect localModulePrefix when ignoreParentPrefix is true" in {
