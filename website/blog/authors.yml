@@ -17,3 +17,11 @@ jackkoenig:
     x: jackakattack
     github: jackkoenig
     linkedin: koenigjack
+adkian-sifive:
+  name: Aditya Naik
+  title: Senior Engineer at SiFive
+  page: true
+  socials:
+    x: 0x7felf
+    github: adkian-sifive
+    linkedin: 0x7felf
