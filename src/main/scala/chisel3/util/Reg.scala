@@ -47,6 +47,13 @@ object ShiftRegister extends ShiftRegisterIntf {
   ): T =
     ShiftRegisters(in, n, resetData, en).lastOption.getOrElse(in)
 
+  private def holdRead[T <: Data](out: T, en: Bool)(implicit sourceInfo: SourceInfo): T = {
+    // A synchronous read is valid in the cycle after en was asserted.
+    val readValid = RegNext(en)
+    val held = RegEnable(out, readValid)
+    Mux(readValid, out, held)
+  }
+
   protected def _applyImplMem[T <: Data](
     in:              T,
     n:               Int,
@@ -73,15 +80,9 @@ object ShiftRegister extends ShiftRegisterIntf {
       when(en) {
         mem.write(waddr, in)
       }
-      out
+      holdRead(out, en)
     } else {
       require(n % 2 == 0, "Odd shift register length with single-port SRAMs is not supported")
-
-      val out_sp0 = Wire(in.cloneType)
-      out_sp0 := DontCare
-
-      val out_sp1 = Wire(in.cloneType)
-      out_sp1 := DontCare
 
       val mem_sp0 = SyncReadMem(n / 2, in.cloneType)
       val mem_sp1 = SyncReadMem(n / 2, in.cloneType)
@@ -99,17 +100,10 @@ object ShiftRegister extends ShiftRegisterIntf {
       val wen_sp1 = WireDefault(false.B)
       wen_sp1 := ~wen_sp0
 
-      when(en) {
-        val rdwrPort = mem_sp0(raddr_sp0)
-        when(wen_sp0) { rdwrPort := in }.otherwise { out_sp0 := rdwrPort }
-      }
-
-      when(en) {
-        val rdwrPort = mem_sp1(raddr_sp1)
-        when(wen_sp1) { rdwrPort := in }.otherwise { out_sp1 := rdwrPort }
-      }
-      val out = Mux(~wen_sp1, out_sp0, out_sp1)
-      out
+      val rdwrPort_sp0 = mem_sp0.readWrite(raddr_sp0, in, en, wen_sp0)
+      val rdwrPort_sp1 = mem_sp1.readWrite(raddr_sp1, in, en, wen_sp1)
+      val out = Mux(~wen_sp1, rdwrPort_sp0, rdwrPort_sp1)
+      holdRead(out, en)
     }
   }
 }
