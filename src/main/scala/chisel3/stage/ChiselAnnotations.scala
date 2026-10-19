@@ -22,6 +22,7 @@ import chisel3.internal.firrtl.ir.Circuit
 import chisel3.internal.firrtl.Converter
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq}
 import firrtl.ir.{CircuitWithAnnos, Serializer}
+import scala.annotation.nowarn
 import scala.util.control.NonFatal
 import java.io.{BufferedWriter, File, FileWriter}
 import java.lang.reflect.InvocationTargetException
@@ -583,32 +584,76 @@ case object UseSRAMBlackbox extends NoTargetAnnotation with ChiselOption with Ha
   )
 }
 
+/** Select auto-tests whose DUT module names match a glob. */
+case class IncludeAutoTestsForModuleAnnotation(glob: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption
+
+/** Add the option that selects auto-tests by DUT module name. */
+case object IncludeAutoTestsForModule extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "include-tests-module",
+      toAnnotationSeq = glob => Seq(IncludeAutoTestsForModuleAnnotation(glob)),
+      helpText = "Elaborate auto-tests when the module-under-test name matches this glob"
+    )
+  )
+}
+
+/** Select auto-tests whose names match a glob. */
+case class IncludeAutoTestsWithNameAnnotation(glob: String)
+    extends NoTargetAnnotation
+    with Unserializable
+    with ChiselOption
+
+/** Add the option that selects auto-tests by test name. */
+case object IncludeAutoTestsWithName extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "include-tests-name",
+      toAnnotationSeq = glob => Seq(IncludeAutoTestsWithNameAnnotation(glob)),
+      helpText = "Elaborate auto-tests whose name matches this glob"
+    )
+  )
+}
+
+/** The old module filter annotation. Use IncludeAutoTestsForModuleAnnotation instead. */
+@deprecated("Use IncludeAutoTestsForModuleAnnotation", "Chisel 7.16.0")
 case class IncludeInlineTestsForModuleAnnotation(glob: String)
     extends NoTargetAnnotation
     with Unserializable
     with ChiselOption
 
+/** The old module filter option. Use IncludeAutoTestsForModule instead. */
+@deprecated("Use IncludeAutoTestsForModule", "Chisel 7.16.0")
+@nowarn("cat=deprecation")
 case object IncludeInlineTestsForModule extends HasShellOptions {
   val options = Seq(
     new ShellOption[String](
       longOption = "include-tests-module",
       toAnnotationSeq = glob => Seq(IncludeInlineTestsForModuleAnnotation(glob)),
-      helpText = "Elaborate inline tests when the module-under-test name matches this glob"
+      helpText = "Elaborate tests when the module-under-test name matches this glob"
     )
   )
 }
 
+/** The old test name filter annotation. Use IncludeAutoTestsWithNameAnnotation instead. */
+@deprecated("Use IncludeAutoTestsWithNameAnnotation", "Chisel 7.16.0")
 case class IncludeInlineTestsWithNameAnnotation(glob: String)
     extends NoTargetAnnotation
     with Unserializable
     with ChiselOption
 
+/** The old test name filter option. Use IncludeAutoTestsWithName instead. */
+@deprecated("Use IncludeAutoTestsWithName", "Chisel 7.16.0")
+@nowarn("cat=deprecation")
 case object IncludeInlineTestsWithName extends HasShellOptions {
   val options = Seq(
     new ShellOption[String](
       longOption = "include-tests-name",
       toAnnotationSeq = glob => Seq(IncludeInlineTestsWithNameAnnotation(glob)),
-      helpText = "Elaborate inline tests whose name matches this glob"
+      helpText = "Elaborate tests whose name matches this glob"
     )
   )
 }
