@@ -72,4 +72,17 @@ class CsaSpec extends AnyPropSpec with PropertyUtils with ChiselSim with Matcher
     }))
     log should include("Cannot optimize width of carry vector because width of input term ")
   }
+
+  property("Carry-Save Adder construction should fail with actionable feedback if too many single-bit terms") {
+    val exception = intercept[IllegalArgumentException] {
+      ChiselStage.emitCHIRRTL(new RawModule {
+        val myUInts = Seq.fill(5)(Wire(UInt()))
+        val myBools = Seq.fill(13)(Wire(Bool())) // Compressing 5 terms leaves 3 holes. This is clearly too much
+        CarrySaveAdder(myUInts, myBools)
+      })
+    }
+    exception.getMessage should include(
+      "Not enough reduction stages to accommodate all 13 single-bit terms. 10 bits did not find a hole. Need more UInt terms"
+    )
+  }
 }

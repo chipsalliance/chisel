@@ -92,7 +92,8 @@ object Log2 {
 object CarrySaveAdder {
 
   /** Adds an arbitrary-length sequence of UInts in an area- and timing-efficient way, by using a Carry-Save Adder tree.
-   *  The bits from the *bits parameter are inserted in the tree with LSB weight, without adding logic depth.
+   *  The elements from the bits parameter are inserted in the holes at the LSB positions in the tree, without adding logic depth.
+   *  If more bits are offered than holes are available, elaboration fails.
    */
   def apply(terms: Seq[UInt], bits: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = {
     val sumRedundant = sumCarry(terms, bits)
@@ -113,17 +114,20 @@ object CarrySaveAdder {
 
   /** Adds the arbitrary-length sequence of UInts in an area- and timing-efficient way, by using a Carry-Save Adder tree.
    *  Inserts an additional bit in the LSB bit position, without adding logic depth.
+   *  If less than three terms are provided, there is no hole for the addtional bit, and elaboration fails.
    */
   def apply(terms: Seq[UInt], bit: Bool)(implicit sourceInfo: SourceInfo): UInt = apply(terms, Seq(bit))
 
   /** Adds the arbitrary-length sequence of UInts in an area- and timing-efficient way, by using a Carry-Save Adder tree.
-   *  Inserts additional bits in the LSB bit position, without adding logic depth.
+   *  The elements from the bits parameter are inserted in the holes at the LSB positions in the tree, without adding logic depth.
+   *  If more bits are offered than holes are available, elaboration fails.
    */
   def apply(terms: Seq[UInt], bit: Bool, moreBits: Bool*)(implicit sourceInfo: SourceInfo): UInt =
     apply(terms, bit +: moreBits)
 
   /** Adds the arbitrary-length sequence of UInts in an area- and timing-efficient way, by using a Carry-Save Adder tree.
-   *  The bits from the *bits parameter are inserted in the tree with LSB weight, without adding logic depth.
+   *  The elements from the bits parameter are inserted in the holes at the LSB positions in the tree, without adding logic depth.
+   *  If more bits are offered than holes are available, elaboration fails.
    *  Returns the sum in redundant format as sum/carry tuple.
    */
   def sumCarry(terms: Seq[UInt], bits: Seq[Bool])(implicit sourceInfo: SourceInfo): (UInt, UInt) = {
@@ -131,7 +135,7 @@ object CarrySaveAdder {
     val result = carrySaveRec(terms, bitsIt)
     require(
       !bitsIt.hasNext,
-      "Not enough 3:2 reduction stages to accommodate all single-bit terms from the second argument"
+      s"Not enough reduction stages to accommodate all ${bits.length} single-bit terms. ${bitsIt.size} bits did not find a hole. Need more UInt terms"
     )
     terms.filterNot(_.isWidthKnown).foreach { t =>
       Builder.warning(
@@ -161,12 +165,14 @@ object CarrySaveAdder {
 
   /** Adds the arbitrary-length sequence of UInts in an area- and timing-efficient way, by using a Carry-Save Adder tree.
    *  Inserts an additional bit in the LSB bit position, without adding logic depth.
+   *  If less than three terms are provided, there is no hole for the addtional bit, and elaboration fails.
    *  Returns the sum in redundant format as sum/carry tuple.
    */
   def sumCarry(terms: Seq[UInt], bit: Bool)(implicit sourceInfo: SourceInfo): (UInt, UInt) = sumCarry(terms, Seq(bit))
 
   /** Adds the arbitrary-length sequence of UInts in an area- and timing-efficient way, by using a Carry-Save Adder tree.
-   *  Inserts additional bits in the LSB bit position, without adding logic depth.
+   *  The elements from the bits parameter are inserted in the holes at the LSB positions in the tree, without adding logic depth.
+   *  If more bits are offered than holes are available, elaboration fails.
    *  Returns the sum in redundant format as sum/carry tuple.
    */
   def sumCarry(terms: Seq[UInt], bit: Bool, moreBits: Bool*)(implicit sourceInfo: SourceInfo): (UInt, UInt) =
