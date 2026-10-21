@@ -7,7 +7,7 @@ import scala.util.Random
 import chisel3._
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
-import chisel3.util.{Counter, Csa, PopCount}
+import chisel3.util.{CarrySaveAdder, Counter, PopCount}
 import chisel3.util.random.LFSR
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
@@ -39,8 +39,8 @@ class CsaTester(termWidths: Seq[Int], boolCount: Int) extends Module {
   val testCases = Seq(termsCounting, termsRandom)
 
   testCases.foreach { csaInput => // parallel testing circuitry for both tests
-    val csaResult = Csa(csaInput, bools)
-    val (sum, cry) = Csa.sumCarry(csaInput, bools)
+    val csaResult = CarrySaveAdder(csaInput, bools)
+    val (sum, cry) = CarrySaveAdder.sumCarry(csaInput, bools)
     val refResult = csaInput.reduce((a, b) => a +& b) +& PopCount(bools)
     assert(csaInput.forall(_.isWidthKnown), "Testcase error: should know the width of input terms")
     assert(
@@ -68,7 +68,7 @@ class CsaSpec extends AnyPropSpec with PropertyUtils with ChiselSim with Matcher
   property("Carry-Save Adder should warn about unknown-width input terms") {
     val (log, _) = grabLog(ChiselStage.emitCHIRRTL(new RawModule {
       val myUInts = Seq.fill(4)(Wire(UInt()))
-      Csa(myUInts)
+      CarrySaveAdder(myUInts)
     }))
     log should include("Cannot optimize width of carry vector because width of input term ")
   }

@@ -89,7 +89,7 @@ object Log2 {
  * - circuitry returns two UInt hardware terms; final addition includes a signed constant offset.
  */
 
-object Csa {
+object CarrySaveAdder {
 
   /** Adds an arbitrary-length sequence of UInts in an area- and timing-efficient way, by using a Carry-Save Adder tree.
    *  The bits from the *bits parameter are inserted in the tree with LSB weight, without adding logic depth.
