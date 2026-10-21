@@ -96,11 +96,11 @@ object CarrySaveAdder {
    *  If more bits are offered than holes are available, elaboration fails.
    */
   def apply(terms: Seq[UInt], bits: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = {
-    val sumRedundant = sumCarry(terms, bits)
+    val (sum, carry) = sumCarry(terms, bits)
     terms.length match {
       case 0 => 0.U(0.W)
       case 1 => terms.head // avoid +& because it widens result by 1 bit
-      case _ => sumRedundant._1 +& sumRedundant._2 // final carry-propagate addition of the two output terms
+      case _ => sum +& carry // final carry-propagate addition
     }
   }
 
