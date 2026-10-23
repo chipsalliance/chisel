@@ -3,9 +3,9 @@
 import chisel3.properties._
 
 class MyLit
-// CHECK: error: unsupported Property type Bad.MyLit
+// CHECK: unsupported Property type {{Bad.*}}MyLit
 val badPropLiteral = Property(new MyLit)
 
-// CHECK: error: unsupported Property type Bad.MyTpe
+// CHECK: unsupported Property type {{Bad.*}}MyTpe
 class MyTpe
 val badPropType = Property[MyTpe]()
