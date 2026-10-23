@@ -20,7 +20,7 @@ private[chisel3] object SourceInfoMacro {
       if (file.file == null) {
         file.path
       } else {
-        SourceInfoFileResolver.resolve(file.file.toPath)
+        SourceInfoFileResolver.resolve(file.file.toPath, c.settings)
       }
     }
 
