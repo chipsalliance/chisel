@@ -255,7 +255,7 @@ class ChiselComponent(val global: Global, arguments: ChiselPluginArguments)
           if (file.file == null) {
             file.path
           } else {
-            SourceInfoFileResolver.resolve(file.file.toPath)
+            SourceInfoFileResolver.resolve(file.file.toPath, global.settings.XmacroSettings.value)
           }
         }
         val info = localTyper.typed(q"chisel3.experimental.SourceLine($path, ${module.pos.line}, ${module.pos.column})")
