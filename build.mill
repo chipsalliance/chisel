@@ -287,7 +287,7 @@ object circt extends Module {
             v.firtoolVersion,
             if (linux) "linux" else if (mac) "macos" else throw new Exception("unsupported os"),
             // circt does not yet publish for macos-aarch64, use x64 for now
-            if (amd64 || mac) "x64" else throw new Exception("unsupported arch")
+            if (amd64) "x64" else if (aarch64) "arm64" else throw new Exception("unsupported arch")
           )
           Task.ctx().log.info(s"Downloading circt from ${url}")
           download(url, os.rel / "circt.tar.gz")
