@@ -36,6 +36,55 @@ class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
   val chosen = Output(UInt(log2Ceil(n).W))
 }
 
+/** Arbiter interface with a per-input release signal for retained ownership.
+  *
+  * @param gen data type
+  * @param n number of inputs
+  */
+class LockUntilReleaseArbiterIO[T <: Data](gen: T, n: Int) extends ArbiterIO[T](gen, n) {
+
+  /** Release ownership when the corresponding input's transfer is accepted.
+    * For example, connect a stream's last-beat indicator or a NoC packet's tail-flit indicator.
+    *
+    * @group Signals
+    */
+  val release = Input(Vec(n, Bool()))
+}
+
+/** Round-robin locking arbiter that retains its lock until released by a corresponding release signal.
+  * That lock persists even if the valid signal of the input changes, supporting multi-cycle input
+  * streams without being preempted by another input.
+  *
+  * @param gen data type
+  * @param n number of inputs
+  */
+class LockUntilReleaseRRArbiter[T <: Data](gen: T, n: Int) extends Module {
+  require(n >= 1, s"LockUntilReleaseRRArbiter requires at least 1 input, got $n")
+  val io = IO(new LockUntilReleaseArbiterIO(gen, n))
+
+  if (n == 1) {
+    io.out <> io.in(0)
+    io.chosen := 0.U
+  } else {
+    val locked = RegInit(false.B)
+    val lockedGrant = RegInit(0.U(log2Ceil(n).W))
+    val arb = Module(new RRArbiter(gen, n, initLastGrant = true))
+
+    for (i <- 0 until n) {
+      val grantMatch = !locked || lockedGrant === i.U
+      arb.io.in(i).valid := io.in(i).valid && grantMatch
+      arb.io.in(i).bits := io.in(i).bits
+      io.in(i).ready := arb.io.in(i).ready && grantMatch
+    }
+    when(arb.io.out.fire) {
+      locked := !io.release(arb.io.chosen)
+      lockedGrant := arb.io.chosen
+    }
+    io.out <> arb.io.out
+    io.chosen := Mux(locked, lockedGrant, arb.io.chosen)
+  }
+}
+
 /** Arbiter Control determining which producer has access
   */
 private object ArbiterCtrl {
