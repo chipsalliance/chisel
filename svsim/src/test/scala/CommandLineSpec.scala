@@ -125,4 +125,23 @@ class CommandLineSpec extends AnyFlatSpec with Matchers {
     args should contain("--timing")
   }
 
+  it should "not pass --trace-threads for FST tracing" in {
+    import svsim.verilator.Backend.CompilationSettings
+    import svsim.verilator.Backend.CompilationSettings.{TraceKind, TraceStyle}
+
+    val args = verilatorBackend
+      .generateParameters(
+        "bar",
+        "baz",
+        Seq.empty,
+        CommonCompilationSettings(),
+        CompilationSettings.default.withTraceStyle(Some(TraceStyle(TraceKind.Fst(Some(2)))))
+      )
+      .compilerInvocation
+      .arguments
+
+    args should contain("--trace-fst")
+    args should not contain "--trace-threads"
+  }
+
 }

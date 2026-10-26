@@ -4,6 +4,7 @@ package svsim.verilator
 
 import svsim._
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.sys.process._
 
@@ -23,11 +24,15 @@ object Backend {
 
       /** FST tracing
         *
-        * @param traceThreads Enable FST waveform creation using `traceThreads` separate threads
+        * @param traceThreads Ignored.  This used to be passed to Verilator as `--trace-threads`, but Verilator v5.048
+        * removed multi-threaded FST tracing and now warns about the option, which fails the build.
         */
-      case class Fst(traceThreads: Option[Int] = None) extends Type {
-        final def toCompileFlags: Seq[String] =
-          Seq("--trace-fst") ++ traceThreads.map(n => Seq("--trace-threads", n.toString)).toSeq.flatten
+      @nowarn("cat=deprecation") // the synthetic case class members read traceThreads
+      case class Fst(
+        @deprecated("ignored, Verilator v5.048 removed multi-threaded FST tracing", "Chisel 7.17.0")
+        traceThreads: Option[Int] = None
+      ) extends Type {
+        final def toCompileFlags: Seq[String] = Seq("--trace-fst")
       }
     }
 
