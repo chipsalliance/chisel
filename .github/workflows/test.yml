@@ -89,7 +89,6 @@ jobs:
   lit:
     name: Run lit tests
     runs-on: ${{ inputs.system }}
-    if: ${{ inputs.scala == '2.13' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
