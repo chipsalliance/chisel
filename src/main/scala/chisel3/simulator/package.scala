@@ -3,7 +3,8 @@ package chisel3
 import svsim._
 import chisel3.reflect.DataMirror
 import chisel3.experimental.dataview.reifyIdentityView
-import chisel3.experimental.inlinetest.{ElaboratedTest, HasTests, TestParameters}
+import chisel3.autotest.{HasTests, TestParameters}
+import chisel3.experimental.inlinetest.ElaboratedTest
 import chisel3.stage.DesignAnnotation
 import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}

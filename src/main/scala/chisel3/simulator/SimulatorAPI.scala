@@ -3,7 +3,7 @@
 package chisel3.simulator
 
 import chisel3.{Module, RawModule, SimulationTestHarnessInterface}
-import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestChoice}
+import chisel3.autotest.{HasTests, TestChoice}
 import chisel3.simulator.stimulus.{ResetProcedure, SimulationTestStimulus}
 import chisel3.testing.HasTestingDirectory
 import chisel3.util.simpleClassName
