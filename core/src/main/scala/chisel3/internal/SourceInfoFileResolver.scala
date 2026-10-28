@@ -4,6 +4,7 @@ package chisel3.internal.sourceinfo
 
 import java.io.File.separatorChar
 import java.nio.file.Path
+import java.util.concurrent.ConcurrentHashMap
 
 ///////////////////////////////////////////////////////
 //                     WARNING!!                     //
@@ -30,6 +31,15 @@ private[internal] object SourceInfoFileResolver {
       .orElse(sys.props.get("chisel.project.root"))
     val root = projectRoot.orElse(userDir).map(sanitizePath)
 
-    root.map(r => source.toRealPath().toString.stripPrefix(r)).getOrElse(source.toString)
+    root match {
+      case None    => source.toString
+      case Some(r) => cache.computeIfAbsent((source, r), _ => source.toRealPath().toString.stripPrefix(r))
+    }
   }
+
+  // Resolving is called for every SourceInfo macro expansion and Module definition, but there are
+  // few distinct source files. toRealPath hits the filesystem so it is worth caching. The root is
+  // part of the key so that resident compilers (e.g. sbt, Mill, Bloop) reusing this classloader
+  // still respect changes to the project root.
+  private val cache = new ConcurrentHashMap[(Path, String), String]
 }
