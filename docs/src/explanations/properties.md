@@ -186,9 +186,24 @@ class SequenceOperationExample extends RawModule {
 The following table lists the possible sequence operators that are supported on
 sequence `Property` typed values.
 
-| Operation | Description                                                                          |
-| --------- | -----------                                                                          |
-| `++`      | Perform concatenation as defined by FIRRTL spec section List Concatenation Operation |
+| Operation  | Description                                                                          |
+| ---------- | ------------------------------------------------------------------------------------ |
+| `++`       | Perform concatenation as defined by FIRRTL spec section List Concatenation Operation |
+| `contains` | Test whether a sequence contains a property value, returning `Property[Boolean]`     |
+
+The `contains` operation is available on `Property[Seq[U]]`, `Property[List[U]]`,
+and `Property[Vector[U]]` when `U` supports property equality. For example,
+`names.contains(target)` returns a `Property[Boolean]` indicating whether the
+property sequence `names` contains the property value `target`.
+
+```scala mdoc:silent
+class SequenceContainsExample extends RawModule {
+  val names = IO(Input(Property[Seq[String]]()))
+  val target = IO(Input(Property[String]()))
+  val found = IO(Output(Property[Boolean]()))
+  found := names.contains(target)
+}
+```
 
 ### Classes and Objects
 
