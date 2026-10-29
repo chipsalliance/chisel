@@ -400,6 +400,18 @@ sealed trait Property[T] extends Element { self =>
     PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], Property[String](message))
   }
 
+  /** Check whether a sequence property contains a property value.
+    *
+    * @param that the property value to search for
+    * @return Property[Boolean] indicating whether the sequence contains the value
+    */
+  final def contains[U](that: Property[U])(
+    implicit ev: PropertySequenceContainsOps[T, U],
+    sourceInfo:  SourceInfo
+  ): Property[Boolean] = {
+    ev.contains(this, that)
+  }
+
   /** Property equality comparison
     *
     * Compares two properties of the same type and returns a Property[Boolean].
@@ -560,11 +572,11 @@ private object PropertyExpressionHelpers {
   }
 
   // Helper function for comparison operations that return Property[Boolean].
-  def cmpOp[T](
+  def cmpOp[L, R](
     sourceInfo: SourceInfo,
     op:         fir.PropPrimOp,
-    lhs:        Property[T],
-    rhs:        Property[T]
+    lhs:        Property[L],
+    rhs:        Property[R]
   ): Property[Boolean] = {
     implicit val info = sourceInfo
 
@@ -725,6 +737,38 @@ object PropertySequenceOps {
       def concat(lhs: Property[String], rhs: Property[String])(implicit sourceInfo: SourceInfo) =
         binOp(sourceInfo, fir.StringConcatOp, lhs, rhs)
     }
+}
+
+/** Typeclass for Property sequence membership operations.
+  */
+@implicitNotFound("contains is not supported on Property type ${T} with element type ${U}")
+sealed trait PropertySequenceContainsOps[T, U] {
+  def contains(lhs: Property[T], rhs: Property[U])(implicit sourceInfo: SourceInfo): Property[Boolean]
+}
+
+object PropertySequenceContainsOps {
+  import PropertyExpressionHelpers._
+
+  private def sequenceContainsOps[S, U](implicit equality: PropertyEqualityOps[Property[U]]) =
+    new PropertySequenceContainsOps[S, U] {
+      def contains(lhs: Property[S], rhs: Property[U])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+        cmpOp(sourceInfo, fir.ListContainsOp, lhs, rhs)
+    }
+
+  implicit def seqContainsOps[U](
+    implicit equality: PropertyEqualityOps[Property[U]]
+  ): PropertySequenceContainsOps[Seq[U], U] =
+    sequenceContainsOps[Seq[U], U]
+
+  implicit def listContainsOps[U](
+    implicit equality: PropertyEqualityOps[Property[U]]
+  ): PropertySequenceContainsOps[List[U], U] =
+    sequenceContainsOps[List[U], U]
+
+  implicit def vectorContainsOps[U](
+    implicit equality: PropertyEqualityOps[Property[U]]
+  ): PropertySequenceContainsOps[Vector[U], U] =
+    sequenceContainsOps[Vector[U], U]
 }
 
 /** Typeclass for Property string operations.
