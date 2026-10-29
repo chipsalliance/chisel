@@ -12,14 +12,14 @@ object `package` extends Module {
   object cross extends Cross[IntegrationTests](v.scalaCrossVersions)
 }
 
-trait IntegrationTests extends HasScalaPlugin with HasCommonOptions with ScalafmtModule {
+trait IntegrationTests extends HasScalaPlugin with HasCommonOptions with HasChiselProjectRoot with ScalafmtModule {
 
   def moduleDir = super.moduleDir / os.up
 
   // TODO enable
   override def xsource3 = false
 
-  object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends CrossSbtTests with TestModule.ScalaTest with HasChiselProjectRoot with ScalafmtModule {
     override def moduleDeps = super.moduleDeps :+ chisel(crossScalaVersion).test
     def mvnDeps = Seq(v.scalatest, v.scalacheck)
 

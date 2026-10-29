@@ -248,6 +248,16 @@ trait HasCommonOptions extends CrossModuleBase {
   }
 }
 
+/** Sets the project root used by the SourceInfo macro to compute relative source locators.
+  *
+  * Only mix this into modules whose sources expand SourceInfo (i.e. that compile Chisel code).
+  */
+trait HasChiselProjectRoot extends ScalaModule {
+  override def scalacOptions = Task {
+    super.scalacOptions() :+ s"-Xmacro-settings:chisel.project.root=${BuildCtx.workspaceRoot}"
+  }
+}
+
 // Build rules for managing circt artifacts
 object circt extends Module {
   val architecture = System.getProperty("os.arch")
@@ -304,7 +314,12 @@ object circt extends Module {
 // TODO: move chisel src to subfolder once we have dropped sbt flow
 object chisel extends Cross[Chisel](v.scalaCrossVersions)
 
-trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin with ScalafmtModule {
+trait Chisel
+    extends CrossSbtModule
+    with HasScala2MacroAnno
+    with HasScalaPlugin
+    with HasChiselProjectRoot
+    with ScalafmtModule {
 
   override def moduleDir = super.moduleDir / os.up
   def svsimModule = svsim.cross(crossScalaVersion)
@@ -322,7 +337,7 @@ trait Chisel extends CrossSbtModule with HasScala2MacroAnno with HasScalaPlugin 
 
   def compileMvnDeps = Seq(v.scalatest)
 
-  object test extends CrossSbtTests with TestModule.ScalaTest with ScalafmtModule {
+  object test extends CrossSbtTests with TestModule.ScalaTest with HasChiselProjectRoot with ScalafmtModule {
     def mvnDeps = Seq(v.scalatest, v.scalacheck) ++
       (if (v.isScala3(crossScalaVersion)) Seq(v.scala3Staging(_scalaVersion)) else Nil)
 

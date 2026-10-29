@@ -11,7 +11,7 @@ import mill.util.Jvm
 import build._
 
 /** MDoc project */
-object `package` extends HasScalaPlugin with HasCommonOptions {
+object `package` extends HasScalaPlugin with HasCommonOptions with HasChiselProjectRoot {
 
   override def scalaVersion = v.defaultScalaVersion
 
