@@ -84,7 +84,7 @@ package object formal {
 
       // Store the btor2 result to a temp file in a backwards compatible manner (using java)
       val workdir: String = sys.props("user.dir")
-      val btor2file = Files.createTempFile("dut", ".btor2")
+      val btor2file = Files.createTempFile(Paths.get(workdir), "dut", ".btor2")
       Files.write(btor2file, btor2DUT.getBytes(StandardCharsets.UTF_8))
       btor2file.toFile.deleteOnExit
 
