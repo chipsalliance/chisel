@@ -26,7 +26,7 @@ private[chisel3] object SourceInfoMacro {
     */
   private def macroSettings(using Quotes): List[String] = {
     import quotes.reflect.*
-    try CompilationInfo.asInstanceOf[{ def XmacroSettings: List[String] }].XmacroSettings
+    try { CompilationInfo.asInstanceOf[{ def XmacroSettings: List[String] }].XmacroSettings }
     catch { case scala.util.control.NonFatal(_) => Nil }
   }
 }
