@@ -51,7 +51,7 @@ class ChiselSourceLocatorPhase extends PluginPhase {
     val sourceFile = tree.sourcePos.source.file
     val path = sourceFile.jpath match {
       case null  => sourceFile.path
-      case jpath => SourceInfoFileResolver.resolve(jpath)
+      case jpath => SourceInfoFileResolver.resolve(jpath, ctx.settings.XmacroSettings.value)
     }
     val line = tree.sourcePos.line + 1 // Convert from 0-indexed to 1-indexed
     val column = tree.sourcePos.column

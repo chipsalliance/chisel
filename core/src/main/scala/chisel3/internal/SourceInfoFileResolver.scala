@@ -20,9 +20,14 @@ private[internal] object SourceInfoFileResolver {
     else path
   }
 
-  def resolve(source: Path): String = {
+  def resolve(source: Path, macroSettings: List[String] = Nil): String = {
     val userDir = sys.props.get("user.dir") // Figure out what to do if not provided
-    val projectRoot = sys.props.get("chisel.project.root")
+    // Later settings override earlier ones, matching compiler flag semantics
+    val projectRoot = macroSettings.reverseIterator.collectFirst {
+      case setting if setting.startsWith("chisel.project.root=") =>
+        setting.stripPrefix("chisel.project.root=")
+    }
+      .orElse(sys.props.get("chisel.project.root"))
     val root = projectRoot.orElse(userDir).map(sanitizePath)
 
     root.map(r => source.toRealPath().toString.stripPrefix(r)).getOrElse(source.toString)

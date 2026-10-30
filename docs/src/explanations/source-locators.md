@@ -25,4 +25,7 @@ By default, the file's relative path to where the JVM is invoked is included.
 To change where the relative path is computed, set the Java system property `-Dchisel.project.root=/absolute/path/to/root`.
 This option can be directly passed to sbt (`sbt -Dchisel.project.root=/absolute/path/to/root`).
 Setting the value in the `build.sbt` file won't work because it needs to be passed to the JVM that invokes sbt (not the other way around).
+Alternatively, pass the Scala compiler option `-Xmacro-settings:chisel.project.root=/absolute/path/to/root`.
+For example, in `build.sbt`, use `scalacOptions += "-Xmacro-settings:chisel.project.root=/absolute/path/to/root"`.
+The macro setting takes precedence over the Java system property. An empty value retains absolute source paths.
 We expect this only relevant for publishing versions which may want more customization.
