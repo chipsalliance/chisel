@@ -7,6 +7,7 @@ import chiseltest._
 import chiseltest.formal._
 import org.scalatest.flatspec.AnyFlatSpec
 import chisel3.ltl.AssertProperty
+import chisel3.testing.scalatest.FileCheck
 
 /**
  * A simple counter module
@@ -31,7 +32,7 @@ class DualCounter extends Module {
 /**
  * Basic tests for the chiseltest examples
  */
-class VerifyBasicTest extends AnyFlatSpec with ChiselScalatestTester with Formal {
+class VerifyBasicTest extends AnyFlatSpec with ChiselScalatestTester with Formal with FileCheck {
   behavior of "SimpleCounter"
 
   it should "return unsat on k < 256" in {
@@ -56,6 +57,23 @@ class VerifyBasicTest extends AnyFlatSpec with ChiselScalatestTester with Formal
     )
     val isSat = res match { case Sat(_) => true; case _ => false }
     assert(isSat)
+  }
+
+  it should "contain witness message" in {
+    val res = verifyRes(
+      new DualCounter,
+      Seq(
+        BoundedCheck(500),
+        BTORMCBackend
+      )
+    )
+    res.message.fileCheck()(
+        """|CHECK: Some checks failed: counter example was found!
+           |CHECK: sat
+           |CHECK: b0
+           |CHECK: #0
+           |""".stripMargin
+      )
   }
 
 }

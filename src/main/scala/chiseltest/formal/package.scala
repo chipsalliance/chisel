@@ -71,15 +71,24 @@ package object formal {
   trait Formal {
     // Old API for compatibility reasons
     def verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit =
-      verifyRes(dut, annotations)
+      verifyRes(dut, annotations, /*printWitness=*/ true)
 
     // Converts the design to a formal model using the btor2 backend, then
-    // runs the output through some model-checker, e.g. btormc
-    def verifyRes[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult = {
+    // runs the output through some model-checker, e.g. btormc.
+    // Any resulting witness is only printed if `printWitness` is set to `true`.
+    def verifyRes[T <: Module](
+      dut:          => T,
+      annotations:  Seq[Any],
+      printWitness: Boolean = false
+    ): BMCResult = {
       // start by running the btor2 backend
       val btor2DUT: String = ChiselStage.emitBtor2(
         dut,
-        firtoolOpts = Array("-default-layer-specialization=enable")
+        firtoolOpts = Array(
+          "-disable-all-randomization",
+          "-strip-debug-info",
+          "-default-layer-specialization=enable"
+        )
       )
 
       // Store the btor2 result to a temp file in a backwards compatible manner (using java)
@@ -139,8 +148,9 @@ package object formal {
         case s                    => Sat(BasicWitness(s))
       }
 
-      // print out result
-      println(result.message)
+      // print out result if requested
+      if (printWitness)
+        println(result.message)
 
       // feed result to user as well
       result
