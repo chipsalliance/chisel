@@ -7,7 +7,7 @@ import chisel3.internal.Builder
 import chisel3.internal.firrtl.ir
 import chisel3.properties.Property
 import chisel3.properties.PropertyType.{
-  boolpropertyTypeInstance,
+  boolPropertyTypeInstance,
   intPropertyTypeInstance,
   stringPropertyTypeInstance,
   Aux
