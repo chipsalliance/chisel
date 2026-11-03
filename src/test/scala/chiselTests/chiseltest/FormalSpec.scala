@@ -55,8 +55,7 @@ class VerifyBasicTest extends AnyFlatSpec with ChiselScalatestTester with Formal
         BTORMCBackend
       )
     )
-    val isSat = res match { case Sat(_) => true; case _ => false }
-    assert(isSat)
+    assert(res.isSat)
   }
 
   it should "contain witness message" in {

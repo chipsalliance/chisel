@@ -54,19 +54,27 @@ package object formal {
   abstract class BMCResult(
     val message:  String,
     val _witness: Option[Witness]
-  )
+  ) {
+
+    /** Whether or not the current result is SAT. */
+    def isSat: Boolean = false
+  }
 
   case object Unsat
       extends BMCResult(
         "All checks passed: no counterexamples were found!",
         None
-      )
+      ) {
+    override def isSat: Boolean = false
+  }
 
   case class Sat[W <: Witness](witness: W)
       extends BMCResult(
         s"Some checks failed: counter example was found!\n${witness.serialize}",
         Some(witness)
-      )
+      ) {
+    override def isSat: Boolean = true
+  }
 
   trait Formal {
     // Old API for compatibility reasons
