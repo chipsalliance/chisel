@@ -744,12 +744,14 @@ private[chisel3] object Serializer {
   }
 
   private def serialize(fieldType: domain.Field.Type)(implicit b: StringBuilder, indent: Int): Unit = {
-    b ++= {
-      fieldType match {
-        case domain.Field.Boolean => "Bool"
-        case domain.Field.Integer => "Integer"
-        case domain.Field.String  => "String"
-      }
+    fieldType match {
+      case domain.Field.Boolean => b ++= "Bool"
+      case domain.Field.Integer => b ++= "Integer"
+      case domain.Field.String  => b ++= "String"
+      case domain.Field.List(element) =>
+        b ++= "List<"
+        serialize(element)
+        b += '>'
     }
   }
 
