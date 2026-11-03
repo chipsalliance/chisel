@@ -68,12 +68,12 @@ class VerifyBasicTest extends AnyFlatSpec with ChiselScalatestTester with Formal
       )
     )
     res.message.fileCheck()(
-        """|CHECK: Some checks failed: counter example was found!
-           |CHECK: sat
-           |CHECK: b0
-           |CHECK: #0
-           |""".stripMargin
-      )
+      """|CHECK: Some checks failed: counter example was found!
+         |CHECK: sat
+         |CHECK: b0
+         |CHECK: #0
+         |""".stripMargin
+    )
   }
 
 }
