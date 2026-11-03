@@ -74,6 +74,7 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     // Field.Type members are package-private and safe to add
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.createProperty"),
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.expectedPropertyType"),
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.propertyType"),
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.typeName"),
     // Renamed package private *$Intf traits to *ObjInterface
     ProblemFilter.exclude[MissingClassProblem]("chisel3.*$Intf"),
