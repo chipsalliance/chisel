@@ -48,6 +48,7 @@ object Log2 {
  *  Constructs a tree to reduce an arbitrary number of input terms to two terms.
  *
  *  Example resulting circuit topology if applied to 8 4-bit-wide terms, a...h:
+ *  {{{
  *  Rank 1: create groups of 3 terms, reducing each group to 2 terms; i,j,k,l,g,h
  *       GROUP0    GROUP1   GROUP2
  *         aaaa      dddd     gggg
@@ -79,14 +80,16 @@ object Log2 {
  *       ______+
  *       ssssss
  *       tttt..
+ *  }}}
  *
  * Every . is an empty spot introduced by the topology, constant zero in the carry LSB.
  * If the input has single-bit terms, insert those there.
  * In the example tree above, there are six spots where we can insert a single-bit term: j,l,n,p,r,t
  *
  * Future improvement suggestion (not implemented yet):
- * - add support for negative weights at arbitrary bit positions; required to support subtraction.
- * - circuitry returns two UInt hardware terms; final addition includes a signed constant offset.
+ *
+ *  - Add support for negative weights at arbitrary bit positions; required to support subtraction.
+ *  - The circuitry then returns two UInt hardware terms; final addition includes a signed constant offset.
  */
 
 object CarrySaveAdder {
