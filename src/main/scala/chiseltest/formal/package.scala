@@ -71,15 +71,39 @@ package object formal {
   trait Formal {
     // Old API for compatibility reasons
     def verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit =
-      verifyRes(dut, annotations)
+      _verifyImpl(dut, annotations, /*printWitness=*/ true)
+
+    // Formally verifies the given design based on a given backend annotation.
+    // Returns SAT with a witness if the design can violate its specification
+    // under the given backend, UNSAT otherwise.
+    def verifyRes[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult =
+      _verifyImpl(dut, annotations)
+
+    // Formally verifies the given design with the option to automatically
+    // print the witness when it has been discovered.
+    def verifyRes[T <: Module](
+      dut:          => T,
+      annotations:  Seq[Any],
+      printWitness: Boolean
+    ): BMCResult =
+      _verifyImpl(dut, annotations, printWitness)
 
     // Converts the design to a formal model using the btor2 backend, then
-    // runs the output through some model-checker, e.g. btormc
-    def verifyRes[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult = {
+    // runs the output through some model-checker, e.g. btormc.
+    // Any resulting witness is only printed if `printWitness` is set to `true`.
+    private[chiseltest] def _verifyImpl[T <: Module](
+      dut:          => T,
+      annotations:  Seq[Any],
+      printWitness: Boolean = false
+    ) = {
       // start by running the btor2 backend
       val btor2DUT: String = ChiselStage.emitBtor2(
         dut,
-        firtoolOpts = Array("-default-layer-specialization=enable")
+        firtoolOpts = Array(
+          "-disable-all-randomization",
+          "-strip-debug-info",
+          "-default-layer-specialization=enable"
+        )
       )
 
       // Store the btor2 result to a temp file in a backwards compatible manner (using java)
@@ -139,8 +163,9 @@ package object formal {
         case s                    => Sat(BasicWitness(s))
       }
 
-      // print out result
-      println(result.message)
+      // print out result if requested
+      if (printWitness)
+        println(result.message)
 
       // feed result to user as well
       result
