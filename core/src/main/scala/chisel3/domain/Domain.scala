@@ -14,8 +14,11 @@ object Field {
     /** The Scala type that corresponds to this field type (e.g., scala.Int for Integer) */
     private[domain] type PropertyType
 
+    /** Evidence for the Property type associated with this field. */
+    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[PropertyType, PropertyType, _]
+
     /** Create a new Property instance of the appropriate type for this field. */
-    private[domain] def createProperty(): Property[PropertyType]
+    private[domain] def createProperty(): Property[PropertyType] = Property[PropertyType]()(propertyType)
 
     /** The expected FIRRTL PropertyType for this field type */
     private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType
@@ -27,7 +30,8 @@ object Field {
   /** A boolean type */
   object Boolean extends Type {
     private[domain] type PropertyType = scala.Boolean
-    private[domain] def createProperty():     Property[scala.Boolean] = Property[scala.Boolean]()
+    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[scala.Boolean, scala.Boolean, _] =
+      chisel3.properties.PropertyType.boolPropertyTypeInstance
     private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.BooleanPropertyType
     private[domain] def typeName:             scala.Predef.String = "Boolean"
   }
@@ -35,7 +39,8 @@ object Field {
   /** An integer type */
   object Integer extends Type {
     private[domain] type PropertyType = scala.Int
-    private[domain] def createProperty():     Property[scala.Int] = Property[scala.Int]()
+    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[scala.Int, scala.Int, _] =
+      chisel3.properties.PropertyType.intPropertyTypeInstance
     private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.IntegerPropertyType
     private[domain] def typeName:             scala.Predef.String = "Int"
   }
@@ -43,9 +48,36 @@ object Field {
   /** A string type */
   object String extends Type {
     private[domain] type PropertyType = scala.Predef.String
-    private[domain] def createProperty():     Property[scala.Predef.String] = Property[scala.Predef.String]()
+    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[scala.Predef.String, scala.Predef.String, _] =
+      chisel3.properties.PropertyType.stringPropertyTypeInstance
     private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.StringPropertyType
     private[domain] def typeName:             scala.Predef.String = "String"
+  }
+
+  /** A list type containing values of `element`.
+    *
+    * Lists may be nested, for example:
+    * {{{
+    * Field.List(Field.Integer)
+    * Field.List(Field.List(Field.String))
+    * }}}
+    * Domain fields of this type are accessed as `Property[Seq[A]]` and accept
+    * Scala `Seq`, `List`, or `Vector` values when instantiating a domain.
+    */
+  final case class List(element: Type) extends Type {
+    private[domain] type PropertyType = scala.Seq[element.PropertyType]
+    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[
+      scala.Seq[element.PropertyType],
+      scala.Seq[element.PropertyType],
+      _
+    ] = new chisel3.properties.SeqPropertyType[
+      element.PropertyType,
+      scala.Seq,
+      element.propertyType.type
+    ](element.propertyType)
+    private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType =
+      _root_.firrtl.ir.SequencePropertyType(element.expectedPropertyType)
+    private[domain] def typeName: scala.Predef.String = s"List[${element.typeName}]"
   }
 }
 
@@ -69,7 +101,9 @@ object Field {
   *   override def fields: Seq[(String, Field.Type)] = Seq(
   *     "bar" -> Field.Boolean,
   *     "baz" -> Field.Integer,
-  *     "qux" -> Field.String
+  *     "qux" -> Field.String,
+  *     "roots" -> Field.List(Field.Integer),
+  *     "names" -> Field.List(Field.List(Field.String))
   *   )
   * }
   * }}}

@@ -316,6 +316,55 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
 
   }
 
+  object ListDomain extends Domain {
+    override def fields = Seq(
+      "roots" -> Field.List(Field.Integer),
+      "nested" -> Field.List(Field.List(Field.Integer))
+    )
+
+    def apply(roots: Property[_], nested: Property[_]): chisel3.domain.Type = super.apply(roots, nested)
+  }
+
+  class ListDomainModule extends RawModule {
+    val A = IO(Input(ListDomain.Type()))
+    val B = IO(Output(ListDomain.Type()))
+    val roots = IO(Output(Property[Seq[Int]]()))
+    val nested = IO(Output(Property[Seq[Seq[Int]]]()))
+
+    roots := A.field.roots
+    nested := A.field.nested
+    domain.define(B, ListDomain(Property(Seq(1, 2)), Property(Seq(Seq(3), Seq.empty[Int]))))
+  }
+
+  it should "support list fields, including nested and empty lists" in {
+    ChiselStage.emitCHIRRTL(new ListDomainModule).fileCheck() {
+      """|CHECK:      domain ListDomain :
+         |CHECK-NEXT:   roots : List<Integer>{{$}}
+         |CHECK-NEXT:   nested : List<List<Integer>>{{$}}
+         |CHECK:        propassign roots, A.roots
+         |CHECK-NEXT:   propassign nested, A.nested
+         |CHECK:        domain [[instance:.+]] of ListDomain(List<Integer>(Integer(1), Integer(2)), List<List<Integer>>(List<Integer>(Integer(3)), List<Integer>()))
+         |CHECK:        domain_define B = [[instance]]
+         |""".stripMargin
+    }
+  }
+
+  it should "reject a mismatched element type in a nested list field" in {
+    class Foo extends RawModule {
+      ListDomain(Property(Seq(1)), Property(Seq(Seq("wrong"))))
+    }
+
+    intercept[ChiselException] {
+      ChiselStage.elaborate(new Foo, Array("--throw-on-first-error"))
+    }.getMessage should include("field 'nested' expects Property[List[List[Int]]] but got Property[List<List<String>>]")
+  }
+
+  it should "compile list-valued domains to SystemVerilog" in {
+    ChiselStage.emitSystemVerilog(new ListDomainModule, firtoolOpts = Array("--domain-mode=infer-all")) should include(
+      "module ListDomainModule"
+    )
+  }
+
   it should "error when property type doesn't match field type" in {
 
     object TestDomain extends Domain {
