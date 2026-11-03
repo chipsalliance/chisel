@@ -1557,6 +1557,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/domain/Field$.html#","e":false,"i":"","n":"Field","t":"Field","d":"chisel3.domain","k":"object","x":""},
 {"l":"chisel3/domain/Field$$Boolean$.html#","e":false,"i":"","n":"Boolean","t":"Boolean extends Type","d":"chisel3.domain.Field","k":"object","x":""},
 {"l":"chisel3/domain/Field$$Integer$.html#","e":false,"i":"","n":"Integer","t":"Integer extends Type","d":"chisel3.domain.Field","k":"object","x":""},
+{"l":"chisel3/domain/Field$$List.html#","e":false,"i":"","n":"List","t":"List(element: Type) extends Type","d":"chisel3.domain.Field","k":"class","x":""},
 {"l":"chisel3/domain/Field$$String$.html#","e":false,"i":"","n":"String","t":"String extends Type","d":"chisel3.domain.Field","k":"object","x":""},
 {"l":"chisel3/domain/Field$$Type.html#","e":false,"i":"","n":"Type","t":"Type","d":"chisel3.domain.Field","k":"trait","x":""},
 {"l":"chisel3/domain/FieldAccessor.html#","e":false,"i":"","n":"FieldAccessor","t":"FieldAccessor extends Dynamic","d":"chisel3.domain","k":"class","x":""},
