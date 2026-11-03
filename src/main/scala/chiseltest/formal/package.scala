@@ -71,16 +71,31 @@ package object formal {
   trait Formal {
     // Old API for compatibility reasons
     def verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit =
-      verifyRes(dut, annotations, /*printWitness=*/ true)
+      _verifyImpl(dut, annotations, /*printWitness=*/ true)
+
+    // Formally verifies the given design based on a given backend annotation.
+    // Returns SAT with a witness if the design can violate its specification
+    // under the given backend, UNSAT otherwise.
+    def verifyRes[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult =
+      _verifyImpl(dut, annotations)
+
+    // Formally verifies the given design with the option to automatically
+    // print the witness when it has been discovered.
+    def verifyRes[T <: Module](
+      dut:          => T,
+      annotations:  Seq[Any],
+      printWitness: Boolean
+    ): BMCResult =
+      _verifyImpl(dut, annotations, printWitness)
 
     // Converts the design to a formal model using the btor2 backend, then
     // runs the output through some model-checker, e.g. btormc.
     // Any resulting witness is only printed if `printWitness` is set to `true`.
-    def verifyRes[T <: Module](
+    private[chiseltest] def _verifyImpl[T <: Module](
       dut:          => T,
       annotations:  Seq[Any],
       printWitness: Boolean = false
-    ): BMCResult = {
+    ) = {
       // start by running the btor2 backend
       val btor2DUT: String = ChiselStage.emitBtor2(
         dut,
