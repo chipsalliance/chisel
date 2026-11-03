@@ -57,7 +57,7 @@ package object formal {
   ) {
 
     /** Whether or not the current result is SAT. */
-    def isSat: Boolean
+    def isSat: Boolean = false
   }
 
   case object Unsat
