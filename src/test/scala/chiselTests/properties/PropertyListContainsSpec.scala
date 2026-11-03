@@ -208,16 +208,12 @@ class PropertyListContainsSpec extends AnyFlatSpec with Matchers with FileCheck 
     exception.getMessage should include("use of unknown declaration 'list_contains'")
   }
 
-  // TODO: Restore this success smoke test once nightly CIRCT is bumped to support list_contains.
-  it should "fail to emit SystemVerilog when firtool does not support list_contains" in {
-    val exception = intercept[RuntimeException] {
-      ChiselStage.emitSystemVerilog(new RawModule {
-        val names = IO(Input(Property[Seq[String]]()))
-        val target = IO(Input(Property[String]()))
-        val found = IO(Output(Property[Boolean]()))
-        found := names.contains(target)
-      })
-    }
-    exception.getMessage should include("use of unknown declaration 'list_contains'")
+  it should "compile with firtool" in {
+    ChiselStage.emitSystemVerilog(new RawModule {
+      val names = IO(Input(Property[Seq[String]]()))
+      val target = IO(Input(Property[String]()))
+      val found = IO(Output(Property[Boolean]()))
+      found := names.contains(target)
+    })
   }
 }
