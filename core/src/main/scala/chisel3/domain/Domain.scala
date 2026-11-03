@@ -6,6 +6,12 @@ import chisel3.experimental.SourceInfo
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.ir
 import chisel3.properties.Property
+import chisel3.properties.PropertyType.{
+  boolpropertyTypeInstance,
+  intPropertyTypeInstance,
+  stringPropertyTypeInstance,
+  Aux
+}
 import chisel3.util.simpleClassName
 
 object Field {
@@ -15,7 +21,7 @@ object Field {
     private[domain] type PropertyType
 
     /** Evidence for the Property type associated with this field. */
-    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[PropertyType, PropertyType, _]
+    private[domain] val propertyType: Aux[PropertyType, PropertyType, _]
 
     /** Create a new Property instance of the appropriate type for this field. */
     private[domain] def createProperty(): Property[PropertyType] = Property[PropertyType]()(propertyType)
@@ -30,8 +36,7 @@ object Field {
   /** A boolean type */
   object Boolean extends Type {
     private[domain] type PropertyType = scala.Boolean
-    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[scala.Boolean, scala.Boolean, _] =
-      chisel3.properties.PropertyType.boolPropertyTypeInstance
+    private[domain] val propertyType:         Aux[scala.Boolean, scala.Boolean, _] = boolPropertyTypeInstance
     private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.BooleanPropertyType
     private[domain] def typeName:             scala.Predef.String = "Boolean"
   }
@@ -39,8 +44,7 @@ object Field {
   /** An integer type */
   object Integer extends Type {
     private[domain] type PropertyType = scala.Int
-    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[scala.Int, scala.Int, _] =
-      chisel3.properties.PropertyType.intPropertyTypeInstance
+    private[domain] val propertyType:         Aux[scala.Int, scala.Int, _] = intPropertyTypeInstance
     private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.IntegerPropertyType
     private[domain] def typeName:             scala.Predef.String = "Int"
   }
@@ -48,8 +52,7 @@ object Field {
   /** A string type */
   object String extends Type {
     private[domain] type PropertyType = scala.Predef.String
-    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[scala.Predef.String, scala.Predef.String, _] =
-      chisel3.properties.PropertyType.stringPropertyTypeInstance
+    private[domain] val propertyType: Aux[scala.Predef.String, scala.Predef.String, _] = stringPropertyTypeInstance
     private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.StringPropertyType
     private[domain] def typeName:             scala.Predef.String = "String"
   }
@@ -66,7 +69,7 @@ object Field {
     */
   final case class List(element: Type) extends Type {
     private[domain] type PropertyType = scala.Seq[element.PropertyType]
-    private[domain] val propertyType: chisel3.properties.PropertyType.Aux[
+    private[domain] val propertyType: Aux[
       scala.Seq[element.PropertyType],
       scala.Seq[element.PropertyType],
       _
