@@ -71,7 +71,7 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[NewMixinForwarderProblem]("chisel3.ltl.Property.*"),
     // Sequence is a sealed trait
     ProblemFilter.exclude[NewMixinForwarderProblem]("chisel3.ltl.Sequence.*"),
-    // Field.Type members are package-private and safe to add
+    // Field.Type members safe to add since Field.Type is sealed
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.createProperty"),
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.expectedPropertyType"),
     ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.domain.Field#Type.propertyType"),
