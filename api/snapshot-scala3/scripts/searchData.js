@@ -1314,6 +1314,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chiseltest/formal/Formal.html#","e":false,"i":"","n":"Formal","t":"Formal","d":"chiseltest.formal","k":"trait","x":""},
 {"l":"chiseltest/formal/Formal.html#verify-af6","e":false,"i":"","n":"verify","t":"verify[T <: Module](dut: => T, annotations: Seq[Any]): Unit","d":"chiseltest.formal.Formal","k":"def","x":""},
 {"l":"chiseltest/formal/Formal.html#verifyRes-fffff428","e":false,"i":"","n":"verifyRes","t":"verifyRes[T <: Module](dut: => T, annotations: Seq[Any]): BMCResult","d":"chiseltest.formal.Formal","k":"def","x":""},
+{"l":"chiseltest/formal/Formal.html#verifyRes-d74","e":false,"i":"","n":"verifyRes","t":"verifyRes[T <: Module](dut: => T, annotations: Seq[Any], printWitness: Boolean): BMCResult","d":"chiseltest.formal.Formal","k":"def","x":""},
 {"l":"chiseltest/formal/FormalBackendAnnotation.html#","e":false,"i":"","n":"FormalBackendAnnotation","t":"FormalBackendAnnotation(val name: String, val kmaxFlag: String, val UnsatOutput: String, val SatOutput: String)","d":"chiseltest.formal","k":"class","x":""},
 {"l":"chiseltest/formal/FormalBackendAnnotation.html#SatOutput-0","e":false,"i":"","n":"SatOutput","t":"SatOutput: String","d":"chiseltest.formal.FormalBackendAnnotation","k":"val","x":""},
 {"l":"chiseltest/formal/FormalBackendAnnotation.html#UnsatOutput-0","e":false,"i":"","n":"UnsatOutput","t":"UnsatOutput: String","d":"chiseltest.formal.FormalBackendAnnotation","k":"val","x":""},
