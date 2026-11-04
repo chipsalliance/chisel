@@ -1307,6 +1307,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chiseltest/formal.html#past-d76","e":false,"i":"","n":"past","t":"past[T <: Data](x: T, delay: Int = ...): T","d":"chiseltest.formal","k":"def","x":""},
 {"l":"chiseltest/formal/BMCResult.html#","e":false,"i":"","n":"BMCResult","t":"BMCResult(val message: String, val _witness: Option[Witness])","d":"chiseltest.formal","k":"class","x":""},
 {"l":"chiseltest/formal/BMCResult.html#_witness-0","e":false,"i":"","n":"_witness","t":"_witness: Option[Witness]","d":"chiseltest.formal.BMCResult","k":"val","x":""},
+{"l":"chiseltest/formal/BMCResult.html#isSat-0","e":false,"i":"","n":"isSat","t":"isSat: Boolean","d":"chiseltest.formal.BMCResult","k":"def","x":""},
 {"l":"chiseltest/formal/BMCResult.html#message-0","e":false,"i":"","n":"message","t":"message: String","d":"chiseltest.formal.BMCResult","k":"val","x":""},
 {"l":"chiseltest/formal/BTORMCBackend$.html#","e":false,"i":"","n":"BTORMCBackend","t":"BTORMCBackend extends FormalBackendAnnotation","d":"chiseltest.formal","k":"object","x":""},
 {"l":"chiseltest/formal/BasicWitness.html#","e":false,"i":"","n":"BasicWitness","t":"BasicWitness(body: String) extends Witness","d":"chiseltest.formal","k":"class","x":""},
