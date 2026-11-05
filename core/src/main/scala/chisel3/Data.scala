@@ -218,8 +218,8 @@ private[chisel3] object cloneSupertype {
           case (elt1: UInt, elt2: Bool) => elt1 // TODO: what happens with zero width UInts?
           case (elt1: UInt, elt2: UInt) =>
             // TODO: perhaps redefine Widths to allow >= op?
-            if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
-          case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width.max(elt2.width))) elt1 else elt2
+            if (elt1._width == (elt1._width.max(elt2._width))) elt1 else elt2
+          case (elt1: SInt, elt2: SInt) => if (elt1._width == (elt1._width.max(elt2._width))) elt1 else elt2
           case (elt1, elt2) =>
             throw new AssertionError(
               s"can't create $createdType with heterogeneous types ${elt1.getClass} and ${elt2.getClass}"
@@ -637,7 +637,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
               None
             }
           case (e1: Element, e2: Element) if e1.getClass == e2.getClass =>
-            if (strictWidths && e1.width != e2.width) {
+            if (strictWidths && e1._width != e2._width) {
               Some(s": Left ($e1) and Right ($e2) have different widths.")
             } else {
               None
@@ -782,7 +782,7 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
   private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit =
     DataMirror.collectAllMembers(this).foreach { x => x._parent = parent }
 
-  private[chisel3] def width:                                                      Width
+  private[chisel3] def _width:                                                     Width
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
@@ -857,10 +857,10 @@ abstract class Data extends HasId with NamedComponent with DataIntf {
 
   /** Returns the width, in bits, if currently known. */
   final def getWidth: Int =
-    if (isWidthKnown) width.get else throwException(s"Width of $this is unknown!")
+    if (isWidthKnown) _width.get else throwException(s"Width of $this is unknown!")
 
   /** Returns whether the width is currently known. */
-  final def isWidthKnown: Boolean = width.known
+  final def isWidthKnown: Boolean = _width.known
 
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
@@ -1251,7 +1251,7 @@ final case object DontCare extends Element with connectable.ConnectableDocs {
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
   // We make it private to chisel3 so it has to be accessed through the package object.
 
-  private[chisel3] override val width: Width = UnknownWidth
+  private[chisel3] override val _width: Width = UnknownWidth
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType: this.type = DontCare

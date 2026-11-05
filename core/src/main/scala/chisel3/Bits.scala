@@ -21,7 +21,7 @@ import scala.annotation.nowarn
   * @define sumWidthInt     @note The width of the returned $numType is `width of this` + `value of that`.
   * @define unchangedWidth  @note The width of the returned $numType is unchanged, i.e., the `width of this`.
   */
-sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
+sealed abstract class Bits(private[chisel3] val _width: Width) extends BitsIntf {
 
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
@@ -30,15 +30,15 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
   // Only used for in a few cases, hopefully to be removed
   private[chisel3] def cloneTypeWidth(width: Width): this.type
 
-  def cloneType: this.type = cloneTypeWidth(this.width)
+  def cloneType: this.type = cloneTypeWidth(this._width)
 
   /** A non-ambiguous name of this `Bits` instance for use in generated Verilog names
     * Inserts the width directly after the typeName, e.g. UInt4, SInt1
     */
-  override def typeName: String = s"${simpleClassName(this.getClass)}${this.width}"
+  override def typeName: String = s"${simpleClassName(this.getClass)}${this._width}"
 
   protected def _tailImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    val w = this.width match {
+    val w = this._width match {
       case KnownWidth(x) =>
         require(x >= n, s"Can't tail($n) for width $x < $n")
         Width(x - n)
@@ -48,7 +48,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
   }
 
   protected def _headImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    this.width match {
+    this._width match {
       case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
       case UnknownWidth  => ()
     }
@@ -179,10 +179,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
   // Pad literal to that width
   protected def _padLit(that: Int): this.type
 
-  protected def _padImpl(that: Int)(implicit sourceInfo: SourceInfo): this.type = this.width match {
+  protected def _padImpl(that: Int)(implicit sourceInfo: SourceInfo): this.type = this._width match {
     case KnownWidth(w) if w >= that => this
     case _ if this.isLit            => this._padLit(that)
-    case _                          => binop(sourceInfo, cloneTypeWidth(this.width.max(Width(that))), PadOp, that)
+    case _                          => binop(sourceInfo, cloneTypeWidth(this._width.max(Width(that))), PadOp, that)
   }
 
   protected def _impl_unary_~(implicit sourceInfo: SourceInfo): Bits
@@ -205,14 +205,14 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends BitsIntf {
   protected def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt
 
   protected def _asBoolImpl(implicit sourceInfo: SourceInfo): Bool = {
-    this.width match {
+    this._width match {
       case KnownWidth(1) => this(0)
-      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}${this.width} to Bool")
+      case _             => throwException(s"can't covert ${this.getClass.getSimpleName}${this._width} to Bool")
     }
   }
 
   protected def _impl_##(that: Bits)(implicit sourceInfo: SourceInfo): UInt = {
-    val w = this.width + that.width
+    val w = this._width + that._width
     pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
   }
 
@@ -241,12 +241,12 @@ object Bits extends UIntFactory {
   * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
-sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntIntf with Num[UInt] {
+sealed class UInt private[chisel3] (_width: Width) extends Bits(_width) with UIntIntf with Num[UInt] {
 
   override def toString: String = {
     litOption match {
-      case Some(value) => s"UInt$width($value)"
-      case _           => stringAccessor(s"UInt$width")
+      case Some(value) => s"UInt${_width}($value)"
+      case _           => stringAccessor(s"UInt${_width}")
     }
   }
 
@@ -255,7 +255,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
 
   override protected def _padLit(that: Int): this.type = {
     val value = this.litValue
-    UInt.Lit(value, this.width.max(Width(that))).asInstanceOf[this.type]
+    UInt.Lit(value, this._width.max(Width(that))).asInstanceOf[this.type]
   }
 
   protected def _impl_unary_-(implicit sourceInfo: SourceInfo): UInt = 0.U - this
@@ -265,16 +265,16 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   protected def _impl_+(that: UInt)(implicit sourceInfo: SourceInfo): UInt = this +% that
   protected def _impl_-(that: UInt)(implicit sourceInfo: SourceInfo): UInt = this -% that
   protected def _impl_/(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width), DivideOp, that)
+    binop(sourceInfo, UInt(this._width), DivideOp, that)
   protected def _impl_%(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.min(that.width)), RemOp, that)
+    binop(sourceInfo, UInt(this._width.min(that._width)), RemOp, that)
   protected def _impl_*(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width + that.width), TimesOp, that)
+    binop(sourceInfo, UInt(this._width + that._width), TimesOp, that)
 
   protected def _impl_*(that: SInt)(implicit sourceInfo: SourceInfo): SInt = that * this
 
   protected def _impl_+&(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt((this.width.max(that.width)) + 1), AddOp, that)
+    binop(sourceInfo, UInt((this._width.max(that._width)) + 1), AddOp, that)
 
   protected def _impl_+%(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     (this +& that).tail(1)
@@ -288,16 +288,16 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   protected def _absImpl(implicit sourceInfo: SourceInfo): UInt = this
 
   protected def _impl_&(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitAndOp, that)
+    binop(sourceInfo, UInt(this._width.max(that._width)), BitAndOp, that)
 
   protected def _impl_|(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitOrOp, that)
+    binop(sourceInfo, UInt(this._width.max(that._width)), BitOrOp, that)
 
   protected def _impl_^(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that)
+    binop(sourceInfo, UInt(this._width.max(that._width)), BitXorOp, that)
 
   protected def _impl_unary_~(implicit sourceInfo: SourceInfo): UInt =
-    unop(sourceInfo, UInt(width = width), BitNotOp)
+    unop(sourceInfo, UInt(width = _width), BitNotOp)
 
   protected def _orRImpl(implicit sourceInfo: SourceInfo): Bool = redop(sourceInfo, OrReduceOp)
 
@@ -323,16 +323,16 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   protected def _impl_unary_!(implicit sourceInfo: SourceInfo): Bool = this === 0.U(1.W)
 
   override protected def _impl_<<(that: Int)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
+    binop(sourceInfo, UInt(this._width + that), ShiftLeftOp, validateShiftAmount(that))
   override protected def _impl_<<(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     this << castToInt(that, "Shift amount")
   override protected def _impl_<<(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
+    binop(sourceInfo, UInt(this._width.dynamicShiftLeft(that._width)), DynamicShiftLeftOp, that)
 
   // Implement legacy [buggy] UInt shr behavior for both Chisel and FIRRTL
   @nowarn("msg=method shiftRight in class Width is deprecated")
   private def legacyShiftRight(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
-    val resultWidth = this.width.shiftRight(that)
+    val resultWidth = this._width.shiftRight(that)
     val op = binop(sourceInfo, UInt(resultWidth), ShiftRightOp, validateShiftAmount(that))
     resultWidth match {
       // To emulate old FIRRTL behavior where minimum width is 1, we need to insert pad(_, 1) whenever
@@ -348,14 +348,14 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
 
   override protected def _impl_>>(that: Int)(implicit sourceInfo: SourceInfo): UInt = {
     if (Builder.useLegacyWidth) legacyShiftRight(that)
-    else binop(sourceInfo, UInt(this.width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
+    else binop(sourceInfo, UInt(this._width.unsignedShiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   }
   override protected def _impl_>>(that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     this >> castToInt(that, "Shift amount")
   override protected def _impl_>>(that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
+    binop(sourceInfo, UInt(this._width), DynamicShiftRightOp, that)
 
-  protected def _rotateLeftImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = width match {
+  protected def _rotateLeftImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = _width match {
     case _ if (n == 0)             => this
     case KnownWidth(w) if (w <= 1) => this
     case KnownWidth(w) if n >= w   => rotateLeft(n % w)
@@ -363,7 +363,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
     case _                         => tail(n) ## head(n)
   }
 
-  protected def _rotateRightImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = width match {
+  protected def _rotateRightImpl(n: Int)(implicit sourceInfo: SourceInfo): UInt = _width match {
     case _ if (n <= 0)             => rotateLeft(-n)
     case KnownWidth(w) if (w <= 1) => this
     case KnownWidth(w) if n >= w   => rotateRight(n % w)
@@ -392,13 +392,13 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   }
 
   protected def _zextImpl(implicit sourceInfo: SourceInfo): SInt = this.litOption match {
-    case Some(value) => SInt.Lit(value, this.width + 1)
-    case None        => pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
+    case Some(value) => SInt.Lit(value, this._width + 1)
+    case None        => pushOp(DefPrim(sourceInfo, SInt(_width + 1), ConvertOp, ref))
   }
 
   override protected def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt = this.litOption match {
     case Some(value) =>
-      val w = this.width.get // Literals always have a known width, will be minimum legal width if not set
+      val w = this._width.get // Literals always have a known width, will be minimum legal width if not set
       val signedValue =
         // If width is 0, just return value (which will be 0).
         if (w > 0 && value.testBit(w - 1)) {
@@ -408,9 +408,9 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
           value
         }
       // Using SInt.Lit instead of .S so we can use Width argument which may be Unknown
-      SInt.Lit(signedValue, this.width.max(Width(1))) // SInt literal has width >= 1
+      SInt.Lit(signedValue, this._width.max(Width(1))) // SInt literal has width >= 1
     case None =>
-      pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
+      pushOp(DefPrim(sourceInfo, SInt(_width), AsSIntOp, ref))
   }
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = this
@@ -420,7 +420,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with UIntI
   }
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+    binop(sourceInfo, SInt((this._width.max(that._width)) + 1), SubOp, that)
 }
 
 object UInt extends UIntFactory
@@ -433,11 +433,11 @@ object UInt extends UIntFactory
   * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
-sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntIntf with Num[SInt] {
+sealed class SInt private[chisel3] (_width: Width) extends Bits(_width) with SIntIntf with Num[SInt] {
   override def toString: String = {
     litOption match {
-      case Some(value) => s"SInt$width($value)"
-      case _           => stringAccessor(s"SInt$width")
+      case Some(value) => s"SInt${_width}($value)"
+      case _           => stringAccessor(s"SInt${_width}")
     }
   }
 
@@ -446,7 +446,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
 
   override protected def _padLit(that: Int): this.type = {
     val value = this.litValue
-    SInt.Lit(value, this.width.max(Width(that))).asInstanceOf[this.type]
+    SInt.Lit(value, this._width.max(Width(that))).asInstanceOf[this.type]
   }
 
   protected def _impl_unary_-(implicit sourceInfo: SourceInfo): SInt = 0.S - this
@@ -459,41 +459,41 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
   protected def _impl_-(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
     this -% that
   protected def _impl_*(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width + that.width), TimesOp, that)
+    binop(sourceInfo, SInt(this._width + that._width), TimesOp, that)
   protected def _impl_/(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width + 1), DivideOp, that)
+    binop(sourceInfo, SInt(this._width + 1), DivideOp, that)
   protected def _impl_%(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width.min(that.width)), RemOp, that)
+    binop(sourceInfo, SInt(this._width.min(that._width)), RemOp, that)
 
   protected def _impl_*(that: UInt)(implicit sourceInfo: SourceInfo): SInt = {
     val thatToSInt = that.zext
-    val result = binop(sourceInfo, SInt(this.width + thatToSInt.width), TimesOp, thatToSInt)
+    val result = binop(sourceInfo, SInt(this._width + thatToSInt._width), TimesOp, thatToSInt)
     result.tail(1).asSInt
   }
 
   protected def _impl_+&(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), AddOp, that)
+    binop(sourceInfo, SInt((this._width.max(that._width)) + 1), AddOp, that)
 
   protected def _impl_+%(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
     (this +& that).tail(1).asSInt
 
   protected def _impl_-&(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+    binop(sourceInfo, SInt((this._width.max(that._width)) + 1), SubOp, that)
 
   protected def _impl_-%(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
     (this -& that).tail(1).asSInt
 
   protected def _impl_&(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitAndOp, that).asSInt
+    binop(sourceInfo, UInt(this._width.max(that._width)), BitAndOp, that).asSInt
 
   protected def _impl_|(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitOrOp, that).asSInt
+    binop(sourceInfo, UInt(this._width.max(that._width)), BitOrOp, that).asSInt
 
   protected def _impl_^(that: SInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that).asSInt
+    binop(sourceInfo, UInt(this._width.max(that._width)), BitXorOp, that).asSInt
 
   protected def _impl_unary_~(implicit sourceInfo: SourceInfo): SInt =
-    unop(sourceInfo, UInt(width = width), BitNotOp).asSInt
+    unop(sourceInfo, UInt(width = _width), BitNotOp).asSInt
 
   protected def _impl_<(that: SInt)(implicit sourceInfo: SourceInfo): Bool =
     compop(sourceInfo, LessOp, that)
@@ -515,23 +515,23 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
   }
 
   override protected def _impl_<<(that: Int)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
+    binop(sourceInfo, SInt(this._width + that), ShiftLeftOp, validateShiftAmount(that))
   override protected def _impl_<<(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
     this << castToInt(that, "Shift amount")
   override protected def _impl_<<(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
+    binop(sourceInfo, SInt(this._width.dynamicShiftLeft(that._width)), DynamicShiftLeftOp, that)
 
   @nowarn("msg=method shiftRight in class Width is deprecated")
   override protected def _impl_>>(that: Int)(implicit sourceInfo: SourceInfo): SInt = {
     // We don't need to pad to emulate old behavior for SInt, just emulate old Chisel behavior with reported width.
     // FIRRTL will give a minimum of 1 bit for SInt.
-    val newWidth = if (Builder.useLegacyWidth) this.width.shiftRight(that) else this.width.signedShiftRight(that)
+    val newWidth = if (Builder.useLegacyWidth) this._width.shiftRight(that) else this._width.signedShiftRight(that)
     binop(sourceInfo, SInt(newWidth), ShiftRightOp, validateShiftAmount(that))
   }
   override protected def _impl_>>(that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
     this >> castToInt(that, "Shift amount")
   override protected def _impl_>>(that: UInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
+    binop(sourceInfo, SInt(this._width), DynamicShiftRightOp, that)
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt =
     this.litOption match {
@@ -539,14 +539,14 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with SIntI
         // This is a reinterpretation of raw bits
         val posValue =
           if (value.signum == -1) {
-            (BigInt(1) << this.width.get) + value
+            (BigInt(1) << this._width.get) + value
           } else {
             value
           }
         // Using UInt.Lit instead of .U so we can use Width argument which may be Unknown
-        UInt.Lit(posValue, this.width)
+        UInt.Lit(posValue, this._width)
       case None =>
-        pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+        pushOp(DefPrim(sourceInfo, UInt(this._width), AsUIntOp, ref))
     }
 
   override def _asSIntImpl(implicit sourceInfo: SourceInfo): SInt = this
@@ -573,7 +573,7 @@ object Reset {
   * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not their actual
   * super type due to Bool inheriting from abstract class UInt
   */
-final class ResetType(private[chisel3] val width: Width = Width(1)) extends Reset with ResetTypeIntf {
+final class ResetType(private[chisel3] val _width: Width = Width(1)) extends Reset with ResetTypeIntf {
 
   override def toString: String = stringAccessor("Reset")
 
@@ -585,7 +585,7 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Rese
   def toPrintable: Printable = PString("Reset")
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
-    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
+    DefPrim(sourceInfo, UInt(this._width), AsUIntOp, ref)
   )
 
   override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
@@ -611,7 +611,7 @@ object AsyncReset {
   * operation. [[Reg]]s defined with the implicit reset being an [[AsyncReset]] will be
   * asychronously reset registers.
   */
-sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with AsyncResetIntf with Reset {
+sealed class AsyncReset(private[chisel3] val _width: Width = Width(1)) extends Element with AsyncResetIntf with Reset {
 
   override def toString: String = stringAccessor("AsyncReset")
 
@@ -623,7 +623,7 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   def toPrintable: Printable = PString("AsyncReset")
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
-    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
+    DefPrim(sourceInfo, UInt(this._width), AsUIntOp, ref)
   )
 
   override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asAsyncReset

@@ -13,7 +13,7 @@ import chisel3.properties.Property
 import scala.reflect.ClassTag
 
 object DataMirror {
-  def widthOf(target:              Data): Width = target.width
+  def widthOf(target:              Data): Width = target._width
   def specifiedDirectionOf(target: Data): SpecifiedDirection = target.specifiedDirection
   def directionOf(target: Data): ActualDirection = {
     requireIsHardware(target, "node requested directionality on")

@@ -141,7 +141,7 @@ private[chisel3] object DebugIntrinsics {
       // surface `underlyingTypeRef: "uint64"` for what is in fact a
       // tiny enum). getWidth is always known for a Chisel EnumType.
       val widthParam: Seq[(String, Param)] =
-        if (e.width.known) Seq("width" -> IntParam(BigInt(e.width.get)))
+        if (e._width.known) Seq("width" -> IntParam(BigInt(e._width.get)))
         else Nil
       Some(
         DefIntrinsic(

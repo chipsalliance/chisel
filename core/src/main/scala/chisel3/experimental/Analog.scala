@@ -23,18 +23,18 @@ import scala.collection.mutable
   *
   * @note This API is experimental and subject to change
   */
-final class Analog private (private[chisel3] val width: Width) extends Element {
-  require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
+final class Analog private (private[chisel3] val _width: Width) extends Element {
+  require(_width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
-  override def toString: String = stringAccessor(s"Analog$width")
+  override def toString: String = stringAccessor(s"Analog${_width}")
 
   /** A stable typeName for this `Analog`
     */
-  override def typeName = s"Analog$width"
+  override def typeName = s"Analog${_width}"
 
   override def litOption: Option[BigInt] = None
 
-  def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
+  def cloneType: this.type = new Analog(_width).asInstanceOf[this.type]
 
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can
@@ -72,7 +72,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
 
   override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = {
     Builder.error("Analog does not support fromUInt")
-    Wire(Analog(that.width))
+    Wire(Analog(that._width))
   }
 
   def toPrintable: Printable = PString("Analog")

@@ -150,7 +150,7 @@ package object dataview {
         /* Allow views where the types are equal. */
         case (a, b) if a.getClass == b.getClass =>
           // View width must be unknown or match target width
-          if (vex.widthKnown && vex.width != tex.width) {
+          if (vex.widthKnown && vex._width != tex._width) {
             def widthAsString(x: Element) = x.widthOption.map("<" + _ + ">").getOrElse("<unknown>")
             val fieldName = viewFieldName(vex)
             val vwidth = widthAsString(vex)

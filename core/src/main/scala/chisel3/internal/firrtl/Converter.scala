@@ -397,10 +397,10 @@ private[chisel3] object Converter {
     case _: Clock      => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType  => fir.ResetType
-    case t: EnumType   => fir.UIntType(convert(t.width))
-    case t: UInt       => fir.UIntType(convert(t.width))
-    case t: SInt       => fir.SIntType(convert(t.width))
-    case t: Analog     => fir.AnalogType(convert(t.width))
+    case t: EnumType   => fir.UIntType(convert(t._width))
+    case t: UInt       => fir.UIntType(convert(t._width))
+    case t: SInt       => fir.SIntType(convert(t._width))
+    case t: Analog     => fir.AnalogType(convert(t._width))
     case t: Vec[_] =>
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
