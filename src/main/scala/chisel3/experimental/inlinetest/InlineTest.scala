@@ -2,6 +2,7 @@
 
 package chisel3.experimental.inlinetest
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 import chisel3._
@@ -9,9 +10,7 @@ import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.simulator.SimulationOutcome
 import chisel3.util.Counter
 
-import firrtl.options.StageUtils.dramaticMessage
-import chisel3.simulator.SimulationOutcome.Assertion
-
+@deprecated("Use chisel3.autotest.TestResult", "Chisel 7.16.0")
 object TestResult {
 
   /** The result of a test; i.e. simulation outcome vs. expectation. */
@@ -24,6 +23,7 @@ object TestResult {
   case class Failure(message: String) extends Type
 }
 
+@deprecated("Use chisel3.autotest.TestConfiguration", "Chisel 7.16.0")
 final class TestConfiguration private (
   finishCondition:  Option[Bool],
   successCondition: Option[Bool],
@@ -40,6 +40,7 @@ final class TestConfiguration private (
   }
 }
 
+@deprecated("Use chisel3.autotest.TestConfiguration", "Chisel 7.16.0")
 object TestConfiguration {
   def default(): TestConfiguration =
     new TestConfiguration(finishCondition = None, successCondition = None, failureMessage = None)
@@ -69,31 +70,27 @@ object TestConfiguration {
 }
 
 /** A test, its expected behavior, and actual outcome. */
+@deprecated("Use chisel3.autotest.SimulatedTest", "Chisel 7.16.0")
 private[chisel3] class SimulatedTest private (
-  val dutName:  String,
-  val testName: String,
-  outcome:      SimulationOutcome.Type
+  _dutName:  String,
+  _testName: String,
+  outcome:   SimulationOutcome.Type
 ) {
-  val result = outcome match {
-    case SimulationOutcome.Success                    => TestResult.Success
-    case SimulationOutcome.Assertion(simulatorOutput) => TestResult.Failure(simulatorOutput)
-    case SimulationOutcome.Timeout(n)                 => TestResult.Failure(s"timeout reached after ${n} timesteps")
-    case SimulationOutcome.SignaledFailure            => TestResult.Failure(s"test signaled failure")
-  }
-  val success = result == TestResult.Success
+  private val autoTest = new chisel3.autotest.SimulatedTest(_dutName, _testName, outcome)
+  val dutName = autoTest.dutName
+  val testName = autoTest.testName
+  val result = autoTest.result
+  val success = autoTest.success
 }
 
+@deprecated("Use chisel3.autotest.SimulatedTest", "Chisel 7.16.0")
+@nowarn("cat=deprecation")
 object SimulatedTest {
-
-  /** Construct an SimulatedTest from an ElaboratedTest by provided the outcome of the simulation. */
   private[chisel3] def apply(elaboratedTest: ElaboratedTest[_], outcome: SimulationOutcome.Type) =
-    new SimulatedTest(
-      elaboratedTest.dutName,
-      elaboratedTest.testName,
-      outcome
-    )
+    new SimulatedTest(elaboratedTest.dutName, elaboratedTest.testName, outcome)
 }
 
+@deprecated("Use chisel3.autotest.TestChoice", "Chisel 7.16.0")
 object TestChoice {
 
   /** A choice of what test(s) to run. */
@@ -120,6 +117,7 @@ object TestChoice {
   *
   *  @tparam M the type of the DUT module
   */
+@deprecated("Use chisel3.autotest.TestParameters", "Chisel 7.16.0")
 final class TestParameters[M <: RawModule] private[inlinetest] (
   /** The [[name]] of the DUT module. */
   private[inlinetest] val dutName: () => String,
@@ -153,6 +151,7 @@ trait TestHarnessInterface extends SimulationTestHarnessInterface
    *
    *  @tparam M the type of the DUT module
    */
+@deprecated("Use chisel3.autotest.TestHarness", "Chisel 7.16.0")
 abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends SimulationTestHarness {
   override final def desiredName = test.testHarnessDesiredName
 
@@ -177,12 +176,14 @@ abstract class TestHarness[M <: RawModule](test: TestParameters[M]) extends Simu
 }
 
 /** A test that has been elaborated to the circuit. */
+@nowarn("cat=deprecation")
 private[chisel3] class ElaboratedTest[M <: RawModule] private (
   val dutName:     String,
   val testName:    String,
   val testHarness: TestHarness[M]
 )
 
+@nowarn("cat=deprecation")
 object ElaboratedTest {
   def apply[M <: RawModule](generator: TestHarnessGenerator[M], params: TestParameters[M]) =
     new ElaboratedTest(
@@ -197,15 +198,18 @@ object ElaboratedTest {
   *
   *  @tparam M the type of the DUT module
   */
+@deprecated("Use chisel3.autotest.TestHarnessGenerator", "Chisel 7.16.0")
 trait TestHarnessGenerator[M <: RawModule] {
 
   /** Generate a testharness module given the test parameters. */
   def generate(test: TestParameters[M]): TestHarness[M]
 }
 
+@nowarn("cat=deprecation")
 object TestHarnessGenerator {
 
   /** Factory for a TestHarnessGenerator typeclass. */
+  @deprecated("Use chisel3.autotest.TestHarnessGenerator", "Chisel 7.16.0")
   def apply[M <: RawModule](gen: TestParameters[M] => TestHarness[M]) =
     new TestHarnessGenerator[M] {
       override def generate(test: TestParameters[M]) = gen(test)
@@ -218,6 +222,7 @@ object TestHarnessGenerator {
 }
 
 /** A test that was registered, but is not necessarily selected for elaboration. */
+@nowarn("cat=deprecation")
 private final class RegisteredTest[M <: RawModule](
   /** The user-provided name of the test. */
   val testName: String,
@@ -241,6 +246,7 @@ private final class RegisteredTest[M <: RawModule](
 
 /** Provides methods to build unit testharnesses inline after this module is elaborated.
   */
+@deprecated("Use chisel3.autotest.HasTests", "Chisel 7.16.0")
 trait HasTests { module: RawModule =>
   private type M = module.type
 
@@ -248,11 +254,11 @@ trait HasTests { module: RawModule =>
   protected def elaborateTests: Boolean = true
 
   /** From options, what modules and tests should be included in this run. */
-  private val inlineTestIncluder = internal.Builder.captureContext().inlineTestIncluder
+  private val autoTestIncluder = internal.Builder.captureContext().autoTestIncluder
 
   /** Whether a test is enabled. */
   private def shouldElaborateTest(testName: String): Boolean =
-    elaborateTests && inlineTestIncluder.shouldElaborateTest(module.desiredName, testName)
+    elaborateTests && autoTestIncluder.shouldElaborateTest(module.desiredName, testName)
 
   /** This module as a definition. Lazy in order to prevent evaluation unless used by a test. */
   private lazy val moduleDefinition = module.toDefinition.asInstanceOf[Definition[M]]

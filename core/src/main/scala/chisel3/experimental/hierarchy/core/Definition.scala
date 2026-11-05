@@ -120,7 +120,7 @@ object Definition extends SourceInfoDoc {
         context.definitions,
         context.contextCache,
         context.layerMap,
-        context.inlineTestIncluder,
+        context.autoTestIncluder,
         context.suppressSourceInfo,
         context.elideLayerBlocks,
         context.elaborationTrace
