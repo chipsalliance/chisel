@@ -45,7 +45,7 @@ private[chisel3] object SeqUtils {
           val eltWidth = elt.getWidth
           litValue = (litValue << eltWidth) | (elt.litValue & ((BigInt(1) << eltWidth) - 1))
         }
-        width += elt.width
+        width += elt._width
       }
       if (allLits) {
         UInt.Lit(litValue, width)

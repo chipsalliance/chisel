@@ -16,7 +16,7 @@ import chisel3.internal.binding._
   */
 abstract class Element extends Data {
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
-  def widthKnown:                         Boolean = width.known
+  def widthKnown:                         Boolean = _width.known
   def name:                               String = getRef.name
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {

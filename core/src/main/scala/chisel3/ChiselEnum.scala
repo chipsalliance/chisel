@@ -80,13 +80,13 @@ abstract class EnumType(private[chisel3] val factory: ChiselEnum) extends Elemen
       // This fixes an old bug that changes widths and thus silently changes behavior.
       // See https://github.com/chipsalliance/chisel/issues/4159.
       case Some(value) if !Builder.useLegacyWidth =>
-        value.U(width)
+        value.U(_width)
       case _ =>
-        pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
+        pushOp(DefPrim(sourceInfo, UInt(_width), AsUIntOp, ref))
     }
   }
 
-  protected[chisel3] override def width: Width = factory.width
+  protected[chisel3] override def _width: Width = factory.width
 
   def isValid(implicit sourceInfo: SourceInfo): Bool = {
     if (litOption.isDefined) {
@@ -357,8 +357,8 @@ abstract class ChiselEnum extends ChiselEnumIntf {
 
 // This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
 // to enums.
-private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum) {
-  override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
+private[chisel3] class UnsafeEnum(override val _width: Width) extends EnumType(UnsafeEnum) {
+  override def cloneType: this.type = new UnsafeEnum(_width).asInstanceOf[this.type]
 }
 private object UnsafeEnum extends ChiselEnum
 

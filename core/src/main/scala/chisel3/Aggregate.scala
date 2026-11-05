@@ -31,7 +31,7 @@ sealed trait Aggregate extends Data {
     def shiftAdd(elt: Data, accumulator: Option[BigInt]): Option[BigInt] = {
       (accumulator, elt.litOption) match {
         case (Some(accumulator), Some(eltLit)) =>
-          val width = elt.width.get
+          val width = elt._width.get
           val masked = ((BigInt(1) << width) - 1) & eltLit // also handles the negative case with two's complement
           Some((accumulator << width) + masked)
         case (Some(accumulator), None) if checkForDontCares =>
@@ -89,7 +89,7 @@ sealed trait Aggregate extends Data {
   /** Similar to [[getElements]] but allows for more optimized use */
   private[chisel3] def elementsIterator: Iterator[Data]
 
-  private[chisel3] def width: Width = elementsIterator.map(_.width).foldLeft(0.W)(_ + _)
+  private[chisel3] def _width: Width = elementsIterator.map(_._width).foldLeft(0.W)(_ + _)
 
   // Emits the FIRRTL `this <= that`, or `this is invalid` if that == DontCare
   private[chisel3] def firrtlConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
@@ -109,7 +109,7 @@ sealed trait Aggregate extends Data {
     checkingLitOption(checkForDontCares = false) match {
       case Some(value) =>
         // Using UInt.Lit instead of .U so we can use Width argument which may be Unknown
-        UInt.Lit(value, this.width)
+        UInt.Lit(value, this._width)
       case None =>
         val elts = this.getElements.map(_._asUIntImpl(false))
         if (elts.isEmpty && !first) 0.U(0.W) else SeqUtils.asUInt(elts)
@@ -184,8 +184,8 @@ trait VecFactory extends SourceInfoDoc {
     val w = (n - 1).bitLength
     if (n <= 1) WireInit(0.U) // Need the Wire otherwise we emit vec[0] which is illegal FIRRTL.
     // Other cases do not need a Wire because the literal is truncated to fit.
-    else if (idx.width.known && idx.width.get <= w) idx
-    else if (idx.width.known) idx(w - 1, 0)
+    else if (idx._width.known && idx._width.get <= w) idx
+    else if (idx._width.known) idx(w - 1, 0)
     else (idx | 0.U(w.W))(w - 1, 0)
   }
 }
@@ -524,7 +524,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       // look for literals of this vec that are wider than the vec's type
       val badLits = elementInitializers.flatMap {
         case (index, lit) =>
-          (sample_element.width, lit.width) match {
+          (sample_element._width, lit._width) match {
             case (KnownWidth(m), KnownWidth(n)) =>
               if (m < n) Some(index -> lit) else None
             case (KnownWidth(_), _) =>
@@ -594,7 +594,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
                 throw new VecLiteralException(s"Field $fieldIndex specified with unspecified value")
               )
           }
-          val adjustedLitArg = litArg.cloneWithWidth(sample_element.width)
+          val adjustedLitArg = litArg.cloneWithWidth(sample_element._width)
           vecLitLinkedMap(bitField) = adjustedLitArg
 
         case recordField: Record =>
@@ -1047,7 +1047,7 @@ abstract class Record extends Aggregate with Selectable {
     }
     // Check widths and sign extend as appropriate.
     val bundleLitMap = bundleLitMapping.view.map { case (field, value) =>
-      field.width match {
+      field._width match {
         // If width is unknown, then it is set by the literal value.
         case UnknownWidth => field -> value
         case width @ KnownWidth(widthValue) =>

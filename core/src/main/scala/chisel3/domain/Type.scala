@@ -64,7 +64,7 @@ final class Type private[domain] (val domain: Domain) extends Element { self =>
   override def toPrintable: Printable =
     throwException(s"'domain.Type' does not support hardware printing" + this._errorContext)
 
-  private[chisel3] def width: Width = UnknownWidth
+  private[chisel3] def _width: Width = UnknownWidth
 
   addDomain(domain)
 

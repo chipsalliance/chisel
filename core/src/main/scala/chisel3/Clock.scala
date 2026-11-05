@@ -13,7 +13,7 @@ object Clock {
 
 // TODO: Document this.
 sealed class Clock extends Element with ClockIntf {
-  private[chisel3] val width: Width = Width(1)
+  private[chisel3] val _width: Width = Width(1)
 
   override def toString: String = stringAccessor("Clock")
 
@@ -33,7 +33,7 @@ sealed class Clock extends Element with ClockIntf {
   private[chisel3] def _asBoolImpl(implicit sourceInfo: SourceInfo): Bool = this.asUInt.asBool
 
   override private[chisel3] def _asUIntImpl(first: Boolean)(implicit sourceInfo: SourceInfo): UInt = pushOp(
-    DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)
+    DefPrim(sourceInfo, UInt(this._width), AsUIntOp, ref)
   )
 
   override protected def _fromUInt(that: UInt)(implicit sourceInfo: SourceInfo): Data = that.asBool.asClock

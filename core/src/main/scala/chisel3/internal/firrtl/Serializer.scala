@@ -524,10 +524,10 @@ private[chisel3] object Serializer {
     case _: Clock      => b ++= "Clock"
     case _: AsyncReset => b ++= "AsyncReset"
     case _: ResetType  => b ++= "Reset"
-    case t: EnumType   => b ++= "UInt"; serialize(t.width)
-    case t: UInt       => b ++= "UInt"; serialize(t.width)
-    case t: SInt       => b ++= "SInt"; serialize(t.width)
-    case t: Analog     => b ++= "Analog"; serialize(t.width)
+    case t: EnumType   => b ++= "UInt"; serialize(t._width)
+    case t: UInt       => b ++= "UInt"; serialize(t._width)
+    case t: SInt       => b ++= "SInt"; serialize(t._width)
+    case t: Analog     => b ++= "Analog"; serialize(t._width)
     case t: Vec[_] =>
       val childClearDir = clearDir ||
         t.specifiedDirection == SpecifiedDirection.Input || t.specifiedDirection == SpecifiedDirection.Output
