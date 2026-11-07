@@ -9,7 +9,8 @@ import scala.util.control.NoStackTrace
 import svsim.Backend.HarnessCompilationFlags.{
   enableFsdbTracingSupport,
   enableVcdTracingSupport,
-  enableVpdTracingSupport
+  enableVpdTracingSupport,
+  enableFstTracingSupport
 }
 import svsim.{CommonCompilationSettings, CommonSettingsModifications}
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
@@ -179,6 +180,53 @@ object Cli {
                 )
               case options: svsim.verilator.Backend.CompilationSettings =>
                 throw new IllegalArgumentException("Verilator does not support VPD waveforms.")
+            }
+        )
+    )
+
+  }
+
+  /** Adds `-DemitFst=[1,true]`
+    *
+    * This causes a simulation to dump an FST wave starting at time zero.
+    * Finer grained control can be achieved with
+    * [[chisel3.simulator.ControlAPI.disableWaves]] and
+    * [[chisel3.simulator.ControlAPI.enableWaves]].
+    *
+    * If the simulator does not support FST waves, then using this option will
+    * throw an [[IllegalArgumentException]] when the option is used.
+    */
+  trait EmitFst { this: HasCliOptions =>
+
+    addOption(
+      CliOption
+        .flag(
+          name = "emitFst",
+          help = "compile with FST waveform support and start dumping waves at time zero",
+          updateCommonSettings = (options) => {
+            options.copy(
+              verilogPreprocessorDefines =
+                options.verilogPreprocessorDefines :+ VerilogPreprocessorDefine(enableFstTracingSupport),
+              simulationSettings = options.simulationSettings.copy(
+                enableWavesAtTimeZero = true
+              )
+            )
+          },
+          updateBackendSettings = (options) =>
+            options match {
+              case options: svsim.vcs.Backend.CompilationSettings =>
+                throw new IllegalArgumentException("Vcs does not support FST waveforms.")
+              case options: svsim.verilator.Backend.CompilationSettings =>
+                options.withTraceStyle(
+                  options.traceStyle match {
+                    case None =>
+                      Some(
+                        svsim.verilator.Backend.CompilationSettings
+                          .TraceStyle(svsim.verilator.Backend.CompilationSettings.TraceKind.Fst())
+                      )
+                    case alreadySet => alreadySet
+                  }
+                )
             }
         )
     )
