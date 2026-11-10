@@ -8,9 +8,9 @@ import chisel3.simulator.scalatest.HasCliOptions.CliOption
 import scala.util.control.NoStackTrace
 import svsim.Backend.HarnessCompilationFlags.{
   enableFsdbTracingSupport,
+  enableFstTracingSupport,
   enableVcdTracingSupport,
-  enableVpdTracingSupport,
-  enableFstTracingSupport
+  enableVpdTracingSupport
 }
 import svsim.{CommonCompilationSettings, CommonSettingsModifications}
 import svsim.CommonCompilationSettings.VerilogPreprocessorDefine
@@ -100,7 +100,7 @@ object Cli {
 
   }
 
-    /** Adds `-DemitFst=[1,true]`
+  /** Adds `-DemitFst=[1,true]`
     *
     * This causes a simulation to dump an FST wave starting at time zero.
     * Finer grained control can be achieved with
