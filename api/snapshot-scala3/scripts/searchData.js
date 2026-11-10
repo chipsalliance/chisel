@@ -1216,6 +1216,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"chisel","t":"chisel","d":"","k
 {"l":"chisel3/simulator/scalatest/Cli$.html#","e":false,"i":"","n":"Cli","t":"Cli","d":"chisel3.simulator.scalatest","k":"object","x":""},
 {"l":"chisel3/simulator/scalatest/Cli$$ChiselOpts.html#","e":false,"i":"","n":"ChiselOpts","t":"ChiselOpts","d":"chisel3.simulator.scalatest.Cli","k":"trait","x":""},
 {"l":"chisel3/simulator/scalatest/Cli$$EmitFsdb.html#","e":false,"i":"","n":"EmitFsdb","t":"EmitFsdb","d":"chisel3.simulator.scalatest.Cli","k":"trait","x":""},
+{"l":"chisel3/simulator/scalatest/Cli$$EmitFst.html#","e":false,"i":"","n":"EmitFst","t":"EmitFst","d":"chisel3.simulator.scalatest.Cli","k":"trait","x":""},
 {"l":"chisel3/simulator/scalatest/Cli$$EmitVcd.html#","e":false,"i":"","n":"EmitVcd","t":"EmitVcd","d":"chisel3.simulator.scalatest.Cli","k":"trait","x":""},
 {"l":"chisel3/simulator/scalatest/Cli$$EmitVpd.html#","e":false,"i":"","n":"EmitVpd","t":"EmitVpd","d":"chisel3.simulator.scalatest.Cli","k":"trait","x":""},
 {"l":"chisel3/simulator/scalatest/Cli$$FirtoolOpts.html#","e":false,"i":"","n":"FirtoolOpts","t":"FirtoolOpts","d":"chisel3.simulator.scalatest.Cli","k":"trait","x":""},
