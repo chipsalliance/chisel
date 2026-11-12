@@ -621,8 +621,8 @@ package experimental {
 
     protected def portsSize: Int = _ports.size
 
-    /** Check if the given Data is a wire in this module. */
-    private def isOurWire(data: Data): Boolean = data.topBindingOpt match {
+    /** Check if the given Data is a wire in this module (not a subfield of one). */
+    private def isOurWire(data: Data): Boolean = data.binding match {
       case Some(WireBinding(m, _)) if m == this => true
       case _                                    => false
     }

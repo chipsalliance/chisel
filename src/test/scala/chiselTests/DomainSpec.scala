@@ -468,6 +468,35 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     }.getMessage should include("Unable to associate")
   }
 
+  it should "error if associating a subfield of a wire" in {
+    class ClockReset extends Bundle {
+      val clock = Clock()
+      val reset = Reset()
+    }
+
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val source = IO(Input(new ClockReset))
+      val w = Wire(new ClockReset)
+      w := source
+      associate(w.clock, A)
+    }
+
+    intercept[ChiselException] {
+      ChiselStage.elaborate(new Foo, Array("--throw-on-first-error"))
+    }.getMessage should include("Unable to associate")
+  }
+
+  it should "allow associating a whole aggregate wire" in {
+    class Foo extends RawModule {
+      val A = IO(Input(ClockDomain.Type()))
+      val w = Wire(new Bundle { val x = UInt(8.W) })
+      associate(w, A)
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo) should include("domains [A]")
+  }
+
   it should "work with multiple wires" in {
     class Foo extends RawModule {
       val A = IO(Input(ClockDomain.Type()))
