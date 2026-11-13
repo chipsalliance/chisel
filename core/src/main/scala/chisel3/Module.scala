@@ -621,8 +621,8 @@ package experimental {
 
     protected def portsSize: Int = _ports.size
 
-    /** Check if the given Data is a wire in this module. */
-    private def isOurWire(data: Data): Boolean = data.topBindingOpt match {
+    /** Check if the given Data is a wire in this module (not a subfield of one). */
+    private def isOurTopLevelWire(data: Data): Boolean = data.binding match {
       case Some(WireBinding(m, _)) if m == this => true
       case _                                    => false
     }
@@ -635,7 +635,7 @@ package experimental {
         Builder.error(s"Cannot associate a non 1-1 view ($datax) with domains")
         return
       }
-      if (!portsContains(datax) && !isOurWire(datax)) {
+      if (!portsContains(datax) && !isOurTopLevelWire(datax)) {
         val domainsString = domains.mkString(", ")
         Builder.error(
           s"""Unable to associate data '$datax' to domains '$domainsString' because it is not a port or wire in this module"""
