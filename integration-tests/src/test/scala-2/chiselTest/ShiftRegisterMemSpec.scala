@@ -34,4 +34,34 @@ class ShiftRegisterMemSpec extends AnyPropSpec with PropertyUtils with ChiselSim
       simulate { new ShiftMemTester(shift, false) }(RunUntilFinished(shift + 2))
     }
   }
+
+  property("ShiftRegister with SRAM should hold its output when disabled") {
+    val configs = Seq(0, 1, 2, 3, 4, 5, 8).map((_, true)) ++ Seq(0, 1, 2, 4, 6, 8).map((_, false))
+    simulate(new Module {
+      val in = IO(Input(UInt(8.W)))
+      val en = IO(Input(Bool()))
+      val out = IO(Output(Vec(configs.size, UInt(8.W))))
+      configs.zipWithIndex.foreach { case ((n, dualPort), i) =>
+        out(i) := ShiftRegister.mem(in, n, en, dualPort, None)
+      }
+    }) { dut =>
+      val enables = Seq.fill(3)(false) ++ Seq.fill(16)(true) ++
+        Seq.fill(12)(Seq(true, false, true, false, false, true, true, true)).flatten ++
+        Seq.fill(8)(false) ++ Seq.fill(16)(true)
+      var history = Vector.empty[Int]
+      enables.zipWithIndex.foreach { case (en, cycle) =>
+        val in = (cycle * 37 + 1) & 0xff
+        dut.in.poke(in.U)
+        dut.en.poke(en.B)
+        configs.zipWithIndex.foreach { case ((n, dualPort), i) =>
+          if (history.size >= n) {
+            val expected = if (n == 0) in else history(history.size - n)
+            dut.out(i).expect(expected.U, s"cycle $cycle, length $n, dual-port $dualPort")
+          }
+        }
+        if (en) history :+= in
+        dut.clock.step()
+      }
+    }
+  }
 }
