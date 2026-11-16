@@ -25,7 +25,9 @@ all tests in a suite.
 The backend currently uses `firtool-1.163.0/bin/arcilator` relative to the project
 root (`svsim.Workspace.getProjectRootOrCwd`). It uses `circt-verilog`, `circt-opt`,
 `llc`, `llvm-config`, the Arc runtime archive, and headers from the same bundle.
-Python 3 and a C++17 compiler (`CXX`, default `clang++`) are required.
+A C++17 compiler (`CXX`, default `clang++`) is required. Compilation and native
+bridge generation are implemented in Scala; the replay Makefile invokes the
+Scala compiler entry point using the current JVM and classpath.
 
 Compilation imports the existing SystemVerilog sources into CIRCT, compiles
 them to LLVM, and generates a native bridge for svsim's command protocol.

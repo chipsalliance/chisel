@@ -3,7 +3,8 @@
 package svsim.arcilator
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths, StandardCopyOption}
+import java.nio.file.{Files, Paths}
+import java.net.URLClassLoader
 import svsim._
 
 object Backend {
@@ -15,6 +16,23 @@ object Backend {
 
   def initializeFromProcessEnvironment(): Backend =
     new Backend(Workspace.getProjectRootOrCwd.resolve("firtool-1.163.0/bin/arcilator").toString)
+
+  // Makefile compilation runs in a separate JVM, so include classloader URLs
+  // as well as java.class.path (important when svsim is loaded by a build tool).
+  private def compilerClasspath: String = {
+    val loaderPaths = Iterator
+      .iterate(Option(getClass.getClassLoader))(_.flatMap(loader => Option(loader.getParent)))
+      .takeWhile(_.nonEmpty)
+      .flatMap(_.get match {
+        case loader: URLClassLoader =>
+          loader.getURLs.toSeq.filter(_.getProtocol == "file").map(u => Paths.get(u.toURI).toString)
+        case _ => Seq.empty
+      })
+    (sys.props("java.class.path").split(java.io.File.pathSeparator).toSeq ++ loaderPaths)
+      .map(path => Paths.get(path).toAbsolutePath.toString)
+      .distinct
+      .mkString(java.io.File.pathSeparator)
+  }
 }
 
 /** Compile SystemVerilog through CIRCT's frontend and arcilator, then link a native svsim bridge. */
@@ -23,10 +41,6 @@ final class Backend(executablePath: String) extends svsim.Backend {
 
   override def prepareWorkspace(moduleInfo: ModuleInfo, generatedSourcesPath: String): Unit = {
     val directory = Paths.get(generatedSourcesPath)
-    val resource = getClass.getResourceAsStream("/arcilator-compile.py")
-    if (resource == null) throw new java.io.FileNotFoundException("/arcilator-compile.py")
-    try Files.copy(resource, directory.resolve("arcilator-compile.py"), StandardCopyOption.REPLACE_EXISTING)
-    finally resource.close()
     val manifest = moduleInfo.name + "\n" + moduleInfo.ports.map { port =>
       s"${port.name}\t${port.isSettable}\t${port.isGettable}\n"
     }.mkString
@@ -67,10 +81,12 @@ final class Backend(executablePath: String) extends svsim.Backend {
       case _                                                                       => "-O3"
     }
     svsim.Backend.Parameters(
-      compilerPath = "python3",
+      compilerPath = Paths.get(sys.props("java.home"), "bin", "java").toString,
       compilerInvocation = svsim.Backend.Parameters.Invocation(
         Seq(
-          "../generated-sources/arcilator-compile.py",
+          "-cp",
+          Backend.compilerClasspath,
+          "svsim.arcilator.Compiler",
           "--tools",
           tools.toString,
           "--output",

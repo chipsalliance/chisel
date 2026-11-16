@@ -31,6 +31,8 @@ trait Svsim extends ChiselCrossModule with HasCommonOptions with ScalafmtModule 
 
   def compileMvnDeps = Seq(mvn"com.lihaoyi::unroll-annotation:0.3.0")
 
+  def mvnDeps = Seq(mvn"com.lihaoyi::ujson:3.3.1")
+
   object test extends SbtTests with TestModule.ScalaTest with ScalafmtModule {
     def mvnDeps = Seq(v.scalatest, v.scalacheck)
   }
