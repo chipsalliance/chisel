@@ -252,6 +252,10 @@ final class PlusArg(
 
 trait Backend {
   type CompilationSettings <: Backend.Settings
+
+  /** Prepare backend-specific sources before compilation. */
+  def prepareWorkspace(moduleInfo: ModuleInfo, generatedSourcesPath: String): Unit = ()
+
   def generateParameters(
     outputBinaryName:        String,
     topModuleName:           String,

@@ -4,7 +4,7 @@ package chiseltest
 
 import chisel3._
 import chisel3.simulator.EphemeralSimulator._
-import chisel3.simulator.ChiselSim
+import chisel3.simulator.{ChiselSim, HasSimulator}
 import svsim._
 import svsim.verilator.Backend.CompilationSettings.{TraceKind, TraceStyle}
 import scala.language.implicitConversions
@@ -64,6 +64,9 @@ trait ChiselScalatestTester {
    */
   def resetCycles: Int = 1
 
+  /** Default simulator for tests without a backend annotation. */
+  def simulator: HasSimulator = HasSimulator.simulators.verilator()
+
   /**
    * Test a module with the given stimulus
    *
@@ -101,13 +104,7 @@ trait ChiselScalatestTester {
      */
     // Allow direct execution without annotations
     def apply(body: T => Unit): Unit = {
-      val chiselSim = new ChiselSim {}
-      chiselSim.simulate(dutGen) { dut =>
-        if (autoReset) {
-          applyReset(dut, resetCyc)
-        }
-        body(dut)
-      }
+      new TestRunner(dutGen, autoReset, resetCyc).apply(body)
     }
   }
 
@@ -127,6 +124,12 @@ trait ChiselScalatestTester {
      * @param body User-defined test body operating on the DUT instance
      */
     def apply(body: T => Unit): Unit = {
+      val selectedBackends = annotations.collect {
+        case ArcilatorBackendAnnotation => HasSimulator.simulators.arcilator()
+        case VerilatorBackendAnnotation => HasSimulator.simulators.verilator()
+      }
+      require(selectedBackends.size <= 1, "Only one simulator backend annotation may be provided")
+      implicit val hasSimulator: HasSimulator = selectedBackends.headOption.getOrElse(simulator)
       // Check if WriteVcdAnnotation is present
       val hasVcd = annotations.exists {
         case _: chiseltest.WriteVcdAnnotation.type => true
@@ -153,6 +156,7 @@ trait ChiselScalatestTester {
                   traceDepth = None
                 )
                 vs.withTraceStyle(Some(vcdStyle))
+              case settings: arcilator.Backend.CompilationSettings => settings.copy(enableVcd = true)
               case other => other
             }
 

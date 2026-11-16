@@ -94,6 +94,8 @@ object Cli {
                 )
               case options: svsim.verilator.Backend.CompilationSettings =>
                 throw new IllegalArgumentException("Verilator does not support FSDB waveforms.")
+              case _: svsim.arcilator.Backend.CompilationSettings =>
+                throw new IllegalArgumentException("Arcilator does not support FSDB waveforms.")
             }
         )
     )
@@ -130,6 +132,8 @@ object Cli {
             options match {
               case options: svsim.vcs.Backend.CompilationSettings =>
                 throw new IllegalArgumentException("Vcs does not support FST waveforms.")
+              case _: svsim.arcilator.Backend.CompilationSettings =>
+                throw new IllegalArgumentException("Arcilator does not support FST waveforms.")
               case options: svsim.verilator.Backend.CompilationSettings =>
                 options.withTraceStyle(
                   options.traceStyle match {
@@ -176,6 +180,8 @@ object Cli {
                 options.copy(
                   traceSettings = options.traceSettings.copy(enableVcd = true)
                 )
+              case options: svsim.arcilator.Backend.CompilationSettings =>
+                options.copy(enableVcd = true)
               case options: svsim.verilator.Backend.CompilationSettings =>
                 options.withTraceStyle(
                   options.traceStyle match {
@@ -227,6 +233,8 @@ object Cli {
                 )
               case options: svsim.verilator.Backend.CompilationSettings =>
                 throw new IllegalArgumentException("Verilator does not support VPD waveforms.")
+              case _: svsim.arcilator.Backend.CompilationSettings =>
+                throw new IllegalArgumentException("Arcilator does not support VPD waveforms.")
             }
         )
     )
@@ -329,6 +337,7 @@ object Cli {
     /** A mapping of simulator names to simulators. */
     protected def cliSimulatorMap: Map[String, HasSimulator] = Map(
       "verilator" -> HasSimulator.simulators.verilator(),
+      "arcilator" -> HasSimulator.simulators.arcilator(),
       "vcs" -> HasSimulator.simulators.vcs()
     )
 
@@ -384,8 +393,8 @@ object Cli {
         updateFirtoolOptions = (_, a) => a,
         updateCommonSettings = (simulator, a) =>
           simulator match {
-            case "verilator" => disableTemporalLayers(a)
-            case _           => a
+            case "verilator" | "arcilator" => disableTemporalLayers(a)
+            case _                         => a
           },
         updateBackendSettings = (_, a) => a,
         updateUnsetChiselOptions = (a: Array[String]) => a,

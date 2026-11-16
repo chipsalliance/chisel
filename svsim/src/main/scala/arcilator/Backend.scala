@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: Apache-2.0
+
+package svsim.arcilator
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths, StandardCopyOption}
+import svsim._
+
+object Backend {
+  case class CompilationSettings(
+    enableVcd:        Boolean = false,
+    arcilatorOptions: Seq[String] = Seq.empty,
+    frontendOptions:  Seq[String] = Seq.empty
+  ) extends svsim.Backend.Settings
+
+  def initializeFromProcessEnvironment(): Backend =
+    new Backend(Workspace.getProjectRootOrCwd.resolve("firtool-1.163.0/bin/arcilator").toString)
+}
+
+/** Compile SystemVerilog through CIRCT's frontend and arcilator, then link a native svsim bridge. */
+final class Backend(executablePath: String) extends svsim.Backend {
+  type CompilationSettings = Backend.CompilationSettings
+
+  override def prepareWorkspace(moduleInfo: ModuleInfo, generatedSourcesPath: String): Unit = {
+    val directory = Paths.get(generatedSourcesPath)
+    val resource = getClass.getResourceAsStream("/arcilator-compile.py")
+    if (resource == null) throw new java.io.FileNotFoundException("/arcilator-compile.py")
+    try Files.copy(resource, directory.resolve("arcilator-compile.py"), StandardCopyOption.REPLACE_EXISTING)
+    finally resource.close()
+    val manifest = moduleInfo.name + "\n" + moduleInfo.ports.map { port =>
+      s"${port.name}\t${port.isSettable}\t${port.isGettable}\n"
+    }.mkString
+    Files.write(directory.resolve("arcilator-ports.txt"), manifest.getBytes(StandardCharsets.UTF_8))
+  }
+
+  override def generateParameters(
+    outputBinaryName:        String,
+    topModuleName:           String,
+    additionalHeaderPaths:   Seq[String],
+    commonSettings:          CommonCompilationSettings,
+    backendSpecificSettings: CompilationSettings
+  ): svsim.Backend.Parameters = {
+    val tools = Paths.get(executablePath).toAbsolutePath.getParent
+    require(Files.isExecutable(tools.resolve("arcilator")), s"arcilator not executable: $executablePath")
+    val unsupportedWaves = Set(
+      svsim.Backend.HarnessCompilationFlags.enableFstTracingSupport,
+      svsim.Backend.HarnessCompilationFlags.enableFsdbTracingSupport,
+      svsim.Backend.HarnessCompilationFlags.enableVpdTracingSupport
+    )
+    require(
+      !commonSettings.verilogPreprocessorDefines.exists(d => unsupportedWaves(d.name)),
+      "Arcilator only supports VCD waveforms"
+    )
+    require(commonSettings.simulationSettings.plusArgs.isEmpty, "Arcilator does not support Verilog plusargs")
+    val frontend = commonSettings.verilogPreprocessorDefines.map { define =>
+      "-D" + define.name + define.value.map("=" + _).getOrElse("")
+    } ++ commonSettings.includeDirs.toSeq.flatten.map("-I" + _) ++
+      commonSettings.libraryPaths.toSeq.flatten.flatMap(p => Seq("-y", p)) ++
+      commonSettings.libraryExtensions.toSeq.flatten.flatMap(e => Seq("-Y", e)) ++
+      commonSettings.defaultTimescale.toSeq.map(t => s"--timescale=$t") ++
+      backendSpecificSettings.frontendOptions
+    val enableVcd = backendSpecificSettings.enableVcd || commonSettings.verilogPreprocessorDefines.exists(
+      _.name == svsim.Backend.HarnessCompilationFlags.enableVcdTracingSupport
+    )
+    val optimization = commonSettings.optimizationStyle match {
+      case CommonCompilationSettings.OptimizationStyle.OptimizeForCompilationSpeed => "-O0"
+      case _                                                                       => "-O3"
+    }
+    svsim.Backend.Parameters(
+      compilerPath = "python3",
+      compilerInvocation = svsim.Backend.Parameters.Invocation(
+        Seq(
+          "../generated-sources/arcilator-compile.py",
+          "--tools",
+          tools.toString,
+          "--output",
+          outputBinaryName,
+          "--optimization=" + optimization
+        ) ++ Option.when(enableVcd)("--vcd") ++
+          frontend.map("--frontend-option=" + _) ++
+          backendSpecificSettings.arcilatorOptions.map("--arc-option=" + _) ++
+          commonSettings.linkLibraryPaths.map("--link-library=" + _),
+        Seq.empty
+      ),
+      simulationInvocation = svsim.Backend.Parameters.Invocation(Seq.empty, Seq.empty)
+    )
+  }
+
+  override def escapeDefine(string: String): String = string
+  override val assertionFailed = "^.*(Assertion failed|assertion failed|Fatal:|fatal error).*$".r
+}

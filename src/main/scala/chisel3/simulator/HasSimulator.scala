@@ -33,11 +33,32 @@ object HasSimulator {
     * import chisel3.simulator.HasSimulator.simulators.vcs
     * }}}
     *
+    * Or, to use arcilator, provide an implicit value:
+    *
+    * {{{
+    * implicit val simulator: HasSimulator = HasSimulator.simulators.arcilator()
+    * }}}
+    *
     * Note: if you do _not_ import one of these, the default will be to use
     * Verilator due to the low-priority implicit default
     * [[HasSimulator.default]].
     */
   object simulators {
+
+    /** A [[HasSimulator]] implementation for arcilator. */
+    def arcilator(
+      compilationSettings: svsim.CommonCompilationSettings = svsim.CommonCompilationSettings(),
+      arcilatorSettings:   svsim.arcilator.Backend.CompilationSettings = svsim.arcilator.Backend.CompilationSettings()
+    ): HasSimulator = new HasSimulator {
+      override def getSimulator(implicit testingDirectory: HasTestingDirectory): Simulator[svsim.arcilator.Backend] =
+        new Simulator[svsim.arcilator.Backend] {
+          override val backend = svsim.arcilator.Backend.initializeFromProcessEnvironment()
+          override val tag = "arcilator"
+          override val commonCompilationSettings = compilationSettings
+          override val backendSpecificCompilationSettings = arcilatorSettings
+          override val workspacePath = Files.createDirectories(testingDirectory.getDirectory).toString
+        }
+    }
 
     /** A [[HasSimulator]] implementation for a Verilator simulator. */
     def verilator(

@@ -36,9 +36,10 @@ package object chiseltest {
   import chisel3.simulator.EphemeralSimulator._
   import chisel3.util.DecoupledIO
 
-  // Dummy annotations for compatibility (ignored in Chisel 7)
+  // Annotations interpreted by the compatibility test runner.
   case object WriteVcdAnnotation
   case object VerilatorBackendAnnotation
+  case object ArcilatorBackendAnnotation
 
   // Implicit conversions for ChiselTest-compatible operations
   implicit class testableData[T <: Data](val x: T) extends AnyVal {

@@ -396,6 +396,8 @@ final class Workspace(
     val workingDirectory = new File(workingDirectoryPath)
     workingDirectory.mkdir()
 
+    backend.prepareWorkspace(moduleInfo, generatedSourcesPath)
+
     val parameters = backend.generateParameters(
       outputBinaryName = "simulation",
       topModuleName = Workspace.testbenchModuleName,
