@@ -58,119 +58,105 @@ Please see [Chisel Motivation](../explanations/motivation)
 Chisel does not directly support Verilog logic values ```x``` *unknown* and ```z``` *high-impedance*.  There are a number of reasons to want to avoid these values.  See:[The Dangers of Living With An X](http://infocenter.arm.com/help/topic/com.arm.doc.arp0009a/Verilog_X_Bugs.pdf) and [Malicious LUT: A stealthy FPGA Trojan injected and triggered by the design flow](http://ieeexplore.ieee.org/document/7827620/).  Chisel has its own eco-system of unit and functional testers that limit the need for ```x``` and ```z``` and their omission simplify language implementation, design, and testing.  The circuits created by chisel do not preclude developers from using ```x``` and ```z``` in downstream toolchains as they see fit.
 
 ### Get me Verilog
-I wrote a module and I want to see the Verilog; what do I do?
 
-Here's a simple hello world module in a file HelloWorld.scala.
+I wrote a module and I want to see the SystemVerilog; what do I do?
 
+Here's a simple hello world module in a file `HelloWorld.scala`:
 
-```scala
-package intro
-```
 ```scala mdoc:silent
+//> using scala "2.13.18"
+//> using dep "org.chipsalliance::chisel:7.16.0"
+//> using plugin "org.chipsalliance:::chisel-plugin:7.16.0"
+//> using options -unchecked -deprecation -language:reflectiveCalls -feature -Xcheckinit -Xfatal-warnings -Ywarn-dead-code -Ywarn-unused -Ymacro-annotations
+
 import chisel3._
+import circt.stage.ChiselStage
+
 class HelloWorld extends Module {
-  val io = IO(new Bundle{})
+  val io = IO(new Bundle {})
   printf("hello world\n")
 }
-```
 
-Add the following
-```scala mdoc:silent
-import circt.stage.ChiselStage
 object VerilogMain extends App {
-  ChiselStage.emitSystemVerilog(new HelloWorld)
+  ChiselStage.emitSystemVerilogFile(new HelloWorld, args)
 }
 ```
-Now you can get some Verilog. Start sbt:
+
+Run it with Scala CLI:
+
+```bash
+scala-cli run HelloWorld.scala -- --target-dir buildstuff
 ```
-bash> sbt
-> run-main intro.VerilogMain
-[info] Running intro.VerilogMain
-[info] [0.004] Elaborating design...
-[info] [0.100] Done elaborating.
-[success] Total time: 1 s, completed Jan 12, 2017 6:24:03 PM
-```
-or as a one-liner:
-```
-bash> sbt 'runMain intro.VerilogMain'
-```
-After either of the above there will be a HelloWorld.v file in the current directory:
-```scala mdoc:invisible
+
+This writes one or more `.sv` files to `buildstuff`, including `buildstuff/HelloWorld.sv`. `emitSystemVerilogFile` is the API that writes files; it uses `--split-verilog` so that each module is emitted to its own file.
+
+If you just want the SystemVerilog as a `String`, use `emitSystemVerilog` instead. It does not write a file:
+
+```scala mdoc:silent
 val verilog = ChiselStage.emitSystemVerilog(new HelloWorld)
 ```
+
 ```scala mdoc:passthrough
 println("```verilog")
 println(verilog)
 println("```")
 ```
 
-You can see additional options with
-```
-bash> sbt 'runMain intro.HelloWorld --help'
-```
-This will return a comprehensive usage line with available options.
+You can see additional options with:
 
-For example to place the output in a directory name buildstuff use
-```
-bash> sbt 'runMain intro.HelloWorld --target-dir buildstuff --top-name HelloWorld'
+```bash
+scala-cli run HelloWorld.scala -- --help
 ```
 
-Alternatively, you can also use the sbt console to invoke the Verilog driver:
+For example, to place the output in a directory named `buildstuff`:
 
-```
-$ sbt
-> console
-[info] Starting scala interpreter...
-Welcome to Scala 2.12.13 (OpenJDK 64-Bit Server VM, Java 1.8.0_275).
-Type in expressions for evaluation. Or try :help.
-
-scala> (new circt.stage.ChiselStage).emitSystemVerilog(new HelloWorld())
-chisel3.Driver.execute(Array[String](), () => new HelloWorld)
-Elaborating design...
-Done elaborating.
-res1: String =
-"module HelloWorld(
-  input   clock,
-  input   reset
-);
-...
+```bash
+scala-cli run HelloWorld.scala -- --target-dir buildstuff
 ```
 
-As before, there should be a HelloWorld.v file in the current directory.
+:::tip
 
-Note: Using the following, without the `new`,
-will ONLY return the string representation, and will not emit a `.v` file:
+The examples above use Scala CLI. For a build-tool based project, see [Installation](../installation).
 
-```scala mdoc:silent
-ChiselStage.emitSystemVerilog(new HelloWorld())
-```
+:::
 
 ### Get me FIRRTL
 
-If for some reason you don't want the Verilog (e.g. maybe you want to run some custom transformations before exporting to Verilog), then use something along these lines:
+If for some reason you don't want the SystemVerilog (e.g. maybe you want to run custom transformations before exporting), use `emitCHIRRTL` to get the textual CHIRRTL representation:
 
-```scala
-package intro
-```
 ```scala mdoc:silent:reset
+//> using scala "2.13.18"
+//> using dep "org.chipsalliance::chisel:7.16.0"
+//> using plugin "org.chipsalliance:::chisel-plugin:7.16.0"
 
 import chisel3._
 import circt.stage.ChiselStage
 
 class MyFirrtlModule extends Module {
-  val io = IO(new Bundle{})
+  val io = IO(new Bundle {})
 }
 
 object FirrtlMain extends App {
-  ChiselStage.emitCHIRRTL(new MyFirrtlModule)
+  println(ChiselStage.emitCHIRRTL(new MyFirrtlModule, args))
 }
 ```
 
-Run it with:
+Run it with Scala CLI:
 
+```bash
+scala-cli run MyFirrtlModule.scala
 ```
-sbt 'runMain intro.FirrtlMain'
+
+`emitCHIRRTL` returns the CHIRRTL text as a `String`; it does not write a file. If you want to write it to a file, use `emitCHIRRTLFile`, which writes a `.fir` file (for example, `buildstuff/MyFirrtlModule.fir`):
+
+```scala
+object FirrtlFileMain extends App {
+  ChiselStage.emitCHIRRTLFile(new MyFirrtlModule, args ++ Array("--target-dir", "buildstuff"))
+}
 ```
+
+The CHIRRTL for the example is:
+
 ```scala mdoc:invisible
 val theFirrtl = ChiselStage.emitCHIRRTL(new MyFirrtlModule)
 ```
@@ -180,20 +166,11 @@ println(theFirrtl)
 println("```")
 ```
 
-Alternatively, you can also use the sbt console to invoke the FIRRTL driver directly (replace MyFirrtlModule with your module name):
+:::note
 
-```
-$ sbt
-> console
-[info] Starting scala interpreter...
-Welcome to Scala 2.12.13 (OpenJDK 64-Bit Server VM, Java 1.8.0_275).
-Type in expressions for evaluation. Or try :help.
+`emitCHIRRTL` produces the textual CHIRRTL intermediate representation. If you need the FIRRTL dialect (MLIR), use `emitFIRRTLDialect`.
 
-scala> circt.stage.ChiselStage.emitCHIRRTL(new MyFirrtlModule)
-Elaborating design...
-Done elaborating.
-res3: String = ...
-```
+:::
 
 ### Why doesn't Chisel tell me which wires aren't connected?
 
