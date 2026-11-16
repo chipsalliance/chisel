@@ -2,6 +2,14 @@ name: Continuous Integration
 
 on:
   workflow_dispatch:
+    inputs:
+      simulator:
+        description: Simulation backend
+        type: choice
+        default: verilator
+        options:
+          - verilator
+          - arcilator
   pull_request:
     branches-ignore:
       - ci/ci-circt-nightly
@@ -25,6 +33,7 @@ jobs:
       system: ${{ matrix.system }}
       jvm: ${{ matrix.jvm }}
       scala: ${{ matrix.scala }}
+      simulator: ${{ inputs.simulator || 'verilator' }}
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify. This job checks that all matrix jobs were

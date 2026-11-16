@@ -18,6 +18,10 @@ on:
         default: '2.13'
         required: true
         type: string
+      simulator:
+        description: 'Simulation backend (verilator or arcilator)'
+        default: 'verilator'
+        type: string
       circt:
         description: 'The CIRCT version to use (must be a valid release tag, "nightly", or "version-file").
                       Leave off (or empty) to let Chisel manage the CIRCT version'
@@ -36,6 +40,8 @@ jobs:
   ci:
     name: ci
     runs-on: ${{ inputs.system }}
+    env:
+      CHISELSIM_SIMULATOR: ${{ inputs.simulator }}
 
     steps:
       - name: Checkout
@@ -64,10 +70,10 @@ jobs:
           java-version: ${{ inputs.jvm }}
       - name: Install CIRCT
         id: install-circt
-        if: ${{ inputs.circt }}
+        if: ${{ inputs.circt || inputs.simulator == 'arcilator' }}
         uses: circt/install-circt@3f8dda6e1c1965537b5801a43c81c287bac4eae4 # v1.1.1
         with:
-          version: ${{ inputs.circt }}
+          version: ${{ inputs.circt || 'firtool-1.163.0' }}
           github-token: ${{ github.token }}
       # TODO have install-circt do this
       - name: Set CHISEL_FIRTOOL_PATH

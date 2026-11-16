@@ -55,7 +55,7 @@ class TestingDirectorySpec extends AnyFunSpec with Matchers with SimulatorAPI wi
     val allFiles = deepFiles(directory).map(_.toString).toSet
     for (
       file <- Seq(
-        directory.toString + "/workdir-verilator/Makefile",
+        directory.toString + s"/workdir-${chisel3.simulator.HasSimulator.defaultSimulatorName}/Makefile",
         directory.toString + "/primary-sources/Foo.sv"
       )
     ) {

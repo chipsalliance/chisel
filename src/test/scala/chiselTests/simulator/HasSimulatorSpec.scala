@@ -14,10 +14,21 @@ class HasSimulatorSpec extends AnyFunSpec with Matchers {
 
   describe("HasSimulator") {
 
-    it("should use Verilator as a low-priority default") {
+    it("should use the process-wide simulator as a low-priority default") {
 
-      foo should be("verilator")
+      foo should be(HasSimulator.defaultSimulatorName)
 
+    }
+
+    it("should select either backend by name") {
+      HasSimulator.fromName("verilator").getSimulator.tag should be("verilator")
+      HasSimulator.fromName("arcilator").getSimulator.tag should be("arcilator")
+    }
+
+    it("should reject an unknown backend instead of silently falling back") {
+      intercept[IllegalArgumentException] {
+        HasSimulator.fromName("arcilaotr")
+      }.getMessage should include("CHISELSIM_SIMULATOR")
     }
 
     it("should allow overriding via an implicit val") {

@@ -19,6 +19,12 @@ import scala.jdk.CollectionConverters._
 
 class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileCheck {
 
+  private def workdir: String = s"workdir-${HasSimulator.defaultSimulatorName}"
+
+  // Normalize the spelling of preprocessor arguments in the two backends' Makefiles.
+  private def normalizeDefines(text: String): String =
+    text.replace("--frontend-option=-D", "+define+")
+
   private def deleteRecursively(path: Path): Unit = {
     if (Files.exists(path)) {
       if (Files.isDirectory(path)) {
@@ -103,9 +109,9 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
            |CHECK:      lineNo  line
            |CHECK-NEXT: ---
-           |CHECK-NEXT:      0  [{{[0-9]+}}] %Error:
+           |CHECK:      Assertion failed
            |CHECK:      For more information, see the complete log file:
-           |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-a-chisel3.assert-fires-during-the-simulation/workdir-verilator/simulation-log.txt
+           |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-a-chisel3.assert-fires-during-the-simulation/workdir-{{(verilator|arcilator)}}/simulation-log.txt
            |CHECK-NEXT: ---
            |""".stripMargin
       )
@@ -128,9 +134,9 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
            |CHECK-NEXT: The following assertion failures were extracted from the log file:
            |CHECK:      lineNo  line
            |CHECK-NEXT: ---
-           |CHECK-NEXT:      0  [{{[0-9]+}}] %Error:
+           |CHECK:      Assertion failed
            |CHECK:      For more information, see the complete log file:
-           |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-verilator/simulation-log.txt
+           |CHECK:        build/chiselsim/ChiselSimSpec/scalatest.ChiselSim/should-error-if-an-ltl.AssertProperty-fires-during-the-simulation/workdir-{{(verilator|arcilator)}}/simulation-log.txt
            |CHECK-NEXT: ---
            |""".stripMargin
       )
@@ -151,14 +157,16 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       simulateRaw(new Foo, settings = settings) { _ => }
 
-      io.Source
-        .fromFile(
-          FileSystems
-            .getDefault()
-            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
-            .toFile
-        )
-        .mkString
+      normalizeDefines(
+        io.Source
+          .fromFile(
+            FileSystems
+              .getDefault()
+              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "Makefile")
+              .toFile
+          )
+          .mkString
+      )
         .fileCheck()(
           """|CHECK:      '+define+ASSERT_VERBOSE_COND=svsimTestbench.a'
              |CHECK-NEXT: '+define+PRINTF_COND=svsimTestbench.b'
@@ -174,14 +182,16 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         success :<= true.B
       }
       simulateTest(new Foo, timeout = 100, settings = Settings.defaultTest[Foo])
-      io.Source
-        .fromFile(
-          FileSystems
-            .getDefault()
-            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
-            .toFile
-        )
-        .mkString
+      normalizeDefines(
+        io.Source
+          .fromFile(
+            FileSystems
+              .getDefault()
+              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "Makefile")
+              .toFile
+          )
+          .mkString
+      )
         .fileCheck()(
           """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.init'
              |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.init'
@@ -204,14 +214,16 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         }
       }
       simulateTest(new SeparateIOHarness, timeout = 100, settings = Settings.defaultTest[SeparateIOHarness])
-      io.Source
-        .fromFile(
-          FileSystems
-            .getDefault()
-            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
-            .toFile
-        )
-        .mkString
+      normalizeDefines(
+        io.Source
+          .fromFile(
+            FileSystems
+              .getDefault()
+              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "Makefile")
+              .toFile
+          )
+          .mkString
+      )
         .fileCheck()(
           """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.init'
              |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.init'
@@ -240,14 +252,16 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         }
       }
       simulateTest(new FlatIOHarness, timeout = 100, settings = Settings.defaultTest[FlatIOHarness])
-      io.Source
-        .fromFile(
-          FileSystems
-            .getDefault()
-            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
-            .toFile
-        )
-        .mkString
+      normalizeDefines(
+        io.Source
+          .fromFile(
+            FileSystems
+              .getDefault()
+              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "Makefile")
+              .toFile
+          )
+          .mkString
+      )
         .fileCheck()(
           """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.init'
              |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.init'
@@ -276,14 +290,16 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         }
       }
       simulateTest(new BundleIOHarness, timeout = 100, settings = Settings.defaultTest[BundleIOHarness])
-      io.Source
-        .fromFile(
-          FileSystems
-            .getDefault()
-            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
-            .toFile
-        )
-        .mkString
+      normalizeDefines(
+        io.Source
+          .fromFile(
+            FileSystems
+              .getDefault()
+              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "Makefile")
+              .toFile
+          )
+          .mkString
+      )
         .fileCheck()(
           """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.io_init'
              |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.io_init'
@@ -311,14 +327,16 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
         }
       }
       simulateTest(new RenamedPortHarness, timeout = 100, settings = Settings.defaultTest[RenamedPortHarness])
-      io.Source
-        .fromFile(
-          FileSystems
-            .getDefault()
-            .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "Makefile")
-            .toFile
-        )
-        .mkString
+      normalizeDefines(
+        io.Source
+          .fromFile(
+            FileSystems
+              .getDefault()
+              .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "Makefile")
+              .toFile
+          )
+          .mkString
+      )
         .fileCheck()(
           """|CHECK:      '+define+ASSERT_VERBOSE_COND=!svsimTestbench.reset_n'
              |CHECK-NEXT: '+define+PRINTF_COND=!svsimTestbench.reset_n'
@@ -357,7 +375,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       val allFiles = deepFiles(directory).map(_.toString).toSet
       for (
         file <- Seq(
-          "test_run_dir/foo/workdir-verilator/Makefile",
+          s"test_run_dir/foo/$workdir/Makefile",
           "test_run_dir/foo/primary-sources/Foo.sv"
         )
       ) {
@@ -373,7 +391,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       var file = FileSystems
         .getDefault()
-        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "foo", "workdir-verilator", "Makefile")
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "foo", workdir, "Makefile")
         .toFile
       file.delete()
       simulate(new Foo, subdirectory = Some("foo")) { _ => }
@@ -382,7 +400,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       file = FileSystems
         .getDefault()
-        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "bar", "workdir-verilator", "Makefile")
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "bar", workdir, "Makefile")
         .toFile
       file.delete()
       simulateRaw(new Foo, subdirectory = Some("bar")) { _ => }
@@ -390,10 +408,12 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
       file should (exist)
     }
 
-    // Return a Verilator `HasSimulator` that will dump waves to `trace.vcd`.
-    def verilatorWithVcd = HasSimulator.simulators
-      .verilator(verilatorSettings =
-        svsim.verilator.Backend.CompilationSettings.default.withTraceStyle(
+    // Configure VCD tracing on the selected backend.
+    def simulatorWithVcd = HasSimulator
+      .fromName(
+        HasSimulator.defaultSimulatorName,
+        arcilatorSettings = svsim.arcilator.Backend.CompilationSettings(enableVcd = true),
+        verilatorSettings = svsim.verilator.Backend.CompilationSettings.default.withTraceStyle(
           Some(
             svsim.verilator.Backend.CompilationSettings
               .TraceStyle(
@@ -426,7 +446,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
     it("should dump a VCD waveform when traceStyle is Vcd and enableWaves is used") {
 
-      implicit val verilator = verilatorWithVcd
+      implicit val simulator = simulatorWithVcd
 
       class Foo extends Module {
         stop()
@@ -434,7 +454,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       val waveFile = FileSystems
         .getDefault()
-        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.vcd")
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "trace.vcd")
         .toFile
 
       waveFile.delete
@@ -449,6 +469,8 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
     }
 
     it("should dump a FST waveform when traceStyle is Fst and enableWaves is used") {
+
+      assume(HasSimulator.defaultSimulatorName == "verilator", "Arcilator does not support FST waveforms")
 
       implicit val vaerilator = verilatorWithFst
 
@@ -474,7 +496,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
     it("should dump a waveform using ChiselSim settings") {
 
-      implicit val vaerilator = verilatorWithVcd
+      implicit val simulator = simulatorWithVcd
 
       class Foo extends Module {
         stop()
@@ -482,7 +504,7 @@ class ChiselSimSpec extends AnyFunSpec with Matchers with ChiselSim with FileChe
 
       val vcdFile = FileSystems
         .getDefault()
-        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, "workdir-verilator", "trace.vcd")
+        .getPath(implicitly[HasTestingDirectory].getDirectory.toString, workdir, "trace.vcd")
         .toFile
 
       vcdFile.delete

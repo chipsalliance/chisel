@@ -268,7 +268,13 @@ class VerilatorSpec extends BackendSpec {
   val compilationSettings = verilator.Backend.CompilationSettings.default.withTraceStyle(
     Some(TraceStyle(TraceKind.Vcd, traceUnderscore = false))
   )
-  test("verilator", backend)(compilationSettings)
+  sys.env.getOrElse("CHISELSIM_SIMULATOR", "verilator") match {
+    case "verilator" => test("verilator", backend)(compilationSettings)
+    case "arcilator" =>
+      val arc = arcilator.Backend.initializeFromProcessEnvironment()
+      test("arcilator", arc)(arcilator.Backend.CompilationSettings(enableVcd = true))
+    case other => throw new IllegalArgumentException(s"Unknown CHISELSIM_SIMULATOR '$other'")
+  }
 
   describe("trace enablement") {
 

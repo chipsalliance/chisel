@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.simulator.HasSimulator.simulators
 import chisel3.simulator.scalatest.ChiselSim
 import chisel3.simulator.stimulus.RunUntilFinished
 import chisel3.util.Counter
@@ -124,9 +123,10 @@ class MultiClockSpec extends AnyFlatSpec with Matchers with LogUtils with Chisel
   }
 
   it should "scope ports of memories" in {
-    implicit val verilator = simulators
-      .verilator(verilatorSettings =
-        svsim.verilator.Backend.CompilationSettings.default.withDisabledWarnings(Seq("MULTIDRIVEN"))
+    implicit val simulator = chisel3.simulator.HasSimulator
+      .fromName(
+        chisel3.simulator.HasSimulator.defaultSimulatorName,
+        verilatorSettings = svsim.verilator.Backend.CompilationSettings.default.withDisabledWarnings(Seq("MULTIDRIVEN"))
       )
     simulate(new MultiClockMemTest)(RunUntilFinished(21))
   }

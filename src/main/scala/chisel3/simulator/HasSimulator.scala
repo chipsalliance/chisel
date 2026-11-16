@@ -40,7 +40,7 @@ object HasSimulator {
     * }}}
     *
     * Note: if you do _not_ import one of these, the default will be to use
-    * Verilator due to the low-priority implicit default
+    * Verilator (or the backend selected by `CHISELSIM_SIMULATOR`) via the low-priority implicit default
     * [[HasSimulator.default]].
     */
   object simulators {
@@ -93,10 +93,30 @@ object HasSimulator {
 
   }
 
-  /** Low-priority default implementation of [[HasSimulator]] that uses Verilator.
-    * This is the default that will be used if the user does provide an
-    * alternative.
+  /** Select a simulator by name, retaining explicitly supplied backend settings. */
+  def fromName(
+    name:                String,
+    compilationSettings: svsim.CommonCompilationSettings = svsim.CommonCompilationSettings(),
+    verilatorSettings: svsim.verilator.Backend.CompilationSettings =
+      svsim.verilator.Backend.CompilationSettings.default,
+    arcilatorSettings: svsim.arcilator.Backend.CompilationSettings = svsim.arcilator.Backend.CompilationSettings()
+  ): HasSimulator = name match {
+    case "verilator" => simulators.verilator(compilationSettings, verilatorSettings)
+    case "arcilator" => simulators.arcilator(compilationSettings, arcilatorSettings)
+    case other =>
+      throw new IllegalArgumentException(
+        s"Unknown simulator '$other': CHISELSIM_SIMULATOR must be 'verilator' or 'arcilator'"
+      )
+  }
+
+  /** The process-wide default, overridable with `CHISELSIM_SIMULATOR`.
+    * Explicit simulator instances and ScalaTest `-Dsimulator` take precedence.
     */
-  implicit def default: HasSimulator = simulators.verilator()
+  def defaultSimulatorName: String = sys.env.getOrElse("CHISELSIM_SIMULATOR", "verilator")
+
+  /** Low-priority default implementation of [[HasSimulator]].
+    * Uses Verilator unless `CHISELSIM_SIMULATOR=arcilator` is set.
+    */
+  implicit def default: HasSimulator = fromName(defaultSimulatorName)
 
 }

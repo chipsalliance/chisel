@@ -104,7 +104,7 @@ class DPIAPITest extends Module {
 class DPISpec extends AnyFunSpec with Matchers {
   describe("DPI") {
     it("DPI intrinsics run correctly") {
-      val simulator = new VerilatorSimulator("test_run_dir/simulator/DPIIntrinsic")
+      val simulator = TestSimulator("test_run_dir/simulator/DPIIntrinsic")
 
       simulator
         .simulate(new DPIIntrinsicTest()) { module =>
@@ -129,13 +129,14 @@ class DPISpec extends AnyFunSpec with Matchers {
         }
         .result
 
-      val outputFile = io.Source.fromFile("test_run_dir/simulator/DPIIntrinsic/workdir-verilator/simulation-log.txt")
+      val outputFile =
+        io.Source.fromFile(s"test_run_dir/simulator/DPIIntrinsic/workdir-${simulator.tag}/simulation-log.txt")
       val output = outputFile.mkString
       outputFile.close()
       output should include("hello from c++")
     }
     it("DPI API run correctly") {
-      val simulator = new VerilatorSimulator("test_run_dir/simulator/DPIAPI")
+      val simulator = TestSimulator("test_run_dir/simulator/DPIAPI")
 
       simulator
         .simulate(new DPIAPITest()) { module =>
@@ -160,7 +161,7 @@ class DPISpec extends AnyFunSpec with Matchers {
         }
         .result
 
-      val outputFile = io.Source.fromFile("test_run_dir/simulator/DPIAPI/workdir-verilator/simulation-log.txt")
+      val outputFile = io.Source.fromFile(s"test_run_dir/simulator/DPIAPI/workdir-${simulator.tag}/simulation-log.txt")
       val output = outputFile.mkString
       outputFile.close()
       output should include("hello from c++")

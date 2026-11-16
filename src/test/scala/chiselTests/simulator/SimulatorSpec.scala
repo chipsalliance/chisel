@@ -9,11 +9,13 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.matchers.should.Matchers._
 import svsim._
 
-class VerilatorSimulator(val workspacePath: String) extends Simulator[verilator.Backend] {
-  val backend = verilator.Backend.initializeFromProcessEnvironment()
-  val tag = "verilator"
-  val commonCompilationSettings = CommonCompilationSettings()
-  val backendSpecificCompilationSettings = verilator.Backend.CompilationSettings.default
+object TestSimulator {
+  def apply(workspacePath: String): Simulator[_] = {
+    implicit val directory: chisel3.testing.HasTestingDirectory = new chisel3.testing.HasTestingDirectory {
+      def getDirectory = java.nio.file.Paths.get(workspacePath)
+    }
+    HasSimulator.default.getSimulator
+  }
 }
 
 object SimulatorSpec {
@@ -34,7 +36,7 @@ object SimulatorSpec {
 class SimulatorSpec extends AnyFunSpec with Matchers {
   describe("Chisel Simulator") {
     it("runs GCD correctly") {
-      val simulator = new VerilatorSimulator("test_run_dir/simulator/GCDSimulator")
+      val simulator = TestSimulator("test_run_dir/simulator/GCDSimulator")
       val result = simulator
         .simulate(new GCD()) { module =>
           val gcd = module.wrapped
@@ -68,7 +70,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("runs GCD correctly with peek/poke") {
-      val simulator = new VerilatorSimulator("test_run_dir/simulator/GCDSimulator")
+      val simulator = TestSimulator("test_run_dir/simulator/GCDSimulator")
       val result = simulator
         .simulate(new GCD()) { module =>
           import PeekPokeAPI._
@@ -88,7 +90,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("reports failed expects correctly") {
-      val simulator = new VerilatorSimulator("test_run_dir/simulator/GCDSimulator")
+      val simulator = TestSimulator("test_run_dir/simulator/GCDSimulator")
       val thrown = the[FailedExpectationException[_]] thrownBy {
         simulator
           .simulate(new GCD()) { module =>
@@ -144,7 +146,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         c :<= Module(new Qux).a
       }
 
-      new VerilatorSimulator("test_run_dir/simulator/extmodule")
+      TestSimulator("test_run_dir/simulator/extmodule")
         .simulate(new Foo) { module =>
           import PeekPokeAPI._
           val foo = module.wrapped
@@ -169,7 +171,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
       // Check now the debug info is stripped
       val expectedSV = ChiselStage.emitSystemVerilog(new Bar, firtoolOpts = Array("--strip-debug-info", "-g"))
 
-      new VerilatorSimulator("test_run_dir/simulator/bar_debug_mode")
+      TestSimulator("test_run_dir/simulator/bar_debug_mode")
         .simulate(new Bar, firtoolOpts = Array("-strip-debug-info", "-g")) { module =>
           import PeekPokeAPI._
           val bar = module.wrapped
@@ -202,7 +204,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     it("simulate a circuit with zero-width ports") {
       val width = 0
       // Run a simulation with zero width foo
-      new VerilatorSimulator("test_run_dir/simulator/foo_zero_width")
+      TestSimulator("test_run_dir/simulator/foo_zero_width")
         .simulate(new OptionalIOModule(n = width), firtoolOpts = Array("--strip-debug-info", "-g")) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
@@ -236,7 +238,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     it("simulate a circuit with non zero-width ports") {
       val width = 8
       // Run a simulation with zero width foo
-      new VerilatorSimulator("test_run_dir/simulator/foo_non_zero_width")
+      TestSimulator("test_run_dir/simulator/foo_non_zero_width")
         .simulate(new OptionalIOModule(n = width), firtoolOpts = Array("--strip-debug-info", "-g")) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
@@ -278,7 +280,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         val delay = RegNext(io.in)
         io.out := delay
       }
-      new VerilatorSimulator("test_run_dir/simulator/flat_io_ports")
+      TestSimulator("test_run_dir/simulator/flat_io_ports")
         .simulate(new SimpleModule) { module =>
           import PeekPokeAPI._
           val dut = module.wrapped
@@ -300,7 +302,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
         }
       }
       intercept[Exception] {
-        new VerilatorSimulator("test_run_dir/simulator/has_layers_enabled")
+        TestSimulator("test_run_dir/simulator/has_layers_enabled")
           .simulate(new Foo) { module =>
             import PeekPokeAPI._
             val dut = module.wrapped
@@ -324,23 +326,23 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
 
       info("illegal constructs cause compilation failure")
       intercept[Exception] {
-        new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-enabledf")
+        TestSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-enabledf")
           .simulate(
             new Foo,
             settings = Settings.default[Foo].copy(verilogLayers = LayerControl.EnableAll)
           ) { _ => }
           .result
-      }.getMessage() should include("Unsupported: s_eventually")
+      }.getMessage() should include("s_eventually")
 
       info("disabling unsupported constracts causes compilation to succeed using LayerControl.DisableAll")
-      new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
+      TestSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
         .simulate(new Foo, settings = Settings.default[Foo].copy(verilogLayers = LayerControl.DisableAll)) { _ => }
         .result
 
       info(
         "disabling unsupported constracts causes compilation to succeed using LayerControl.Disable(layers.Verification.Assert.Temporal)"
       )
-      new VerilatorSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
+      TestSimulator("test_run_dir/simulator/does_not_compile_disabled_layers-disabled")
         .simulate(
           new Foo,
           settings =
@@ -351,7 +353,7 @@ class SimulatorSpec extends AnyFunSpec with Matchers {
     }
 
     it("supports link libraries provided by the build system") {
-      val simulator = new VerilatorSimulator("test_run_dir/simulator/LinkLibrary")
+      val simulator = TestSimulator("test_run_dir/simulator/LinkLibrary")
       val settings = Settings
         .defaultRaw[SimulatorSpec.LinkLibraryTest]
         .withLibraries(Seq("linkLibA", "linkLibB"))

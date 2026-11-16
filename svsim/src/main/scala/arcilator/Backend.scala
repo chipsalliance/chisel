@@ -14,8 +14,23 @@ object Backend {
     frontendOptions:  Seq[String] = Seq.empty
   ) extends svsim.Backend.Settings
 
-  def initializeFromProcessEnvironment(): Backend =
-    new Backend(Workspace.getProjectRootOrCwd.resolve("firtool-1.163.0/bin/arcilator").toString)
+  def initializeFromProcessEnvironment(): Backend = {
+    val executable = sys.env
+      .get("ARCILATOR_PATH")
+      .orElse {
+        sys.env
+          .get("PATH")
+          .toSeq
+          .flatMap(_.split(java.io.File.pathSeparator))
+          .map { directory =>
+            Paths.get(directory).resolve("arcilator")
+          }
+          .find(Files.isExecutable(_))
+          .map(_.toString)
+      }
+      .getOrElse(Workspace.getProjectRootOrCwd.resolve("firtool-1.163.0/bin/arcilator").toString)
+    new Backend(executable)
+  }
 
   // Makefile compilation runs in a separate JVM, so include classloader URLs
   // as well as java.class.path (important when svsim is loaded by a build tool).

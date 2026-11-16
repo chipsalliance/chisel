@@ -65,7 +65,7 @@ trait ChiselScalatestTester {
   def resetCycles: Int = 1
 
   /** Default simulator for tests without a backend annotation. */
-  def simulator: HasSimulator = HasSimulator.simulators.verilator()
+  def simulator: HasSimulator = HasSimulator.default
 
   /**
    * Test a module with the given stimulus

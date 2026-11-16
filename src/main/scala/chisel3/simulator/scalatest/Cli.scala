@@ -349,7 +349,7 @@ object Cli {
     * If `Some` then the provided default will be used.  If `None`, then a
     * simulator must be provided.
     */
-    protected def defaultCliSimulator: Option[HasSimulator] = Some(HasSimulator.simulators.verilator())
+    protected def defaultCliSimulator: Option[HasSimulator] = Some(HasSimulator.default)
 
     implicit def cliSimulator: HasSimulator = configMap.getOptional[String]("simulator") match {
       case None =>

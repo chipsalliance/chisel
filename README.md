@@ -317,6 +317,11 @@ If the compilation succeeded and the dependencies noted above are installed, you
 ./mill chisel[].unitTest
 ```
 
+Select the ScalaTest simulation backend with `CHISELSIM_SIMULATOR=arcilator`
+or `CHISELSIM_SIMULATOR=verilator` (the default). See
+[the Arcilator testing guide](svsim/ARCILATOR.md) for commands, CI configuration,
+tool setup, and current backend limitations.
+
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`main` branch), you will need to build from source and publish locally.
