@@ -414,7 +414,14 @@ sealed trait Property[T] extends Element { self =>
 
   /** Property equality comparison
     *
-    * Compares two properties of the same type and returns a Property[Boolean].
+    * Compares two properties and returns a Property[Boolean].  Integer, string,
+    * and boolean properties are compared by value.  Class or AnyClass
+    * properties are compared by reference, looking through intermediary
+    * assignments.
+    *
+    * Integer, string, and boolean equality must have exactly the same type.
+    * Class and AnyClass comparisons may be of different types and Classes can
+    * be compared to AnyClasses.
     *
     * @param that the property to compare with
     * @return Property[Boolean] indicating whether the two properties are equal
@@ -799,6 +806,15 @@ sealed trait PropertyEqualityOps[T] {
 
 object PropertyEqualityOps {
   import PropertyExpressionHelpers._
+
+  // Inst and AnyRef properties both use ClassType as their Scala type parameter.
+  implicit val classEqualityOps: PropertyEqualityOps[Property[ClassType]] =
+    new PropertyEqualityOps[Property[ClassType]] {
+      def propEq(lhs: Property[ClassType], rhs: Property[ClassType])(
+        implicit sourceInfo: SourceInfo
+      ): Property[Boolean] =
+        cmpOp(sourceInfo, fir.PropEqOp, lhs, rhs)
+    }
 
   // Type class instances for Property equality operations.
   implicit val boolEqualityOps: PropertyEqualityOps[Property[Boolean]] =
