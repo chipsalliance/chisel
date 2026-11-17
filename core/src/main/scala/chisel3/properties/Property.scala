@@ -402,6 +402,11 @@ sealed trait Property[T] extends Element { self =>
 
   /** Check whether a sequence property contains a property value.
     *
+    * This uses the equality semantics of `===`, including referential identity
+    * for Class and AnyClass properties. The search value must have the same
+    * type as the sequence elements, except that AnyClass sequences also accept
+    * Class references.
+    *
     * @param that the property value to search for
     * @return Property[Boolean] indicating whether the sequence contains the value
     */
@@ -410,6 +415,21 @@ sealed trait Property[T] extends Element { self =>
     sourceInfo:  SourceInfo
   ): Property[Boolean] = {
     ev.contains(this, that)
+  }
+
+  /** Check whether an AnyClass sequence contains a domain reference.
+    *
+    * This uses referential equality. Class-specific sequences do not accept
+    * domain references.
+    *
+    * @param that the domain reference to search for
+    * @return Property[Boolean] indicating whether the sequence contains the reference
+    */
+  final def contains(that: domain.Type)(
+    implicit ev: PropertySequenceContainsOps[T, chisel3.properties.ClassType],
+    sourceInfo:  SourceInfo
+  ): Property[Boolean] = {
+    PropertySequenceContainsOps.containsDomain(this, that)
   }
 
   /** Property equality comparison
@@ -579,11 +599,11 @@ private object PropertyExpressionHelpers {
   }
 
   // Helper function for comparison operations that return Property[Boolean].
-  def cmpOp[L, R](
+  def cmpOp[L](
     sourceInfo: SourceInfo,
     op:         fir.PropPrimOp,
     lhs:        Property[L],
-    rhs:        Property[R]
+    rhs:        Element
   ): Property[Boolean] = {
     implicit val info = sourceInfo
 
@@ -756,10 +776,33 @@ sealed trait PropertySequenceContainsOps[T, U] {
 object PropertySequenceContainsOps {
   import PropertyExpressionHelpers._
 
+  private[chisel3] def containsDomain[S](lhs: Property[S], rhs: domain.Type)(
+    implicit sourceInfo: SourceInfo
+  ): Property[Boolean] = {
+    lhs.getPropertyType match {
+      case fir.SequencePropertyType(fir.AnyRefPropertyType) => ()
+      case fir.SequencePropertyType(elementType) =>
+        Builder.exception(
+          s"list_contains with a domain reference requires list element type AnyRef, but got ${elementType.serialize}"
+        )
+      case _ => ()
+    }
+    cmpOp(sourceInfo, fir.ListContainsOp, lhs, rhs)
+  }
+
   private def sequenceContainsOps[S, U](implicit equality: PropertyEqualityOps[Property[U]]) =
     new PropertySequenceContainsOps[S, U] {
-      def contains(lhs: Property[S], rhs: Property[U])(implicit sourceInfo: SourceInfo): Property[Boolean] =
+      def contains(lhs: Property[S], rhs: Property[U])(implicit sourceInfo: SourceInfo): Property[Boolean] = {
+        (lhs.getPropertyType, rhs.getPropertyType) match {
+          case (fir.SequencePropertyType(fir.AnyRefPropertyType), _: fir.ClassPropertyType) => ()
+          case (fir.SequencePropertyType(elementType), searchType) if elementType != searchType =>
+            Builder.exception(
+              s"list_contains element type ${searchType.serialize} does not match list element type ${elementType.serialize}"
+            )
+          case _ => ()
+        }
         cmpOp(sourceInfo, fir.ListContainsOp, lhs, rhs)
+      }
     }
 
   implicit def seqContainsOps[U](
