@@ -10,7 +10,7 @@
 
 
 <link rel="search" type="application/opensearchdescription+xml" title="Chisel" href="/opensearch.xml"><link rel="stylesheet" href="/assets/css/styles.5b455b69.css">
-<script src="/assets/js/runtime~main.2bc243e6.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.8d4742d3.js" defer="defer"></script>
 <script src="/assets/js/main.4b461219.js" defer="defer"></script>
 </head>
 <body>
@@ -111,9 +111,14 @@ Users are advised to remove the <code>brew</code> version of Java with the follo
 <div class="language-sh codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-sh codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">scoop </span><span class="token function" style="color:#d73a49">install</span><span class="token plain"> sbt</span><br></div></code></pre></div></div>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="firtool">Firtool<a href="#firtool" class="hash-link" aria-label="Direct link to Firtool" title="Direct link to Firtool" translate="no">​</a></h3>
 <p>Beginning with version 6.0, Chisel manages the version of firtool on most systems.
-However, some systems (e.g. NixOS or older Linux distributions like CentOS 6) may need to build firtool from source.
+On first use, current Chisel versions download firtool from the <a href="https://github.com/llvm/circt/releases" target="_blank" rel="noopener noreferrer" class="">CIRCT GitHub releases</a>, verify its SHA-256 checksum, and cache the binary for later runs.
+The download is approximately 50–100 MB and requires access to <code>github.com</code> and <code>release-assets.githubusercontent.com</code>.
+The default cache is the platform-specific user cache directory for <code>llvm-firtool</code> (typically <code>~/.cache/llvm-firtool</code> on Linux, <code>~/Library/Caches/org.chipsalliance.llvm-firtool</code> on macOS, or <code>%LOCALAPPDATA%\org.chipsalliance\llvm-firtool\cache</code> on Windows).
+Set <code>CHISEL_FIRTOOL_CACHE</code> to choose a different cache directory; each version is stored under <code>&lt;cache&gt;/&lt;version&gt;/bin/</code>.</p>
+<p>However, some systems (e.g. NixOS or older Linux distributions like CentOS 6) may need to build firtool from source.
 If you need to build firtool from source, please see the <a href="https://github.com/llvm/circt" target="_blank" rel="noopener noreferrer" class="">Github repository</a>.</p>
-<p>To override the Chisel-managed version of firtool, set environment variable <code>CHISEL_FIRTOOL_PATH</code> to point to the directory containing your firtool binary.</p>
+<p>To use an installed firtool, set the Java system property <code>chisel.firtool.path</code> or the environment variable <code>CHISEL_FIRTOOL_PATH</code> to the directory containing the binary. If both are set, the system property takes precedence.
+To download a different version or use a release mirror on a restricted network, see <a class="" href="/docs/appendix/versioning#setting-your-own-firtool-version">Setting Your Own Firtool Version</a>.</p>
 <p>To see what version of firtool is recommended for a given version of Chisel, see <a class="" href="/docs/appendix/versioning#firtool-version">Versioning</a>.
 You can also query this information programmatically in Scala via <a href="https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest/chisel3/BuildInfo$.html" target="_blank" rel="noopener noreferrer" class=""><code>chisel3.BuildInfo.firtoolVersion</code></a>.
 For example, you can use Scala CLI to compile a tiny program on the command-line to print out this value:</p>
