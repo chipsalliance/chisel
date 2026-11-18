@@ -213,10 +213,16 @@ scoop install sbt
 ### Firtool
 
 Beginning with version 6.0, Chisel manages the version of firtool on most systems.
+On first use, current Chisel versions download firtool from the [CIRCT GitHub releases](https://github.com/llvm/circt/releases), verify its SHA-256 checksum, and cache the binary for later runs.
+The download is approximately 50–100 MB and requires access to `github.com` and `release-assets.githubusercontent.com`.
+The default cache is the platform-specific user cache directory for `llvm-firtool` (typically `~/.cache/llvm-firtool` on Linux, `~/Library/Caches/org.chipsalliance.llvm-firtool` on macOS, or `%LOCALAPPDATA%\org.chipsalliance\llvm-firtool\cache` on Windows).
+Set `CHISEL_FIRTOOL_CACHE` to choose a different cache directory; each version is stored under `<cache>/<version>/bin/`.
+
 However, some systems (e.g. NixOS or older Linux distributions like CentOS 6) may need to build firtool from source.
 If you need to build firtool from source, please see the [Github repository](https://github.com/llvm/circt).
 
-To override the Chisel-managed version of firtool, set environment variable `CHISEL_FIRTOOL_PATH` to point to the directory containing your firtool binary.
+To use an installed firtool, set the Java system property `chisel.firtool.path` or the environment variable `CHISEL_FIRTOOL_PATH` to the directory containing the binary. If both are set, the system property takes precedence.
+To download a different version or use a release mirror on a restricted network, see [Setting Your Own Firtool Version](appendix/versioning#setting-your-own-firtool-version).
 
 To see what version of firtool is recommended for a given version of Chisel, see [Versioning](appendix/versioning#firtool-version).
 You can also query this information programmatically in Scala via [`chisel3.BuildInfo.firtoolVersion`](https://javadoc.io/doc/org.chipsalliance/chisel_2.13/latest/chisel3/BuildInfo$.html).

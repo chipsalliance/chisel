@@ -28,24 +28,69 @@ Users are also encouraged to emit `.fir` from Chisel and invoke an installed fir
 
 :::
 
-To use a specific version, add a dependency on the desired [`org.chipsalliance::llvm-firtool`](https://central.sonatype.com/artifact/org.chipsalliance/llvm-firtool) release to your build. For example:
+:::warning
+
+A given version of Chisel is only tested against the firtool version listed in the [Firtool Version Tables](#firtool-version-tables). Other versions often work, but support is not guaranteed.
+
+:::
+
+
+To use a specific version of firtool, set the `CHISEL_FIRTOOL_VERSION` environment variable or the `chisel.firtool.version` Java system property.
+Chisel will download that version from the [CIRCT GitHub releases](https://github.com/llvm/circt/releases), verify its SHA-256 checksum, and cache it.
+The system property takes precedence over the environment variable. For example:
+
+```sh
+export CHISEL_FIRTOOL_VERSION=1.163.0
+```
+
+In sbt, setting the system property through `javaOptions` requires forking:
 
 ```scala title="build.sbt"
-libraryDependencies += "org.chipsalliance" %% "llvm-firtool" % "1.153.0"
+Test / fork := true
+Test / javaOptions += "-Dchisel.firtool.version=1.163.0"
 ```
+
+Exporting `CHISEL_FIRTOOL_VERSION` in the shell that launches sbt works without forking.
+Setting it through sbt's `envVars` setting requires forking, just like `javaOptions`.
+For `run` instead of tests, use the corresponding `Compile / run / fork` and `Compile / run / javaOptions` settings.
+
+In Mill, add the property or environment variable to the module that runs your Chisel code (or its `test` module):
 
 ```scala title="build.mill"
-def mvnDeps = Agg(
-  mvn"org.chipsalliance::llvm-firtool:1.153.0"
-)
+def forkArgs = Seq("-Dchisel.firtool.version=1.163.0")
+// or: def forkEnv = Map("CHISEL_FIRTOOL_VERSION" -> "1.163.0")
 ```
 
-Alternatively, you can install firtool yourself from the [pre-built artifacts](https://github.com/llvm/circt/releases) or build it from source.
-To use your own installed firtool binary, set `CHISEL_FIRTOOL_PATH` to the directory containing the `firtool` binary you want Chisel to use.
+With Scala CLI:
+
+```sh
+scala-cli run --java-prop chisel.firtool.version=1.163.0 .
+```
+
+#### Restricted networks and installed binaries
+
+Automatic downloads require access to `github.com` and `release-assets.githubusercontent.com`.
+If your machine cannot reach GitHub, set `CHISEL_FIRTOOL_URL` or the `chisel.firtool.url` Java system property to a mirror's release base URL.
+The system property takes precedence. The mirror must provide the same archives and `.sha256` files at `<base-url>/firtool-<version>/<asset>`.
+For example, `CHISEL_FIRTOOL_URL=https://mirror.example.com/circt/releases/download` makes Chisel fetch assets from `https://mirror.example.com/circt/releases/download/firtool-1.163.0/`.
+
+Alternatively, install firtool yourself from the [pre-built artifacts](https://github.com/llvm/circt/releases) or build it from source.
+To use an installed binary such as `/opt/circt/bin/firtool`, pass `-Dchisel.firtool.path=/opt/circt/bin` to the JVM or set `CHISEL_FIRTOOL_PATH=/opt/circt/bin`.
+The system property takes precedence over the environment variable. Setting either path bypasses downloads, so the version and URL overrides do not apply.
+
+#### Legacy dependency override
+
+Adding a dependency on [`org.chipsalliance:llvm-firtool`](https://central.sonatype.com/artifact/org.chipsalliance/llvm-firtool) is deprecated but still works for versions up to **1.162.0**.
+No newer versions will be published to Maven Central.
+An explicit version override takes precedence over an `llvm-firtool` dependency on the classpath.
+For versions already published to Maven Central, Chisel also retains Maven downloads as a fallback if the GitHub download fails.
+
+Older Chisel releases that do not include the GitHub-enabled firtool-resolver cannot download firtool versions newer than 1.162.0 automatically.
+With those releases, install firtool yourself and use `CHISEL_FIRTOOL_PATH`.
 
 :::warning
 
-A given version of Chisel is only tested against the version listed in the tables below. It often works with other versions, but it is not guaranteed.
+Using `org.chipsalliance:llvm-firtool` Maven Artifacts to get firtool is supported in Chisel 7 but support will be dropped in Chisel 8.
 
 :::
 

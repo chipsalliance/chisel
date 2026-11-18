@@ -118,7 +118,10 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[DirectMissingMethodProblem]("chisel3.Vec.width"),
     // _width is package private and implemented by sealed Aggregate.
     // It is implemented in the bytecode of Record which makes it available for all user-defined types.
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.Data._width")
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("chisel3.Data._width"),
+    // circt.stage.phases.Exceptions is private
+    ProblemFilter.exclude[DirectMissingMethodProblem]("circt.stage.phases.Exceptions.versionAdvice"),
+    ProblemFilter.exclude[DirectMissingMethodProblem]("circt.stage.phases.Exceptions#FirtoolNonZeroExitCode.this")
   )
 
   def pluginVersion = v.scalaCrossToVersion(crossScalaVersion)
