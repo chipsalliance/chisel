@@ -8,7 +8,7 @@ import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 import firrtl.{annoSeqToSeq, seqToAnnoSeq, AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseManager, Stage, StageMain, Unserializable}
 import firrtl.stage.FirrtlCircuitAnnotation
-import logger.LogLevelAnnotation
+import logger.Logger
 import firrtl.EmittedBtor2CircuitAnnotation
 
 /** Entry point for running Chisel with the CIRCT compiler.
@@ -67,6 +67,10 @@ object ChiselStage {
     )
   )
 
+  private def runPhases(annos: AnnotationSeq): AnnotationSeq = Logger.makeScope(annos) {
+    phase.transform(annos)
+  }
+
   /** Run elaboration and return the [[ElaboratedCircuit]]
     *
     * @param gen  a call-by-name Chisel module
@@ -82,10 +86,7 @@ object ChiselStage {
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
     ) ++ (new Shell("circt")).parse(args)
 
-    phase
-      .transform(annos)
-      .collectFirst { case a: ChiselCircuitAnnotation => a.elaboratedCircuit }
-      .get
+    runPhases(annos).collectFirst { case a: ChiselCircuitAnnotation => a.elaboratedCircuit }.get
   }
 
   /** Elaborate a Chisel circuit into a CHIRRTL string */
@@ -98,7 +99,7 @@ object ChiselStage {
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
     ) ++ (new Shell("circt")).parse(args)
 
-    val resultAnnos = phase.transform(annos)
+    val resultAnnos = runPhases(annos)
 
     var elaboratedCircuit: Option[ElaboratedCircuit] = None
     val inFileAnnos = resultAnnos.flatMap {
@@ -141,12 +142,9 @@ object ChiselStage {
       CIRCTTargetAnnotation(CIRCTTarget.CHIRRTL)
     ) ++ (new Shell("circt")).parse(args)
 
-    phase
-      .transform(annos)
-      .collectFirst { case FirrtlCircuitAnnotation(a) =>
-        a
-      }
-      .get
+    runPhases(annos).collectFirst { case FirrtlCircuitAnnotation(a) =>
+      a
+    }.get
   }
 
   /** Compile a Chisel circuit to FIRRTL dialect */
@@ -160,12 +158,9 @@ object ChiselStage {
       CIRCTTargetAnnotation(CIRCTTarget.FIRRTL)
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
 
-    phase
-      .transform(annos)
-      .collectFirst { case EmittedMLIR(_, a, _) =>
-        a
-      }
-      .get
+    runPhases(annos).collectFirst { case EmittedMLIR(_, a, _) =>
+      a
+    }.get
   }
 
   /** Compile a Chisel circuit to HWS dialect */
@@ -179,12 +174,9 @@ object ChiselStage {
       CIRCTTargetAnnotation(CIRCTTarget.HW)
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
 
-    phase
-      .transform(annos)
-      .collectFirst { case EmittedMLIR(_, a, _) =>
-        a
-      }
-      .get
+    runPhases(annos).collectFirst { case EmittedMLIR(_, a, _) =>
+      a
+    }.get
   }
 
   /** Compile a Chisel circuit to SystemVerilog
@@ -203,13 +195,9 @@ object ChiselStage {
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
-    phase
-      .transform(annos)
-      .collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
-        a
-      }
-      .get
-      .value
+    runPhases(annos).collectFirst { case EmittedVerilogCircuitAnnotation(a) =>
+      a
+    }.get.value
   }
 
   /** Compile a Chisel circuit to multiple SystemVerilog files.
@@ -245,13 +233,9 @@ object ChiselStage {
       ChiselGeneratorAnnotation(() => gen),
       CIRCTTargetAnnotation(CIRCTTarget.Btor2)
     ) ++ (new Shell("circt")).parse(args) ++ firtoolOpts.map(FirtoolOption(_))
-    phase
-      .transform(annos)
-      .collectFirst { case EmittedBtor2CircuitAnnotation(a) =>
-        a
-      }
-      .get
-      .value
+    runPhases(annos).collectFirst { case EmittedBtor2CircuitAnnotation(a) =>
+      a
+    }.get.value
   }
 }
 
