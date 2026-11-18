@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - id: cache-oss-cad-suite
-      uses: actions/cache@v6
+      uses: actions/cache/restore@v6
       with:
         path: oss-cad-suite
         key: oss-cad-suite-${{ runner.os }}-${{ inputs.version }}
@@ -21,6 +21,13 @@ runs:
         VERSION=${{ inputs.version }}
         ARTIFACT=oss-cad-suite-linux-x64-$(echo $VERSION | tr -d '-')
         wget -q -O - https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${VERSION}/${ARTIFACT}.tgz | tar -zx
+
+    # Seed the cache on the default branch so pull requests can reuse it.
+    - if: steps.cache-oss-cad-suite.outputs.cache-hit != 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      uses: actions/cache/save@v6
+      with:
+        path: oss-cad-suite
+        key: ${{ steps.cache-oss-cad-suite.outputs.cache-primary-key }}
 
     # Add the CAD Suite to the PATH
     - shell: bash
