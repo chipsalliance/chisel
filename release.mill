@@ -50,6 +50,8 @@ trait Unipublish extends ChiselCrossModule with ChiselPublishModule with Mima {
     ProblemFilter.exclude[IncompatibleResultTypeProblem]("chisel3.internal.firrtl.ir*"),
     ProblemFilter.exclude[MissingTypesProblem]("chisel3.internal.firrtl.ir*"),
     ProblemFilter.exclude[MissingClassProblem]("chisel3.internal.firrtl.ir*"),
+    // PropertyExpressionHelpers is Scala-private implementation detail.
+    ProblemFilter.exclude[IncompatibleMethTypeProblem]("chisel3.properties.PropertyExpressionHelpers.cmpOp"),
     // This was package private and is fine to break.
     ProblemFilter.exclude[MissingClassProblem]("chisel3.util.BlackBoxHelpers*"),
     // firrtl is deprecated and is fine to break.
