@@ -79,9 +79,13 @@ private object Helpers {
 
 private[this] object Exceptions {
 
-  def versionAdvice: String =
-    s"Note that this version of Chisel ($chiselVersion) was published against firtool version " +
-      firtoolVersion.getOrElse("<unknown>") + "."
+  def versionAdvice(resolvedVersion: Option[String]): String = {
+    val publishedVersion = firtoolVersion.getOrElse("<unknown>")
+    val usingVersion =
+      resolvedVersion.filter(_ != publishedVersion).map(v => s"Using firtool version $v. ").getOrElse("")
+    usingVersion + s"Note that this version of Chisel ($chiselVersion) was published against firtool version " +
+      publishedVersion + "."
+  }
 
   /** Indicates that the firtool binary failed with a non-zero exit code.  This generally indicates a compiler error
     * either originating from a user error or from a crash.
@@ -90,11 +94,17 @@ private[this] object Exceptions {
     * @param exitCode the numeric exit status code returned by the firtool binary
     * @param stdout the contents returned to standard out by the firtool binary
     * @param stderr the contents returned to standard error by the firtool binary
+    * @param resolvedVersion the version reported by firtool-resolver, if available
     */
-  class FirtoolNonZeroExitCode(binary: String, exitCode: Int, stdout: String, stderr: String)
-      extends RuntimeException(
+  class FirtoolNonZeroExitCode(
+    binary:          String,
+    exitCode:        Int,
+    stdout:          String,
+    stderr:          String,
+    resolvedVersion: Option[String]
+  ) extends RuntimeException(
         dramaticMessage(
-          header = Some(s"${binary} returned a non-zero exit code. $versionAdvice"),
+          header = Some(s"${binary} returned a non-zero exit code. ${versionAdvice(resolvedVersion)}"),
           body = s"ExitCode:\n${exitCode}\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}"
         )
       )
@@ -110,9 +120,24 @@ private[this] object Exceptions {
         dramaticMessage(
           header = Some(s"Error resolving firtool"),
           body = s"""|Chisel requires firtool, the MLIR-based FIRRTL Compiler (MFC), to generate Verilog.
-                     |Something is wrong with your firtool installation, please see the following logging
-                     |information.
+                     |Use -Dchisel.firtool.path=<directory> or set CHISEL_FIRTOOL_PATH to the directory
+                     |containing an installed firtool binary, or
+                     |choose a version to download with CHISEL_FIRTOOL_VERSION or -Dchisel.firtool.version=<version>.
+                     |For restricted networks, set CHISEL_FIRTOOL_URL (or -Dchisel.firtool.url=<base-url>)
+                     |to a mirror of the CIRCT release assets.
+                     |Please see the following logging information:
                      |$msg""".stripMargin
+        )
+      )
+      with NoStackTrace
+
+  class FirtoolLaunchFailed(binary: String, explicitPath: Boolean, msg: String)
+      extends RuntimeException(
+        dramaticMessage(
+          header = Some(s"Could not run firtool at $binary"),
+          body = if (explicitPath) {
+            s"Point --firtool-binary-path to a firtool executable, or remove the option to let Chisel resolve firtool.\n$msg"
+          } else msg
         )
       )
       with NoStackTrace
@@ -210,16 +235,17 @@ class CIRCT extends Phase {
 
     val circtAnnotationFilename = "circt.anno.json"
 
-    val binary = circtOptions.firtoolBinaryPath.getOrElse {
-      // .get is safe, firtoolVersion is an Option for backwards compatibility
-      val version = firtoolVersion.get
-      val resolved = firtoolresolver.Resolve(new LoggerShim(logger), version)
-      resolved match {
-        case Left(msg) =>
-          throw new Exceptions.FirtoolNotFound(msg)
-        case Right(bin) =>
-          bin.path.toString
-      }
+    val (binary, resolvedVersion) = circtOptions.firtoolBinaryPath match {
+      case Some(path) => (path, None)
+      case None       =>
+        // .get is safe, firtoolVersion is an Option for backwards compatibility
+        val version = firtoolVersion.get
+        firtoolresolver.Resolve(new LoggerShim(logger), version) match {
+          case Left(msg) =>
+            throw new Exceptions.FirtoolNotFound(msg)
+          case Right(bin) =>
+            (bin.path.toString, Some(bin.version))
+        }
     }
 
     val cmd = // Only 1 of input or firFile will be Some
@@ -275,7 +301,7 @@ class CIRCT extends Phase {
         os.proc(cmd).call(check = false, stdin = stdin, stdout = stdout, stderr = stderr).exitCode
       } catch {
         case a: java.io.IOException if a.getMessage().startsWith("Cannot run program") =>
-          throw new Exceptions.FirtoolNotFound(a.getMessage())
+          throw new Exceptions.FirtoolLaunchFailed(binary, circtOptions.firtoolBinaryPath.isDefined, a.getMessage())
       }
     stdoutWriter.close()
     stderrWriter.close()
@@ -284,7 +310,7 @@ class CIRCT extends Phase {
     val errors = stderrStream.toString
     if (errors.nonEmpty) logger.warn(errors)
     if (exitValue != 0)
-      throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors)
+      throw new Exceptions.FirtoolNonZeroExitCode(binary, exitValue, result, errors, resolvedVersion)
     val finalAnnotations = if (split) {
       logger.info(result)
       val file = new File(stageOptions.getBuildFileName(circtAnnotationFilename, Some(".anno.json")))

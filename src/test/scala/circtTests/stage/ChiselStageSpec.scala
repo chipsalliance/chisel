@@ -176,6 +176,7 @@ class TraceSpec {
 class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils with FileCheck {
 
   private val baseDir = os.pwd / "test_run_dir" / this.getClass.getSimpleName
+  private val resolverPathCheck = "Checking chisel.firtool.path and CHISEL_FIRTOOL_PATH for firtool"
 
   describe("ChiselStage") {
 
@@ -417,17 +418,16 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
         targetDir.toString
       )
       val annos = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
-      val msg = "Checking CHISEL_FIRTOOL_PATH for firtool"
       // Capture stdout without supplying the logger scope that execute must establish.
       val (defaultLog, _, _) = grabStdOutErr {
         (new ChiselStage).execute(args, annos)
       }
-      defaultLog shouldNot include(msg)
+      defaultLog shouldNot include(resolverPathCheck)
 
       val (debugLog, _, _) = grabStdOutErr {
         (new ChiselStage).execute(args ++ Array("--log-level", "debug"), annos)
       }
-      debugLog should include(msg)
+      debugLog should include(resolverPathCheck)
     }
 
     it("should support --log-level") {
@@ -716,6 +716,22 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       }
       val version = chisel3.BuildInfo.firtoolVersion.getOrElse("<unknown>")
       e.getMessage should include(s"firtool version $version")
+      val resolvedVersion = firtoolresolver.Resolve(version).toOption.get.version
+      if (resolvedVersion != version) {
+        e.getMessage should include(s"Using firtool version $resolvedVersion.")
+      } else {
+        e.getMessage shouldNot include("Using firtool version")
+      }
+    }
+
+    it("should explain how to correct a missing explicit firtool binary") {
+      val missingBinary = (os.temp.dir() / "missing-firtool").toString
+      val e = intercept[java.lang.Exception] {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, Array("--firtool-binary-path", missingBinary))
+      }
+      e.getMessage should include("--firtool-binary-path")
+      e.getMessage should include("remove the option")
+      e.getMessage should include(missingBinary)
     }
 
     it("should properly report Builder.errors even if there is a later Exception") {
@@ -1285,16 +1301,15 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
 
     it("should forward firtool-resolver logging under log-level debug") {
       // Capture stdout without creating a logger scope: the helper must establish its own.
-      val msg = "Checking CHISEL_FIRTOOL_PATH for firtool"
       val (defaultLog, _, _) = grabStdOutErr {
         ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
       }
-      defaultLog shouldNot include(msg)
+      defaultLog shouldNot include(resolverPathCheck)
 
       val (debugLog, _, _) = grabStdOutErr {
         ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, args = Array("-ll", "debug"))
       }
-      debugLog should include(msg)
+      debugLog should include(resolverPathCheck)
     }
 
     it("should support --log-level") {
@@ -1409,7 +1424,9 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       info("The exception includes a useful error message")
       val message = exception.getMessage
       message should include("Cannot run program \"potato\"")
-      message should include("Chisel requires firtool, the MLIR-based FIRRTL Compiler (MFC), to generate Verilog.")
+      message should include(
+        "Point --firtool-binary-path to a firtool executable, or remove the option to let Chisel resolve firtool."
+      )
 
       info("The exception should not contain a stack trace")
       exception.getStackTrace should be(Array.empty[StackTraceElement])
