@@ -418,16 +418,16 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
       )
       val annos = Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo))
       val msg = "Checking CHISEL_FIRTOOL_PATH for firtool"
-      // By default it should NOT show anything
-      val (log1, _) = grabLog {
+      // Capture stdout without supplying the logger scope that execute must establish.
+      val (defaultLog, _, _) = grabStdOutErr {
         (new ChiselStage).execute(args, annos)
       }
-      log1 shouldNot include(msg)
+      defaultLog shouldNot include(msg)
 
-      val (log2, _) = grabLog {
+      val (debugLog, _, _) = grabStdOutErr {
         (new ChiselStage).execute(args ++ Array("--log-level", "debug"), annos)
       }
-      log2 should include(msg)
+      debugLog should include(msg)
     }
 
     it("should support --log-level") {
@@ -1284,18 +1284,17 @@ class ChiselStageSpec extends AnyFunSpec with Matchers with chiselTests.LogUtils
     }
 
     it("should forward firtool-resolver logging under log-level debug") {
-      // By default it should NOT show anything
-      val (log1, _) = grabLog {
+      // Capture stdout without creating a logger scope: the helper must establish its own.
+      val msg = "Checking CHISEL_FIRTOOL_PATH for firtool"
+      val (defaultLog, _, _) = grabStdOutErr {
         ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo)
       }
-      log1 shouldNot include("Checking CHISEL_FIRTOOL_PATH for firtool")
+      defaultLog shouldNot include(msg)
 
-      // circt.stage.ChiselStage does not currently accept --log-level so we have to use testing
-      // APIs to set the level
-      val (log2, _) = grabLog {
-        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, args = Array("--log-level", "debug"))
+      val (debugLog, _, _) = grabStdOutErr {
+        ChiselStage.emitSystemVerilog(new ChiselStageSpec.Foo, args = Array("-ll", "debug"))
       }
-      log2 should include("Checking CHISEL_FIRTOOL_PATH for firtool")
+      debugLog should include(msg)
     }
 
     it("should support --log-level") {
