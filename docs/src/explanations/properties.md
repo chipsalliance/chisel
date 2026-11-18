@@ -121,6 +121,32 @@ Expressions can be built out of `Property` values for certain `Property` types.
 This is useful for expressing design intent that is parameterized by input
 `Property` values.
 
+#### Property Equality
+
+The `===` operator compares two properties and returns a `Property[Boolean]`.
+It supports integer (`Int`, `Long`, and `BigInt`), string, and boolean properties
+of the same Scala type.
+
+Object references also support `===`, but compare **referential identity** (or
+"pointer" equality), not the values of an object's fields. Class-specific
+references (`Inst<ClassName>` in FIRRTL) and `Property[AnyClassType]` references
+(`AnyRef` in FIRRTL) may be freely compared, including references to different
+classes. Assignment of references and conversion to `AnyRef` preserve object
+identity.
+
+```scala mdoc:silent
+class ReferenceEqualityExample extends RawModule {
+  import chisel3.properties.{AnyClassType, Class}
+  import chisel3.experimental.hierarchy.Definition
+
+  val cls = Definition(new Class)
+  val a = IO(Input(cls.getPropertyType))
+  val b = IO(Input(Property[AnyClassType]()))
+  val sameObject = IO(Output(Property[Boolean]()))
+  sameObject := a === b
+}
+```
+
 #### Integer Arithmetic
 
 The integral `Property` types, like `Property[Int]`, `Property[Long]` and 
