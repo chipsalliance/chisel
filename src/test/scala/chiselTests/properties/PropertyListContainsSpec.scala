@@ -205,7 +205,7 @@ class PropertyListContainsSpec extends AnyFlatSpec with Matchers with FileCheck 
     val exception = intercept[RuntimeException] {
       ChiselStage.emitSystemVerilog(new ReferenceContainsModule)
     }
-    exception.getMessage should include("use of unknown declaration 'list_contains'")
+    exception.getMessage should include("list_contains does not support elements of type")
   }
 
   it should "compile with firtool" in {
