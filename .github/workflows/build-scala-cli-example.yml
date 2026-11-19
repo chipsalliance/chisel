@@ -31,8 +31,6 @@ jobs:
         run: |
           dir=$(dirname $(which firtool))
           echo "CHISEL_FIRTOOL_PATH=$dir" >> "$GITHUB_ENV"
-      - name: Cache Scala-CLI
-        uses: coursier/cache-action@95e5b1029b6b86e7bac033ee44a0697d8a527d2d # v8.1.1
       - name: Setup Scala-CLI
         uses: VirtusLab/scala-cli-setup@30de070d5e5cf2ed93c79009c9a3b69e7bead234 # v1.17.0
         with:
