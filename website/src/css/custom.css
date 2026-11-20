@@ -41,6 +41,13 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
+/* Make hero banner less ugly for dark theme */
+ [data-theme='dark'] .hero--primary {
+  /** Defaults to primary color which is horrible for the hero background */
+  --ifm-hero-background-color: #2b307d; /* --ifm-color-primary-lightest from light theme */
+  --ifm-hero-text-color: var(--ifm-font-color-base);
+}
+
 .header-chipsalliance-link::before {
   content: '';
   background: url("/static/img/chips-alliance.svg");
@@ -49,13 +56,22 @@
   display: flex;
 }
 
-/* Make links more obvious */
+/* Make links more obvious [for light theme] */
 a {
   color: var(--color-link);
 }
 
 a:hover {
   color: var(--color-link-hover);
+}
+
+/* Use default link color for dark theme */
+[data-theme='dark'] a {
+  color: var(--ifm-color-primary);
+}
+
+[data-theme='dark'] a:hover {
+  color: var(--ifm-color-primary);
 }
 
 /* Styling for the result of TOCInline
