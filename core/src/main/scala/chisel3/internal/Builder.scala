@@ -476,7 +476,7 @@ private[chisel3] class DynamicContext(
   val definitions:        DefinitionRegistry,
   val contextCache:       BuilderContextCache,
   val layerMap:           Map[layer.Layer, layer.Layer],
-  val inlineTestIncluder: InlineTestIncluder,
+  val autoTestIncluder:   AutoTestIncluder,
   val suppressSourceInfo: Boolean,
   var elideLayerBlocks:   Boolean,
   val elaborationTrace:   ElaborationTrace

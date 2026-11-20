@@ -4,12 +4,12 @@ import scala.annotation.nowarn
 
 import chisel3._
 import chisel3.experimental.hierarchy._
-import chisel3.experimental.inlinetest._
+import chisel3.autotest._
 import chisel3.testers._
 import chisel3.properties.Property
 import chisel3.testing.scalatest.FileCheck
 import chisel3.simulator.{ChiselSim, Exceptions}
-import chisel3.simulator.stimulus.InlineTestStimulus
+import chisel3.simulator.stimulus.AutoTestStimulus
 import chisel3.util.{is, switch, Counter, Decoupled}
 import circt.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
@@ -145,7 +145,7 @@ class RawModuleWithTests(ioWidth: Int = 32) extends RawModule with HasTests {
   }
 }
 
-class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim {
+class AutoTestSpec extends AnyFlatSpec with Matchers with FileCheck with ChiselSim {
   private def makeArgs(moduleGlobs: Seq[String], testGlobs: Seq[String]): Array[String] =
     (
       moduleGlobs.map { glob => s"--include-tests-module=$glob" } ++
@@ -157,7 +157,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
 
   private val argsElaborateAllTests: Array[String] = makeArgs(Seq("*"), Seq("*"))
 
-  it should "generate a public module for each test" in {
+  it should "generate a public module for each auto-test" in {
     emitCHIRRTL(new ModuleWithTests, args = argsElaborateAllTests).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
@@ -202,7 +202,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     )
   }
 
-  it should "not elaborate tests without flag" in {
+  it should "not elaborate auto-tests without flag" in {
     emitCHIRRTL(new ModuleWithTests).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
@@ -215,7 +215,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     )
   }
 
-  it should "only elaborate tests whose name matches the test name glob" in {
+  it should "only elaborate auto-tests whose name matches the auto-test name glob" in {
     emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlob = "*", testGlob = "passing")).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
@@ -228,7 +228,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     )
   }
 
-  it should "elaborate tests whose name matches the test name glob when module glob is omitted" in {
+  it should "elaborate auto-tests whose name matches the auto-test name glob when module glob is omitted" in {
     emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Nil, testGlobs = Seq("passing"))).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
@@ -241,9 +241,10 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     )
   }
 
-  it should "elaborate all tests when module glob is provided but test name glob is omitted" in {
-    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Nil)).fileCheck()(
-      """
+  it should "elaborate all auto-tests when module glob is provided but auto-test name glob is omitted" in {
+    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Nil))
+      .fileCheck()(
+        """
       | CHECK:      module ModuleWithTests
       | CHECK:        output monProbe : Probe<{ in : UInt<32>, out : UInt<32>}>
       |
@@ -251,10 +252,10 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       | CHECK:      module test_ModuleWithTests_failing
       | CHECK:      module test_ModuleWithTests_with_monitor
       """
-    )
+      )
   }
 
-  it should "only elaborate tests whose name matches the test name glob with multiple globs" in {
+  it should "only elaborate auto-tests whose name matches the auto-test name glob with multiple globs" in {
     emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*"), testGlobs = Seq("passing", "with_*")))
       .fileCheck()(
         """
@@ -268,8 +269,11 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       )
   }
 
-  it should "only elaborate tests whose name and module match their globs" in {
-    emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Seq("passing", "with_*")))
+  it should "only elaborate auto-tests whose name and module match their globs" in {
+    emitCHIRRTL(
+      new ModuleWithTests,
+      makeArgs(moduleGlobs = Seq("*WithTests"), testGlobs = Seq("passing", "with_*"))
+    )
       .fileCheck()(
         """
       | CHECK:      module ModuleWithTests
@@ -282,7 +286,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       )
   }
 
-  it should "not elaborate tests whose module does not match the glob" in {
+  it should "not elaborate auto-tests whose module does not match the glob" in {
     emitCHIRRTL(new ModuleWithTests, makeArgs(moduleGlob = "*WithoutTests", testGlob = "*")).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
@@ -295,7 +299,7 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
     )
   }
 
-  it should "not elaborate tests with HasTests.elaborateTests set to false" in {
+  it should "not elaborate auto-tests when HasTests.elaborateTests is false" in {
     emitCHIRRTL(new ModuleWithTests(elaborateTests = false), argsElaborateAllTests).fileCheck()(
       """
       | CHECK:      module ModuleWithTests
@@ -382,9 +386,10 @@ class InlineTestSpec extends AnyFlatSpec with Matchers with FileCheck with Chise
       .fileCheck()(
         fileCheckString("AsyncReset")
       )
-    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default), args = argsElaborateAllTests).fileCheck()(
-      fileCheckString("UInt<1>")
-    )
+    emitCHIRRTL(new ModuleWithTests(resetType = Module.ResetType.Default), args = argsElaborateAllTests)
+      .fileCheck()(
+        fileCheckString("UInt<1>")
+      )
 
     emitCHIRRTL(new RawModuleWithTests(), args = argsElaborateAllTests).fileCheck()(
       """

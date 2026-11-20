@@ -2,8 +2,11 @@
 
 package chisel3.internal
 
+import scala.annotation.nowarn
+
 import java.nio.file.{FileSystems, PathMatcher, Paths}
 
+@deprecated("Use AutoTestIncluder", "Chisel 7.16.0")
 class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNameGlobs: Seq[String]) {
   private def copy(
     includeModuleGlobs:   Seq[String] = this.includeModuleGlobs,
@@ -34,6 +37,8 @@ class InlineTestIncluder private (includeModuleGlobs: Seq[String], includeTestNa
   }
 }
 
+@deprecated("Use AutoTestIncluder", "Chisel 7.16.0")
+@nowarn("cat=deprecation")
 object InlineTestIncluder {
 
   /** Create an InlineTestIncluder that does not include any tests */

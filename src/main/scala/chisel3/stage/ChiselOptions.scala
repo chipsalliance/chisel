@@ -3,10 +3,11 @@
 package chisel3.stage
 
 import chisel3.internal.firrtl.ir.Circuit
-import chisel3.internal.{InlineTestIncluder, WarningFilter}
+import chisel3.internal.{AutoTestIncluder, WarningFilter}
 import chisel3.layer.Layer
 import chisel3.ElaboratedCircuit
 import java.io.File
+import scala.annotation.nowarn
 
 class ChiselOptions private[stage] (
   val printFullStackTrace: Boolean = false,
@@ -19,9 +20,14 @@ class ChiselOptions private[stage] (
   val includeUtilMetadata: Boolean = false,
   val useSRAMBlackbox:     Boolean = false,
   val elaboratedCircuit:   Option[ElaboratedCircuit] = None,
-  val inlineTestIncluder:  InlineTestIncluder = InlineTestIncluder.none,
+  val autoTestIncluder:    AutoTestIncluder = AutoTestIncluder.none,
   val suppressSourceInfo:  Boolean = false
 ) {
+
+  /** The old auto-test includer name. */
+  @deprecated("Use autoTestIncluder", "Chisel 7.16.0")
+  @nowarn("cat=deprecation")
+  def inlineTestIncluder: chisel3.internal.InlineTestIncluder = autoTestIncluder
 
   private[stage] def copy(
     printFullStackTrace: Boolean = printFullStackTrace,
@@ -34,7 +40,7 @@ class ChiselOptions private[stage] (
     includeUtilMetadata: Boolean = includeUtilMetadata,
     useSRAMBlackbox:     Boolean = useSRAMBlackbox,
     elaboratedCircuit:   Option[ElaboratedCircuit] = elaboratedCircuit,
-    inlineTestIncluder:  InlineTestIncluder = inlineTestIncluder,
+    autoTestIncluder:    AutoTestIncluder = autoTestIncluder,
     suppressSourceInfo:  Boolean = suppressSourceInfo
   ): ChiselOptions = {
 
@@ -49,7 +55,7 @@ class ChiselOptions private[stage] (
       includeUtilMetadata = includeUtilMetadata,
       useSRAMBlackbox = useSRAMBlackbox,
       elaboratedCircuit = elaboratedCircuit,
-      inlineTestIncluder = inlineTestIncluder,
+      autoTestIncluder = autoTestIncluder,
       suppressSourceInfo = suppressSourceInfo
     )
 
