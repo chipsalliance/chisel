@@ -29,13 +29,13 @@ private[chisel3] trait ModuleChoiceObjIntf extends SourceInfoDoc { self: ModuleC
     *
     * @throws java.lang.IllegalArgumentException if the cases do not belong to the same option.
     */
-  def apply[T <: Data](
+  def apply[T](
     default: => FixedIOBaseModule[T]
   )(choices: => Seq[(Case, () => FixedIOBaseModule[T])]): T =
     macro InstChoiceTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](
+  def do_apply[T](
     default: => FixedIOBaseModule[T],
     choices: Seq[(Case, () => FixedIOBaseModule[T])]
   )(

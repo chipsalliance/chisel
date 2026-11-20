@@ -168,4 +168,26 @@ class ModuleChoiceSpec extends AnyFlatSpec with Matchers with FileCheck {
            |CHECK: connect inst.in, io.in""".stripMargin
       )
   }
+
+  it should "generate correct FIRRTL when using tuple ports" in {
+
+    class Bar extends FixedIORawModule[(UInt, UInt)]((UInt(1.W), UInt(2.W)))
+
+    class Foo extends Module {
+      val a = IO(Output(UInt(1.W)))
+      val b = IO(Output(UInt(2.W)))
+      private val bar = ModuleChoice(new Bar)(Seq(Platform.FPGA -> new Bar))
+      a :<= bar._1
+      b :<= bar._2
+    }
+
+    ChiselStage.emitCHIRRTL(new Foo)
+      .fileCheck()(
+        """|CHECK:      instchoice bar of Bar
+           |CHECK:      connect a, bar._1
+           |CHECK-NEXT: connect b, bar._2
+           |"""
+      )
+
+  }
 }
