@@ -374,20 +374,19 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
   }
 
   it should "support AnyRef fields, including optional references" in {
-    ChiselStage
-      .emitCHIRRTL {
-        new RawModule {
-          val A = IO(Input(ClockDomain.Type()))
-          val refOut = IO(Output(Property[AnyClassType]()))
-          val rootOut = IO(Output(Property[Option[AnyClassType]]()))
+    ChiselStage.emitCHIRRTL {
+      new RawModule {
+        val A = IO(Input(ClockDomain.Type()))
+        val refOut = IO(Output(Property[AnyClassType]()))
+        val rootOut = IO(Output(Property[Option[AnyClassType]]()))
 
-          private val ref = A.asAnyClassType
-          private val instance = References(ref, Property(Option(ref)))
+        private val ref = A.asAnyClassType
+        private val instance = References(ref, Property(Option(ref)))
 
-          refOut := instance.field.ref.asInstanceOf[Property[ClassType]]
-          rootOut := instance.field.root.asInstanceOf[Property[Option[ClassType]]]
-        }
+        refOut := instance.field.ref.asInstanceOf[Property[ClassType]]
+        rootOut := instance.field.root.asInstanceOf[Property[Option[ClassType]]]
       }
+    }
       .fileCheck() {
         """|CHECK:        public module {{.+}} :
            |CHECK:          wire [[ref:.+]] : AnyRef
