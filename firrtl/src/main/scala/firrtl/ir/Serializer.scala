@@ -128,6 +128,8 @@ object Serializer {
         if (idx != lastIdx) b ++= ", "
       }
       b += ')'
+    case OptionPropertyValue(tpe, value) =>
+      b ++= "Option<"; s(tpe); b ++= ">("; value.foreach(s(_)); b += ')'
     case ProbeExpr(expr, _)                          => b ++= "probe("; s(expr); b += ')'
     case RWProbeExpr(expr, _)                        => b ++= "rwprobe("; s(expr); b += ')'
     case ProbeRead(expr, _)                          => b ++= "read("; s(expr); b += ')'
@@ -492,6 +494,7 @@ object Serializer {
     case BooleanPropertyType       => b ++= "Bool"
     case PathPropertyType          => b ++= "Path"
     case SequencePropertyType(tpe) => b ++= "List<"; s(tpe, lastEmittedConst); b += '>'
+    case OptionPropertyType(tpe)   => b ++= "Option<"; s(tpe, lastEmittedConst); b += '>'
     case ClassPropertyType(name)   => b ++= "Inst<"; b ++= name; b += '>'
     case AnyRefPropertyType        => b ++= "AnyRef"
     case AliasType(name)           => b ++= name

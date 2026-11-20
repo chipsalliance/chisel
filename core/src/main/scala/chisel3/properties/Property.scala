@@ -80,13 +80,29 @@ private[chisel3] class SeqPropertyType[A, F[A] <: Seq[A], PT <: PropertyType[A]]
     value.map(v => tpe.convertUnderlying(v, info))
 }
 
-/** This contains recursive versions of Seq PropertyTypes. These instances need be lower priority to prevent ambiguous implicit errors with the non-recursive versions.
+private[chisel3] class OptionPropertyType[A, PT <: PropertyType[A]](val tpe: PT) extends PropertyType[Option[A]] {
+  type Type = Option[tpe.Type]
+  override def getPropertyType(): fir.PropertyType = fir.OptionPropertyType(tpe.getPropertyType())
+
+  type Underlying = Option[tpe.Underlying]
+  override def convert(value: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
+    fir.OptionPropertyValue(tpe.getPropertyType(), value.map(tpe.convert(_, ctx, info)))
+  override def convertUnderlying(value: Option[A], info: SourceInfo): Underlying =
+    value.map(tpe.convertUnderlying(_, info))
+}
+
+/** Recursive container instances have lower priority to avoid ambiguous implicit resolution.
   */
 private[chisel3] trait LowPriorityPropertyTypeInstances {
   implicit def sequencePropertyTypeInstance[A, F[A] <: Seq[A]](
     implicit tpe: RecursivePropertyType[A]
   ): SeqPropertyType[A, F, tpe.type] with RecursivePropertyType[F[A]] =
     new SeqPropertyType[A, F, tpe.type](tpe) with RecursivePropertyType[F[A]]
+
+  implicit def optionPropertyTypeInstance[A](
+    implicit tpe: RecursivePropertyType[A]
+  ): OptionPropertyType[A, tpe.type] with RecursivePropertyType[Option[A]] =
+    new OptionPropertyType[A, tpe.type](tpe) with RecursivePropertyType[Option[A]]
 }
 
 private[chisel3] abstract class ClassTypePropertyType[T](val classType: fir.PropertyType)
@@ -203,6 +219,10 @@ private[chisel3] object PropertyType extends LowPriorityPropertyTypeInstances {
     implicit tpe: PropertyType[A]
   ): SeqPropertyType[A, F, tpe.type] =
     new SeqPropertyType[A, F, tpe.type](tpe)
+
+  implicit def recursiveOptionPropertyTypeInstance[A](
+    implicit tpe: PropertyType[A]
+  ): OptionPropertyType[A, tpe.type] = new OptionPropertyType[A, tpe.type](tpe)
 }
 
 /** Property is the base type for all properties.
@@ -400,6 +420,15 @@ sealed trait Property[T] extends Element { self =>
     PropertyBooleanOps.assert(this.asInstanceOf[Property[Boolean]], Property[String](message))
   }
 
+  /** Return the contained property value, or the default when this option is empty.
+    *
+    * The default must have the same FIRRTL type as the option's element type.
+    */
+  final def getOrElse[U](default: Property[U])(
+    implicit ev: T =:= Option[U],
+    sourceInfo:  SourceInfo
+  ): Property[U] = PropertyExpressionHelpers.optionGetOrElse(this, default)
+
   /** Check whether a sequence property contains a property value.
     *
     * This uses the equality semantics of `===`, including referential identity
@@ -596,6 +625,27 @@ private object PropertyExpressionHelpers {
 
     // Return the temporary Wire as the result.
     wire.asInstanceOf[Property[T]]
+  }
+
+  def optionGetOrElse[T](option: Property[_], default: Property[T])(
+    implicit sourceInfo: SourceInfo
+  ): Property[T] = {
+    val elementType = option.getPropertyType match {
+      case fir.OptionPropertyType(elementType) => elementType
+      case other =>
+        Builder.exception(
+          s"Internal Error! option_get_or_else expected an option property, got ${other.serialize}"
+        )
+    }
+    if (default.getPropertyType != elementType) {
+      Builder.exception(
+        s"option_get_or_else default type ${default.getPropertyType.serialize} does not match option element type ${elementType.serialize}"
+      )
+    }
+    val wire = createPropertyWire(default)
+    val expression = ir.PropExpr(sourceInfo, elementType, fir.OptionGetOrElseOp, List(option.ref, default.ref))
+    Builder.pushCommand(ir.PropAssign(sourceInfo, wire.lref, expression))
+    wire
   }
 
   // Helper function for comparison operations that return Property[Boolean].
@@ -987,6 +1037,25 @@ object Property {
     val literal = ir.PropertyLit[tpe.Type, tpe.Underlying](tpe, tpe.convertUnderlying(lit, info))
     val result = makeWithValueOpt(tpe)
     literal.bindLitArg(result)
+  }
+
+  /** Construct a populated option from an existing property.
+    *
+    * Preserves the element's FIRRTL type, including its class for object references.
+    */
+  def some[T](value: Property[T])(implicit sourceInfo: SourceInfo): Property[Option[T]] = {
+    val referenceType = new PropertyType[Property[T]] {
+      type Type = T
+      type Underlying = ir.Arg
+      def getPropertyType(): fir.PropertyType = value.getPropertyType
+      def convert(reference: Underlying, ctx: ir.Component, info: SourceInfo): fir.Expression =
+        Converter.convert(reference, ctx, info)
+      def convertUnderlying(reference: Property[T], info: SourceInfo): Underlying = reference.ref(info)
+    }
+    Property[Option[Property[T]]](Some(value))(
+      new OptionPropertyType[Property[T], referenceType.type](referenceType),
+      sourceInfo
+    )
   }
 
   /** Concatenate multiple string properties into a single string property.

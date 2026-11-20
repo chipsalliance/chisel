@@ -265,6 +265,14 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     Serializer.serialize(probeRelease) should be("release(clock, cond, outProbe)")
   }
 
+  it should "serialize option property types and values" in {
+    OptionPropertyType(AnyRefPropertyType).serialize should be("Option<AnyRef>")
+    OptionPropertyValue(IntegerPropertyType, None).serialize should be("Option<Integer>()")
+    OptionPropertyValue(IntegerPropertyType, Some(IntegerPropertyLiteral(42))).serialize should be(
+      "Option<Integer>(Integer(42))"
+    )
+  }
+
   it should "serialize property assertion string messages as string property literals" in {
     val assertion = PropertyAssert(NoInfo, Reference("condition"), "message")
     Serializer.serialize(assertion) should be("propassert condition, String(\"message\")")

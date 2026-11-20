@@ -285,6 +285,13 @@ case class PathPropertyLiteral(value: String) extends Expression with UseSeriali
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SequencePropertyValue(tpe: Type, values: Seq[Expression]) extends Expression with UseSerializer
 
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class OptionPropertyValue(elementType: PropertyType, value: Option[Expression])
+    extends Expression
+    with UseSerializer {
+  def tpe: Type = OptionPropertyType(elementType)
+}
+
 /** Property primitive operations.
   */
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
@@ -309,6 +316,8 @@ case object IntegerNotOp extends PropPrimOp("integer_not")
 case object ListConcatOp extends PropPrimOp("list_concat")
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object ListContainsOp extends PropPrimOp("list_contains")
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case object OptionGetOrElseOp extends PropPrimOp("option_get_or_else")
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case object StringConcatOp extends PropPrimOp("string_concat")
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
@@ -731,6 +740,9 @@ case object PathPropertyType extends PropertyType
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class SequencePropertyType(tpe: PropertyType) extends PropertyType
+
+@deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
+case class OptionPropertyType(tpe: PropertyType) extends PropertyType
 
 @deprecated("All APIs in package firrtl are deprecated.", "Chisel 7.0.0")
 case class ClassPropertyType(name: String) extends PropertyType

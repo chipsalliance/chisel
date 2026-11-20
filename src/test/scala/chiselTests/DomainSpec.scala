@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.domain.{domainOf, Domain, Field}
 import chisel3.domains.ClockDomain
 import chisel3.experimental.dataview._
-import chisel3.properties.Property
+import chisel3.properties.{AnyClassType, ClassType, Property}
 import chisel3.testing.FileCheck
 import chisel3.experimental.hierarchy.{instantiable, public, Instantiate}
 import circt.stage.ChiselStage
@@ -363,6 +363,52 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     ChiselStage.emitSystemVerilog(new ListDomainModule, firtoolOpts = Array("--domain-mode=infer-all")) should include(
       "module ListDomainModule"
     )
+  }
+
+  private object References extends Domain {
+    override def fields = Seq(
+      "ref" -> Field.AnyRef,
+      "root" -> Field.Option(Field.AnyRef)
+    )
+    def apply(ref: Property[_], root: Property[_]): domain.Type = super.apply(ref, root)
+  }
+
+  it should "support AnyRef fields, including optional references" in {
+    ChiselStage
+      .emitCHIRRTL {
+        new RawModule {
+          val A = IO(Input(ClockDomain.Type()))
+          val refOut = IO(Output(Property[AnyClassType]()))
+          val rootOut = IO(Output(Property[Option[AnyClassType]]()))
+
+          private val ref = A.asAnyClassType
+          private val instance = References(ref, Property(Option(ref)))
+
+          refOut := instance.field.ref.asInstanceOf[Property[ClassType]]
+          rootOut := instance.field.root.asInstanceOf[Property[Option[ClassType]]]
+        }
+      }
+      .fileCheck() {
+        """|CHECK:        public module {{.+}} :
+           |CHECK:          wire [[ref:.+]] : AnyRef
+           |CHECK-NEXT:     propassign [[ref]], A
+           |CHECK-NEXT:     domain [[instance:.+]] of References([[ref]], Option<AnyRef>([[ref]]))
+           |CHECK-NEXT:     propassign refOut, [[instance]].ref
+           |CHECK-NEXT:     propassign rootOut, [[instance]].root
+           |""".stripMargin
+      }
+  }
+
+  it should "reject an option field with the wrong element type" in {
+    intercept[ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          val ref = IO(Input(Property[AnyClassType]()))
+          References(ref, Property[Option[Int]](None))
+        },
+        Array("--throw-on-first-error")
+      )
+    }.getMessage should include("field 'root' expects Property[Option[AnyClassType]] but got Property[Option<Integer>]")
   }
 
   it should "error when property type doesn't match field type" in {
