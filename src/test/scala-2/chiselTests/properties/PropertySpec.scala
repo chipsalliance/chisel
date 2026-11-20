@@ -3,6 +3,7 @@
 package chiselTests.properties
 
 import chisel3._
+import chisel3.experimental.hierarchy.Definition
 import chisel3.properties.{AnyClassType, Class, ClassType, DynamicObject, Path, Property, PropertyType}
 import chisel3.testing.scalatest.FileCheck
 import chisel3.util.experimental.BoringUtils
@@ -771,6 +772,101 @@ class PropertySpec extends AnyFlatSpec with Matchers with FileCheck {
       port.isLit shouldBe false
       lit.isLit shouldBe true
     })
+  }
+
+  behavior.of("Property options")
+
+  it should "construct empty and populated options and return a value or default" in {
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        val in = IO(Input(Property[Int]()))
+        val option = IO(Input(Property[Option[Int]]()))
+        val empty = IO(Output(Property[Option[Int]]()))
+        val populated = IO(Output(Property[Option[Int]]()))
+        val result = IO(Output(Property[Int]()))
+        empty := Property[Option[Int]](None)
+        populated := Property(Option(in))
+        result := option.getOrElse(Property(42))
+      })
+      .fileCheck() {
+        """|CHECK: output empty : Option<Integer>{{( @.*)?$}}
+           |CHECK: output populated : Option<Integer>{{( @.*)?$}}
+           |CHECK: propassign empty, Option<Integer>()
+           |CHECK: propassign populated, Option<Integer>(in)
+           |CHECK: propassign [[value:.+]], option_get_or_else(option, Integer(42))
+           |CHECK: propassign result, [[value]]
+           |""".stripMargin
+      }
+  }
+
+  it should "compose with lists, nested options, and property-valued elements" in {
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        val mixed = IO(Output(Property[Option[Seq[Option[Int]]]]()))
+        val nested = IO(Output(Property[Option[Property[Option[Int]]]]()))
+        mixed := Property(Option(Seq(Option(1), Option.empty[Int])))
+        nested := Property(Option(Property[Option[Int]](None)))
+      })
+      .fileCheck() {
+        """|CHECK: output mixed : Option<List<Option<Integer>>>{{( @.*)?$}}
+           |CHECK: output nested : Option<Option<Integer>>{{( @.*)?$}}
+           |CHECK: propassign mixed, Option<List<Option<Integer>>>(List<Option<Integer>>(Option<Integer>(Integer(1)), Option<Integer>()))
+           |CHECK: propassign nested, Option<Option<Integer>>(Option<Integer>())
+           |""".stripMargin
+      }
+  }
+
+  private class Foo extends Class
+  private class Bar extends Class
+
+  it should "support class-specific and AnyRef options" in {
+    ChiselStage
+      .emitCHIRRTL(new RawModule {
+        private val cls = Definition(new Foo)
+        private val clsType = cls.getClassType
+        val objects = IO(Input(Property[Option[clsType.Type]]()))
+        val obj = IO(Input(cls.getPropertyType))
+        val refs = IO(Input(Property[Option[AnyClassType]]()))
+        val ref = IO(Input(Property[AnyClassType]()))
+        val wrapped = IO(Output(Property[Option[clsType.Type]]()))
+        val objectResult = IO(Output(cls.getPropertyType))
+        val refResult = IO(Output(Property[AnyClassType]()))
+        wrapped := Property.some(obj)
+        objectResult := objects.getOrElse(obj)
+        refResult := refs.getOrElse(ref)
+      })
+      .fileCheck() {
+        """|CHECK: input objects : Option<Inst<Foo>>{{( @.*)?$}}
+           |CHECK: input refs : Option<AnyRef>{{( @.*)?$}}
+           |CHECK: propassign wrapped, Option<Inst<Foo>>(obj)
+           |CHECK: option_get_or_else(objects, obj)
+           |CHECK: option_get_or_else(refs, ref)
+           |""".stripMargin
+      }
+  }
+
+  it should "reject a different-class default despite erased Scala reference types" in {
+    intercept[ChiselException] {
+      ChiselStage.emitCHIRRTL(
+        new RawModule {
+          private val foo = Definition(new Foo)
+          private val fooType = foo.getClassType
+          private val bar = Definition(new Bar)
+          val option = IO(Input(Property[Option[fooType.Type]]()))
+          val default = IO(Input(bar.getPropertyType))
+          option.getOrElse(default)
+        },
+        Array("--throw-on-first-error")
+      )
+    }.getMessage should include("default type Inst<Bar> does not match option element type Inst<Foo>")
+  }
+
+  it should "reject non-options, mismatched defaults, and doubly wrapped properties" in {
+    assertTypeError("Property[Int]().getOrElse(Property[Int]())")
+    assertTypeError("Property[Option[Int]]().getOrElse(Property[String]())")
+    assertTypeError("Property[Option[Int]]().getOrElse(42)")
+    assertTypeError("Property[Option[Property[Property[Int]]]]()")
+    assertTypeError("Property[Option[Int]]() === Property[Option[Int]]()")
   }
 
   behavior.of("PropertyArithmeticOps")

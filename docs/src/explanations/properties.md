@@ -43,6 +43,7 @@ The following are legal `Property` types:
 * `Property[String]`
 * `Property[Boolean]`
 * `Property[Seq[A]]` (where `A` is itself a `Property`)
+* `Property[Option[A]]` (where `A` is itself a `Property`)
 
 ## Using Properties
 
@@ -112,6 +113,26 @@ class SequenceExample extends RawModule {
   outPort1 := Property(Seq(123, 456))
   // Property ports and literals can be mixed together into a Seq
   outPort2 := Property(Seq(inPort, Property(789)))
+}
+```
+
+### Property Options
+
+Similarly to sequences, optional `Property` values may be used for creating
+ports and values and they may also be connected:
+
+```scala mdoc:silent
+class OptionExample extends RawModule {
+  val inPort = IO(Input(Property[Int]()))
+  val outPort1 = IO(Output(Property[Option[Int]]()))
+  val outPort2 = IO(Output(Property[Option[Int]]()))
+  val outPort3 = IO(Output(Property[Option[Int]]()))
+  // An empty Option can be turned into a Property
+  outPort1 := Property[Option[Int]](None)
+  // An Option of a literal can be turned into a Property
+  outPort2 := Property(Option(123))
+  // A Property value can be wrapped in an Option
+  outPort3 := Property.some(inPort)
 }
 ```
 
@@ -228,6 +249,21 @@ class SequenceContainsExample extends RawModule {
   val target = IO(Input(Property[String]()))
   val found = IO(Output(Property[Boolean]()))
   found := names.contains(target)
+}
+```
+
+#### Option Operations
+
+The optional `Property` types, like `Property[Option[Int]]`, support the
+`getOrElse` operation to return the contained value, or a default if the option
+is empty. The default must have the same `Property` type as the option's element.
+For example:
+
+```scala mdoc:silent
+class OptionOperationExample extends RawModule {
+  val inPort = IO(Input(Property[Option[Int]]()))
+  val outPort = IO(Output(Property[Int]()))
+  outPort := inPort.getOrElse(Property(42))
 }
 ```
 

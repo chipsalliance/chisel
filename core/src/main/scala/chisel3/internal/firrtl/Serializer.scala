@@ -748,6 +748,11 @@ private[chisel3] object Serializer {
       case domain.Field.Boolean => b ++= "Bool"
       case domain.Field.Integer => b ++= "Integer"
       case domain.Field.String  => b ++= "String"
+      case domain.Field.AnyRef  => b ++= "AnyRef"
+      case domain.Field.Option(element) =>
+        b ++= "Option<"
+        serialize(element)
+        b += '>'
       case domain.Field.List(element) =>
         b ++= "List<"
         serialize(element)
