@@ -1,7 +1,7 @@
 package chisel3.simulator
 
 import chisel3.{Data, RawModule, SimulationTestHarnessInterface}
-import chisel3.experimental.inlinetest.{HasTests, SimulatedTest, TestParameters, TestResult}
+import chisel3.autotest.{HasTests, SimulatedTest, TestParameters, TestResult}
 import firrtl.options.StageUtils.dramaticMessage
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileSystems, FileVisitResult, FileVisitor, Files, Path, PathMatcher, Paths}
@@ -62,7 +62,7 @@ object Exceptions {
 
   class TestsFailed private[simulator] (
     message:     String,
-    val results: Seq[chisel3.experimental.inlinetest.SimulatedTest]
+    val results: Seq[chisel3.autotest.SimulatedTest]
   ) extends RuntimeException(
         dramaticMessage(
           header = Some("One or more tests failed during simulation"),

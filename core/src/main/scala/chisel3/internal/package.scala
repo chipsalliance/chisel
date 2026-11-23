@@ -16,6 +16,10 @@ import chisel3.ChiselException
 
 package object internal {
 
+  /** Selects auto-tests for elaboration. */
+  @scala.annotation.nowarn("cat=deprecation")
+  type AutoTestIncluder = InlineTestIncluder
+
   @implicitNotFound("You are trying to access a macro-only API. Please use the @public annotation instead.")
   trait MacroGenerated
 
