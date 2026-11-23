@@ -5,7 +5,7 @@ package chisel3.domain
 import chisel3.experimental.SourceInfo
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.ir
-import chisel3.properties.Property
+import chisel3.properties.{ClassType, ClassTypeProvider, OptionPropertyType, Property}
 import chisel3.properties.PropertyType.{
   boolPropertyTypeInstance,
   intPropertyTypeInstance,
@@ -57,6 +57,27 @@ object Field {
     private[domain] def typeName:             scala.Predef.String = "String"
   }
 
+  /** An object reference type. References are compared by identity. */
+  object AnyRef extends Type {
+    private[domain] type PropertyType = ClassType
+    private[domain] val propertyType: Aux[PropertyType, PropertyType, _] =
+      chisel3.properties.PropertyType.classTypePropertyType[ClassType](
+        ClassTypeProvider[ClassType](_root_.firrtl.ir.AnyRefPropertyType)
+      )
+    private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType = _root_.firrtl.ir.AnyRefPropertyType
+    private[domain] def typeName:             scala.Predef.String = "AnyClassType"
+  }
+
+  /** An optional property value. Options may contain any field type, including other containers. */
+  final case class Option(element: Type) extends Type {
+    private[domain] type PropertyType = scala.Option[element.PropertyType]
+    private[domain] val propertyType: Aux[PropertyType, PropertyType, _] =
+      new OptionPropertyType[element.PropertyType, element.propertyType.type](element.propertyType)
+    private[domain] def expectedPropertyType: _root_.firrtl.ir.PropertyType =
+      _root_.firrtl.ir.OptionPropertyType(element.expectedPropertyType)
+    private[domain] def typeName: scala.Predef.String = s"Option[${element.typeName}]"
+  }
+
   /** A list type containing values of `element`.
     *
     * Lists may be nested, for example:
@@ -105,6 +126,7 @@ object Field {
   *     "bar" -> Field.Boolean,
   *     "baz" -> Field.Integer,
   *     "qux" -> Field.String,
+  *     "source" -> Field.Option(Field.AnyRef),
   *     "roots" -> Field.List(Field.Integer),
   *     "names" -> Field.List(Field.List(Field.String))
   *   )

@@ -5,7 +5,7 @@ package chisel3.domain
 import chisel3.{fromIntToLiteral, Data, Element, Printable, UInt, UnknownWidth, Width}
 import chisel3.experimental.SourceInfo
 import chisel3.internal.{throwException, Builder}
-import chisel3.properties.Property
+import chisel3.properties.{AnyClassType, ClassType, Property}
 import chisel3.internal.firrtl.ir
 import scala.language.dynamics
 
@@ -67,6 +67,16 @@ final class Type private[domain] (val domain: Domain) extends Element { self =>
   private[chisel3] def _width: Width = UnknownWidth
 
   addDomain(domain)
+
+  /** Return an AnyRef property referring to this domain, preserving its identity.
+    *
+    * This reference can be stored in property containers and compared with `===`.
+    */
+  def asAnyClassType(implicit sourceInfo: SourceInfo): Property[ClassType] with AnyClassType = {
+    val reference = chisel3.Wire(Property[AnyClassType]())
+    Builder.pushCommand(ir.PropAssign(sourceInfo, reference.lref, this.ref))
+    reference.asAnyClassType
+  }
 
   /** Accessor object for domain fields using dynamic selection.
     *
