@@ -51,7 +51,20 @@ private[hierarchy] object HierarchyLookupMacro {
     }
 
     val publicSym = TypeRepr.of[public].typeSymbol
-    if (!fieldSym.annotations.exists(_.tpe.typeSymbol == publicSym)) {
+    def isPublic(sym: Symbol): Boolean =
+      sym != Symbol.noSymbol && sym.annotations.exists(_.tpe.typeSymbol == publicSym)
+
+    // Special handling for @public annoation for when classes
+    // with @public parameters live in a separately compiled TASTy
+    // file: extract them from the constructor parameter rather than
+    // from the field/getter selected above
+    val publicCandidates = fieldSym :: syms.flatMap { typeSym =>
+      val constructorParams =
+        if (typeSym.primaryConstructor == Symbol.noSymbol) Nil
+        else typeSym.primaryConstructor.paramSymss.flatten.filter(_.name == name)
+      typeSym.fieldMember(name) :: typeSym.methodMember(name) ::: constructorParams
+    }
+    if (!publicCandidates.exists(isPublic)) {
       report.errorAndAbort(
         s"value `$name` in ${tpe.show} is not marked @public"
       )
