@@ -562,7 +562,19 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
       }
       ChiselStage.emitCHIRRTL(new Top) should include("module Foo :")
     }
-    it("(3.l): should work on unimplemented vals in abstract classes/traits") {
+    it("(3.l): should expose public overridden constructor vals") {
+      abstract class Base(val x: Int) extends Module
+      @instantiable
+      class Foo(@public override val x: Int) extends Base(x)
+      class Top extends Module {
+        val definition = Definition(new Foo(1))
+        definition.x should be(1)
+        val instance = Instance(definition)
+        instance.x should be(1)
+      }
+      ChiselStage.emitCHIRRTL(new Top) should include("module Foo :")
+    }
+    it("(3.m): should work on unimplemented vals in abstract classes/traits") {
       class Top() extends Module {
         val i = Definition(new ConcreteHasBlah())
         def f(d: Definition[HasBlah]): Unit = {
@@ -579,7 +591,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
-    it("(3.m): should work on eithers") {
+    it("(3.n): should work on eithers") {
       class Top() extends Module {
         val i = Definition(new HasEither())
         i.x.map(x => mark(x, "xright")).left.map(x => mark(x, "xleft"))
@@ -597,7 +609,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
-    it("(3.n): should work on tuple2") {
+    it("(3.o): should work on tuple2") {
       class Top() extends Module {
         val i = Definition(new HasTuple2())
         mark(i.xy._1, "x")
@@ -615,7 +627,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
-    it("(3.o): should work on Mems/SyncReadMems") {
+    it("(3.p): should work on Mems/SyncReadMems") {
       class Top() extends Module {
         val i = Definition(new HasMems())
         mark(i.mem, "Mem")
@@ -633,7 +645,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
-    it("(3.p): should not create memory ports") {
+    it("(3.q): should not create memory ports") {
       class Top() extends Module {
         val i = Definition(new HasMems())
         i.mem(0) := 100.U // should be illegal!
@@ -644,7 +656,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
         "Cannot create a memory port in a different module (Top) than where the memory is (HasMems)."
       )
     }
-    it("(3.q): should work on HasTarget") {
+    it("(3.r): should work on HasTarget") {
       class Top() extends Module {
         val i = Definition(new HasHasTarget)
         mark(i.x, "x")
@@ -658,7 +670,7 @@ class DefinitionSpec extends AnyFunSpec with Matchers with FileCheck {
              |""".stripMargin
         )
     }
-    it("(3.r): should work on Tuple5 with a Module in it") {
+    it("(3.s): should work on Tuple5 with a Module in it") {
       class Top() extends Module {
         val defn = Definition(new HasTuple5())
         val (3, w: UInt, "hi", inst: Instance[AddOne], l) = defn.tup
