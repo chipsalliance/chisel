@@ -49,7 +49,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       """|CHECK:      circuit Foo :
          |CHECK:        domain ClockDomain :
          |CHECK-NEXT:     name : String
-         |CHECK-NEXT:     source : String
+         |CHECK-NEXT:     source : Option<AnyRef>
          |CHECK-NEXT:     relationship : String
          |
          |CHECK:        domain PowerDomain :
@@ -250,7 +250,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
     class Foo extends RawModule {
       val A = IO(Input(ClockDomain.Type()))
       val nameOut = IO(Output(Property[String]()))
-      val sourceOut = IO(Output(Property[String]()))
+      val sourceOut = IO(Output(Property[Option[AnyClassType]]()))
 
       nameOut := A.field.name
       sourceOut := A.field.source
@@ -260,7 +260,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
       """|CHECK: module Foo :
          |CHECK:   input A : Domain of ClockDomain
          |CHECK:   output nameOut : String
-         |CHECK:   output sourceOut : String
+         |CHECK:   output sourceOut : Option<AnyRef>
          |CHECK:   propassign nameOut, A.name
          |CHECK:   propassign sourceOut, A.source
          |""".stripMargin
@@ -286,7 +286,9 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
          |CHECK:   output B : Domain of ClockDomain
          |CHECK:   wire [[name:.+]] : String
          |CHECK:   propassign [[name]], string_concat(A.name, String("_1to4"))
-         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], A.name, String("synchronous"))
+         |CHECK:   wire [[source:.+]] : AnyRef
+         |CHECK:   propassign [[source]], A
+         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], Option<AnyRef>([[source]]), String("synchronous"))
          |CHECK:   domain_define B = [[b]]
          |""".stripMargin
     }
@@ -309,7 +311,9 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
          |CHECK:   output B : Domain of ClockDomain
          |CHECK:   wire [[name:.+]] : String
          |CHECK:   propassign [[name]], string_concat(A.name, String("_2to3"))
-         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], A.name, String("rational"))
+         |CHECK:   wire [[source:.+]] : AnyRef
+         |CHECK:   propassign [[source]], A
+         |CHECK:   domain [[b:.*]] of ClockDomain([[name]], Option<AnyRef>([[source]]), String("rational"))
          |CHECK:   domain_define B = [[b]]
          |""".stripMargin
     }
@@ -674,7 +678,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
         )
       )
     }.getMessage should include(
-      "Clock domain 'A' (with relationship 'synchronous' to clock domain 'A') and clock domain 'A_4to3' (with relationship 'rational' to clock domain 'A') are not synchronously related to each other.  They must have the same clock domain source and a synchronous relationship."
+      "Clock domain 'A' (with relationship 'synchronous') and clock domain 'A_4to3' (with relationship 'rational') are not synchronously related to each other.  They must have the same clock domain source and a synchronous relationship."
     )
 
   }
@@ -699,7 +703,7 @@ class DomainSpec extends AnyFlatSpec with Matchers with FileCheck {
         )
       )
     }.getMessage should include(
-      "Clock domain 'A' (with relationship 'synchronous' to clock domain 'A') and clock domain 'B' (with relationship 'synchronous' to clock domain 'B') are not synchronously or rationally related to each other.  They must have the same clock domain source and a synchronous or rational relationship."
+      "Clock domain 'A' (with relationship 'synchronous') and clock domain 'B' (with relationship 'synchronous') are not synchronously or rationally related to each other.  They must have the same clock domain source and a synchronous or rational relationship."
     )
   }
 

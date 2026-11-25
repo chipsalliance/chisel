@@ -5,7 +5,7 @@ package chisel3.domains
 import chisel3.domain
 import chisel3.domain.{Domain, Field}
 import chisel3.experimental.UnlocatableSourceInfo
-import chisel3.properties.Property
+import chisel3.properties.{AnyClassType, ClassType, Property}
 
 /** A Clock Domain
   *
@@ -48,21 +48,21 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
       */
     private def assertPrelude(A: domain.Type, B: domain.Type): Property[String] = {
       val A_name = A.field.name.asInstanceOf[Property[String]]
-      val A_source = A.field.source.asInstanceOf[Property[String]]
       val A_relationship = A.field.relationship.asInstanceOf[Property[String]]
       val B_name = B.field.name.asInstanceOf[Property[String]]
-      val B_source = B.field.source.asInstanceOf[Property[String]]
       val B_relationship = B.field.relationship.asInstanceOf[Property[String]]
       Property("Clock domain '") ++ A_name ++ Property(
         "' (with relationship '"
-      ) ++ A_relationship ++ Property("' to clock domain '") ++ A_source ++ Property(
-        "') and clock domain '"
-      ) ++ B_name ++ Property(
+      ) ++ A_relationship ++ Property("') and clock domain '") ++ B_name ++ Property(
         "' (with relationship '"
-      ) ++ B_relationship ++ Property("' to clock domain '") ++ B_source ++ Property(
-        "')"
-      )
+      ) ++ B_relationship ++ Property("')")
     }
+
+    /** Treat a root clock as its own source so that it can be compared with
+      * clocks derived from it.
+      */
+    private def sourceOrSelf(clock: domain.Type): Property[ClassType] =
+      clock.field.source.asInstanceOf[Property[Option[ClassType]]].getOrElse(clock.asAnyClassType)
 
     /** Generate an assertion that two domains have a synchronous relationship.
       *
@@ -72,9 +72,9 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
       * @param B the second domain
       */
     def assertSynchronous(A: domain.Type, B: domain.Type): Unit = {
-      val A_source = A.field.source.asInstanceOf[Property[String]]
+      val A_source = sourceOrSelf(A)
       val A_relationship = A.field.relationship.asInstanceOf[Property[String]]
-      val B_source = B.field.source.asInstanceOf[Property[String]]
+      val B_source = sourceOrSelf(B)
       val B_relationship = B.field.relationship.asInstanceOf[Property[String]]
       val sync = Property(ClockDomain.Relationship.Synchronous.toString)
       (A_source === B_source && A_relationship === sync && B_relationship === sync)
@@ -93,9 +93,9 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
       * @param B the second domain
       */
     def assertRational(A: domain.Type, B: domain.Type): Unit = {
-      val A_source = A.field.source.asInstanceOf[Property[String]]
+      val A_source = sourceOrSelf(A)
       val A_relationship = A.field.relationship.asInstanceOf[Property[String]]
-      val B_source = B.field.source.asInstanceOf[Property[String]]
+      val B_source = sourceOrSelf(B)
       val B_relationship = B.field.relationship.asInstanceOf[Property[String]]
       val sync = Property(ClockDomain.Relationship.Synchronous.toString)
       val rational = Property(ClockDomain.Relationship.Rational.toString)
@@ -111,17 +111,18 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
 
   override def fields: Seq[(String, Field.Type)] = Seq(
     "name" -> Field.String,
-    "source" -> Field.String,
+    "source" -> Field.Option(Field.AnyRef),
     "relationship" -> Field.String
   )
 
-  /** Create a new clock domain that is asynchronous to all other domains.
+  /** Create a new root clock domain.
     *
+    * A root clock has no source and is asynchronous to other root clocks.
     *
     * @param name the name of this domain
     */
   def apply(name: String): chisel3.domain.Type =
-    ClockDomain(Property(name), Property(name), Relationship.Synchronous.toProperty)
+    ClockDomain(Property(name), Property[Option[AnyClassType]](None), Relationship.Synchronous.toProperty)
 
   /** Create a derived clock domain.
     *
@@ -144,7 +145,7 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
   def synchronous(source: chisel3.domain.Type, suffix: String): chisel3.domain.Type =
     ClockDomain(
       Property.concat(source.field.name.asInstanceOf[Property[String]], Property(suffix)),
-      source.field.name,
+      Property.some(source.asAnyClassType),
       Relationship.Synchronous.toProperty
     )
 
@@ -156,7 +157,7 @@ object ClockDomain extends Domain()(sourceInfo = UnlocatableSourceInfo) {
   def rational(source: chisel3.domain.Type, suffix: String): chisel3.domain.Type =
     ClockDomain(
       Property.concat(source.field.name.asInstanceOf[Property[String]], Property(suffix)),
-      source.field.name,
+      Property.some(source.asAnyClassType),
       Relationship.Rational.toProperty
     )
 
